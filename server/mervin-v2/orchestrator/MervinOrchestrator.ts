@@ -17,6 +17,7 @@ import { AIRouter } from '../ai/AIRouter';
 import { SystemAPIService } from '../services/SystemAPIService';
 import { WebSearchService } from '../services/WebSearchService';
 import { ProgressStreamService } from '../services/ProgressStreamService';
+import { FileProcessorService } from '../services/FileProcessorService';
 
 import type {
   MervinRequest,
@@ -28,7 +29,8 @@ import type {
   EstimateParams,
   ContractParams,
   PermitParams,
-  PropertyParams
+  PropertyParams,
+  FileAttachment
 } from '../types/mervin-types';
 
 export class MervinOrchestrator {
@@ -62,25 +64,38 @@ export class MervinOrchestrator {
     console.log('\n=================================');
     console.log('🤖 [MERVIN-V2] Procesando request');
     console.log('Input:', request.input);
+    if (request.attachments?.length) {
+      console.log(`📎 Archivos adjuntos: ${request.attachments.length}`);
+    }
     console.log('=================================\n');
 
     try {
-      // PASO 1: Análisis rápido con ChatGPT
+      // Generar contexto de archivos si existen
+      let filesContext = '';
+      if (request.attachments && request.attachments.length > 0) {
+        this.progress?.sendMessage('📎 Procesando archivos adjuntos...');
+        const fileProcessor = new FileProcessorService();
+        filesContext = fileProcessor.generateFilesSummary(request.attachments);
+        console.log('📎 [FILES] Contexto generado:', filesContext.substring(0, 200));
+      }
+
+      // PASO 1: Análisis rápido con ChatGPT (incluir archivos)
       this.progress?.sendMessage('🔍 Analizando tu mensaje...');
-      const analysis = await this.analyzeInput(request.input);
+      const inputWithFiles = request.input + filesContext;
+      const analysis = await this.analyzeInput(inputWithFiles);
 
       console.log('📊 [ANALYSIS]', analysis);
 
       // PASO 2: Decisión de flujo
       if (analysis.isSimpleConversation) {
         // FLUJO CONVERSACIONAL
-        return await this.handleConversation(request, analysis);
+        return await this.handleConversation(request, analysis, filesContext);
       } else if (analysis.isExecutableTask) {
         // FLUJO DE TAREA EJECUTABLE
-        return await this.handleExecutableTask(request, analysis);
+        return await this.handleExecutableTask(request, analysis, filesContext);
       } else {
         // FLUJO DE CONSULTA COMPLEJA
-        return await this.handleComplexQuery(request, analysis);
+        return await this.handleComplexQuery(request, analysis, filesContext);
       }
 
     } catch (error: any) {
@@ -103,12 +118,14 @@ export class MervinOrchestrator {
    */
   private async handleConversation(
     request: MervinRequest,
-    analysis: QuickAnalysis
+    analysis: QuickAnalysis,
+    filesContext: string = ''
   ): Promise<MervinResponse> {
     this.progress?.sendMessage('💬 Preparando respuesta...');
 
+    const inputWithFiles = request.input + filesContext;
     const response = await this.chatgpt.generateResponse(
-      request.input,
+      inputWithFiles,
       request.conversationHistory
     );
 
@@ -126,14 +143,16 @@ export class MervinOrchestrator {
    */
   private async handleExecutableTask(
     request: MervinRequest,
-    analysis: QuickAnalysis
+    analysis: QuickAnalysis,
+    filesContext: string = ''
   ): Promise<MervinResponse> {
     const taskType = analysis.taskType!;
     
     try {
-      // PASO 1: Extraer parámetros
+      // PASO 1: Extraer parámetros (incluir archivos)
       this.progress?.sendMessage('📋 Extrayendo información necesaria...');
-      const params = await this.chatgpt.extractParameters(request.input, taskType);
+      const inputWithFiles = request.input + filesContext;
+      const params = await this.chatgpt.extractParameters(inputWithFiles, taskType);
 
       console.log('📋 [PARAMS]', params);
 
@@ -179,13 +198,15 @@ export class MervinOrchestrator {
    */
   private async handleComplexQuery(
     request: MervinRequest,
-    analysis: QuickAnalysis
+    analysis: QuickAnalysis,
+    filesContext: string = ''
   ): Promise<MervinResponse> {
     this.progress?.sendMessage('🧠 Analizando consulta compleja...');
 
-    // Usar Claude para razonamiento profundo
+    // Usar Claude para razonamiento profundo (incluir archivos)
+    const inputWithFiles = request.input + filesContext;
     const response = await this.claude.processComplexQuery(
-      request.input,
+      inputWithFiles,
       { conversationHistory: request.conversationHistory }
     );
 

@@ -7,11 +7,22 @@
  */
 
 import express, { Request, Response } from 'express';
+import multer from 'multer';
 import { MervinOrchestrator } from '../mervin-v2/orchestrator/MervinOrchestrator';
 import { ProgressStreamService } from '../mervin-v2/services/ProgressStreamService';
-import type { MervinRequest } from '../mervin-v2/types/mervin-types';
+import { FileProcessorService } from '../mervin-v2/services/FileProcessorService';
+import type { MervinRequest, FileAttachment } from '../mervin-v2/types/mervin-types';
 
 const router = express.Router();
+
+// Configurar multer para manejar archivos en memoria
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10 MB por archivo
+    files: 5 // Máximo 5 archivos
+  }
+});
 
 /**
  * POST /api/mervin-v2/process
@@ -140,6 +151,105 @@ router.post('/stream', async (req: Request, res: Response) => {
     if (!res.headersSent) {
       res.status(500).json({
         error: 'Error procesando mensaje',
+        details: error.message
+      });
+    }
+  }
+});
+
+/**
+ * POST /api/mervin-v2/process-with-files
+ * Procesar mensaje con archivos adjuntos
+ */
+router.post('/process-with-files', upload.array('files', 5), async (req: Request, res: Response) => {
+  try {
+    const files = req.files as Express.Multer.File[];
+    const { input, userId, conversationHistory, language } = req.body;
+
+    // Validación
+    if (!input || !userId) {
+      return res.status(400).json({
+        error: 'Se requiere input y userId'
+      });
+    }
+
+    console.log(`📨 [MERVIN-V2-FILES] Request con ${files?.length || 0} archivos`);
+
+    // Procesar archivos adjuntos
+    const fileProcessor = new FileProcessorService();
+    const attachments: FileAttachment[] = [];
+
+    if (files && files.length > 0) {
+      console.log('📎 [MERVIN-V2-FILES] Procesando archivos adjuntos...');
+      
+      for (const file of files) {
+        try {
+          const processedFile = await fileProcessor.processFile(file);
+          attachments.push(processedFile);
+        } catch (error: any) {
+          console.error(`❌ Error procesando ${file.originalname}:`, error);
+          // Continuar con otros archivos
+        }
+      }
+      
+      console.log(`✅ [MERVIN-V2-FILES] ${attachments.length} archivos procesados`);
+    }
+
+    // Forward auth headers
+    const authHeaders: Record<string, string> = {};
+    
+    if (req.headers.authorization) {
+      authHeaders['authorization'] = req.headers.authorization;
+    }
+    
+    if (req.headers.cookie) {
+      authHeaders['cookie'] = req.headers.cookie;
+    }
+    
+    ['x-firebase-appcheck', 'x-csrf-token'].forEach(header => {
+      const value = req.headers[header];
+      if (value) {
+        authHeaders[header] = Array.isArray(value) ? value[0] : value;
+      }
+    });
+
+    // Crear orquestrador
+    const orchestrator = new MervinOrchestrator(userId, authHeaders);
+
+    // Configurar streaming
+    const progressService = new ProgressStreamService();
+    progressService.initializeStream(res);
+    orchestrator.setProgressStream(progressService);
+
+    // Parsear conversationHistory si viene como string
+    let parsedHistory = [];
+    if (conversationHistory) {
+      try {
+        parsedHistory = typeof conversationHistory === 'string' 
+          ? JSON.parse(conversationHistory) 
+          : conversationHistory;
+      } catch (e) {
+        console.error('Error parsing conversationHistory:', e);
+      }
+    }
+
+    // Procesar con archivos adjuntos
+    await orchestrator.process({
+      input,
+      userId,
+      conversationHistory: parsedHistory,
+      language: language || 'es',
+      attachments
+    });
+
+    console.log('✅ [MERVIN-V2-FILES] Procesamiento completado');
+
+  } catch (error: any) {
+    console.error('❌ [MERVIN-V2-FILES] Error:', error);
+    
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: 'Error procesando mensaje con archivos',
         details: error.message
       });
     }

@@ -5,11 +5,21 @@
 
 // ============= REQUEST/RESPONSE TYPES =============
 
+export interface FileAttachment {
+  filename: string;
+  mimeType: string;
+  size: number;
+  content: string; // Base64 or extracted text content
+  extractedText?: string; // For PDFs, images with OCR, etc.
+  metadata?: Record<string, any>;
+}
+
 export interface MervinRequest {
   input: string;
   userId: string;
   conversationHistory?: Message[];
   language?: 'es' | 'en';
+  attachments?: FileAttachment[];
 }
 
 export interface MervinResponse {

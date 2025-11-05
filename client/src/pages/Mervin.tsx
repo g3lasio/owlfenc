@@ -17,6 +17,10 @@ import {
   Cpu,
   Copy,
   Check,
+  X,
+  File,
+  FileText,
+  Image as ImageIcon,
 } from "lucide-react";
 import { ConversationEngine } from "../mervin-ai/core/ConversationEngine";
 import { SmartActionSystem } from "../components/mervin/SmartActionSystem";
@@ -103,6 +107,10 @@ export default function Mervin() {
   const [suggestionContext, setSuggestionContext] = useState<'initial' | 'estimate' | 'contract' | 'permit' | 'property' | 'general'>('initial');
   const [isHistorySidebarOpen, setIsHistorySidebarOpen] = useState(false);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+  
+  // File attachment states
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const conversationEngineRef = useRef<ConversationEngine | null>(null);
   const { toast } = useToast();
   const { currentUser } = useAuth();
@@ -305,7 +313,9 @@ export default function Mervin() {
 
     setMessages(prev => [...prev, userMessage]);
     const currentInput = inputValue;
+    const currentFiles = [...attachedFiles]; // Capturar archivos actuales
     setInputValue("");
+    setAttachedFiles([]); // Limpiar archivos adjuntos
     
     // Reset all context states for fresh task
     setActiveEndpoints([]);
@@ -324,8 +334,8 @@ export default function Mervin() {
       if (selectedModel === "agent" && canUseAgentMode && mervinAgent.isHealthy) {
         console.log('🤖 [AGENT-MODE-V2] Using Mervin V2 backend orchestrator');
         
-        // Send to Mervin V2 backend - response will be handled by useEffect
-        await mervinAgent.sendMessage(currentInput);
+        // Send to Mervin V2 backend with files if any
+        await mervinAgent.sendMessage(currentInput, currentFiles.length > 0 ? currentFiles : undefined);
         
         // Note: The assistant response will be added automatically by the useEffect
         // that watches mervinAgent.messages
@@ -642,6 +652,55 @@ export default function Mervin() {
       });
     }
   };
+
+  // File attachment handlers
+  const handleFileButtonClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const newFiles = Array.from(files);
+    
+    // Limit to 5 files total
+    if (attachedFiles.length + newFiles.length > 5) {
+      toast({
+        title: 'Límite de archivos',
+        description: 'Solo puedes adjuntar hasta 5 archivos',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Check file size (10MB per file)
+    const oversizedFiles = newFiles.filter(file => file.size > 10 * 1024 * 1024);
+    if (oversizedFiles.length > 0) {
+      toast({
+        title: 'Archivo muy grande',
+        description: 'Cada archivo debe ser menor a 10 MB',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setAttachedFiles(prev => [...prev, ...newFiles]);
+    
+    toast({
+      title: '✓ Archivos adjuntados',
+      description: `${newFiles.length} archivo(s) listo(s) para enviar`,
+    });
+
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setAttachedFiles(prev => prev.filter((_, i) => i !== index));
+  };
   
   // Auto-save conversation every 3 messages (more frequent)
   useEffect(() => {
@@ -874,12 +933,55 @@ export default function Mervin() {
               isVisible={!isOnboardingMode}
             />
             
+            {/* Archivo adjunto preview */}
+            {attachedFiles.length > 0 && (
+              <div className="mb-3 flex flex-wrap gap-2">
+                {attachedFiles.map((file, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-2 bg-gray-800/50 border border-cyan-900/30 rounded-lg px-3 py-2 text-sm"
+                  >
+                    {file.type.startsWith('image/') ? (
+                      <ImageIcon className="h-4 w-4 text-cyan-400" />
+                    ) : file.type === 'application/pdf' ? (
+                      <FileText className="h-4 w-4 text-red-400" />
+                    ) : (
+                      <File className="h-4 w-4 text-gray-400" />
+                    )}
+                    <span className="text-gray-300 max-w-[150px] truncate">
+                      {file.name}
+                    </span>
+                    <button
+                      onClick={() => handleRemoveFile(index)}
+                      className="text-gray-400 hover:text-red-400 transition-colors"
+                      title="Eliminar archivo"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            
             <div className="flex gap-3 md:gap-2">
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="*/*"
+                onChange={handleFileSelect}
+                className="hidden"
+                data-testid="input-file"
+              />
+              
               <Button
                 variant="outline"
                 size="icon"
-                className="bg-gray-800 text-cyan-500 border-cyan-900/50 min-h-[48px] min-w-[48px] md:min-h-[40px] md:min-w-[40px] flex-shrink-0"
-                title="Subir archivos"
+                className="bg-gray-800 text-cyan-500 border-cyan-900/50 min-h-[48px] min-w-[48px] md:min-h-[40px] md:min-w-[40px] flex-shrink-0 hover:bg-gray-700"
+                title="Adjuntar archivos (PDF, imágenes, documentos)"
+                onClick={handleFileButtonClick}
+                data-testid="button-attach-files"
               >
                 <Paperclip className="h-5 w-5 md:h-4 md:w-4" />
               </Button>

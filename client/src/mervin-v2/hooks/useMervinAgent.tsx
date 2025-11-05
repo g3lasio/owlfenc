@@ -18,7 +18,7 @@ export interface UseMervinAgentReturn {
   messages: MervinMessage[];
   isProcessing: boolean;
   streamingUpdates: StreamUpdate[];
-  sendMessage: (input: string) => Promise<void>;
+  sendMessage: (input: string, files?: File[]) => Promise<void>;
   clearMessages: () => void;
   isHealthy: boolean;
   systemStatus: any;
@@ -71,9 +71,9 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
   }, [userId]);
 
   /**
-   * Enviar mensaje a Mervin
+   * Enviar mensaje a Mervin (con soporte para archivos adjuntos)
    */
-  const sendMessage = useCallback(async (input: string) => {
+  const sendMessage = useCallback(async (input: string, files?: File[]) => {
     if (!input.trim() || isProcessing) return;
 
     // Agregar mensaje del usuario
@@ -88,8 +88,37 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
     setStreamingUpdates([]);
 
     try {
-      if (enableStreaming) {
-        // Modo streaming
+      // Si hay archivos, usar endpoint específico
+      if (files && files.length > 0 && enableStreaming) {
+        console.log(`📎 [MERVIN-AGENT] Enviando con ${files.length} archivo(s)`);
+        
+        await clientRef.current.sendMessageWithFiles(
+          input,
+          files,
+          messages,
+          language,
+          (update: StreamUpdate) => {
+            // Agregar actualización al estado
+            setStreamingUpdates(prev => [...prev, update]);
+            
+            // Callback externo si existe
+            if (onStreamUpdate) {
+              onStreamUpdate(update);
+            }
+
+            // Si es mensaje completo, agregarlo a los mensajes
+            if (update.type === 'complete') {
+              const assistantMessage: MervinMessage = {
+                role: 'assistant',
+                content: update.content,
+                timestamp: new Date()
+              };
+              setMessages(prev => [...prev, assistantMessage]);
+            }
+          }
+        );
+      } else if (enableStreaming) {
+        // Modo streaming sin archivos
         await clientRef.current.sendMessageStream(
           input,
           messages,

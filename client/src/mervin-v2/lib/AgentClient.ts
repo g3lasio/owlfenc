@@ -158,6 +158,83 @@ export class AgentClient {
   }
 
   /**
+   * Enviar mensaje con archivos adjuntos (streaming SSE)
+   */
+  async sendMessageWithFiles(
+    input: string,
+    files: File[],
+    conversationHistory: MervinMessage[] = [],
+    language: 'es' | 'en' = 'es',
+    onUpdate: StreamCallback
+  ): Promise<void> {
+    try {
+      console.log(`📨 [AGENT-CLIENT] Enviando mensaje con ${files.length} archivo(s)`);
+
+      // Crear FormData para multipart/form-data
+      const formData = new FormData();
+      formData.append('input', input);
+      formData.append('userId', this.userId);
+      formData.append('language', language);
+      formData.append('conversationHistory', JSON.stringify(conversationHistory));
+
+      // Adjuntar archivos
+      files.forEach((file) => {
+        formData.append('files', file);
+      });
+
+      const response = await fetch(`${this.baseURL}/api/mervin-v2/process-with-files`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Leer stream SSE
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        throw new Error('No se pudo crear reader del stream');
+      }
+
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) {
+          console.log('✅ [AGENT-CLIENT] Stream completado');
+          break;
+        }
+
+        // Decodificar chunk
+        const chunk = decoder.decode(value);
+        
+        // Parsear líneas de SSE
+        const lines = chunk.split('\n');
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.substring(6));
+              onUpdate(data as StreamUpdate);
+            } catch (e) {
+              console.error('Error parsing SSE data:', e);
+            }
+          }
+        }
+      }
+
+    } catch (error: any) {
+      console.error('❌ [AGENT-CLIENT] Error enviando archivos:', error);
+      onUpdate({
+        type: 'error',
+        content: `Error enviando archivos: ${error.message}`
+      });
+    }
+  }
+
+  /**
    * Health check del servicio
    */
   async checkHealth(): Promise<boolean> {
