@@ -26,15 +26,19 @@ export class SystemAPIService {
   private baseURL: string;
   private userId: string;
   private client: AxiosInstance;
+  private authHeaders: Record<string, string>;
 
-  constructor(userId: string, baseURL: string = 'http://localhost:5000') {
+  constructor(userId: string, authHeaders: Record<string, string> = {}, baseURL: string = 'http://localhost:5000') {
     this.userId = userId;
     this.baseURL = baseURL;
+    this.authHeaders = authHeaders;
+    
     this.client = axios.create({
       baseURL: this.baseURL,
       timeout: 60000, // 60 segundos para operaciones largas
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        ...authHeaders // Forward all auth headers (Firebase token, cookies, etc.)
       }
     });
   }

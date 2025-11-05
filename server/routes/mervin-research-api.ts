@@ -14,7 +14,8 @@
 
 import express from 'express';
 import { WebResearchService } from '../ai/unified-chat/WebResearchService';
-import { MervinChatOrchestrator } from '../ai/MervinChatOrchestrator';
+// V2 MIGRATION: MervinChatOrchestrator removed
+// import { MervinChatOrchestrator } from '../ai/MervinChatOrchestrator';
 import Anthropic from '@anthropic-ai/sdk';
 import { verifyFirebaseAuth } from '../middleware/firebase-auth';
 import { userMappingService } from '../services/userMappingService';
@@ -22,7 +23,8 @@ import { userMappingService } from '../services/userMappingService';
 const router = express.Router();
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const webResearchService = new WebResearchService(anthropic);
-const mervinOrchestrator = new MervinChatOrchestrator();
+// V2 MIGRATION: Orchestrator removed, will be replaced by Mervin V2
+// const mervinOrchestrator = new MervinChatOrchestrator();
 
 /**
  * INVESTIGACIÓN EXPRESS - SÚPER RÁPIDA (< 5 segundos)
@@ -189,24 +191,11 @@ router.post('/estimate-research', verifyFirebaseAuth, async (req, res) => {
       });
     }
     
-    const startTime = Date.now();
-    const result = await mervinOrchestrator.researchForEstimateCreation(
-      projectType, 
-      materials, 
-      location || 'California'
-    );
-    const responseTime = Date.now() - startTime;
-    
-    console.log(`✅ [RESEARCH-API] Investigación para estimado completada en ${responseTime}ms`);
-    
-    res.json({
-      success: true,
-      data: result,
-      performance: {
-        responseTime: `${responseTime}ms`,
-        relevanceScore: result.relevanceScore,
-        method: 'estimate-specialized'
-      }
+    // V2 MIGRATION: This endpoint will be replaced by Mervin V2
+    res.status(503).json({
+      success: false,
+      message: 'Este endpoint está siendo migrado a Mervin V2. Estará disponible próximamente.',
+      migration: 'Mervin V2 - Hybrid Intelligence Architecture'
     });
     
   } catch (error) {
@@ -226,17 +215,11 @@ router.get('/performance-stats', async (req, res) => {
   console.log('📊 [RESEARCH-API] Solicitud de estadísticas de rendimiento');
   
   try {
-    const stats = await mervinOrchestrator.getSystemPerformanceStats();
-    
+    // V2 MIGRATION: This endpoint will be replaced by Mervin V2
     res.json({
       success: true,
-      stats: stats,
-      summary: {
-        efficiency: stats.cacheStats.efficiency || 'Excelente',
-        timesSaved: stats.timesSaved,
-        hitRate: `${stats.cacheStats.hitRate || 0}%`,
-        status: 'Sistema optimizado para máxima velocidad'
-      }
+      message: 'Estadísticas de rendimiento en migración a V2',
+      migration: 'Mervin V2 - Hybrid Intelligence Architecture'
     });
     
   } catch (error) {
@@ -290,12 +273,11 @@ router.post('/invalidate-cache', verifyFirebaseAuth, async (req, res) => {
       });
     }
     
-    await mervinOrchestrator.invalidateOutdatedData(changeType);
-    
+    // V2 MIGRATION: This function will be replaced by Mervin V2
     res.json({
       success: true,
-      message: `Caché invalidado para: ${changeType}`,
-      action: 'Las próximas consultas obtendrán información actualizada',
+      message: 'Invalidación de caché en migración a V2',
+      migration: 'Mervin V2 - Hybrid Intelligence Architecture',
       changeType: changeType
     });
     

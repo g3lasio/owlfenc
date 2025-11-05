@@ -30,8 +30,29 @@ router.post('/process', async (req: Request, res: Response) => {
 
     console.log('📨 [MERVIN-V2-API] Request recibido:', { userId, input: input.substring(0, 50) });
 
-    // Crear orquestador
-    const orchestrator = new MervinOrchestrator(userId);
+    // Forward all auth headers to SystemAPIService
+    const authHeaders: Record<string, string> = {};
+    
+    // Forward Firebase token if present
+    if (req.headers.authorization) {
+      authHeaders['authorization'] = req.headers.authorization;
+    }
+    
+    // Forward session cookies
+    if (req.headers.cookie) {
+      authHeaders['cookie'] = req.headers.cookie;
+    }
+    
+    // Forward any other auth-related headers
+    ['x-firebase-appcheck', 'x-csrf-token'].forEach(header => {
+      const value = req.headers[header];
+      if (value) {
+        authHeaders[header] = Array.isArray(value) ? value[0] : value;
+      }
+    });
+
+    // Crear orquestador con auth headers
+    const orchestrator = new MervinOrchestrator(userId, authHeaders);
 
     // Procesar
     const response = await orchestrator.process({
@@ -72,8 +93,29 @@ router.post('/stream', async (req: Request, res: Response) => {
 
     console.log('📡 [MERVIN-V2-STREAM] Request recibido:', { userId, input: input.substring(0, 50) });
 
-    // Crear orquestador
-    const orchestrator = new MervinOrchestrator(userId);
+    // Forward all auth headers to SystemAPIService
+    const authHeaders: Record<string, string> = {};
+    
+    // Forward Firebase token if present
+    if (req.headers.authorization) {
+      authHeaders['authorization'] = req.headers.authorization;
+    }
+    
+    // Forward session cookies
+    if (req.headers.cookie) {
+      authHeaders['cookie'] = req.headers.cookie;
+    }
+    
+    // Forward any other auth-related headers
+    ['x-firebase-appcheck', 'x-csrf-token'].forEach(header => {
+      const value = req.headers[header];
+      if (value) {
+        authHeaders[header] = Array.isArray(value) ? value[0] : value;
+      }
+    });
+
+    // Crear orquestador con auth headers
+    const orchestrator = new MervinOrchestrator(userId, authHeaders);
 
     // Configurar streaming
     const progressService = new ProgressStreamService();

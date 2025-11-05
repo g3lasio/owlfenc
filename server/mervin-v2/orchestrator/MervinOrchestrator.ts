@@ -39,11 +39,11 @@ export class MervinOrchestrator {
   private webSearch: WebSearchService;
   private progress: ProgressStreamService | null = null;
 
-  constructor(userId: string, baseURL?: string) {
+  constructor(userId: string, authHeaders: Record<string, string> = {}, baseURL?: string) {
     this.chatgpt = new ChatGPTService();
     this.claude = new ClaudeService();
     this.aiRouter = new AIRouter();
-    this.systemAPI = new SystemAPIService(userId, baseURL);
+    this.systemAPI = new SystemAPIService(userId, authHeaders, baseURL);
     this.webSearch = new WebSearchService();
   }
 
