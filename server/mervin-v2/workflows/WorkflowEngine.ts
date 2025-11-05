@@ -63,10 +63,13 @@ export class WorkflowEngine {
       throw new Error(`Workflow not found: ${request.workflowId}`);
     }
     
+    // CRITICAL: Default initialContext to empty object to prevent crashes
+    const context = request.initialContext ?? {};
+    
     // CRITICAL: Validate required context fields before starting
     if (workflow.requiredContext) {
       const missingFields = workflow.requiredContext.filter(
-        field => request.initialContext[field] === undefined || request.initialContext[field] === null
+        field => context[field] === undefined || context[field] === null
       );
       
       if (missingFields.length > 0) {
@@ -85,7 +88,7 @@ export class WorkflowEngine {
       workflowId: workflow.id,
       userId: request.userId,
       status: 'running',
-      context: request.initialContext || {},
+      context: context,
       currentStepId: null,
       currentStepIndex: -1,
       completedSteps: [],
