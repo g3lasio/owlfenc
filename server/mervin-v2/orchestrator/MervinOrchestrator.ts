@@ -73,14 +73,35 @@ export class MervinOrchestrator {
       // Generar contexto de archivos si existen
       let filesContext = '';
       if (request.attachments && request.attachments.length > 0) {
-        this.progress?.sendMessage('📎 Procesando archivos adjuntos...');
+        const fileCount = request.attachments.length;
+        
+        this.progress?.sendMessage(`📎 Processing ${fileCount} file${fileCount > 1 ? 's' : ''}...`);
         const fileProcessor = new FileProcessorService();
+        
+        // Mensaje más específico según tipo de archivo
+        const hasPDF = request.attachments.some(f => f.mimeType.includes('pdf'));
+        const hasImage = request.attachments.some(f => f.mimeType.startsWith('image/'));
+        const hasText = request.attachments.some(f => 
+          f.mimeType.startsWith('text/') || 
+          f.mimeType.includes('json') || 
+          f.mimeType.includes('csv')
+        );
+        
+        if (hasPDF) {
+          this.progress?.sendMessage('📄 Reading PDF document...');
+        } else if (hasImage) {
+          this.progress?.sendMessage('🖼️ Analyzing image metadata...');
+        } else if (hasText) {
+          this.progress?.sendMessage('📝 Reading text content...');
+        }
+        
         filesContext = fileProcessor.generateFilesSummary(request.attachments);
+        this.progress?.sendMessage('✅ Files processed successfully');
         console.log('📎 [FILES] Contexto generado:', filesContext.substring(0, 200));
       }
 
       // PASO 1: Análisis rápido con ChatGPT (incluir archivos)
-      this.progress?.sendMessage('🔍 Analizando tu mensaje...');
+      this.progress?.sendMessage('🔍 Analyzing your message...');
       const inputWithFiles = request.input + filesContext;
       const analysis = await this.analyzeInput(inputWithFiles);
 
@@ -121,7 +142,7 @@ export class MervinOrchestrator {
     analysis: QuickAnalysis,
     filesContext: string = ''
   ): Promise<MervinResponse> {
-    this.progress?.sendMessage('💬 Preparando respuesta...');
+    this.progress?.sendMessage('💬 Crafting response...');
 
     const inputWithFiles = request.input + filesContext;
     const response = await this.chatgpt.generateResponse(
@@ -150,7 +171,7 @@ export class MervinOrchestrator {
     
     try {
       // PASO 1: Extraer parámetros (incluir archivos)
-      this.progress?.sendMessage('📋 Extrayendo información necesaria...');
+      this.progress?.sendMessage('📋 Extracting required information...');
       const inputWithFiles = request.input + filesContext;
       const params = await this.chatgpt.extractParameters(inputWithFiles, taskType);
 
@@ -161,19 +182,19 @@ export class MervinOrchestrator {
       if (!validation.isValid) {
         return {
           type: 'NEEDS_MORE_INFO',
-          message: `Necesito más información primo:\n${validation.missingFields.join('\n')}`,
+          message: `I need more information:\n${validation.missingFields.join('\n')}`,
           suggestedActions: validation.missingFields
         };
       }
 
       // PASO 3: Ejecutar tarea
-      this.progress?.sendMessage(`⚙️ Ejecutando tarea: ${taskType}...`);
+      this.progress?.sendMessage(`⚙️ Executing task: ${taskType}...`);
       const taskResult = await this.executeTask(taskType, params);
 
       console.log('✅ [TASK-RESULT]', taskResult);
 
       // PASO 4: Generar respuesta final profesional con Claude
-      this.progress?.sendMessage('✨ Preparando respuesta final...');
+      this.progress?.sendMessage('✨ Generating final response...');
       const finalMessage = await this.claude.generateCompletionMessage(
         taskResult,
         analysis.language
@@ -201,7 +222,7 @@ export class MervinOrchestrator {
     analysis: QuickAnalysis,
     filesContext: string = ''
   ): Promise<MervinResponse> {
-    this.progress?.sendMessage('🧠 Analizando consulta compleja...');
+    this.progress?.sendMessage('🧠 Deep analysis in progress...');
 
     // Usar Claude para razonamiento profundo (incluir archivos)
     const inputWithFiles = request.input + filesContext;
@@ -279,18 +300,18 @@ export class MervinOrchestrator {
     const steps: string[] = [];
 
     // Paso 1: Crear estimado
-    this.progress?.completeStep('Creando estimado...', 1, 3);
+    this.progress?.completeStep('Creating estimate...', 1, 3);
     const estimate = await this.systemAPI.createEstimate(params);
-    steps.push('Estimado creado');
+    steps.push('Estimate created');
 
     // Paso 2: Enviar email si se requiere
     if (params.sendEmail && params.clientEmail) {
-      this.progress?.completeStep('Enviando email...', 2, 3);
+      this.progress?.completeStep('Sending email...', 2, 3);
       await this.systemAPI.sendEstimateEmail(estimate.id, params.clientEmail);
-      steps.push('Email enviado');
+      steps.push('Email sent');
     }
 
-    this.progress?.completeStep('Estimado completado', 3, 3);
+    this.progress?.completeStep('Estimate completed', 3, 3);
 
     return {
       estimate,
@@ -306,19 +327,19 @@ export class MervinOrchestrator {
     const steps: string[] = [];
 
     // Paso 1: Generar contenido del contrato con Claude
-    this.progress?.completeStep('Generando contrato legal...', 1, 3);
+    this.progress?.completeStep('Generating legal contract...', 1, 3);
     const contractContent = await this.claude.generateContractContent(params);
-    steps.push('Contrato generado');
+    steps.push('Contract generated');
 
     // Paso 2: Crear contrato en el sistema
-    this.progress?.completeStep('Guardando contrato...', 2, 3);
+    this.progress?.completeStep('Saving contract...', 2, 3);
     const contract = await this.systemAPI.createContract(params, contractContent);
-    steps.push('Contrato guardado');
+    steps.push('Contract saved');
 
     // Paso 3: Generar PDF
-    this.progress?.completeStep('Generando PDF...', 3, 3);
+    this.progress?.completeStep('Generating PDF...', 3, 3);
     const pdf = await this.systemAPI.generateContractPDF(contract.id);
-    steps.push('PDF generado');
+    steps.push('PDF generated');
 
     return {
       contract,
@@ -335,9 +356,9 @@ export class MervinOrchestrator {
     const steps: string[] = [];
 
     // Consultar información de permisos
-    this.progress?.completeStep('Consultando permisos requeridos...', 1, 1);
+    this.progress?.completeStep('Checking required permits...', 1, 1);
     const permitInfo = await this.systemAPI.getPermitInfo(params);
-    steps.push('Permisos consultados');
+    steps.push('Permits checked');
 
     return {
       permitInfo,
@@ -353,9 +374,9 @@ export class MervinOrchestrator {
     const steps: string[] = [];
 
     // Verificar propiedad usando Atom
-    this.progress?.completeStep('Verificando propiedad con Atom...', 1, 1);
+    this.progress?.completeStep('Verifying property with Atom...', 1, 1);
     const propertyData = await this.systemAPI.verifyProperty(params);
-    steps.push('Propiedad verificada');
+    steps.push('Property verified');
 
     return {
       propertyData,
