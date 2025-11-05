@@ -5,6 +5,7 @@
  * - Comunicación con endpoints de Mervin V2
  * - Soporte para JSON y streaming SSE
  * - Manejo de errores y reintentos
+ * - Autenticación con Firebase token
  */
 
 export interface MervinMessage {
@@ -36,14 +37,40 @@ export interface StreamUpdate {
 }
 
 export type StreamCallback = (update: StreamUpdate) => void;
+export type AuthTokenProvider = () => Promise<string | null>;
 
 export class AgentClient {
   private baseURL: string;
   private userId: string;
+  private getAuthToken: AuthTokenProvider | null;
 
-  constructor(userId: string, baseURL: string = '') {
+  constructor(userId: string, baseURL: string = '', getAuthToken: AuthTokenProvider | null = null) {
     this.userId = userId;
     this.baseURL = baseURL;
+    this.getAuthToken = getAuthToken;
+  }
+  
+  /**
+   * Obtener headers de autenticación
+   */
+  private async getAuthHeaders(): Promise<Record<string, string>> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    
+    // Incluir Firebase token si está disponible
+    if (this.getAuthToken) {
+      try {
+        const token = await this.getAuthToken();
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+      } catch (error) {
+        console.error('❌ [AGENT-CLIENT] Error obteniendo token:', error);
+      }
+    }
+    
+    return headers;
   }
 
   /**
@@ -56,12 +83,13 @@ export class AgentClient {
   ): Promise<MervinResponse> {
     try {
       console.log('📨 [AGENT-CLIENT] Enviando mensaje:', input.substring(0, 50));
+      
+      const headers = await this.getAuthHeaders();
 
       const response = await fetch(`${this.baseURL}/api/mervin-v2/process`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
+        credentials: 'include', // Include cookies for session-based auth
         body: JSON.stringify({
           input,
           userId: this.userId,
@@ -96,12 +124,13 @@ export class AgentClient {
   ): Promise<void> {
     try {
       console.log('📡 [AGENT-CLIENT] Iniciando streaming:', input.substring(0, 50));
+      
+      const headers = await this.getAuthHeaders();
 
       const response = await fetch(`${this.baseURL}/api/mervin-v2/stream`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
+        credentials: 'include', // Include cookies for session-based auth
         body: JSON.stringify({
           input,
           userId: this.userId,
@@ -181,9 +210,24 @@ export class AgentClient {
       files.forEach((file) => {
         formData.append('files', file);
       });
+      
+      // Obtener headers de autenticación (solo Authorization, no Content-Type para FormData)
+      const headers: Record<string, string> = {};
+      if (this.getAuthToken) {
+        try {
+          const token = await this.getAuthToken();
+          if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+          }
+        } catch (error) {
+          console.error('❌ [AGENT-CLIENT] Error obteniendo token:', error);
+        }
+      }
 
       const response = await fetch(`${this.baseURL}/api/mervin-v2/process-with-files`, {
         method: 'POST',
+        headers, // No incluir Content-Type aquí, FormData lo configura automáticamente
+        credentials: 'include', // Include cookies for session-based auth
         body: formData,
       });
 
