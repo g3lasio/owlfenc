@@ -37,6 +37,14 @@ export class ChatGPTService {
 
 Input: "${input}"
 
+IMPORTANTE: 
+- Si el usuario pide "revisar", "analizar", "verificar", "checar" un contrato/estimado/documento EXISTENTE → es "conversation" (análisis), NO una tarea ejecutable
+- Solo es "estimate" si pide CREAR/GENERAR un nuevo estimado
+- Solo es "contract" si pide CREAR/GENERAR un nuevo contrato
+- Si hay archivos adjuntos y pide revisarlos → es "conversation"
+- Si pide información sobre permisos → es "permit"
+- Si pide verificar una propiedad/dirección → es "property"
+
 Responde SOLO con JSON:
 {
   "isSimpleConversation": boolean,

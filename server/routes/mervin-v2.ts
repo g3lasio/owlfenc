@@ -162,6 +162,11 @@ router.post('/stream', async (req: Request, res: Response) => {
  * Procesar mensaje con archivos adjuntos
  */
 router.post('/process-with-files', upload.array('files', 5), async (req: Request, res: Response) => {
+  // Configurar timeout de 120 segundos
+  req.setTimeout(120000);
+  
+  let progressService: ProgressStreamService | null = null;
+  
   try {
     const files = req.files as Express.Multer.File[];
     const { input, userId, conversationHistory, language } = req.body;
@@ -174,6 +179,7 @@ router.post('/process-with-files', upload.array('files', 5), async (req: Request
     }
 
     console.log(`📨 [MERVIN-V2-FILES] Request con ${files?.length || 0} archivos`);
+    console.log(`📝 [MERVIN-V2-FILES] Input: ${input.substring(0, 100)}...`);
 
     // Procesar archivos adjuntos
     const fileProcessor = new FileProcessorService();
@@ -184,15 +190,17 @@ router.post('/process-with-files', upload.array('files', 5), async (req: Request
       
       for (const file of files) {
         try {
+          console.log(`📄 [MERVIN-V2-FILES] Procesando: ${file.originalname} (${file.size} bytes)`);
           const processedFile = await fileProcessor.processFile(file);
           attachments.push(processedFile);
+          console.log(`✅ [MERVIN-V2-FILES] Procesado: ${file.originalname} - ${processedFile.extractedText?.length || 0} chars`);
         } catch (error: any) {
-          console.error(`❌ Error procesando ${file.originalname}:`, error);
+          console.error(`❌ [MERVIN-V2-FILES] Error procesando ${file.originalname}:`, error.message);
           // Continuar con otros archivos
         }
       }
       
-      console.log(`✅ [MERVIN-V2-FILES] ${attachments.length} archivos procesados`);
+      console.log(`✅ [MERVIN-V2-FILES] ${attachments.length} archivos procesados correctamente`);
     }
 
     // Forward auth headers
@@ -217,7 +225,7 @@ router.post('/process-with-files', upload.array('files', 5), async (req: Request
     const orchestrator = new MervinOrchestrator(userId, authHeaders);
 
     // Configurar streaming
-    const progressService = new ProgressStreamService();
+    progressService = new ProgressStreamService();
     progressService.initializeStream(res);
     orchestrator.setProgressStream(progressService);
 
@@ -229,12 +237,17 @@ router.post('/process-with-files', upload.array('files', 5), async (req: Request
           ? JSON.parse(conversationHistory) 
           : conversationHistory;
       } catch (e) {
-        console.error('Error parsing conversationHistory:', e);
+        console.error('⚠️ [MERVIN-V2-FILES] Error parsing conversationHistory:', e);
       }
     }
 
-    // Procesar con archivos adjuntos
-    await orchestrator.process({
+    console.log(`🚀 [MERVIN-V2-FILES] Iniciando procesamiento con ${attachments.length} archivos`);
+
+    // Procesar con archivos adjuntos con timeout (con cleanup)
+    let timeoutId: NodeJS.Timeout;
+    let timedOut = false;
+    
+    const processPromise = orchestrator.process({
       input,
       userId,
       conversationHistory: parsedHistory,
@@ -242,11 +255,45 @@ router.post('/process-with-files', upload.array('files', 5), async (req: Request
       attachments
     });
 
-    console.log('✅ [MERVIN-V2-FILES] Procesamiento completado');
+    // Timeout wrapper con cleanup
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => {
+        timedOut = true;
+        reject(new Error('Request timeout after 120 seconds'));
+      }, 120000);
+    });
+
+    try {
+      await Promise.race([processPromise, timeoutPromise]);
+      
+      // Limpiar timeout si se completó exitosamente
+      if (!timedOut && timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      
+      console.log('✅ [MERVIN-V2-FILES] Procesamiento completado exitosamente');
+    } catch (error) {
+      // Limpiar timeout si hubo error
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      throw error;
+    }
 
   } catch (error: any) {
-    console.error('❌ [MERVIN-V2-FILES] Error:', error);
+    console.error('❌ [MERVIN-V2-FILES] Error:', error.message);
+    console.error('❌ [MERVIN-V2-FILES] Stack:', error.stack);
     
+    // Intentar enviar error al stream si está disponible
+    if (progressService) {
+      try {
+        progressService.sendError(error.message);
+      } catch (streamError) {
+        console.error('❌ [MERVIN-V2-FILES] Error enviando al stream:', streamError);
+      }
+    }
+    
+    // Si los headers no se enviaron, enviar respuesta JSON
     if (!res.headersSent) {
       res.status(500).json({
         error: 'Error procesando mensaje con archivos',

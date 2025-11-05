@@ -142,21 +142,27 @@ export class MervinOrchestrator {
     analysis: QuickAnalysis,
     filesContext: string = ''
   ): Promise<MervinResponse> {
-    this.progress?.sendMessage('💬 Crafting response...');
+    try {
+      this.progress?.sendMessage('💬 Crafting response...');
 
-    const inputWithFiles = request.input + filesContext;
-    const response = await this.chatgpt.generateResponse(
-      inputWithFiles,
-      request.conversationHistory
-    );
+      const inputWithFiles = request.input + filesContext;
+      const response = await this.chatgpt.generateResponse(
+        inputWithFiles,
+        request.conversationHistory
+      );
 
-    this.progress?.sendComplete(response);
+      this.progress?.sendComplete(response);
 
-    return {
-      type: 'CONVERSATION',
-      message: response,
-      executionTime: Date.now() - Date.now()
-    };
+      return {
+        type: 'CONVERSATION',
+        message: response,
+        executionTime: Date.now() - Date.now()
+      };
+    } catch (error: any) {
+      console.error('❌ [CONVERSATION-ERROR]:', error.message);
+      this.progress?.sendError(`Error generating response: ${error.message}`);
+      throw error;
+    }
   }
 
   /**
@@ -180,9 +186,14 @@ export class MervinOrchestrator {
       // PASO 2: Verificar si tenemos toda la información
       const validation = this.validateParameters(params, taskType);
       if (!validation.isValid) {
+        console.warn(`⚠️ [VALIDATION-FAILED] Missing fields for ${taskType}:`, validation.missingFields);
+        
+        const message = `I need more information:\n${validation.missingFields.join('\n')}`;
+        this.progress?.sendComplete(message);
+        
         return {
           type: 'NEEDS_MORE_INFO',
-          message: `I need more information:\n${validation.missingFields.join('\n')}`,
+          message,
           suggestedActions: validation.missingFields
         };
       }
@@ -210,6 +221,8 @@ export class MervinOrchestrator {
       };
 
     } catch (error: any) {
+      console.error(`❌ [EXECUTABLE-TASK-ERROR] ${taskType}:`, error.message);
+      this.progress?.sendError(`Error executing ${taskType}: ${error.message}`);
       throw new Error(`Error ejecutando tarea ${taskType}: ${error.message}`);
     }
   }
@@ -222,24 +235,30 @@ export class MervinOrchestrator {
     analysis: QuickAnalysis,
     filesContext: string = ''
   ): Promise<MervinResponse> {
-    this.progress?.sendMessage('🧠 Deep analysis in progress...');
+    try {
+      this.progress?.sendMessage('🧠 Deep analysis in progress...');
 
-    // Usar Claude para razonamiento profundo (incluir archivos)
-    const inputWithFiles = request.input + filesContext;
-    const response = await this.claude.processComplexQuery(
-      inputWithFiles,
-      { conversationHistory: request.conversationHistory }
-    );
+      // Usar Claude para razonamiento profundo (incluir archivos)
+      const inputWithFiles = request.input + filesContext;
+      const response = await this.claude.processComplexQuery(
+        inputWithFiles,
+        { conversationHistory: request.conversationHistory }
+      );
 
-    console.log('🧠 [CLAUDE-COMPLEX] Response:', response);
+      console.log('🧠 [CLAUDE-COMPLEX] Response:', response);
 
-    this.progress?.sendComplete(response);
+      this.progress?.sendComplete(response);
 
-    return {
-      type: 'CONVERSATION',
-      message: response,
-      executionTime: Date.now() - Date.now()
-    };
+      return {
+        type: 'CONVERSATION',
+        message: response,
+        executionTime: Date.now() - Date.now()
+      };
+    } catch (error: any) {
+      console.error('❌ [COMPLEX-QUERY-ERROR]:', error.message);
+      this.progress?.sendError(`Error processing query: ${error.message}`);
+      throw error;
+    }
   }
 
   // ============= EJECUCIÓN DE TAREAS =============
