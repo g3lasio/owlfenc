@@ -1,0 +1,289 @@
+/**
+ * SYSTEM API SERVICE - ORQUESTADOR DE ENDPOINTS EXISTENTES
+ * 
+ * Responsabilidad CRÍTICA:
+ * - Usar endpoints existentes, NUNCA reimplementar funcionalidad
+ * - Actúa como proxy inteligente hacia los sistemas reales
+ * - Maneja autenticación y permisos
+ */
+
+import axios, { AxiosInstance } from 'axios';
+import type {
+  EstimateParams,
+  ContractParams,
+  PermitParams,
+  PropertyParams,
+  PropertyData,
+  EstimateCalculation,
+  PDF,
+  EmailResult,
+  Client,
+  Contract,
+  PermitInfo
+} from '../types/mervin-types';
+
+export class SystemAPIService {
+  private baseURL: string;
+  private userId: string;
+  private client: AxiosInstance;
+
+  constructor(userId: string, baseURL: string = 'http://localhost:5000') {
+    this.userId = userId;
+    this.baseURL = baseURL;
+    this.client = axios.create({
+      baseURL: this.baseURL,
+      timeout: 60000, // 60 segundos para operaciones largas
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+  }
+
+  // ============= PROPERTY VERIFICATION =============
+
+  /**
+   * Verificar propiedad usando endpoint /api/property/details
+   * Este endpoint usa Atom para obtener información real
+   */
+  async verifyProperty(params: PropertyParams): Promise<PropertyData> {
+    console.log('🏠 [SYSTEM-API] Verificando propiedad:', params.address);
+    
+    try {
+      const response = await this.client.post('/api/property/details', {
+        address: params.address,
+        includeHistory: params.includeHistory || false
+      });
+
+      console.log('✅ [SYSTEM-API] Propiedad verificada exitosamente');
+      return response.data as PropertyData;
+
+    } catch (error: any) {
+      console.error('❌ [SYSTEM-API] Error verificando propiedad:', error.message);
+      throw new Error(`Error verificando propiedad: ${error.response?.data?.error || error.message}`);
+    }
+  }
+
+  // ============= ESTIMATES =============
+
+  /**
+   * Crear estimado usando endpoint /api/estimates
+   */
+  async createEstimate(params: EstimateParams): Promise<EstimateCalculation> {
+    console.log('📊 [SYSTEM-API] Creando estimado para:', params.clientName);
+    
+    try {
+      // 1. Buscar o crear cliente
+      let client = await this.findOrCreateClient({
+        name: params.clientName,
+        email: params.clientEmail,
+        phone: params.clientPhone
+      });
+
+      // 2. Crear el estimado
+      const response = await this.client.post('/api/estimates', {
+        userId: this.userId,
+        clientId: client.id,
+        projectType: params.projectType,
+        dimensions: params.dimensions
+      });
+
+      const estimate = response.data as EstimateCalculation;
+      console.log('✅ [SYSTEM-API] Estimado creado:', estimate.id);
+
+      // 3. Enviar email si se requiere
+      if (params.sendEmail && params.clientEmail) {
+        await this.sendEstimateEmail(estimate.id, params.clientEmail);
+      }
+
+      return estimate;
+
+    } catch (error: any) {
+      console.error('❌ [SYSTEM-API] Error creando estimado:', error.message);
+      throw new Error(`Error creando estimado: ${error.response?.data?.error || error.message}`);
+    }
+  }
+
+  /**
+   * Enviar estimado por email
+   */
+  async sendEstimateEmail(estimateId: string, email: string): Promise<EmailResult> {
+    console.log('📧 [SYSTEM-API] Enviando estimado por email:', email);
+    
+    try {
+      const response = await this.client.post('/api/estimates/send', {
+        estimateId,
+        email
+      });
+
+      console.log('✅ [SYSTEM-API] Email enviado exitosamente');
+      return { success: true, messageId: response.data.messageId };
+
+    } catch (error: any) {
+      console.error('❌ [SYSTEM-API] Error enviando email:', error.message);
+      return { 
+        success: false, 
+        error: error.response?.data?.error || error.message 
+      };
+    }
+  }
+
+  // ============= CONTRACTS =============
+
+  /**
+   * Crear contrato usando endpoint /api/contracts
+   */
+  async createContract(params: ContractParams, contractContent: string): Promise<Contract> {
+    console.log('📄 [SYSTEM-API] Creando contrato para:', params.clientName);
+    
+    try {
+      // 1. Buscar o crear cliente
+      let client = await this.findOrCreateClient({
+        name: params.clientName,
+        email: params.clientEmail
+      });
+
+      // 2. Crear el contrato
+      const response = await this.client.post('/api/contracts', {
+        userId: this.userId,
+        clientId: client.id,
+        content: contractContent,
+        amount: params.amount,
+        projectType: params.projectType,
+        projectAddress: params.projectAddress,
+        startDate: params.startDate,
+        endDate: params.endDate,
+        specialTerms: params.specialTerms
+      });
+
+      const contract = response.data as Contract;
+      console.log('✅ [SYSTEM-API] Contrato creado:', contract.id);
+
+      return contract;
+
+    } catch (error: any) {
+      console.error('❌ [SYSTEM-API] Error creando contrato:', error.message);
+      throw new Error(`Error creando contrato: ${error.response?.data?.error || error.message}`);
+    }
+  }
+
+  /**
+   * Generar PDF de contrato
+   */
+  async generateContractPDF(contractId: string): Promise<PDF> {
+    console.log('📄 [SYSTEM-API] Generando PDF de contrato:', contractId);
+    
+    try {
+      const response = await this.client.post('/api/contracts/pdf', {
+        contractId
+      });
+
+      console.log('✅ [SYSTEM-API] PDF generado exitosamente');
+      return response.data as PDF;
+
+    } catch (error: any) {
+      console.error('❌ [SYSTEM-API] Error generando PDF:', error.message);
+      throw new Error(`Error generando PDF: ${error.response?.data?.error || error.message}`);
+    }
+  }
+
+  // ============= PERMITS =============
+
+  /**
+   * Consultar información de permisos usando endpoint /api/permits
+   */
+  async getPermitInfo(params: PermitParams): Promise<PermitInfo> {
+    console.log('📋 [SYSTEM-API] Consultando permisos para:', params.projectAddress);
+    
+    try {
+      const response = await this.client.post('/api/permits/check', {
+        projectType: params.projectType,
+        projectAddress: params.projectAddress,
+        projectScope: params.projectScope
+      });
+
+      console.log('✅ [SYSTEM-API] Información de permisos obtenida');
+      return response.data as PermitInfo;
+
+    } catch (error: any) {
+      console.error('❌ [SYSTEM-API] Error consultando permisos:', error.message);
+      throw new Error(`Error consultando permisos: ${error.response?.data?.error || error.message}`);
+    }
+  }
+
+  // ============= CLIENTS =============
+
+  /**
+   * Buscar cliente existente
+   */
+  async findClient(email: string): Promise<Client | null> {
+    try {
+      const response = await this.client.get('/api/clients', {
+        params: { email, userId: this.userId }
+      });
+
+      return response.data as Client;
+
+    } catch (error) {
+      return null;
+    }
+  }
+
+  /**
+   * Crear nuevo cliente
+   */
+  async createClient(data: { name: string; email?: string; phone?: string }): Promise<Client> {
+    console.log('👤 [SYSTEM-API] Creando cliente:', data.name);
+    
+    try {
+      const response = await this.client.post('/api/clients', {
+        userId: this.userId,
+        ...data
+      });
+
+      console.log('✅ [SYSTEM-API] Cliente creado');
+      return response.data as Client;
+
+    } catch (error: any) {
+      console.error('❌ [SYSTEM-API] Error creando cliente:', error.message);
+      throw new Error(`Error creando cliente: ${error.response?.data?.error || error.message}`);
+    }
+  }
+
+  /**
+   * Buscar o crear cliente (helper)
+   */
+  async findOrCreateClient(data: { name: string; email?: string; phone?: string }): Promise<Client> {
+    // Si tiene email, buscar primero
+    if (data.email) {
+      const existing = await this.findClient(data.email);
+      if (existing) {
+        console.log('👤 [SYSTEM-API] Cliente existente encontrado');
+        return existing;
+      }
+    }
+
+    // Si no existe, crear
+    return await this.createClient(data);
+  }
+
+  // ============= UTILITIES =============
+
+  /**
+   * Verificar salud de un endpoint
+   */
+  async checkEndpointHealth(endpoint: string): Promise<boolean> {
+    try {
+      const response = await this.client.get(endpoint, { timeout: 5000 });
+      return response.status === 200;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Obtener URL base del servidor
+   */
+  getBaseURL(): string {
+    return this.baseURL;
+  }
+}
