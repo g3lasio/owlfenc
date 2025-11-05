@@ -26,6 +26,9 @@ import { DynamicActionSuggestions } from "../components/mervin/DynamicActionSugg
 import { WebResearchIndicator } from "../components/mervin/WebResearchIndicator";
 import { SystemStatusBar } from "../components/mervin/SystemStatusBar";
 import { FuturisticThinking } from "../components/mervin/FuturisticThinking";
+import { ConversationHistory } from "../components/mervin/ConversationHistory";
+import { useConversationManager } from "@/hooks/useConversationManager";
+import { History } from "lucide-react";
 
 // Complete types for agent functionality
 type MessageSender = "user" | "assistant";
@@ -95,11 +98,17 @@ export default function Mervin() {
   const [webSearchResults, setWebSearchResults] = useState<number | undefined>(undefined);
   const [webSearchQuery, setWebSearchQuery] = useState<string | undefined>(undefined);
   const [suggestionContext, setSuggestionContext] = useState<'initial' | 'estimate' | 'contract' | 'permit' | 'property' | 'general'>('initial');
+  const [isHistorySidebarOpen, setIsHistorySidebarOpen] = useState(false);
   const conversationEngineRef = useRef<ConversationEngine | null>(null);
   const { toast } = useToast();
   const { currentUser } = useAuth();
   const { userPlan } = usePermissions();
   const { isSidebarExpanded } = useSidebar();
+  
+  // Conversation History Manager
+  const conversationManager = useConversationManager({
+    userId: currentUser?.uid || null,
+  });
 
   // Detect if user is free plan (Primo Chambeador)
   const isFreeUser = userPlan?.id === 5 || userPlan?.name === "Primo Chambeador";
@@ -520,6 +529,121 @@ export default function Mervin() {
     };
     return prompts[action as keyof typeof prompts] || `Activa la funcionalidad de ${action}.`;
   };
+  
+  // Conversation History Handlers
+  const handleNewConversation = () => {
+    if (messages.length > 0) {
+      // Auto-save current conversation before starting new one
+      handleSaveCurrentConversation();
+    }
+    
+    // Clear messages and states
+    setMessages([]);
+    setActiveEndpoints([]);
+    setCurrentAIModel(null);
+    setWebSearchResults(undefined);
+    setWebSearchQuery(undefined);
+    setSuggestionContext('initial');
+    conversationManager.clearActiveConversation();
+    setIsHistorySidebarOpen(false);
+  };
+  
+  const handleSelectConversation = async (conversationId: string) => {
+    conversationManager.loadConversation(conversationId);
+    setIsHistorySidebarOpen(false);
+    
+    // Wait for conversation to load
+    setTimeout(() => {
+      if (conversationManager.activeConversation) {
+        const conv = conversationManager.activeConversation;
+        
+        // Convert conversation messages to Mervin message format
+        const mervinMessages: Message[] = conv.messages.map(msg => ({
+          id: msg.id,
+          content: msg.text,
+          sender: msg.sender === 'user' ? 'user' : 'assistant',
+          timestamp: msg.timestamp,
+          state: msg.state as MessageState | undefined,
+        }));
+        
+        setMessages(mervinMessages);
+        // Restore model: always 'agent' mode for history (legacy doesn't save conversations)
+        setSelectedModel('agent');
+        // Set AI model state based on saved conversation
+        setCurrentAIModel(conv.aiModel === 'claude' ? 'Claude Sonnet 4' : 'ChatGPT-4o');
+      }
+    }, 300);
+  };
+  
+  const handleSaveCurrentConversation = async () => {
+    if (!currentUser?.uid || messages.length < 2) return;
+    
+    try {
+      // Convert Mervin messages to conversation format
+      const conversationMessages = messages.map(msg => ({
+        id: msg.id,
+        sender: msg.sender === 'user' ? ('user' as const) : ('agent' as const),
+        text: msg.content,
+        timestamp: msg.timestamp || new Date(),
+        state: msg.state as 'normal' | 'thinking' | 'analyzing' | 'processing' | 'error' | undefined,
+      }));
+      
+      // Detect AI model based on currentAIModel state (ChatGPT-4o vs Claude Sonnet 4)
+      const aiModel: 'chatgpt' | 'claude' = currentAIModel === 'Claude Sonnet 4' ? 'claude' : 'chatgpt';
+      const category = suggestionContext !== 'initial' ? suggestionContext : 'general';
+      
+      // Save or update conversation
+      if (conversationManager.activeConversationId) {
+        // Update existing conversation
+        await conversationManager.addMessages(
+          conversationManager.activeConversationId,
+          conversationMessages
+        );
+      } else {
+        // Create new conversation
+        await conversationManager.createConversation(
+          conversationMessages,
+          aiModel,
+          category as any
+        );
+      }
+    } catch (error) {
+      console.error('❌ Error saving conversation:', error);
+    }
+  };
+  
+  const handleDeleteConversation = async (conversationId: string) => {
+    try {
+      await conversationManager.deleteConversation(conversationId);
+      
+      // If deleted conversation was active, clear messages
+      if (conversationManager.activeConversationId === conversationId) {
+        setMessages([]);
+      }
+    } catch (error) {
+      console.error('❌ Error deleting conversation:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo eliminar la conversación',
+        variant: 'destructive',
+      });
+    }
+  };
+  
+  const handlePinConversation = async (conversationId: string, isPinned: boolean) => {
+    try {
+      await conversationManager.updateConversation(conversationId, { isPinned });
+    } catch (error) {
+      console.error('❌ Error pinning conversation:', error);
+    }
+  };
+  
+  // Auto-save conversation every 5 messages
+  useEffect(() => {
+    if (messages.length > 0 && messages.length % 5 === 0) {
+      handleSaveCurrentConversation();
+    }
+  }, [messages.length]);
 
   return (
     <div className="flex flex-col h-full bg-black text-white">
@@ -543,8 +667,20 @@ export default function Mervin() {
             </h1>
           </div>
           
-          {/* Model Selector */}
-          <div className="flex items-center gap-2">{/* Model Selector */}
+          {/* Model Selector and History */}
+          <div className="flex items-center gap-2">
+            {/* History Button */}
+            <Button
+              variant="outline"
+              size="icon"
+              className="bg-gray-800 text-cyan-500 border-cyan-900/50 hover:bg-gray-700"
+              onClick={() => setIsHistorySidebarOpen(true)}
+              data-testid="button-open-history"
+            >
+              <History className="w-5 h-5" />
+            </Button>
+            
+            {/* Model Selector */}
             <div className="relative">
               <Button
                 variant="outline"
@@ -789,6 +925,19 @@ export default function Mervin() {
       <SystemStatusBar 
         isHealthy={mervinAgent.isHealthy}
         version={mervinAgent.systemStatus?.version}
+      />
+      
+      {/* Conversation History Sidebar */}
+      <ConversationHistory
+        isOpen={isHistorySidebarOpen}
+        onClose={() => setIsHistorySidebarOpen(false)}
+        conversations={conversationManager.conversations}
+        activeConversationId={conversationManager.activeConversationId}
+        onSelectConversation={handleSelectConversation}
+        onNewConversation={handleNewConversation}
+        onDeleteConversation={handleDeleteConversation}
+        onPinConversation={handlePinConversation}
+        isLoading={conversationManager.isLoadingConversations}
       />
     </div>
   );

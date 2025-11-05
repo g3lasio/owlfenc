@@ -447,6 +447,9 @@ import { passwordResetRoutes } from './routes/password-reset-routes';
 // 🧠 PHASE 5: MEMORY SYSTEM - AI Learning and Optimization
 import memoryRoutes from './routes/memory-routes';
 
+// 💬 CONVERSATION HISTORY SYSTEM - Mervin AI Chat History
+import conversationRoutes from './routes/conversations';
+
 // 🔧 UNIFIED ANALYSIS SYSTEM - Combines General Contractor + DeepSearch
 import { deepSearchService } from './services/deepSearchService';
 import { GeneralContractorIntelligenceService } from './services/generalContractorIntelligenceService';
@@ -530,6 +533,11 @@ console.log('🔐 [PASSWORD-RESET] Sistema de restablecimiento registrado en /ap
 // 🧠 Registrar sistema de memoria y aprendizaje
 app.use('/api/memory', memoryRoutes);
 console.log('🧠 [MEMORY-SYSTEM] Sistema de memoria y aprendizaje registrado en /api/memory');
+
+// 💬 Registrar sistema de historial de conversaciones
+app.use('/api/conversations', conversationRoutes);
+console.log('💬 [CONVERSATIONS] Sistema de historial de conversaciones registrado en /api/conversations');
+
 // Add logging middleware only for API routes
 app.use('/api', (req, res, next) => {
   const start = Date.now();

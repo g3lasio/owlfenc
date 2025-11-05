@@ -1038,3 +1038,98 @@ export type SupportTicket = z.infer<typeof supportTicketSchema>;
 export type SupportTicketResponse = z.infer<typeof supportTicketResponseSchema>;
 export type InsertSupportTicket = z.infer<typeof insertSupportTicketSchema>;
 export type InsertSupportTicketResponse = z.infer<typeof insertSupportTicketResponseSchema>;
+
+// ================================
+// MERVIN AI CONVERSATION HISTORY
+// ================================
+
+// Conversation categories
+export const conversationCategories = [
+  'estimate',
+  'contract',
+  'permit',
+  'property',
+  'general'
+] as const;
+
+// AI models used
+export const aiModels = [
+  'chatgpt',
+  'claude'
+] as const;
+
+// Message states
+export const messageStates = [
+  'normal',
+  'thinking',
+  'analyzing',
+  'processing',
+  'error'
+] as const;
+
+// Conversation message schema
+export const conversationMessageSchema = z.object({
+  id: z.string(),
+  sender: z.enum(['user', 'agent']),
+  text: z.string(),
+  timestamp: z.date(),
+  state: z.enum(messageStates).optional(),
+  aiModel: z.enum(aiModels).optional(),
+});
+
+// Conversation schema (Firebase structure)
+export const conversationSchema = z.object({
+  conversationId: z.string(),
+  userId: z.string(),
+  title: z.string(),
+  messages: z.array(conversationMessageSchema),
+  createdAt: z.date(),
+  lastActivityAt: z.date(),
+  aiModel: z.enum(aiModels).default('chatgpt'),
+  category: z.enum(conversationCategories).default('general'),
+  isPinned: z.boolean().default(false),
+  messageCount: z.number().default(0),
+});
+
+// Insert schemas
+export const insertConversationMessageSchema = conversationMessageSchema.omit({
+  id: true,
+});
+
+export const insertConversationSchema = conversationSchema.omit({
+  conversationId: true,
+  createdAt: true,
+  lastActivityAt: true,
+  messageCount: true,
+});
+
+// Update conversation schema (for title changes, pins, etc)
+export const updateConversationSchema = z.object({
+  title: z.string().optional(),
+  isPinned: z.boolean().optional(),
+  category: z.enum(conversationCategories).optional(),
+});
+
+// TypeScript types
+export type ConversationCategory = typeof conversationCategories[number];
+export type AIModel = typeof aiModels[number];
+export type MessageState = typeof messageStates[number];
+export type ConversationMessage = z.infer<typeof conversationMessageSchema>;
+export type Conversation = z.infer<typeof conversationSchema>;
+export type InsertConversationMessage = z.infer<typeof insertConversationMessageSchema>;
+export type InsertConversation = z.infer<typeof insertConversationSchema>;
+export type UpdateConversation = z.infer<typeof updateConversationSchema>;
+
+// Conversation list item (for sidebar display)
+export const conversationListItemSchema = z.object({
+  conversationId: z.string(),
+  title: z.string(),
+  lastActivityAt: z.date(),
+  messageCount: z.number(),
+  category: z.enum(conversationCategories),
+  aiModel: z.enum(aiModels),
+  isPinned: z.boolean(),
+  preview: z.string().optional(), // First user message preview
+});
+
+export type ConversationListItem = z.infer<typeof conversationListItemSchema>;
