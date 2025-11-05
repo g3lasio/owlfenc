@@ -314,32 +314,12 @@ export default function Mervin() {
     
     setIsLoading(true);
 
-    // Add thinking indicator
-    const thinkingMessage: Message = {
-      id: "thinking-" + Date.now(),
-      content: "Analizando tu solicitud...",
-      sender: "assistant",
-      state: "thinking",
-      timestamp: new Date()
-    };
-    setMessages(prev => [...prev, thinkingMessage]);
+    // No need for thinking message anymore - ThinkingIndicator handles it
 
     try {
       // AGENT MODE V2 - Use backend orchestrator
       if (selectedModel === "agent" && canUseAgentMode && mervinAgent.isHealthy) {
         console.log('🤖 [AGENT-MODE-V2] Using Mervin V2 backend orchestrator');
-        
-        // Remove thinking message and add processing
-        setMessages(prev => prev.slice(0, -1));
-        
-        const processingMessage: Message = {
-          id: "processing-" + Date.now(),
-          content: "",
-          sender: "assistant",
-          state: "analyzing",
-          timestamp: new Date()
-        };
-        setMessages(prev => [...prev, processingMessage]);
         
         // Send to Mervin V2 backend - response will be handled by useEffect
         await mervinAgent.sendMessage(currentInput);
@@ -350,7 +330,6 @@ export default function Mervin() {
       } else if (selectedModel === "legacy" || !canUseAgentMode) {
         // LEGACY MODE - Simple conversational responses
         console.log('💬 [LEGACY-MODE] Using simple conversational mode');
-        setMessages(prev => prev.slice(0, -1)); // Remove thinking
         
         // Simple responses for legacy mode
         const legacyResponses = [
@@ -370,7 +349,6 @@ export default function Mervin() {
         setMessages(prev => [...prev, assistantMessage]);
       } else {
         // Fallback - Service not available
-        setMessages(prev => prev.slice(0, -1));
         const assistantMessage: Message = {
           id: "assistant-" + Date.now(),
           content: "⚠️ El servicio de Mervin V2 no está disponible en este momento. Por favor intenta de nuevo más tarde.",
@@ -382,7 +360,6 @@ export default function Mervin() {
       
     } catch (error) {
       console.error("Error processing request:", error);
-      setMessages(prev => prev.slice(0, -1)); // Remove thinking/processing message
       
       const errorMessage: Message = {
         id: "assistant-" + Date.now(),
@@ -777,17 +754,9 @@ export default function Mervin() {
               className={`max-w-[280px] sm:max-w-sm md:max-w-md lg:max-w-lg px-4 py-3 rounded-2xl md:rounded-lg text-base md:text-sm leading-relaxed ${
                 message.sender === "user"
                   ? "bg-cyan-600 text-white shadow-lg"
-                  : message.state === "thinking" || message.state === "analyzing" 
-                    ? "bg-purple-900/50 text-purple-200 border border-purple-700/50 shadow-lg"
-                    : "bg-gray-800 text-gray-200 shadow-lg"
+                  : "bg-gray-800 text-gray-200 shadow-lg"
               }`}
             >
-              {(message.state === "thinking" || message.state === "analyzing") && (
-                <div className="mb-2">
-                  <FuturisticThinking state={message.state} />
-                </div>
-              )}
-              
               <MessageContent 
                 content={message.content}
                 sender={message.sender}
@@ -819,7 +788,13 @@ export default function Mervin() {
         
         {isLoading && (
           <div className="flex justify-start px-2">
-            <ThinkingIndicator />
+            <ThinkingIndicator 
+              currentAction={
+                mervinAgent.streamingUpdates.length > 0
+                  ? mervinAgent.streamingUpdates[mervinAgent.streamingUpdates.length - 1].content
+                  : undefined
+              }
+            />
           </div>
         )}
         
