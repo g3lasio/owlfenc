@@ -9,13 +9,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Phone, MessageSquare, ShieldCheck } from 'lucide-react';
+import { Loader2, Phone, MessageSquare, ShieldCheck, Mail, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { auth } from '@/lib/firebase';
 import {
   multiFactor,
   PhoneAuthProvider,
   PhoneMultiFactorGenerator,
   RecaptchaVerifier,
+  sendEmailVerification,
 } from 'firebase/auth';
 
 interface PhoneAuthMFAProps {
@@ -30,8 +32,39 @@ const PhoneAuthMFA: React.FC<PhoneAuthMFAProps> = ({ onSuccess, onCancel }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<'phone' | 'verify'>('phone');
   const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null);
+  const [emailVerified, setEmailVerified] = useState(true);
   
   const { toast } = useToast();
+
+  // Check email verification status on mount
+  React.useEffect(() => {
+    if (auth.currentUser) {
+      setEmailVerified(auth.currentUser.emailVerified);
+    }
+  }, []);
+
+  const handleSendEmailVerification = async () => {
+    if (!auth.currentUser) return;
+    
+    try {
+      setIsLoading(true);
+      await sendEmailVerification(auth.currentUser);
+      
+      toast({
+        title: "Verification Email Sent",
+        description: "Please check your inbox and click the verification link. Then refresh this page.",
+      });
+    } catch (error: any) {
+      console.error('Email verification error:', error);
+      toast({
+        title: "Error Sending Email",
+        description: error.message || "Failed to send verification email. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const formatPhoneNumber = (value: string) => {
     const digits = value.replace(/\D/g, '');
@@ -141,17 +174,25 @@ const PhoneAuthMFA: React.FC<PhoneAuthMFAProps> = ({ onSuccess, onCancel }) => {
     } catch (error: any) {
       console.error('Phone verification error:', error);
       
+      let errorTitle = "Verification Error";
       let errorMessage = "Failed to send verification code. Please try again.";
-      if (error.code === 'auth/invalid-phone-number') {
+      
+      if (error.code === 'auth/unverified-email') {
+        errorTitle = "Email Verification Required";
+        errorMessage = "You must verify your email address before enabling Two-Factor Authentication. Please check your inbox for a verification email.";
+      } else if (error.code === 'auth/invalid-phone-number') {
         errorMessage = "Invalid phone number format. Please use a valid US number.";
       } else if (error.code === 'auth/too-many-requests') {
         errorMessage = "Too many requests. Please wait a moment before trying again.";
       } else if (error.code === 'auth/quota-exceeded') {
         errorMessage = "SMS quota exceeded. Please try again later.";
+      } else if (error.code === 'auth/requires-recent-login') {
+        errorTitle = "Re-authentication Required";
+        errorMessage = "For security, please sign out and sign back in before enabling 2FA.";
       }
       
       toast({
-        title: "Verification Error",
+        title: errorTitle,
         description: errorMessage,
         variant: "destructive",
       });
@@ -372,6 +413,35 @@ const PhoneAuthMFA: React.FC<PhoneAuthMFAProps> = ({ onSuccess, onCancel }) => {
           Enter your phone number to receive verification codes via SMS
         </p>
       </div>
+
+      {!emailVerified && (
+        <Alert variant="destructive" className="border-yellow-600 bg-yellow-900/20">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Email Verification Required</AlertTitle>
+          <AlertDescription className="space-y-3">
+            <p>You must verify your email address before enabling Two-Factor Authentication.</p>
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={handleSendEmailVerification}
+              disabled={isLoading}
+              className="w-full border-yellow-600 text-yellow-400 hover:bg-yellow-900/30"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Mail className="mr-2 h-3 w-3" />
+                  Send Verification Email
+                </>
+              )}
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       <form onSubmit={handleSendVerification} className="space-y-4">
         <div className="space-y-2">
