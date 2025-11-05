@@ -77,6 +77,8 @@ export interface TaskResult {
 export interface QuickAnalysis {
   isSimpleConversation: boolean;
   isExecutableTask: boolean;
+  isWorkflow?: boolean; // True si requiere workflow multi-paso completo
+  workflowType?: 'estimate_wizard' | 'contract_generator' | 'permit_advisor' | 'property_verifier' | null;
   needsDeepThinking: boolean;
   needsWebResearch: boolean;
   taskType?: TaskType;

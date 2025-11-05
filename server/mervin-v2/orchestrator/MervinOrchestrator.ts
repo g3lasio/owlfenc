@@ -18,6 +18,10 @@ import { SystemAPIService } from '../services/SystemAPIService';
 import { WebSearchService } from '../services/WebSearchService';
 import { ProgressStreamService } from '../services/ProgressStreamService';
 import { FileProcessorService } from '../services/FileProcessorService';
+import { WorkflowEngine } from '../workflows/WorkflowEngine';
+import { SystemAPIStepAdapter } from '../workflows/adapters/SystemAPIStepAdapter';
+import { DeepSearchStepAdapter } from '../workflows/adapters/DeepSearchStepAdapter';
+import { EstimateWorkflow } from '../workflows/definitions/EstimateWorkflow';
 
 import type {
   MervinRequest,
@@ -39,14 +43,25 @@ export class MervinOrchestrator {
   private aiRouter: AIRouter;
   private systemAPI: SystemAPIService;
   private webSearch: WebSearchService;
+  private workflowEngine: WorkflowEngine;
   private progress: ProgressStreamService | null = null;
+  private userId: string;
 
   constructor(userId: string, authHeaders: Record<string, string> = {}, baseURL?: string) {
+    this.userId = userId;
     this.chatgpt = new ChatGPTService();
     this.claude = new ClaudeService();
     this.aiRouter = new AIRouter();
     this.systemAPI = new SystemAPIService(userId, authHeaders, baseURL);
     this.webSearch = new WebSearchService();
+    this.workflowEngine = new WorkflowEngine();
+    
+    // Registrar workflows disponibles
+    this.workflowEngine.registerWorkflow(EstimateWorkflow);
+    
+    // Registrar step adapters
+    this.workflowEngine.registerStepAdapter(new SystemAPIStepAdapter());
+    this.workflowEngine.registerStepAdapter(new DeepSearchStepAdapter());
   }
 
   /**
@@ -108,7 +123,10 @@ export class MervinOrchestrator {
       console.log('📊 [ANALYSIS]', analysis);
 
       // PASO 2: Decisión de flujo
-      if (analysis.isSimpleConversation) {
+      if (analysis.isWorkflow && analysis.workflowType) {
+        // FLUJO DE WORKFLOW MULTI-PASO
+        return await this.handleWorkflow(request, analysis, filesContext);
+      } else if (analysis.isSimpleConversation) {
         // FLUJO CONVERSACIONAL
         return await this.handleConversation(request, analysis, filesContext);
       } else if (analysis.isExecutableTask) {
@@ -258,6 +276,103 @@ export class MervinOrchestrator {
       console.error('❌ [COMPLEX-QUERY-ERROR]:', error.message);
       this.progress?.sendError(`Error processing query: ${error.message}`);
       throw error;
+    }
+  }
+
+  /**
+   * Flujo: Workflow Multi-Paso
+   */
+  private async handleWorkflow(
+    request: MervinRequest,
+    analysis: QuickAnalysis,
+    filesContext: string = ''
+  ): Promise<MervinResponse> {
+    const workflowType = analysis.workflowType!;
+    const startTime = Date.now();
+    
+    try {
+      console.log(`🎬 [WORKFLOW] Starting workflow: ${workflowType}`);
+      this.progress?.sendMessage(`🎬 Iniciando workflow: ${workflowType}...`);
+
+      // Extraer contexto inicial del input con ChatGPT
+      const inputWithFiles = request.input + filesContext;
+      const initialContext = await this.chatgpt.extractParameters(inputWithFiles, 'estimate');
+      
+      // Agregar userId al context
+      initialContext.userId = this.userId;
+      
+      console.log('📋 [WORKFLOW] Initial context extracted:', initialContext);
+
+      // Configurar progress stream en el workflow engine
+      if (this.progress) {
+        this.workflowEngine = new WorkflowEngine(this.progress);
+        this.workflowEngine.registerWorkflow(EstimateWorkflow);
+        this.workflowEngine.registerStepAdapter(new SystemAPIStepAdapter());
+        this.workflowEngine.registerStepAdapter(new DeepSearchStepAdapter());
+      }
+
+      // Iniciar workflow
+      const session = await this.workflowEngine.startWorkflow({
+        workflowId: workflowType,
+        userId: this.userId,
+        initialContext,
+        conversationId: request.conversationHistory?.[0]?.content,
+        aiModel: 'chatgpt-4o'
+      });
+
+      console.log(`✅ [WORKFLOW] Workflow session created: ${session.sessionId}`);
+
+      // Verificar si está esperando input del usuario
+      if (session.status === 'waiting_input' && session.pendingQuestion) {
+        const message = session.pendingQuestion.question;
+        this.progress?.sendComplete(message);
+        
+        return {
+          type: 'NEEDS_MORE_INFO',
+          message,
+          data: {
+            sessionId: session.sessionId,
+            pendingFields: session.pendingQuestion.fields
+          },
+          suggestedActions: session.pendingQuestion.fields
+        };
+      }
+
+      // Si se completó exitosamente
+      if (session.status === 'completed') {
+        const finalMessage = await this.claude.generateCompletionMessage(
+          {
+            success: true,
+            data: session.result,
+            executionTime: Date.now() - startTime,
+            stepsCompleted: session.completedSteps.map(s => s.stepId),
+            endpointsUsed: []
+          },
+          analysis.language
+        );
+
+        this.progress?.sendComplete(finalMessage, session.result);
+
+        return {
+          type: 'TASK_COMPLETED',
+          message: finalMessage,
+          data: session.result,
+          executionTime: Date.now() - startTime
+        };
+      }
+
+      // Si falló
+      if (session.status === 'failed') {
+        throw new Error(session.error?.message || 'Workflow failed');
+      }
+
+      // Estado inesperado
+      throw new Error(`Unexpected workflow status: ${session.status}`);
+
+    } catch (error: any) {
+      console.error(`❌ [WORKFLOW-ERROR] ${workflowType}:`, error.message);
+      this.progress?.sendError(`Error ejecutando workflow: ${error.message}`);
+      throw new Error(`Error ejecutando workflow ${workflowType}: ${error.message}`);
     }
   }
 

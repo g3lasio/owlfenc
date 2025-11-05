@@ -33,7 +33,8 @@ export class ChatGPTService {
 3. ¿Requiere razonamiento profundo?
 4. ¿Necesita investigación web?
 5. ¿Qué tipo de tarea es? (estimate, contract, permit, property, conversation, research)
-6. ¿Idioma? (es o en)
+6. ¿Es un workflow completo multi-paso o una tarea aislada?
+7. ¿Idioma? (es o en)
 
 Input: "${input}"
 
@@ -45,10 +46,18 @@ IMPORTANTE:
 - Si pide información sobre permisos → es "permit"
 - Si pide verificar una propiedad/dirección → es "property"
 
+WORKFLOWS vs SINGLE TASKS:
+- isWorkflow = true si el usuario pide un proceso completo de principio a fin
+- Ejemplos de workflows: "crea un estimado completo para...", "genera un estimado profesional con PDF", "necesito un estimado para enviarle al cliente"
+- Ejemplos de single tasks: "calcula solo los materiales", "dame el costo de mano de obra", "busca el cliente Juan Pérez"
+- Si dice "estimado", "contrato", "permit analysis" sin más contexto → asumir workflow completo
+
 Responde SOLO con JSON:
 {
   "isSimpleConversation": boolean,
   "isExecutableTask": boolean,
+  "isWorkflow": boolean,
+  "workflowType": "estimate_wizard" | "contract_generator" | "permit_advisor" | "property_verifier" | null,
   "needsDeepThinking": boolean,
   "needsWebResearch": boolean,
   "taskType": "estimate" | "contract" | "permit" | "property" | "conversation" | "research",
