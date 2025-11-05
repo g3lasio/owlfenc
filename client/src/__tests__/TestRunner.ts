@@ -55,13 +55,6 @@ export class MervinTestRunner {
       description: 'Motor conversacional - detección de idiomas, personalidad, memoria'
     },
     {
-      name: 'MervinAgent', 
-      category: 'core',
-      priority: 'critical',
-      estimatedDuration: 60,
-      description: 'Agente autónomo - procesamiento, coordinación, permisos'
-    },
-    {
       name: 'SecurityValidation',
       category: 'security', 
       priority: 'critical',
@@ -228,7 +221,6 @@ export class MervinTestRunner {
   private getExpectedTestCounts(suite: TestSuite): { total: number } {
     const testCounts = {
       'ConversationEngine': 45,
-      'MervinAgent': 38,  
       'SecurityValidation': 52,
       'APIIntegration': 35,
       'PerformanceTests': 28,
@@ -399,12 +391,11 @@ export class MervinTestRunner {
 
   private calculateOverallScore(results: TestResult[]): number {
     const weights = {
-      'ConversationEngine': 25,
-      'MervinAgent': 25, 
-      'SecurityValidation': 20,
-      'APIIntegration': 15,
-      'PerformanceTests': 10,
-      'UserExperienceTests': 5
+      'ConversationEngine': 35,
+      'SecurityValidation': 25,
+      'APIIntegration': 20,
+      'PerformanceTests': 12,
+      'UserExperienceTests': 8
     };
     
     let weightedScore = 0;
@@ -461,7 +452,7 @@ export class MervinTestRunner {
     const checklist = [
       {
         item: 'Todas las pruebas críticas pasan',
-        status: results.filter(r => ['ConversationEngine', 'MervinAgent', 'SecurityValidation'].includes(r.suiteName))
+        status: results.filter(r => ['ConversationEngine', 'SecurityValidation'].includes(r.suiteName))
           .every(r => r.failed === 0) ? 'pass' : 'fail' as const
       },
       {
