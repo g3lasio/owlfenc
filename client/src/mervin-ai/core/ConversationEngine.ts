@@ -119,6 +119,27 @@ class ConversationEngine {
     console.log('🗑️ [CONVERSATION-ENGINE-V2] History cleared');
   }
 
+  /**
+   * Generate welcome message
+   */
+  generateWelcomeMessage(isAgentMode: boolean = false): string {
+    const profile = this.state.currentLanguageProfile;
+    const isMexican = profile.region === 'mexican';
+    
+    if (isMexican) {
+      if (isAgentMode) {
+        return "¡Órale primo! 👋 Soy Mervin AI en modo agente superinteligente. Puedo ayudarte a crear estimados, contratos, verificar propiedades y mucho más. Solo dime qué necesitas y yo me encargo del resto. ¿En qué te ayudo hoy?";
+      }
+      return "¡Qué onda compadre! 👋 Soy Mervin AI, tu asistente de construcción. Estoy aquí para ayudarte con estimados, contratos, permisos y lo que necesites. ¿En qué te puedo echar la mano?";
+    }
+    
+    // English version
+    if (isAgentMode) {
+      return "Hey there! 👋 I'm Mervin AI in super-intelligent agent mode. I can help you create estimates, contracts, verify properties and much more. Just tell me what you need and I'll take care of the rest. How can I help you today?";
+    }
+    return "Hey! 👋 I'm Mervin AI, your construction assistant. I'm here to help you with estimates, contracts, permits and whatever you need. How can I help you?";
+  }
+
   // ============= PRIVATE HELPERS =============
 
   private sanitizeInput(input: string): string {

@@ -17,9 +17,6 @@ import {
   Cpu,
 } from "lucide-react";
 import { ConversationEngine } from "../mervin-ai/core/ConversationEngine";
-// V2 MIGRATION: MervinAgent and OnboardingEngine removed in V2 architecture
-// import { MervinAgent } from "../mervin-ai/core/MervinAgent";
-// import { OnboardingEngine } from "../mervin-ai/onboarding/OnboardingEngine";
 import { SmartActionSystem } from "../components/mervin/SmartActionSystem";
 
 // Complete types for agent functionality
@@ -59,9 +56,6 @@ export default function Mervin() {
   const [showOnboardingProgress, setShowOnboardingProgress] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const conversationEngineRef = useRef<ConversationEngine | null>(null);
-  // V2 MIGRATION: Refs removed, will use useMervinAgent hook in next iteration
-  // const mervinAgentRef = useRef<MervinAgent | null>(null);
-  // const onboardingEngineRef = useRef<OnboardingEngine | null>(null);
   const { toast } = useToast();
   const { currentUser } = useAuth();
   const { userPlan } = usePermissions();
@@ -113,9 +107,6 @@ export default function Mervin() {
   useEffect(() => {
     if (!conversationEngineRef.current && currentUser?.uid) {
       conversationEngineRef.current = new ConversationEngine(currentUser.uid);
-      
-      // V2 MIGRATION: Agent initialization removed
-      // Will be replaced with useMervinAgent hook in next iteration
       console.log('🤖 [MERVIN-V2] Ready for V2 integration');
     }
   }, [currentUser, userPlan]);
@@ -186,9 +177,7 @@ export default function Mervin() {
       // Sistema de onboarding eliminado - usuarios van directo al dashboard
 
       const engine = conversationEngineRef.current;
-      // V2 MIGRATION: Agent ref commented out
-      // const agent = mervinAgentRef.current;
-      const agent = null; // Temporarily disabled for V2 migration
+      const agent = null;
 
       if (selectedModel === "agent" && agent) {
         // CONTROL INTELIGENTE - Solo activar agente autónomo para tareas específicas
@@ -385,9 +374,7 @@ export default function Mervin() {
     setMessages(prev => [...prev, actionMessage]);
     
     try {
-      // V2 MIGRATION: Agent ref commented out
-      // const agent = mervinAgentRef.current;
-      const agent = null; // Temporarily disabled for V2 migration
+      const agent = null;
       if (agent && selectedModel === "agent") {
         // Let the autonomous agent handle the task
         const taskPrompt = getTaskPrompt(action);
