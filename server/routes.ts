@@ -100,7 +100,7 @@ import clientRoutes from "./routes/clientRoutes";
 import quickbooksRoutes from "./routes/quickbooks-routes";
 import contactRoutes from "./routes/contact-route";
 import anthropicRoutes from "./routes/anthropic";
-import mervinAgentAPI from "./routes/mervin-agent-api"; // Import new unified Mervin AI API
+import mervinV2Routes from "./routes/mervin-v2"; // Mervin AI V2 - Hybrid Intelligence Architecture
 import mervinResearchAPI from "./routes/mervin-research-api"; // Import Mervin Research API - FASE 2 OPTIMIZATIONS
 import openrouterAPI from "./routes/openrouter-api"; // Import OpenRouter API for diagnostics and testing
 // PDF routes removed - using only premiumPdfService
@@ -1704,9 +1704,9 @@ Output must be between 200-900 characters in English.`;
   app.use("/api/anthropic", anthropicRoutes);
   app.use("/api/anthropic", anthropicSummarizeRoutes); // 🧠 Intelligent summarization service
 
-  // 🤖 Registrar Mervin AI - Sistema Unificado de Inteligencia
-  console.log("🤖 [MERVIN-AI] Registrando sistema unificado de inteligencia...");
-  app.use("/api/mervin", mervinAgentAPI);
+  // 🤖 Registrar Mervin AI V2 - Hybrid Intelligence Architecture
+  console.log("🤖 [MERVIN-V2] Registrando sistema V2 de inteligencia híbrida...");
+  app.use("/api/mervin-v2", mervinV2Routes);
   
   // ==================== FASE 2: INVESTIGACIÓN SÚPER RÁPIDA PARA CONTRATISTAS ====================
   console.log('🔬 [MERVIN-RESEARCH-API] Registrando sistema de investigación optimizado...');
