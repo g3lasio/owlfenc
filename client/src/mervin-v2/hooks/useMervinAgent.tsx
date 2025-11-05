@@ -5,7 +5,8 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { AgentClient, MervinMessage, MervinResponse, StreamUpdate } from '../lib/AgentClient';
+import { AgentClient, MervinMessage, MervinResponse, StreamUpdate, AuthTokenProvider } from '../lib/AgentClient';
+import { auth } from '@/lib/firebase';
 
 export interface UseMervinAgentOptions {
   userId: string;
@@ -24,6 +25,23 @@ export interface UseMervinAgentReturn {
   systemStatus: any;
 }
 
+/**
+ * Función para obtener token de Firebase
+ */
+const getFirebaseToken: AuthTokenProvider = async () => {
+  try {
+    const user = auth.currentUser;
+    if (user) {
+      const token = await user.getIdToken();
+      return token;
+    }
+    return null;
+  } catch (error) {
+    console.error('❌ [MERVIN-AGENT] Error obteniendo Firebase token:', error);
+    return null;
+  }
+};
+
 export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentReturn {
   const {
     userId,
@@ -39,15 +57,15 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
   const [isHealthy, setIsHealthy] = useState(true);
   const [systemStatus, setSystemStatus] = useState<any>(null);
 
-  // Cliente de API (ref para no recrearlo innecesariamente)
-  const clientRef = useRef<AgentClient>(new AgentClient(userId));
+  // Cliente de API con autenticación (ref para no recrearlo innecesariamente)
+  const clientRef = useRef<AgentClient>(new AgentClient(userId, '', getFirebaseToken));
   const prevUserIdRef = useRef<string>(userId);
 
   // Recrear cliente si userId cambia (fix para autenticación)
   useEffect(() => {
     if (userId !== prevUserIdRef.current) {
       console.log(`🔄 [MERVIN-AGENT] UserId changed: ${prevUserIdRef.current} → ${userId}`);
-      clientRef.current = new AgentClient(userId);
+      clientRef.current = new AgentClient(userId, '', getFirebaseToken);
       prevUserIdRef.current = userId;
       
       // Limpiar mensajes al cambiar usuario
