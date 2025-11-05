@@ -334,7 +334,7 @@ export default function Mervin() {
         
         const processingMessage: Message = {
           id: "processing-" + Date.now(),
-          content: "🤖 **Mervin AI V2 Activo**\n\nProcesando tu solicitud con inteligencia híbrida...\n\n*ChatGPT-4o + Claude Sonnet 4 trabajando en tu proyecto...*",
+          content: "",
           sender: "assistant",
           state: "analyzing",
           timestamp: new Date()
