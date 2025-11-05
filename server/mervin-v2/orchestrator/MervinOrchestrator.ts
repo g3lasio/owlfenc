@@ -189,7 +189,9 @@ export class MervinOrchestrator {
       { conversationHistory: request.conversationHistory }
     );
 
-    this.progress?.sendComplete('✅ Análisis completado');
+    console.log('🧠 [CLAUDE-COMPLEX] Response:', response);
+
+    this.progress?.sendComplete(response);
 
     return {
       type: 'CONVERSATION',
