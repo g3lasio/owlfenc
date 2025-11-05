@@ -63,6 +63,22 @@ export class WorkflowEngine {
       throw new Error(`Workflow not found: ${request.workflowId}`);
     }
     
+    // CRITICAL: Validate required context fields before starting
+    if (workflow.requiredContext) {
+      const missingFields = workflow.requiredContext.filter(
+        field => request.initialContext[field] === undefined || request.initialContext[field] === null
+      );
+      
+      if (missingFields.length > 0) {
+        throw new Error(
+          `Missing required context fields for workflow ${workflow.id}: ${missingFields.join(', ')}. ` +
+          `Please provide: ${missingFields.join(', ')}`
+        );
+      }
+      
+      console.log(`✅ [WORKFLOW-ENGINE] All required context fields validated for ${workflow.id}`);
+    }
+    
     // Crear sesión
     const session: WorkflowSession = {
       sessionId: uuidv4(),
@@ -118,6 +134,19 @@ export class WorkflowEngine {
     // Validar que está esperando input
     if (session.status !== 'waiting_input') {
       throw new Error(`Session is not waiting for input (status: ${session.status})`);
+    }
+    
+    // CRITICAL: Validate required context after resume (in case userId or other required fields are missing)
+    if (workflow.requiredContext) {
+      const missingFields = workflow.requiredContext.filter(
+        field => session.context[field] === undefined || session.context[field] === null
+      );
+      
+      if (missingFields.length > 0) {
+        throw new Error(
+          `Missing required context fields after resume: ${missingFields.join(', ')}`
+        );
+      }
     }
     
     // Actualizar contexto con el input del usuario

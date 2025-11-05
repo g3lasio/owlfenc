@@ -20,7 +20,6 @@ import { ProgressStreamService } from '../services/ProgressStreamService';
 import { FileProcessorService } from '../services/FileProcessorService';
 import { WorkflowEngine } from '../workflows/WorkflowEngine';
 import { SystemAPIStepAdapter } from '../workflows/adapters/SystemAPIStepAdapter';
-import { DeepSearchStepAdapter } from '../workflows/adapters/DeepSearchStepAdapter';
 import { EstimateWorkflow } from '../workflows/definitions/EstimateWorkflow';
 
 import type {
@@ -61,7 +60,6 @@ export class MervinOrchestrator {
     
     // Registrar step adapters
     this.workflowEngine.registerStepAdapter(new SystemAPIStepAdapter());
-    this.workflowEngine.registerStepAdapter(new DeepSearchStepAdapter());
   }
 
   /**
@@ -308,7 +306,6 @@ export class MervinOrchestrator {
         this.workflowEngine = new WorkflowEngine(this.progress);
         this.workflowEngine.registerWorkflow(EstimateWorkflow);
         this.workflowEngine.registerStepAdapter(new SystemAPIStepAdapter());
-        this.workflowEngine.registerStepAdapter(new DeepSearchStepAdapter());
       }
 
       // Iniciar workflow
