@@ -21,10 +21,27 @@ function parseContentWithLinks(text: string) {
       });
     }
     
+    let url = match[0];
+    const trailingPunctuation = /[.,;:!?\)\]}>]+$/;
+    const punctuationMatch = url.match(trailingPunctuation);
+    let trailingText = '';
+    
+    if (punctuationMatch) {
+      trailingText = punctuationMatch[0];
+      url = url.slice(0, -trailingText.length);
+    }
+    
     parts.push({
       type: 'link',
-      content: match[0]
+      content: url
     });
+    
+    if (trailingText) {
+      parts.push({
+        type: 'text',
+        content: trailingText
+      });
+    }
     
     lastIndex = match.index + match[0].length;
   }
