@@ -81,18 +81,19 @@ export class ConversationService {
 
   /**
    * List all conversations for a user
+   * NOTE: Simplified to avoid Firebase composite index requirement
    */
   static async listConversations(
     userId: string,
     limit: number = 30,
     category?: string
   ): Promise<ConversationListItem[]> {
+    // Build query without composite index (only orderBy lastActivityAt)
     let query = db
       .collection(CONVERSATIONS_COLLECTION)
       .where('userId', '==', userId)
-      .orderBy('isPinned', 'desc')
       .orderBy('lastActivityAt', 'desc')
-      .limit(limit);
+      .limit(limit * 2); // Get more to allow filtering
 
     if (category && category !== 'all') {
       query = query.where('category', '==', category) as any;
@@ -100,7 +101,8 @@ export class ConversationService {
 
     const snapshot = await query.get();
 
-    const conversations: ConversationListItem[] = snapshot.docs.map(doc => {
+    // Map and separate pinned/unpinned conversations
+    const allConversations: ConversationListItem[] = snapshot.docs.map(doc => {
       const data = doc.data();
       const firstUserMessage = data.messages?.find((msg: any) => msg.sender === 'user');
 
@@ -116,7 +118,14 @@ export class ConversationService {
       };
     });
 
-    console.log(`📋 [CONVERSATION] Listed ${conversations.length} conversations for user: ${userId}`);
+    // Separate pinned and unpinned, then combine (pinned first)
+    const pinned = allConversations.filter(c => c.isPinned);
+    const unpinned = allConversations.filter(c => !c.isPinned);
+    
+    // Combine and limit to requested amount
+    const conversations = [...pinned, ...unpinned].slice(0, limit);
+
+    console.log(`📋 [CONVERSATION] Listed ${conversations.length} conversations for user: ${userId} (${pinned.length} pinned)`);
     return conversations;
   }
 

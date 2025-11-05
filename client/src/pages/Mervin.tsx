@@ -616,12 +616,21 @@ export default function Mervin() {
     }
   };
   
-  // Auto-save conversation every 5 messages
+  // Auto-save conversation every 3 messages (more frequent)
   useEffect(() => {
-    if (messages.length > 0 && messages.length % 5 === 0) {
+    if (messages.length > 0 && messages.length % 3 === 0) {
+      console.log('💾 [AUTO-SAVE] Saving conversation (every 3 messages)');
       handleSaveCurrentConversation();
     }
   }, [messages.length]);
+  
+  // Save conversation when loading stops (after receiving Mervin's response)
+  useEffect(() => {
+    if (!isLoading && messages.length >= 2) {
+      console.log('💾 [AUTO-SAVE] Saving conversation (after response completed)');
+      handleSaveCurrentConversation();
+    }
+  }, [isLoading]);
 
   return (
     <div className="flex flex-col h-full bg-black text-white">
