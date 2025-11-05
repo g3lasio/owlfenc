@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { ConversationEngine } from "../mervin-ai/core/ConversationEngine";
 import { SmartActionSystem } from "../components/mervin/SmartActionSystem";
+import { useMervinAgent } from "../mervin-v2/hooks/useMervinAgent";
 
 // Complete types for agent functionality
 type MessageSender = "user" | "assistant";
@@ -64,6 +65,45 @@ export default function Mervin() {
   // Detect if user is free plan (Primo Chambeador)
   const isFreeUser = userPlan?.id === 5 || userPlan?.name === "Primo Chambeador";
   const canUseAgentMode = !isFreeUser;
+
+  // Initialize Mervin V2 Agent (only if user has access and is in agent mode)
+  const mervinAgent = useMervinAgent({
+    userId: currentUser?.uid || 'guest',
+    enableStreaming: false, // Start with JSON mode for simplicity
+    language: 'es'
+  });
+
+  // React to mervinAgent messages updates (fix asynchronous state issue)
+  useEffect(() => {
+    if (mervinAgent.messages.length > 0) {
+      const lastMervinMessage = mervinAgent.messages[mervinAgent.messages.length - 1];
+      
+      // Only add assistant messages that are new (not already in our messages state)
+      if (lastMervinMessage.role === 'assistant') {
+        const alreadyExists = messages.some(msg => 
+          msg.sender === 'assistant' && 
+          msg.content === lastMervinMessage.content &&
+          Math.abs(new Date().getTime() - (lastMervinMessage.timestamp?.getTime() || 0)) < 1000
+        );
+        
+        if (!alreadyExists) {
+          console.log('📨 [MERVIN-UI] Adding assistant message from hook:', lastMervinMessage.content.substring(0, 50));
+          
+          // Remove any processing/thinking messages
+          setMessages(prev => {
+            const filtered = prev.filter(msg => msg.state !== 'analyzing' && msg.state !== 'thinking');
+            return [...filtered, {
+              id: "assistant-" + Date.now(),
+              content: lastMervinMessage.content,
+              sender: "assistant" as MessageSender
+            }];
+          });
+          setIsLoading(false);
+          setIsProcessingTask(false);
+        }
+      }
+    }
+  }, [mervinAgent.messages]);
 
   // Función para determinar si el input requiere capacidades de agente autónomo
   const isTaskRequiringAgent = (input: string): boolean => {
@@ -173,101 +213,53 @@ export default function Mervin() {
     setMessages(prev => [...prev, thinkingMessage]);
 
     try {
-      // ONBOARDING MODE - DISABLED
-      // Sistema de onboarding eliminado - usuarios van directo al dashboard
-
-      const engine = conversationEngineRef.current;
-      const agent = null;
-
-      if (selectedModel === "agent" && agent) {
-        // CONTROL INTELIGENTE - Solo activar agente autónomo para tareas específicas
-        const requiresAgentAction = isTaskRequiringAgent(currentInput);
+      // AGENT MODE V2 - Use backend orchestrator
+      if (selectedModel === "agent" && canUseAgentMode && mervinAgent.isHealthy) {
+        console.log('🤖 [AGENT-MODE-V2] Using Mervin V2 backend orchestrator');
         
-        if (requiresAgentAction) {
-          console.log('🤖 [AGENT-MODE] Task detected - activating autonomous capabilities');
-          
-          // Remove thinking message and add processing
-          setMessages(prev => prev.slice(0, -1));
-          
-          const processingMessage: Message = {
-            id: "processing-" + Date.now(),
-            content: "🤖 **Ejecutando Tarea Autónoma**\n\nCoordinando acciones para completar tu solicitud...\n\n*Agente trabajando en tu proyecto...*",
-            sender: "assistant",
-            state: "analyzing"
-          };
-          setMessages(prev => [...prev, processingMessage]);
-          
-          // Execute with full agent capabilities
-          const conversationHistory = messages
-            .filter(m => m.sender === 'user')
-            .map(m => ({ content: m.content, timestamp: new Date() }));
-          
-          const result = await agent.processUserInput(currentInput, conversationHistory);
-          
-          // Remove processing message
-          setMessages(prev => prev.slice(0, -1));
-          
-          const responseContent = result.data?.conversationalResponse || 
-            result.data?.response || 
-            "¡Órale primo! ¿En qué más te puedo ayudar?";
-          
-          // Solo mostrar badge si es una tarea específica completada, no conversación normal
-          const isActualTaskCompletion = result.success && 
-            result.data && 
-            (result.data.fileGenerated || result.data.estimateCreated || result.data.contractGenerated || result.data.taskCompleted);
-          
-          const agentResponse: Message = {
-            id: "assistant-" + Date.now(),
-            content: responseContent,
-            sender: "assistant",
-            // Solo añadir taskResult para tareas específicas completadas
-            ...(isActualTaskCompletion && { taskResult: result })
-          };
-          setMessages(prev => [...prev, agentResponse]);
-        } else {
-          // Para conversaciones normales, usar solo el motor conversacional
-          console.log('💬 [AGENT-CONVERSATION] Normal chat - using conversational mode only');
-          setMessages(prev => prev.slice(0, -1)); // Remove thinking
-          
-          if (engine) {
-            const response = await engine.processUserMessage(currentInput);
-            
-            const assistantMessage: Message = {
-              id: "assistant-" + Date.now(),
-              content: response.message,
-              sender: "assistant"
-            };
-            setMessages(prev => [...prev, assistantMessage]);
-          } else {
-            // Fallback si no hay engine
-            const assistantMessage: Message = {
-              id: "assistant-" + Date.now(),
-              content: "¡Órale primo! Se me trabó un poco el sistema, pero aquí ando. ¿En qué te puedo ayudar?",
-              sender: "assistant"
-            };
-            setMessages(prev => [...prev, assistantMessage]);
-          }
-        }
+        // Remove thinking message and add processing
+        setMessages(prev => prev.slice(0, -1));
         
-      } else if (engine) {
-        // LEGACY MODE - Conversational only
-        console.log('💬 [LEGACY-MODE] Using conversational engine');
+        const processingMessage: Message = {
+          id: "processing-" + Date.now(),
+          content: "🤖 **Mervin AI V2 Activo**\n\nProcesando tu solicitud con inteligencia híbrida...\n\n*ChatGPT-4o + Claude Sonnet 4 trabajando en tu proyecto...*",
+          sender: "assistant",
+          state: "analyzing"
+        };
+        setMessages(prev => [...prev, processingMessage]);
+        
+        // Send to Mervin V2 backend - response will be handled by useEffect
+        await mervinAgent.sendMessage(currentInput);
+        
+        // Note: The assistant response will be added automatically by the useEffect
+        // that watches mervinAgent.messages
+        
+      } else if (selectedModel === "legacy" || !canUseAgentMode) {
+        // LEGACY MODE - Simple conversational responses
+        console.log('💬 [LEGACY-MODE] Using simple conversational mode');
         setMessages(prev => prev.slice(0, -1)); // Remove thinking
         
-        const response = await engine.processUserMessage(currentInput);
+        // Simple responses for legacy mode
+        const legacyResponses = [
+          "¡Órale primo! En modo Legacy te puedo ayudar con conversaciones simples. Para funciones avanzadas, activa el modo Agent.",
+          "¡Qué onda! Estoy en modo conversacional. Si necesitas que genere estimados o contratos, cambia a modo Agent arriba.",
+          "¡Ey compadre! Te escucho. Para usar las capacidades completas del agente, activa el modo Agent en el selector de arriba."
+        ];
+        
+        const randomResponse = legacyResponses[Math.floor(Math.random() * legacyResponses.length)];
         
         const assistantMessage: Message = {
           id: "assistant-" + Date.now(),
-          content: response.message,
-          sender: "assistant",
+          content: randomResponse,
+          sender: "assistant"
         };
         setMessages(prev => [...prev, assistantMessage]);
       } else {
-        // Fallback
+        // Fallback - Service not available
         setMessages(prev => prev.slice(0, -1));
         const assistantMessage: Message = {
           id: "assistant-" + Date.now(),
-          content: "¡Órale primo! Se me trabó un poco el sistema, pero aquí ando. ¿En qué te puedo ayudar?",
+          content: "⚠️ El servicio de Mervin V2 no está disponible en este momento. Por favor intenta de nuevo más tarde.",
           sender: "assistant",
         };
         setMessages(prev => [...prev, assistantMessage]);
@@ -374,38 +366,20 @@ export default function Mervin() {
     setMessages(prev => [...prev, actionMessage]);
     
     try {
-      const agent = null;
-      if (agent && selectedModel === "agent") {
-        // Let the autonomous agent handle the task
+      if (selectedModel === "agent" && canUseAgentMode && mervinAgent.isHealthy) {
+        // Use Mervin V2 agent to handle the task
         const taskPrompt = getTaskPrompt(action);
-        const conversationHistory = messages
-          .filter(m => m.sender === 'user')
-          .map(m => ({ content: m.content, timestamp: new Date() }));
         
-        const result = await agent.processUserInput(taskPrompt, conversationHistory);
+        // Send to Mervin V2 backend - response will be handled by useEffect
+        await mervinAgent.sendMessage(taskPrompt);
         
-        const responseContent = result.data?.conversationalResponse || 
-          result.data?.response || 
-          `¡Listo primo! Activé ${action} para ti. ¿Qué más necesitas?`;
-        
-        // Solo mostrar badge si realmente es una tarea específica completada, no conversación
-        const isActualTaskCompletion = result.success && 
-          result.data && 
-          (result.data.fileGenerated || result.data.estimateCreated || result.data.contractGenerated);
-        
-        const resultMessage: Message = {
-          id: "result-" + Date.now(),
-          content: responseContent,
-          sender: "assistant",
-          // Solo añadir taskResult si es realmente una tarea específica completada
-          ...(isActualTaskCompletion && { taskResult: result })
-        };
-        setMessages(prev => [...prev, resultMessage]);
+        // Note: The assistant response will be added automatically by the useEffect
+        // that watches mervinAgent.messages
       } else {
         // Legacy mode guidance
         const guidanceMessage: Message = {
           id: "guidance-" + Date.now(),
-          content: `Para usar ${action}, háblame sobre lo que necesitas y te guío paso a paso, primo.`,
+          content: `Para usar ${action}, activa el modo Agent arriba y háblame sobre lo que necesitas, primo.`,
           sender: "assistant",
         };
         setMessages(prev => [...prev, guidanceMessage]);

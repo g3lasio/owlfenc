@@ -39,10 +39,25 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
   const [isHealthy, setIsHealthy] = useState(true);
   const [systemStatus, setSystemStatus] = useState<any>(null);
 
-  // Cliente de API (ref para no recrearlo)
+  // Cliente de API (ref para no recrearlo innecesariamente)
   const clientRef = useRef<AgentClient>(new AgentClient(userId));
+  const prevUserIdRef = useRef<string>(userId);
 
-  // Health check al montar
+  // Recrear cliente si userId cambia (fix para autenticación)
+  useEffect(() => {
+    if (userId !== prevUserIdRef.current) {
+      console.log(`🔄 [MERVIN-AGENT] UserId changed: ${prevUserIdRef.current} → ${userId}`);
+      clientRef.current = new AgentClient(userId);
+      prevUserIdRef.current = userId;
+      
+      // Limpiar mensajes al cambiar usuario
+      if (userId !== 'guest') {
+        setMessages([]);
+      }
+    }
+  }, [userId]);
+
+  // Health check al montar y cuando cambia userId
   useEffect(() => {
     const checkHealth = async () => {
       const healthy = await clientRef.current.checkHealth();
@@ -53,7 +68,7 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
     };
 
     checkHealth();
-  }, []);
+  }, [userId]);
 
   /**
    * Enviar mensaje a Mervin
