@@ -42,6 +42,9 @@ import {
   Bot,
   Crown,
   ShoppingBag,
+  BookOpen,
+  Headphones,
+  Ticket,
 } from "lucide-react";
 import { navigationGroups, NavigationItem } from "@/config/navigation";
 import { useTranslation } from "react-i18next";
@@ -495,6 +498,9 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                                   case "invoices": return <FileCheck className="h-4 w-4 mr-3" />;
                                   case "permit-advisor": return <Bot className="h-4 w-4 mr-3" />;
                                   case "owl-funding": return <TrendingUp className="h-4 w-4 mr-3" />;
+                                  case "help-center": return <BookOpen className="h-4 w-4 mr-3" />;
+                                  case "get-support": return <Headphones className="h-4 w-4 mr-3" />;
+                                  case "my-tickets": return <Ticket className="h-4 w-4 mr-3" />;
                                   case "profile": return <Settings className="h-4 w-4 mr-3" />;
                                   case "billing": return <CreditCard className="h-4 w-4 mr-3" />;
                                   case "subscription": return <Crown className="h-4 w-4 mr-3" />;
@@ -575,6 +581,9 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                                     case "invoices": return <FileCheck className="h-4 w-4" />;
                                     case "permit-advisor": return <Bot className="h-4 w-4" />;
                                     case "owl-funding": return <TrendingUp className="h-4 w-4" />;
+                                    case "help-center": return <BookOpen className="h-4 w-4" />;
+                                    case "get-support": return <Headphones className="h-4 w-4" />;
+                                    case "my-tickets": return <Ticket className="h-4 w-4" />;
                                     case "profile": return <Settings className="h-4 w-4" />;
                                     case "billing": return <CreditCard className="h-4 w-4" />;
                                     case "subscription": return <Crown className="h-4 w-4" />;
