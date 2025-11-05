@@ -44,12 +44,24 @@ const PhoneAuthMFA: React.FC<PhoneAuthMFAProps> = ({ onSuccess, onCancel }) => {
   const initializeRecaptcha = () => {
     if (!recaptchaVerifier) {
       try {
+        // Ensure the container exists
+        let container = document.getElementById('recaptcha-container-mfa');
+        if (!container) {
+          container = document.createElement('div');
+          container.id = 'recaptcha-container-mfa';
+          document.body.appendChild(container);
+        }
+
         const verifier = new RecaptchaVerifier(auth, 'recaptcha-container-mfa', {
           size: 'invisible',
           callback: () => {
             console.log('reCAPTCHA solved');
           },
+          'expired-callback': () => {
+            console.log('reCAPTCHA expired');
+          }
         });
+        
         setRecaptchaVerifier(verifier);
         return verifier;
       } catch (error) {
@@ -345,9 +357,6 @@ const PhoneAuthMFA: React.FC<PhoneAuthMFAProps> = ({ onSuccess, onCancel }) => {
           <p>🔒 Code expires in 5 minutes</p>
           <p>Check that you entered the correct phone number</p>
         </div>
-        
-        {/* reCAPTCHA container - hidden */}
-        <div id="recaptcha-container-mfa" style={{ display: 'none' }}></div>
       </div>
     );
   }
@@ -422,8 +431,6 @@ const PhoneAuthMFA: React.FC<PhoneAuthMFAProps> = ({ onSuccess, onCancel }) => {
         <p>🔒 We'll never share your phone number</p>
         <p>By continuing, you agree to receive SMS verification codes</p>
       </div>
-      
-      {/* reCAPTCHA container - will be created dynamically */}
     </div>
   );
 };
