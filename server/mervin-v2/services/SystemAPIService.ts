@@ -53,16 +53,20 @@ export class SystemAPIService {
     console.log('🏠 [SYSTEM-API] Verificando propiedad:', params.address);
     
     try {
-      const response = await this.client.post('/api/property/details', {
-        address: params.address,
-        includeHistory: params.includeHistory || false
+      const response = await this.client.get('/api/property/details', {
+        params: {
+          address: params.address,
+          mock: 'false'
+        }
       });
 
       console.log('✅ [SYSTEM-API] Propiedad verificada exitosamente');
+      console.log('📊 [SYSTEM-API] Datos de propiedad:', JSON.stringify(response.data, null, 2));
       return response.data as PropertyData;
 
     } catch (error: any) {
       console.error('❌ [SYSTEM-API] Error verificando propiedad:', error.message);
+      console.error('❌ [SYSTEM-API] Response data:', error.response?.data);
       throw new Error(`Error verificando propiedad: ${error.response?.data?.error || error.message}`);
     }
   }
