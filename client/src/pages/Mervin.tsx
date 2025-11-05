@@ -671,16 +671,15 @@ export default function Mervin() {
             <div className="relative">
               <Button
                 variant="outline"
-                size="default"
-                className="bg-gray-800 text-cyan-500 border-cyan-900/50 hover:bg-gray-700 min-h-[44px] min-w-[100px] text-sm md:text-base"
+                size="icon"
+                className="bg-gray-800 text-cyan-500 border-cyan-900/50 hover:bg-gray-700"
                 onClick={() => setShowModelSelector(!showModelSelector)}
               >
                 {selectedModel === "agent" ? (
-                  <><Brain className="w-5 h-5 md:w-4 md:h-4 mr-1 md:mr-2" /><span className="hidden sm:inline">Agent</span></>
+                  <Brain className="w-5 h-5" />
                 ) : (
-                  <><Zap className="w-5 h-5 md:w-4 md:h-4 mr-1 md:mr-2" /><span className="hidden sm:inline">Legacy</span></>
+                  <Zap className="w-5 h-5" />
                 )}
-                <ChevronDown className="w-4 h-4 md:w-3 md:h-3 ml-1" />
               </Button>
               
               {showModelSelector && (
