@@ -32,84 +32,166 @@ export const helpArticles: HelpArticle[] = [
     id: '1',
     title: 'Creating Your First Estimate with Mervin AI',
     category: 'getting-started',
-    description: 'Step-by-step guide to creating professional estimates',
+    description: 'Step-by-step guide to creating estimate data',
     icon: FileText,
     relatedArticles: ['4', '2'],
     content: `
 # Creating Your First Estimate with Mervin AI
 
-Mervin AI makes creating professional estimates quick and easy. Follow these steps to generate your first estimate.
+Mervin AI provides a simple 4-step wizard to help you organize and calculate estimate data for your construction projects.
+
+## Important: Current Capabilities
+
+**What This Tool Does:**
+- ✅ Organize client information
+- ✅ Create detailed project descriptions with AI assistance
+- ✅ Add and calculate line items (materials, labor, costs)
+- ✅ Automatically calculate subtotals, tax, and totals
+- ✅ Store client data for future use
+
+**Coming Soon (Not Yet Available):**
+- ⏳ PDF generation
+- ⏳ Email delivery to clients
+- ⏳ Persistent saving of estimates
+- ⏳ Download options
+
+Currently, the estimate tool helps you **organize and calculate** your project data. You'll need to manually transfer this information to your own documents or systems.
 
 ## Step 1: Navigate to Estimates
 
-1. Log into your Mervin AI dashboard
+1. Log into your Mervin AI account
 2. Click on **"Estimates"** in the sidebar
-3. Click the **"New Estimate"** button
+3. Click the **"Create Estimate"** or **"New Estimate"** button
 
-## Step 2: Choose Your Method
+## Step 2: Client Information (Step 1 of 4)
 
-You have two options for creating estimates:
-
-### Basic Estimate
-- Manually enter all details
-- Full control over pricing
-- Best for standard projects
-
-### AI Smart Estimate
-- Let AI generate the estimate
-- Describe your project in natural language
-- AI calculates materials and labor automatically
-
-## Step 3: Fill in Project Details
+The wizard starts with client details:
 
 **Required Information:**
-- Client name and contact information
+- Client name
+- Client email
+- Client phone number
 - Project address
-- Fence type (wood, vinyl, chain-link, etc.)
-- Linear footage
-- Height specifications
 
-**Optional Details:**
-- Gate requirements
-- Special features
-- Terrain considerations
-- Timeline preferences
+**Quick Options:**
+- **Select Existing Client**: Choose from your saved client database
+- **Search Clients**: Find a client by name, email, or phone
+- **Add New Client**: Enter new client information manually
 
-## Step 4: Review AI Suggestions
+**Tips:**
+- Use the search feature to find existing clients quickly
+- Client information is saved automatically to your client database
+- You can update client details from the Clients page
 
-If using AI Smart Estimate:
-1. Review AI-calculated materials list
-2. Check labor estimates
-3. Adjust any values as needed
-4. Add custom line items if necessary
+## Step 3: Project Details (Step 2 of 4)
 
-## Step 5: Finalize and Send
+Enter your project information:
 
-1. Review the complete estimate
-2. Add any notes or terms
-3. Click **"Generate PDF"**
-4. Email directly to your client or download
+**Project Information:**
+- Estimate title
+- Project description
+- Property/work location
+
+**AI-Powered Description Enhancement:**
+- Use the **"Enhance with AI"** button to improve your project description
+- The AI will expand and clarify your project details
+- You can refine the AI-generated description before proceeding
+- This is one of the most powerful features currently available!
+
+**Tips:**
+- Be specific in your project description for accurate estimates
+- The enhanced description helps create professional, detailed scopes
+- You can always edit the description manually after AI enhancement
+
+## Step 4: Line Items (Step 3 of 4)
+
+Add all materials and labor to your estimate:
+
+**Adding Line Items:**
+1. Click **"Add Item"** button
+2. Enter item details:
+   - Item name
+   - Description
+   - Quantity
+   - Unit of measure
+   - Unit price
+3. Total automatically calculates for each item
+
+**Managing Items:**
+- **Edit**: Click the edit icon to modify any item
+- **Delete**: Remove items with the trash icon
+- **Reorder**: Drag and drop items to reorder (where supported)
+
+**Calculations:**
+- Subtotal: Automatically calculated from all line items
+- Tax: Optional tax percentage (automatically applied)
+- Total: Final amount including tax
+
+## Step 5: Review & Calculate (Step 4 of 4)
+
+Final review of your estimate calculations:
+
+**Review All Details:**
+- Verify client information is correct
+- Check project description
+- Confirm all line items and pricing
+- Review subtotal, tax, and total amounts
+
+**Add Notes:**
+- Include any special terms or conditions
+- Add payment terms
+- Include warranty information
+- Add project timeline
+
+**What You Can Do Next:**
+- Review all calculated totals
+- Make notes of the information for your records
+- Manually create your own PDF using this data
+- Copy/paste the information into your own documents
 
 ## Tips for Success
 
-✅ **Be Specific**: The more details you provide, the more accurate your estimate will be
+✅ **Save Client Data**: Build your client database for faster future estimates
 
-✅ **Use Photos**: Attach site photos to help with calculations
+✅ **Use AI Enhancement**: The ProjectDescriptionEnhancer is a powerful tool - use it!
 
-✅ **Save Templates**: Create templates for common project types
+✅ **Be Detailed**: Include all materials and labor for accurate calculations
 
-✅ **Track History**: All estimates are saved in your dashboard for easy reference
+✅ **Keep Your Own Records**: Currently, you'll need to save this information externally
+
+✅ **Double-Check Math**: Review all calculations before using
+
+## Plan Limits
+
+Estimate creation limits vary by plan:
+
+**Primo Chambeador (Free):**
+- 5 basic estimates per month
+- 1 AI-enhanced estimate per month
+
+**Mero Patrón ($49.99/month):**
+- 50 basic estimates per month
+- 20 AI-enhanced estimates per month
+
+**Master Contractor ($99.99/month):**
+- Unlimited estimates
 
 ## Common Questions
 
-**Q: Can I edit an estimate after sending?**
-A: Yes! You can create a revised version at any time.
+**Q: Can I save my estimates?**
+A: Persistent saving is not yet implemented. We recommend copying the information to your own documents or systems.
 
-**Q: How does AI pricing work?**
-A: AI uses current market rates for materials and standard labor calculations based on your region.
+**Q: Can I generate a PDF?**
+A: PDF generation is planned for a future update. Currently, you'll need to create your own documents using the calculated data.
 
-**Q: Can I customize my company branding?**
-A: Yes! Go to Settings > Company Profile to upload your logo and customize colors.
+**Q: Can I email estimates to clients?**
+A: Direct email functionality is not yet available. You can use the estimate tool to calculate totals, then create and send your own documents.
+
+**Q: What's the difference between basic and AI-enhanced estimates?**
+A: Using the "Enhance with AI" feature on the project description counts as an AI estimate and uses your AI credits.
+
+**Q: Can I use my company logo and branding?**
+A: Company profile settings are available. Check Settings > Company Profile for available options.
 
 ---
 
@@ -120,19 +202,19 @@ Need more help? [Contact our support team](/support/get-support)
     id: '2',
     title: 'Setting Up Your Company Profile',
     category: 'getting-started',
-    description: 'Complete your profile for professional documents',
+    description: 'Configure your company information',
     icon: Settings,
     relatedArticles: ['1', '5'],
     content: `
 # Setting Up Your Company Profile
 
-Your company profile is essential for creating professional, branded documents. Here's how to set it up properly.
+Configure your company information in Mervin AI for a more personalized experience.
 
 ## Accessing Company Settings
 
 1. Click on **Settings** in the sidebar
-2. Select **"Company Profile"**
-3. You'll see all profile options
+2. Select **"Company Profile"** or **"Profile"**
+3. You'll see available profile options
 
 ## Essential Information
 
@@ -145,7 +227,7 @@ Your company profile is essential for creating professional, branded documents. 
 ### Business Address
 - Street address
 - City, State, ZIP
-- Service areas (for permit lookups)
+- Service areas
 
 ### License & Insurance
 - Contractor license number
@@ -153,70 +235,24 @@ Your company profile is essential for creating professional, branded documents. 
 - Insurance information
 - Bond details (if applicable)
 
-## Branding Your Documents
+## Future Capabilities
 
-### Logo Upload
-1. Click **"Upload Logo"**
-2. Recommended size: 500x200 pixels
-3. Accepted formats: PNG, JPG, SVG
-4. Logo appears on all PDFs
+**Coming Soon:**
+- Document branding (logo upload)
+- Custom color schemes
+- Branded PDF templates
+- Email signature customization
 
-### Color Scheme
-- Choose your brand colors
-- Affects headers and accents in documents
-- Preview before saving
-
-### Email Signature
-- Customize the footer of estimate emails
-- Add social media links
-- Include taglines or certifications
-
-## Document Preferences
-
-### Default Terms & Conditions
-Set up standard terms that appear on:
-- Estimates
-- Contracts
-- Invoices
-
-### Payment Terms
-- Default payment schedules
-- Accepted payment methods
-- Deposit requirements
-
-### Warranty Information
-- Standard warranty period
-- What's covered
-- Claim process
-
-## Verification & Compliance
-
-### License Verification
-- Upload license documentation
-- Keeps your credentials current
-- Required for legal contracts
-
-### Tax Information
-- Sales tax rates by region
-- Tax ID number
-- Automatic tax calculation
-
-## Tips for Professional Documents
-
-✅ **Complete Profile**: Fill out all fields for credibility
-
-✅ **Professional Logo**: Use high-quality images
-
-✅ **Clear Terms**: Make payment terms easy to understand
-
-✅ **Keep Updated**: Review quarterly for accuracy
+**Current Use:**
+- Store your company information
+- Maintain business records
+- Reference for future features
 
 ## Saving Your Changes
 
 1. Review all information
-2. Click **"Save Profile"**
-3. Changes apply immediately to new documents
-4. Existing documents remain unchanged
+2. Click **"Save Profile"** or **"Update Profile"**
+3. Your information is stored for future use
 
 ---
 
@@ -225,1205 +261,1374 @@ Questions? [Get support here](/support/get-support)
   },
   {
     id: '3',
-    title: 'Understanding Your Dashboard',
+    title: 'Getting Started with Mervin AI',
     category: 'getting-started',
-    description: 'Navigate your workspace like a pro',
+    description: 'Navigate your workspace and access features',
     icon: BookOpen,
     relatedArticles: ['1', '4'],
     content: `
-# Understanding Your Dashboard
+# Getting Started with Mervin AI
 
-Your Mervin AI dashboard is command central for your contracting business. Here's a complete guide to every feature.
+Welcome to Mervin AI! Here's how to navigate and understand the currently available features.
 
-## Dashboard Overview
+## Home Screen
 
-When you log in, you'll see:
-- **Quick Stats**: Active projects, pending estimates, revenue
-- **Recent Activity**: Latest estimates and contracts
-- **Notifications**: Important updates and reminders
-- **Quick Actions**: One-click access to common tasks
+When you first log in, you'll see the Mervin AI home screen:
+
+**Central Logo:**
+- Displays the Mervin AI logo with an animated glow effect
+- Click the logo to access the **Mervin AI Chat Interface**
+- This is your gateway to the AI assistant
 
 ## Main Navigation
 
-### Sidebar Menu
+Access features from the **sidebar menu**:
+
+### Currently Available Core Features
 
 **Estimates**
-- View all estimates
-- Create new estimates
-- Track sent/accepted/declined
+- Create estimate calculations
+- 4-step wizard for data organization
+- AI-powered description enhancement
+- Automatic total calculations
 
 **Contracts**
-- Generate legal contracts
-- Track signatures
-- Manage templates
-
-**Projects**
-- Active job tracking
-- Project timeline
-- Client communication
-
-**Clients**
-- Client database
-- Contact history
-- Project history per client
+- Generate legal contracts from projects
+- Digital signature workflow
+- Track signing status
+- Firebase-powered contract management
 
 **Mervin AI Chat**
-- Ask questions
-- Get instant help
-- Research permits and codes
+- Conversational AI assistant
+- Get instant help with projects
+- Research permits and building codes
+- Project planning assistance
 
-**Reports**
-- Revenue analytics
-- Project performance
-- Client insights
+**Property Verification**
+- Verify property ownership
+- Check parcel information
+- 3-step verification process
+- Powered by Mapbox and public records
 
-## Quick Actions Panel
+**Permit Advisor**
+- Look up required permits
+- City and project-based permit research
+- Permit requirements and timelines
+- Save permit research for reference
 
-Located at the top right:
-- **New Estimate**: Create quickly
-- **New Contract**: Generate documents
-- **Chat with Mervin**: Ask AI anything
-- **Search**: Find any document
+### Additional Pages
 
-## Stats & Metrics
+**Clients**
+- Manage your client database
+- Store contact information
+- View client information
+- Quick access for estimates
 
-### This Month Overview
-- Total estimates sent
-- Conversion rate
-- Revenue generated
-- Active projects
+**Subscription**
+- View your current plan
+- Upgrade or manage billing
+- Track feature usage
+- Payment method management
 
-### Performance Trends
-- Week-over-week comparison
-- Monthly growth charts
-- Client acquisition rate
+**Settings**
+- Company profile setup
+- Account preferences
+- Account security
 
-## Notifications Center
+## Quick Actions
 
-Bell icon shows:
-- Estimate acceptances
-- Contract signatures
-- Payment received
-- System updates
+**Creating Your First Estimate:**
+1. Click **"Estimates"** in sidebar
+2. Follow the 4-step wizard
+3. Use AI to enhance descriptions
+4. Review calculated totals
 
-**Notification Settings:**
-1. Click bell icon
-2. Select "Settings"
-3. Choose notification preferences
-4. Email, SMS, or in-app
+**Chatting with Mervin AI:**
+1. Click the Mervin logo on home screen, or
+2. Select **"Mervin AI"** from sidebar
+3. Ask questions in natural language
+4. Get instant construction intelligence
 
-## Customizing Your Dashboard
+**Verifying a Property:**
+1. Go to **"Property Verification"**
+2. Enter the property address
+3. Review ownership and parcel details
+4. Save verification for records
 
-### Widget Arrangement
-- Drag and drop widgets
-- Show/hide sections
-- Save custom layouts
+**Looking Up Permits:**
+1. Navigate to **"Permit Advisor"**
+2. Enter project address and type
+3. Get permit requirements
+4. Review research results
 
-### Dark Mode
-- Toggle in top-right corner
-- Saves preference automatically
-- Reduces eye strain
+## Web Access
 
-### Default Views
-Set preferred default views for:
-- Estimates (list vs. grid)
-- Date ranges
-- Sorting preferences
+The platform is web-based and responsive:
+- Access from any device with a browser
+- Mobile-optimized interface
+- Desktop, tablet, and phone compatible
+- Seamless experience across screen sizes
 
-## Mobile App
+**Note:** There is no dedicated mobile app. The platform is accessed through your web browser on any device.
 
-Access dashboard on mobile:
-- iOS and Android apps
-- Full feature parity
-- Offline mode available
-- Push notifications
-
-## Keyboard Shortcuts
+## Keyboard Navigation
 
 Speed up your workflow:
-- **Cmd/Ctrl + N**:New estimate
-- **Cmd/Ctrl + K**:Search
-- **Cmd/Ctrl + /**:Open Mervin chat
-- **Cmd/Ctrl + ,**:Settings
+- Use tab to navigate between fields
+- Enter to submit forms
+- Sidebar navigation is always accessible
+- Click anywhere to close dialogs
 
-## Dashboard Health Check
+## Your First Steps
 
-Monthly checklist:
-- ✅ Review pending estimates
-- ✅ Follow up on unsigned contracts
-- ✅ Update client information
-- ✅ Check notification settings
-- ✅ Review analytics
+**1. Set Up Your Profile**
+- Go to Settings > Company Profile
+- Add your business information
+- Fill out available fields
+
+**2. Create Your First Estimate**
+- Navigate to Estimates
+- Click Create New Estimate
+- Follow the 4-step wizard
+- Try the AI description enhancer
+
+**3. Try Mervin AI Chat**
+- Click the home screen logo
+- Ask a construction question
+- Explore permit requirements
+- Get project assistance
+
+**4. Explore Features**
+- Property Verification for due diligence
+- Permit Advisor for compliance
+- Contract Generator for legal docs
+- Client management for organization
 
 ## Getting Help
 
-- **?** icon: Contextual help
-- **Chat bubble**: Live support
-- **Tutorials**: Video walkthroughs
+**Mervin AI Assistant:**
+- Click the logo to chat
+- Ask questions about features
+- Get construction advice
+- Research building codes
+
+**Support Resources:**
+- This help center
+- Email: support@mervinai.com
+- In-app support
+
+## Plan Features
+
+Your available features depend on your subscription plan:
+
+**Primo Chambeador (Free):**
+- 5 basic estimates/month
+- 1 AI estimate/month
+- Limited access to advanced features
+
+**Mero Patrón ($49.99/month):**
+- 50 basic estimates/month
+- 20 AI estimates/month
+- 50 contracts/month
+- 15 property verifications/month
+- 10 permit advisor uses/month
+
+**Master Contractor ($99.99/month):**
+- Unlimited estimates
+- Unlimited contracts
+- Unlimited property verifications
+- Unlimited permit advisor
+- Priority support
 
 ---
 
-Ready to dive deeper? [Explore features](/support/help-center#features)
+Ready to dive deeper? [Explore all features](/support/help-center#features)
     `
   },
   {
     id: '4',
-    title: 'Using AI Smart Estimates',
+    title: 'Using AI-Enhanced Project Descriptions',
     category: 'features',
-    description: 'Generate accurate estimates with AI assistance',
+    description: 'Let AI help craft professional project descriptions',
     icon: Zap,
     relatedArticles: ['1', '6'],
     content: `
-# Using AI Smart Estimates
+# Using AI-Enhanced Project Descriptions
 
-Mervin AI's Smart Estimate feature revolutionizes how you create quotes. Let AI do the heavy lifting while you maintain full control.
+One of Mervin AI's most powerful features is the **Project Description Enhancer** - an AI tool that transforms brief project notes into detailed, professional descriptions.
 
-## What is AI Smart Estimate?
+## What is AI Enhancement?
 
-Instead of manually calculating:
-- Material quantities
-- Labor hours
-- Pricing
-- Markup percentages
+The **Project Description Enhancer** is an AI-powered tool that:
+- Expands brief descriptions into detailed project scopes
+- Clarifies technical details
+- Adds professional language
+- Helps prevent misunderstandings
+- Creates clear scope definitions
 
-**Simply describe the project** and let AI generate a complete, accurate estimate.
+**This is a REAL, working feature** that you can use today!
 
 ## How It Works
 
-### Step 1: Start a Smart Estimate
+### Step 1: Start Creating an Estimate
 
 1. Go to Estimates > New Estimate
-2. Select **"AI Smart Estimate"**
-3. You'll see the AI input interface
+2. Complete the client information (Step 1)
+3. Move to project details (Step 2)
 
-### Step 2: Describe Your Project
+### Step 2: Write Your Initial Description
 
-Use natural language like:
+Enter a basic project description like:
 
-> "I need to install 150 linear feet of 6-foot vinyl privacy fence with two gates on level terrain in Sacramento, CA"
+> "Install 150 feet of vinyl privacy fence, 6 feet tall, two gates"
 
-**The AI understands:**
-- Fence types (vinyl, wood, chain-link, etc.)
-- Measurements (linear feet, height)
-- Features (gates, caps, rails)
-- Location (for pricing)
-- Terrain considerations
+**Keep it simple:**
+- Basic measurements
+- Fence type
+- Key features
+- Location details
 
-### Step 3: Review AI Calculations
+### Step 3: Use the Enhance Button
 
-Mervin AI generates:
+1. Click the **"Enhance with AI"** button
+2. AI processes your description in real-time
+3. Wait a few seconds for enhancement
+4. Review the AI-generated description
 
-**Materials List:**
-- Post quantities (based on spacing)
-- Panel or picket counts
-- Concrete requirements
-- Hardware and fasteners
-- Gates and accessories
+### Step 4: Review & Refine
 
-**Labor Estimate:**
-- Installation hours
-- Removal (if needed)
-- Site prep time
-- Cleanup
+The AI expands your description with:
 
-**Pricing:**
-- Material costs (current market rates)
-- Labor costs (regional rates)
-- Suggested markup
-- Total price
+**Detailed Scope:**
+- Specific materials and specifications
+- Installation process overview
+- Professional terminology
+- Clear project boundaries
 
-### Step 4: Customize & Adjust
+**You can:**
+- Edit the AI-generated text
+- Accept it as-is
+- Regenerate if needed
+- Combine AI suggestions with your own words
 
-You have full control:
-- Edit any line item
-- Add custom items
-- Adjust prices
-- Change quantities
-- Modify markup
+## Example Transformation
 
-### Step 5: Send to Client
+**Your Input:**
+> "150 ft vinyl fence, 6 ft high, 2 gates, level yard"
 
-- Generate professional PDF
-- Email directly
-- Track when viewed
-- Get notified of acceptance
+**AI Enhanced:**
+> "This project involves the installation of approximately 150 linear feet of premium 6-foot vinyl privacy fencing on level terrain. The scope includes professional-grade vinyl panels, secure post installation with concrete footings, and the installation of two standard 4-foot access gates with self-closing hinges and lockable latches. All materials will be high-quality, UV-resistant vinyl designed for long-term durability and minimal maintenance. The installation will be completed according to local building codes and manufacturer specifications."
 
-## Advanced Features
+## When to Use AI Enhancement
 
-### Photo Analysis
-Upload site photos and AI will:
-- Detect obstacles
-- Assess terrain difficulty
-- Identify existing structures
-- Suggest additional services
+**Best For:**
+- First-time clients who need detailed information
+- Complex projects with multiple components
+- Formal proposals
+- Projects requiring clear scope definition
+- When you want to sound more professional
 
-### Smart Suggestions
-AI recommends:
-- Upgrades clients might want
-- Common add-ons
-- Seasonal considerations
-- Warranty options
+**Skip Enhancement For:**
+- Repeat clients who know your work
+- Very simple projects
+- Internal notes
+- When you want maximum brevity
 
-### Regional Intelligence
-Automatically factors in:
-- Local material costs
-- Regional labor rates
-- Permit requirements
-- Weather considerations
+## Plan Limits
+
+AI enhancement uses count toward your monthly limits:
+
+**Primo Chambeador (Free):**
+- 1 AI enhancement per month
+
+**Mero Patrón ($49.99/month):**
+- 20 AI enhancements per month
+
+**Master Contractor ($99.99/month):**
+- Unlimited AI enhancements
+
+**Tracking Usage:**
+- View remaining AI credits in your dashboard
+- Upgrade prompt appears when limit is reached
 
 ## Tips for Best Results
 
-✅ **Be Specific**: Include all measurements and details
+✅ **Include Key Details**: Measurements, materials, and features
 
-✅ **Mention Challenges**: Slopes, obstacles, access issues
+✅ **Mention Challenges**: Slopes, obstacles, or special conditions
 
-✅ **Include Location**: City and state for accurate pricing
+✅ **Specify Location**: City helps AI understand local context
 
-✅ **Specify Materials**: Exact fence type and quality level
+✅ **Review Carefully**: AI is a tool, you're the expert
 
-✅ **Note Extras**: Gates, caps, special features
+✅ **Edit Freely**: Customize the AI output to match your style
 
-## Example Prompts
+✅ **Start Simple**: Brief input often yields better results
 
-**Simple Project:**
-> "120 ft of 4-foot chain-link fence, flat yard, no gates, Atlanta GA"
+## What This Feature Does NOT Do
 
-**Complex Project:**
-> "200 linear feet of 6-foot cedar privacy fence on sloped terrain with three 4-foot gates, includes removal of existing fence, Los Angeles CA"
+**Important Clarifications:**
 
-**Commercial Project:**
-> "500 ft perimeter fence, 8-foot height, black vinyl, security grade, includes 10-foot double gate, industrial site, Houston TX"
+❌ Does not create PDFs
+❌ Does not email anything
+❌ Does not save estimates permanently
+❌ Only enhances the description text field
+
+**What It DOES Do:**
+
+✅ Transforms your brief description into detailed, professional text
+✅ Works in real-time during estimate creation
+✅ Helps you communicate clearly with clients
+✅ Saves you time writing detailed scopes
 
 ## Common Questions
 
-**Q: How accurate is AI pricing?**
-A: Typically within 5-10% of manual calculations. Always review and adjust based on your costs.
+**Q: Does AI enhancement cost extra?**
+A: It's included in your plan but counts toward monthly AI usage limits.
 
-**Q: Can AI handle complex projects?**
-A: Yes! The more details you provide, the better the estimate.
+**Q: Can I use both AI and manual descriptions?**
+A: Absolutely! Use AI as a starting point and customize as needed.
 
-**Q: Does it replace my expertise?**
-A: No, it enhances it. You make final decisions on all pricing and details.
+**Q: Is the AI aware of building codes?**
+A: AI includes general best practices but always verify codes with local authorities.
 
-**Q: Can I save AI estimates as templates?**
-A: Yes! Save common project types for even faster quoting.
+**Q: What if I don't like the AI enhancement?**
+A: Simply edit it or discard it and write your own description.
 
-## Limitations
+**Q: Does using AI enhancement create a PDF?**
+A: No. AI enhancement only improves the description text. PDF generation is a separate feature that is not yet available.
 
-AI estimates work best for:
-- Standard residential fencing
-- Commercial chain-link
-- Typical installations
+## Best Practices
 
-May need manual adjustment for:
-- Highly custom designs
-- Unusual materials
-- Extreme terrain
-- Heritage/restoration work
+✅ **Use It**: This is one of the best working features - take advantage of it!
+
+✅ **Review Output**: Always check AI suggestions for accuracy
+
+✅ **Add Personal Touch**: Include your company's specific approach
+
+✅ **Client Communication**: Ensure descriptions match client expectations
+
+✅ **Documentation**: Detailed descriptions prevent disputes later
 
 ---
 
-Need to refine an estimate? [Learn about editing](/support/help-center/article/1)
+Ready to create your first estimate? [Learn the 4-step process](/support/help-center/article/1)
     `
   },
   {
     id: '5',
     title: 'Creating Legal Contracts',
     category: 'features',
-    description: 'Generate state-compliant contracts automatically',
+    description: 'Generate and manage contracts with digital signatures',
     icon: FileText,
     relatedArticles: ['1', '2'],
     content: `
 # Creating Legal Contracts
 
-Generate professional, state-compliant contracts in minutes. Mervin AI ensures your contracts meet legal requirements and protect your business.
+Generate professional contracts with Mervin AI's contract generator. Built on Firebase with secure digital signature workflow.
 
-## Contract Types Available
+## Contract Generation Process
 
-### Installation Contracts
-- New fence installation
-- Custom project agreements
-- Material and labor warranties
+### Step 1: Select a Project
 
-### Service Agreements
-- Maintenance contracts
-- Repair services
-- Inspection agreements
+**From Existing Estimates:**
+1. Navigate to **Contracts** page
+2. View list of your projects/estimates
+3. Click **"Generate Contract"** for a project
+4. Contract pre-fills with project details
 
-### Change Orders
-- Project modifications
-- Additional work authorization
-- Price adjustments
+**Manual Entry:**
+1. Go to Contracts > Create New
+2. Enter project information manually
+3. Add client details
+4. Define scope and pricing
 
-## Creating Your First Contract
+### Step 2: Customize Contract Terms
 
-### Step 1: Select Contract Type
-
-1. Navigate to **Contracts**
-2. Click **"Generate New Contract"**
-3. Choose your contract type
-4. Select your state for compliance
-
-### Step 2: Auto-Fill from Estimate
-
-If you have an existing estimate:
-- Select the estimate
-- Contract pre-fills all details
-- Pricing automatically transfers
-- Client info imports
-
-### Step 3: Customize Terms
+**Project Information:**
+- Auto-filled from selected estimate (if available)
+- Project description and scope
+- Materials and labor breakdown
+- Total project cost
 
 **Payment Terms:**
 - Deposit amount (percentage or fixed)
-- Payment schedule (milestones)
+- Payment schedule milestones
 - Accepted payment methods
-- Late payment terms
+- Late payment terms and fees
 
-**Project Scope:**
-- Detailed work description
-- Materials specification
-- Timeline and milestones
-- Completion criteria
+**Timeline:**
+- Project start date
+- Estimated completion date
+- Milestone deadlines
+- Weather delay provisions
 
-**Legal Protections:**
+**Legal Clauses:**
+- Standard contractor terms
+- Warranty information
 - Liability limitations
-- Warranty terms
-- Force majeure clauses
-- Dispute resolution
+- Change order procedures
 
-### Step 4: Review Legal Compliance
+### Step 3: Review and Generate
 
-AI automatically includes:
-- State-specific lien rights
-- Required disclosures
-- Cancellation rights (if applicable)
-- Licensing information
+1. Review all contract details
+2. Check client information accuracy
+3. Verify pricing and terms
+4. Click **"Generate Contract"**
+5. System creates contract document
 
-### Step 5: Send for Signature
+## Digital Signature Workflow
 
-**Digital Signature Options:**
-- Email to client
-- SMS link
-- In-person signing (tablet)
-- Dual signature workflow
-
-## State Compliance Features
-
-Mervin AI ensures compliance with:
-
-### California
-- Mechanics lien notices
-- 3-day right to cancel
-- License bond disclosures
-- Home Improvement Contract Act
-
-### Texas
-- DTPA disclosures
-- Residential construction provisions
-- Notice of customer complaints
-
-### Florida
-- Construction lien law notices
-- Building permit requirements
-- Hurricane provisions
-
-### Other States
-- All 50 states supported
-- Automatic updates for law changes
-- Regional requirements
-
-## Digital Signatures
+Mervin AI uses a **dual signature system**:
 
 ### How It Works
-1. Contract sent via email
-2. Client clicks secure link
-3. Reviews contract online
-4. Signs electronically
-5. Both parties receive signed copy
 
-### Legal Validity
-- eSign Act compliant
-- Court-admissible
-- Tamper-proof encryption
-- Audit trail included
+**1. Contractor Signs First:**
+- You review the contract
+- Click **"Sign as Contractor"**
+- Enter your signature
+- Contract marked as partially signed
 
-### Dual Signature Workflow
-1. Contractor signs first
-2. Client receives for signature
-3. Both must sign for completion
-4. Automatic PDF generation
+**2. Send to Client:**
+- System generates unique signing link
+- Email sent to client automatically (where supported)
+- Client receives secure access link
+- Link includes contract preview
+
+**3. Client Signs:**
+- Client clicks email link
+- Reviews complete contract
+- Signs electronically
+- Contract becomes fully executed
+
+**4. Completed Contract:**
+- Both parties receive signed PDF
+- Contract stored in Firebase
+- Status updated to "Completed"
+- Downloadable by both parties
+
+## Contract Status Tracking
+
+Track your contracts in real-time:
+
+**Status Types:**
+
+**Draft**
+- Contract created but not yet signed
+- Can be edited or deleted
+- Not sent to client yet
+
+**Pending Contractor Signature**
+- Waiting for you to sign
+- Ready for your review and signature
+
+**Pending Client Signature**
+- You've signed, waiting for client
+- Client has received signing link
+- Tracking shows if client viewed
+
+**Completed**
+- Both parties have signed
+- Fully executed contract
+- PDF generated and stored
+- Ready for download
+
+**Cancelled**
+- Contract voided before completion
+- Retained for records
+- Marked as inactive
 
 ## Contract Management
 
-### Status Tracking
-- Draft
-- Sent for signature
-- Partially signed
-- Fully executed
-- Completed
+### View All Contracts
 
-### Notifications
-Email alerts for:
-- Client views contract
-- Signature received
-- Contract expires
-- Payment due
+**Dashboard View:**
+- See all contracts at a glance
+- Filter by status (Draft, In Progress, Completed)
+- Search by client name
+- Sort by date or project
 
-### Document Storage
-- Cloud storage included
-- Search by client/project
-- Download anytime
-- 7-year retention
+**Contract History:**
+- View past contracts
+- Download signed PDFs (where available)
+- Check signature timestamps
+- Review contract details
+
+### Download Options
+
+**Signed PDF:**
+- Click download icon
+- Get fully executed contract
+- Includes both signatures
+- Time-stamped for legal validity
+
+## Firebase-Powered Features
+
+Contracts are stored securely in Firebase:
+
+**Real-Time Updates:**
+- Status changes update instantly
+- Signature notifications in real-time
+- Multi-device synchronization
+
+**Secure Storage:**
+- Encrypted cloud storage
+- Automatic backups
+- Long-term retention
+- GDPR compliant
+
+**Access Control:**
+- Only authorized parties can view
+- Secure signing links expire
+- Audit trail of all actions
+
+## Legal Validity
+
+**Digital Signatures:**
+- Legally binding under E-Sign Act
+- Court-admissible documentation
+- Tamper-proof encryption
+- Audit trail included
+
+**Contract Storage:**
+- Minimum 7-year retention
+- Downloadable anytime
+- Multiple backup locations
+
+## Plan Limits
+
+Contract generation varies by plan:
+
+**Primo Chambeador (Free):**
+- No contract generation included
+- Upgrade to generate contracts
+
+**Mero Patrón ($49.99/month):**
+- 50 contracts per month
+- Digital signatures included
+- Firebase storage included
+
+**Master Contractor ($99.99/month):**
+- Unlimited contracts
+- Unlimited storage
+- Priority support
 
 ## Tips for Solid Contracts
 
 ✅ **Be Specific**: Detail every aspect of the work
 
-✅ **Set Clear Milestones**: Break projects into phases
+✅ **Set Clear Milestones**: Break projects into payment phases
 
-✅ **Define Materials**: Specify brands and grades
+✅ **Define Materials**: Specify brands and quality levels
 
-✅ **Include Photos**: Attach before photos to contract
+✅ **Include Timeline**: Set realistic completion dates
 
-✅ **Update Templates**: Review quarterly for accuracy
+✅ **Get Both Signatures**: Never start work without full execution
 
-## Modifying Signed Contracts
-
-For changes after signing:
-
-1. Generate a **Change Order**
-2. Detail modifications
-3. Adjust pricing if needed
-4. Both parties sign amendment
-5. Attaches to original contract
+✅ **Keep Records**: Download and save completed contracts
 
 ## Common Questions
 
 **Q: Are digital signatures legally binding?**
-A: Yes! Fully compliant with federal eSign Act and UETA.
+A: Yes, under the E-Sign Act and UETA, digital signatures are legally valid.
 
-**Q: What if a client wants changes?**
-A: Easily edit before sending. After signing, use change orders.
+**Q: Can I modify a contract after it's signed?**
+A: No. Create a new contract or change order for modifications.
 
-**Q: Can I use my own contract template?**
-A: Yes! Upload custom templates while maintaining compliance features.
+**Q: What if my client doesn't sign?**
+A: Follow up with them. The contract remains in "Pending Client Signature" status.
+
+**Q: Can I have multiple contracts with one client?**
+A: Yes! Create separate contracts for each project.
 
 **Q: How long are contracts stored?**
-A: Minimum 7 years, lifetime with premium plans.
-
-## Contract Templates
-
-### Pre-Built Templates
-- Standard installation
-- Repair work
-- Maintenance agreement
-- Emergency service
-- Commercial projects
-
-### Custom Templates
-1. Create from scratch
-2. Save for reuse
-3. Share with team
-4. Update globally
+A: Indefinitely in Firebase, with minimum 7-year retention guaranteed.
 
 ---
 
-Questions about contracts? [Contact legal support](/support/get-support)
+Need help with contracts? [Contact support](/support/get-support)
     `
   },
   {
     id: '6',
-    title: 'Property Verification Tool',
+    title: 'Property Ownership Verification',
     category: 'features',
-    description: 'Verify property details before starting work',
-    icon: HelpCircle,
-    relatedArticles: ['4', '1'],
+    description: 'Verify property ownership before you quote',
+    icon: FileText,
+    relatedArticles: ['1', '5'],
     content: `
-# Property Verification Tool
+# Property Ownership Verification
 
-Avoid costly mistakes by verifying property details before you start work. Mervin AI's verification tool checks boundaries, permits, and restrictions.
+Verify property ownership and check parcel information before submitting estimates or starting work.
 
-## Why Property Verification Matters
+## What is Property Verification?
 
-Common issues prevented:
-- ❌ Building on easements
-- ❌ Violating setback requirements
-- ❌ Ignoring HOA restrictions
-- ❌ Missing required permits
-- ❌ Crossing property lines
+**Due Diligence Tool:**
+- Verify who owns a property
+- Check legal owner of record
+- View parcel information
+- Access property details
+- Review assessment data
+
+**Why Verify:**
+- Ensure you're dealing with the property owner
+- Avoid working for non-owners
+- Check property boundaries
+- Access parcel numbers for permits
+- Professional due diligence
 
 ## How to Verify a Property
 
-### Step 1: Enter Property Address
+### Step 1: Enter Address
 
-1. Go to **Tools** > **Property Verification**
-2. Enter the full address
-3. AI retrieves public records
+1. Go to **"Property Verification"** in sidebar
+2. Enter complete property address
+3. Use autocomplete for accuracy
+4. Verify address is correct
 
-### Step 2: Review Property Details
+**Address Tips:**
+- Include street number and name
+- Add city and state
+- ZIP code helps narrow results
+- Use standard address format
 
-**Parcel Information:**
-- Parcel ID/APN
-- Legal description
-- Property dimensions
-- Lot size
+### Step 2: Run Verification
 
-**Ownership:**
-- Current owner verification
-- Match against your client
-- Ownership transfer dates
-
-**Zoning:**
-- Residential/Commercial designation
-- Allowed uses
-- Density restrictions
-
-### Step 3: Check Restrictions
-
-**Setback Requirements:**
-- Front yard setback (often 15-25 ft)
-- Side yard setback (often 5-10 ft)
-- Rear yard setback (often 10-20 ft)
-- Height restrictions
-
-**Easements:**
-- Utility easements
-- Access easements
-- Conservation easements
-- Drainage easements
-
-**HOA Rules:**
-- Fence height limits
-- Approved materials
-- Color restrictions
-- Architectural review needed?
-
-### Step 4: Permit Requirements
-
-AI checks if you need:
-- Building permit
-- Fence permit
-- Grading permit
-- Tree removal permit
-
-**Permit Info Includes:**
-- Where to apply
-- Estimated cost
-- Processing time
-- Required documents
-
-## Map View Features
-
-Interactive property map shows:
-- Property boundaries (surveyed)
-- Easements (shaded areas)
-- Setback lines (dashed)
-- Existing structures
-- Proposed fence line (you draw)
-
-**Drawing Tools:**
-- Measure distances
-- Mark fence location
-- Calculate linear feet
-- Identify conflicts
-
-## Interpreting Results
-
-### Green Checkmark ✅
-- No restrictions found
-- Clear to proceed
-- Standard permits may apply
-
-### Yellow Warning ⚠️
-- Potential issues detected
-- Review recommended
-- May need approvals
-
-### Red Alert 🚫
-- Serious restrictions
-- Cannot proceed as planned
-- Professional survey needed
-
-## Common Restrictions Found
-
-### HOA Restrictions
-- Maximum fence height (often 6 ft rear, 4 ft front)
-- Approved materials list
-- Color limitations
-- Board approval required
-
-### Municipal Code
-- Fence height by zone
-- Corner lot visibility rules
-- Pool enclosure requirements
-- Material restrictions (some cities ban chain-link in front yards)
-
-### Utility Easements
-- Can't build permanent structures
-- Utility access required
-- Temporary fences only
-
-## What to Do with Results
-
-### No Issues Found
-1. Proceed with confidence
-2. Still check permit requirements
-3. Save report for records
-4. Include in project file
-
-### Issues Detected
-1. Review with client
-2. Adjust plans if possible
-3. Seek variance if needed
-4. Consider professional survey
-
-### Serious Conflicts
-1. Stop planning immediately
-2. Recommend surveyor
-3. Consult local authorities
-4. May need to decline project
-
-## Advanced Features
-
-### Historical Data
-- Past permits on property
-- Previous fence locations
-- Known issues
-
-### Neighbor Properties
-- Adjacent property lines
-- Shared fences
-- Neighbor permits
-
-### 3D Visualization
-- Topographic view
-- Grade changes
-- Drainage patterns
-
-## Accuracy & Limitations
+1. Click **"Verify Property"** or **"Search"**
+2. System searches public records
+3. Wait for results (usually 5-15 seconds)
+4. Review ownership information
 
 **Data Sources:**
 - County assessor records
-- GIS databases
-- HOA registries (if available)
-- Municipal code databases
+- Public tax records
+- GIS mapping databases
+- Parcel information systems
 
-**Limitations:**
-- Public records only
-- May not include recent changes
-- HOA data not always available
-- Survey recommended for disputes
+### Step 3: Review Results
 
-## When to Hire a Surveyor
+**Owner Information:**
+- Legal owner name
+- Mailing address
+- Ownership type (individual, LLC, trust, etc.)
+- Multiple owners (if applicable)
 
-Recommend professional survey for:
+**Property Details:**
+- Property address
+- Parcel number (APN)
+- Legal description
+- Lot size
+- Year built
+- Property type
+
+**Tax & Assessment:**
+- Assessed value
+- Last sale date
+- Last sale price (where available)
+- Current tax status
+
+## Using Verification Data
+
+### Before Estimates
+
+**Verify Client is Owner:**
+- Compare client name with owner of record
+- Ask about ownership if different
+- May be authorized representative
+- Document authorization
+
+### For Permits
+
+**Parcel Information:**
+- Use parcel number on permit applications
+- Verify legal description
+- Confirm property boundaries
+- Check zoning information
+
+### Property Details
+
+**Parcel Information:**
+- Use for permit applications
+- Verify lot size for planning
+- Check legal description accuracy
+- Compare with client information
+
+**Zoning:**
+- Residential vs commercial
+- Allowed uses
+- Setback requirements
+- Height restrictions
+
+## Verification History
+
+**Track All Verifications:**
+
+1. Go to Property Verification
+2. Click **"History"** tab
+3. View all past verifications
+
+**History Features:**
+- Search by address
+- Filter by date
+- View saved results
+- Re-download information
+- Add notes and tags
+
+**Useful For:**
+- Repeat clients
+- Project documentation
+- Due diligence records
+- Audit trail
+
+## Plan Limits
+
+Property verification usage varies by plan:
+
+**Primo Chambeador (Free):**
+- No property verifications included
+- Upgrade to access feature
+
+**Mero Patrón ($49.99/month):**
+- 15 property verifications per month
+
+**Master Contractor ($99.99/month):**
+- Unlimited property verifications
+
+## Best Practices
+
+✅ **Verify Early**: Check property before estimating
+
+✅ **Match Names**: Ensure owner matches your client
+
+✅ **Save Results**: Keep verification records for each project
+
+✅ **Check Boundaries**: Review property lines carefully
+
+✅ **Note Discrepancies**: Document any red flags
+
+✅ **Professional Survey**: Order survey for complex properties
+
+## Limitations & Disclaimers
+
+**Data Sources:**
+- Public county records
+- Assessor databases
+- GIS mapping systems
+- Mapbox location data
+
+**Important Notes:**
+- Data may be outdated
+- Boundaries are approximate
+- Not a substitute for professional survey
+- Always verify critical information
+
+**When to Get a Survey:**
 - Property line disputes
-- No visible boundary markers
-- Complex easements
-- Steep slopes
-- High-value properties
+- Complex boundary issues
+- High-value projects
+- New construction
 - Legal requirements
 
-## Tips for Success
+## Common Questions
 
-✅ **Verify Early**: Check before quoting
+**Q: How accurate is the ownership information?**
+A: We use public records, but data can be outdated. Always verify with client.
 
-✅ **Share with Client**: Include in proposal
+**Q: Are property boundaries exact?**
+A: No, boundaries are approximate from GIS data. Get a professional survey for exact lines.
 
-✅ **Document Everything**: Save reports
+**Q: What if the owner doesn't match my client?**
+A: Stop and verify with your client. They may be renting, or there's an error.
 
-✅ **When in Doubt**: Recommend survey
+**Q: Can I use this for permit applications?**
+A: The parcel number is useful, but verify all information with local authorities.
 
-✅ **Know Local Rules**: Learn your area's common restrictions
+**Q: What if I can't find a property?**
+A: Some addresses may not be in the database. Try alternate address formats or contact support.
 
-## Integration with Estimates
+## Integration with Workflows
 
-Verification data auto-populates:
-- Property address
-- Lot dimensions
-- Permit requirements
-- Special considerations
-
-## Cost
-
-Property verification included in:
-- Pro plans: 50/month
-- Master plans: Unlimited
-- Free trials: 3 verifications
+**Use Verification For:**
+- Pre-estimate due diligence
+- Contract documentation
+- Permit application preparation
+- Client record keeping
 
 ---
 
-Need help interpreting results? [Ask our experts](/support/get-support)
+Need to verify a property? [Start verification now](/property-verification)
     `
   },
   {
     id: '7',
-    title: 'Understanding Subscription Plans',
+    title: 'Understanding Plans & Pricing',
     category: 'billing',
-    description: 'Choose the right plan for your business',
+    description: 'Compare plans and choose the right one for you',
     icon: CreditCard,
     relatedArticles: ['8', '9'],
     content: `
-# Understanding Subscription Plans
+# Understanding Plans & Pricing
 
-Choose the Mervin AI plan that fits your business size and needs. All plans include core features with varying limits and capabilities.
+Mervin AI offers flexible plans to match your business needs, from solo contractors to established companies.
 
 ## Available Plans
 
-### Free Trial
-**Perfect for testing**
-- Duration: 14 days
-- 3 AI estimates
-- 1 contract generation
-- Basic support
+### Free Trial - 14 Days
+
+**Get started risk-free:**
+- Duration: 14 days from signup
 - No credit card required
+- Access to core features
+- Try before you commit
 
-### Starter Plan - $29/month
-**For new contractors**
-- 20 estimates/month
-- 5 contracts/month
+**What's Included:**
+- Create estimates
+- Test AI features
+- Explore all tools
 - Email support
-- Basic analytics
-- 1 user
 
-### Professional Plan - $79/month
-**For growing businesses**
-- 100 estimates/month
-- 25 contracts/month
-- Priority support
+**After Trial:**
+- Automatically converts to Primo Chambeador (Free)
+- Or upgrade to paid plan anytime
+- No data loss
+
+### Primo Chambeador - FREE Forever
+
+**"Ningún trabajo es pequeño cuando tu espíritu es grande"**
+
+**Perfect for:**
+- Starting out in business
+- Side projects
+- Low-volume contractors
+- Testing the platform
+
+**Monthly Limits:**
+- 5 basic estimates
+- 1 AI-enhanced estimate
+- No contract generation
+- No property verification
+- No permit advisor access
+
+**Features:**
+- Client database (unlimited clients)
+- Cloud storage for estimates
+- Basic support
+- Web access on any device
+
+**Cost:** FREE - No credit card required
+
+### Mero Patrón - $49.99/month
+
+**"Para contratistas profesionales"**
+
+**Perfect for:**
+- Growing contractors
+- Regular project volume
+- Professional operations
+- Small to medium business
+
+**Monthly Limits:**
+- 50 basic estimates
+- 20 AI-enhanced estimates
+- 50 contracts with digital signatures
+- 15 property verifications
+- 10 permit advisor lookups
+
+**Features:**
+- Everything in Primo Chambeador, plus:
+- Contract generation with e-signatures
+- Property ownership verification
+- Permit advisor and research
+- Priority email support
 - Advanced analytics
-- Up to 3 users
-- Custom branding
-- Property verification (50/month)
 
-### Master Contractor Plan - $149/month
-**For established companies**
-- Unlimited estimates
-- Unlimited contracts
-- 24/7 phone support
-- Full analytics suite
-- Unlimited users
-- White-label options
-- Unlimited property verifications
-- API access
-- Dedicated account manager
+**Cost:** $49.99 per month (billed monthly)
 
-### Enterprise
-**Custom solutions**
-- Everything in Master
-- Custom integrations
-- On-premise option
-- SLA guarantees
-- Training & onboarding
-- Custom pricing
+**Annual Option:** $499.90/year (Save 17% - ~2 months free)
+
+### Master Contractor - $99.99/month
+
+**"Sin límites para profesionales"**
+
+**Perfect for:**
+- Established companies
+- High project volume
+- Teams and crews
+- Professional contractors
+
+**Monthly Limits:**
+- ✨ **UNLIMITED** estimates (basic and AI)
+- ✨ **UNLIMITED** contracts
+- ✨ **UNLIMITED** property verifications
+- ✨ **UNLIMITED** permit advisor
+- ✨ **UNLIMITED** everything
+
+**Features:**
+- Everything in Mero Patrón, plus:
+- Unlimited usage of all features
+- Priority support
+- Advanced analytics and reporting
+
+**Cost:** $99.99 per month (billed monthly)
+
+**Annual Option:** $999.90/year (Save 17% - ~2 months free)
 
 ## Feature Comparison
 
-| Feature | Free Trial | Starter | Pro | Master |
-|---------|------------|---------|-----|--------|
-| AI Estimates | 3 | 20/mo | 100/mo | Unlimited |
-| Contracts | 1 | 5/mo | 25/mo | Unlimited |
-| Users | 1 | 1 | 3 | Unlimited |
-| Storage | 100MB | 5GB | 50GB | 500GB |
-| Support | Email | Email | Priority | 24/7 Phone |
-| Branding | No | No | Yes | Yes |
-| Analytics | Basic | Basic | Advanced | Full |
-| API | No | No | No | Yes |
+| Feature | Primo Chambeador | Mero Patrón | Master Contractor |
+|---------|------------------|-------------|-------------------|
+| **Price** | FREE | $49.99/mo | $99.99/mo |
+| **Basic Estimates** | 5/month | 50/month | Unlimited |
+| **AI Estimates** | 1/month | 20/month | Unlimited |
+| **Contracts** | ❌ | 50/month | Unlimited |
+| **Property Verification** | ❌ | 15/month | Unlimited |
+| **Permit Advisor** | ❌ | 10/month | Unlimited |
+| **Client Database** | ✅ Unlimited | ✅ Unlimited | ✅ Unlimited |
+| **Cloud Storage** | ✅ | ✅ | ✅ |
+| **Support** | Email | Priority Email | Priority Email |
+| **Web Access** | ✅ | ✅ | ✅ |
 
 ## Choosing the Right Plan
 
-### Start with Starter if:
-- You're new to the business
-- Do 5-15 jobs per month
-- Working solo
-- Budget-conscious
+### Choose Primo Chambeador if:
+- You're just starting out
+- Handle 1-5 jobs per month
+- Want to try the platform
+- Budget is tight
+- Don't need contracts or advanced features
 
-### Upgrade to Professional if:
-- Growing client base
-- 15-50 jobs per month
-- Have a small team
-- Need advanced features
+### Choose Mero Patrón if:
+- Growing contractor business
+- 10-50 jobs per month
+- Need professional contracts
+- Want property verification
+- Permit research is important
+- Professional image matters
 
-### Go Master if:
-- Established business
+### Choose Master Contractor if:
+- Established contracting company
 - 50+ jobs per month
-- Larger team
+- High volume of work
 - Need unlimited everything
+- Want priority support
+- Growing team
 
 ## What Counts Towards Limits?
 
 ### Estimates
-- Each new estimate = 1 count
-- Revisions don't count
-- Duplicates don't count
-- Saved drafts don't count
+
+**Basic Estimates:**
+- Each new estimate created
+- Counts when you click "Create Estimate"
+- Revisions/edits don't count as new
+
+**AI Estimates:**
+- Each use of "Enhance with AI" button
+- Only counts when you use AI enhancement
+- You can create basic estimates without AI
 
 ### Contracts
-- Each generated contract = 1 count
-- Change orders don't count
-- Templates don't count
+- Each contract generated
+- Counts when contract is created
+- Drafts don't count until finalized
 
-### Users
-- Each team member with login
-- View-only users don't count (Pro+)
+### Property Verifications
+- Each property address verified
+- Counts when you click "Verify"
+- Viewing history doesn't count
+
+### Permit Advisor
+- Each permit lookup performed
+- Counts per project research
+- Viewing saved research doesn't count
 
 ## Usage Tracking
 
-Monitor your usage:
-1. Dashboard > Subscription
+**Monitor Your Usage:**
+
+1. Go to Subscription or Dashboard
 2. View current month usage
-3. See days remaining
-4. Upgrade if needed
+3. See remaining credits
+4. Days until reset
 
-**Soft Limits:**
-- Get warned at 80% usage
-- Email notification at 90%
-- Upgrade prompt at 100%
+**Notifications:**
+- Email at 80% usage
+- Warning at 90%
+- Blocked at 100%
+- Upgrade prompt shown
 
-**Overage Policy:**
-- Starter & Pro: Blocked at limit
-- Master: Unlimited (no overages)
-- Can upgrade mid-month
+**Monthly Reset:**
+- Limits reset on billing date
+- Same day each month
+- Unused credits don't roll over
 
-## Annual vs. Monthly
+## Billing & Payments
 
 ### Monthly Billing
+- Charged on signup date each month
 - Cancel anytime
-- Month-to-month
-- Full price
+- No long-term commitment
+- Prorated if upgrading mid-month
 
-### Annual Billing (Save 20%)
+### Annual Billing (Save ~17%)
 - Pay once per year
-- 2 months free
-- Can still cancel
-- Refund first 30 days
+- Approximately 2 months free
+- Still cancel anytime
+- Refund available (see policy)
 
 **Annual Pricing:**
-- Starter: $279/year (vs $348)
-- Professional: $759/year (vs $948)
-- Master: $1,429/year (vs $1,788)
+- Mero Patrón: $499.90/year (vs $599.88 monthly)
+- Master Contractor: $999.90/year (vs $1,199.88 monthly)
+
+## Upgrading & Downgrading
+
+**Upgrade Anytime:**
+- Instant access to new features
+- Prorated billing for current month
+- No data loss
+- Previous records preserved
+
+**Downgrade Anytime:**
+- Takes effect at next billing cycle
+- Keep features until renewal
+- Data preserved
+- Or immediate downgrade (prorated credit)
+
+[Learn more about plan changes →](/support/help-center/article/9)
 
 ## What's Included in All Plans
 
-✅ Unlimited client database
-✅ Cloud document storage
-✅ Email delivery
-✅ Digital signatures
-✅ Mobile app access
-✅ Basic templates
-✅ Automatic backups
-✅ 256-bit encryption
-✅ GDPR compliance
+✅ Client database (unlimited)
+✅ Cloud storage
+✅ Web access on any device
+✅ Secure login
+✅ Data encryption
 ✅ Regular updates
+✅ GDPR compliance
 
-## Add-Ons (Any Plan)
+## Free Features (Never Charged)
 
-### Extra Users
-- $15/month per user
-- Full feature access
-- Individual logins
-
-### Extra Storage
-- +100GB for $10/month
-- Unlimited on Master
-
-### White Labeling
-- $29/month
-- Remove "Powered by Mervin AI"
-- Custom domain for client portal
-- Professional or Master only
-
-## Free Features
-
-Never charged for:
 - Software updates
 - Security patches
 - New feature releases
-- Customer support (varies by tier)
-- Mobile apps
+- Bug fixes
 - Data exports
 
-## Educational Discount
+## Enterprise & Custom Plans
 
-**Students & Educators:**
-- 50% off Starter or Professional
-- Verification required
-- Annual billing only
-- Email edu@mervinai.com
+**Need custom solutions?**
+- Higher volume limits
+- Custom integrations
+- Dedicated support
+- SLA guarantees
+- Custom pricing
 
-## Non-Profit Discount
+Contact: sales@mervinai.com
 
-**Registered 501(c)(3):**
-- 30% off any plan
-- 501(c)(3) documentation required
-- Support community projects
+## Frequently Asked Questions
+
+**Q: Can I change plans anytime?**
+A: Yes! Upgrade or downgrade anytime with no penalties.
+
+**Q: What happens if I hit my limit?**
+A: You'll be prompted to upgrade. Or wait until next month's reset.
+
+**Q: Do unused credits roll over?**
+A: No, limits reset monthly on your billing date.
+
+**Q: Is there a setup fee?**
+A: No setup fees. Pay only for your monthly plan.
+
+**Q: Can I cancel anytime?**
+A: Yes, cancel anytime with no cancellation fees.
+
+**Q: What payment methods do you accept?**
+A: All major credit cards via Stripe.
 
 ---
 
-Ready to upgrade? [Manage your subscription](/subscription) or [Contact sales](/support/get-support)
+Ready to get started? [Choose your plan](/subscription) or [Contact sales](/support/get-support)
     `
   },
   {
     id: '8',
     title: 'Managing Payment Methods',
     category: 'billing',
-    description: 'Update your billing information',
+    description: 'Update your billing information securely',
     icon: CreditCard,
     relatedArticles: ['7', '9'],
     content: `
 # Managing Payment Methods
 
-Keep your billing information current to avoid service interruptions. Here's how to manage your payment methods securely.
+Keep your billing information current to avoid service interruptions. All payment processing is handled securely through Stripe.
 
 ## Adding a Payment Method
 
 ### Step 1: Access Billing
 
-1. Click your profile picture
-2. Select **"Subscription"**
-3. Go to **"Payment Methods"** tab
+1. Click on **Subscription** in the sidebar
+2. Go to **"Payment Methods"** or **"Billing"** tab
+3. Click **"Add Payment Method"**
 
-### Step 2: Add New Method
+### Step 2: Enter Card Information
 
 **Credit/Debit Card:**
-1. Click **"Add Payment Method"**
-2. Enter card number
-3. Expiration date
-4. CVC code
-5. Billing ZIP code
-6. Click **"Save"**
+- Card number
+- Expiration date (MM/YY)
+- CVC security code
+- Billing ZIP code
+- Card holder name
 
 **Accepted Cards:**
 - Visa
 - Mastercard
 - American Express
 - Discover
+- Most debit cards
 
-**Alternative Payment Methods:**
-- PayPal (coming soon)
-- ACH Bank Transfer (Enterprise only)
-- Wire Transfer (Annual plans)
+### Step 3: Save & Verify
+
+1. Click **"Save Card"**
+2. May require verification
+3. Card becomes available for billing
+4. Set as default if desired
 
 ## Setting Default Payment Method
 
-1. View all payment methods
-2. Click **"⋮"** on desired method
-3. Select **"Set as Default"**
-4. Confirmation appears
+**Your default card is charged automatically:**
 
-Default method is used for:
-- Monthly subscriptions
-- Add-on purchases
-- Overage charges (if any)
+1. View all payment methods
+2. Find the card you want as default
+3. Click **"Set as Default"** or menu icon
+4. Confirmation message appears
+
+**Default card used for:**
+- Monthly subscription charges
+- Upgrade charges
+- Any additional fees
 
 ## Updating Card Information
 
-**When card expires or is replaced:**
+**When your card expires or is replaced:**
 
-1. Find existing payment method
-2. Click **"Edit"**
-3. Update information
+**Option 1: Edit Existing**
+1. Find payment method
+2. Click **"Edit"** or menu icon
+3. Update expiration date or details
 4. Save changes
-5. Next billing uses new card
 
-**Note:** If your card number changed (not just expiration), add as new method and remove old one.
+**Option 2: Add New Card**
+1. Add new payment method
+2. Set as default
+3. Remove old card
+4. Next charge uses new card
+
+**Note:** If card number changed (not just expiration), add as new method.
 
 ## Removing Payment Methods
 
-**Important:** Can't remove default payment method with active subscription.
+**Important:** Cannot remove the default payment method while subscription is active.
 
-To remove:
-1. Set different default (if active subscription)
+**To Remove:**
+1. Set a different card as default (if active subscription)
 2. Find method to remove
-3. Click **"⋮"**
-4. Select **"Remove"**
-5. Confirm deletion
+3. Click menu icon or **"Remove"**
+4. Confirm deletion
+5. Card removed from account
 
-## Security Features
+## Security & Privacy
 
-### Data Protection
-- All data encrypted (256-bit SSL)
+### Stripe-Powered Security
+
+**All payment processing through Stripe:**
+- Industry-leading security
 - PCI DSS Level 1 compliant
-- Card numbers never stored in plain text
-- Powered by Stripe
+- 256-bit SSL encryption
+- No card data stored on our servers
+
+### What We See
+
+**We never see:**
+- Your full card number
+- Your CVV code
+- Complete card details
+
+**We only see:**
+- Last 4 digits
+- Card brand (Visa, etc.)
+- Expiration date
+- Billing ZIP
 
 ### Fraud Prevention
+
+**Automatic Protection:**
 - Address verification (AVS)
 - CVC verification
-- 3D Secure support
-- Suspicious activity alerts
-
-### Your Privacy
-- We never see full card numbers
-- Billing handled by Stripe
-- No card data in our database
-- SOC 2 Type II certified
+- 3D Secure support (if required)
+- Suspicious activity monitoring
 
 ## Payment Failed - What to Do
 
-If a payment fails:
+**If a payment fails:**
 
 ### Immediate Actions
-1. Check email for failure notice
-2. Verify card not expired
-3. Confirm sufficient funds
-4. Check billing address matches
+
+**Check These First:**
+1. Card not expired
+2. Sufficient funds available
+3. Billing address matches card
+4. Card not reported lost/stolen
 
 ### Grace Period
-- 3-day grace period
-- Service continues
-- Daily retry attempts
-- Email reminders
+
+**3-Day Grace:**
+- Service continues normally
+- Daily automatic retry attempts
+- Email notifications sent
+- Resolve before grace ends
 
 ### After Grace Period
-- Account locked (read-only)
-- Can't create new estimates
-- Historical data preserved
-- 7 days to resolve
 
-### Resolving Failed Payments
+**If still not resolved:**
+- Account limited to read-only
+- Cannot create new estimates/contracts
+- Existing data preserved
+- 7 days to resolve before suspension
+
+### How to Resolve
 
 **Option 1: Update Card**
 1. Add new payment method
 2. Set as default
-3. We auto-retry
+3. System retries automatically
 4. Account restored immediately
 
 **Option 2: Manual Retry**
-1. Fix card issue
-2. Click **"Retry Payment"**
-3. Immediate processing
-4. Account reactivated
+1. Fix the issue with existing card
+2. Click **"Retry Payment"** button
+3. Immediate charge attempt
+4. Account reactivated if successful
 
-## Billing Statements
+## Viewing Billing History
 
-### Accessing Invoices
+### Access Invoices
 
-1. Go to Subscription > Billing History
-2. View all past invoices
-3. Download PDF
+1. Subscription > **"Billing History"**
+2. View all past charges
+3. Download invoice PDFs (where available)
 4. Email to accounting
 
-**Invoice Details:**
+**Invoice Details Include:**
 - Invoice number
 - Billing date
 - Amount charged
 - Plan details
-- Payment method used
-- Tax information
+- Payment method (last 4 digits)
+- Tax breakdown
 
-### Setting Up Auto-Forward
+### Email Receipts
 
-Send invoices to your accountant:
-1. Subscription > Settings
-2. **"Invoice Settings"**
-3. Add email address(es)
-4. Automatic forward on each payment
+**Automatic receipts:**
+- Sent within minutes of payment
+- To your account email
+- PDF attachment (where supported)
+- Full payment details
+
+**Missing receipt?**
+1. Check spam/junk folder
+2. Download from billing history
+3. Contact support if needed
 
 ## Refund Policy
 
 ### 30-Day Money-Back Guarantee
 
-**New subscribers:**
+**For new paid subscribers:**
 - Full refund within 30 days
 - No questions asked
-- Cancel subscription
-- Refund in 5-7 business days
+- Email billing@mervinai.com
+- Processed in 5-7 business days
 
-**Annual plans:**
-- Pro-rated refund available
-- After 30 days
-- Minus months used
+### After 30 Days
 
 **Monthly plans:**
-- No refund after 30 days
+- No refunds after 30-day window
 - Cancel to avoid future charges
+- Access until period end
 
-### Requesting a Refund
+**Annual plans:**
+- Prorated refund may be available
+- Based on unused months
+- Contact support to request
 
-1. Contact support at billing@mervinai.com
-2. Include:
-   - Account email
-   - Reason (optional)
-   - Invoice number
-3. Processed within 48 hours
+### Requesting Refund
+
+**Email:** billing@mervinai.com
+
+**Include:**
+- Account email address
+- Reason (optional)
+- Invoice number
+- Preferred refund method
+
+**Response:** Within 48 hours
 
 ## Tax Information
 
 ### Sales Tax
-- Charged based on billing address
-- Rates update automatically
-- Shown before payment
+
+**Automatically calculated:**
+- Based on billing address
+- Rates update regularly
+- Shown before charge
 - Itemized on invoice
 
-### VAT (International)
-- VAT collected in EU
-- GST collected in applicable countries
-- Enter VAT/GST number to exempt
+### International VAT/GST
 
-### W-9 for Businesses
-- Email accounting@mervinai.com
-- For expense reporting
+**EU & other countries:**
+- VAT collected where required
+- GST in applicable countries
+- Enter VAT number to exempt (if eligible)
+- Shown on invoices
+
+### Business Tax Documents
+
+**Need a W-9 or tax info?**
+- Email: accounting@mervinai.com
 - Provided within 3 business days
+- For expense reporting
 
-## Changing Billing Frequency
+## Alternative Payment Methods
 
-### Switch Monthly to Annual
+### Currently Available
+- Credit cards (Visa, MC, Amex, Discover)
+- Debit cards
+- Stripe payment processing
 
-**Benefits:**
-- Save 20%
-- Billed once per year
-- Upgrade anytime
+### Coming Soon
+- PayPal
+- ACH bank transfers (annual plans)
+- Purchase orders (Enterprise)
 
-**How to Switch:**
-1. Subscription > Plan Details
-2. Click **"Switch to Annual"**
-3. See prorated calculation
-4. Confirm change
-5. Charged immediately for year
+## Common Questions
 
-### Switch Annual to Monthly
+**Q: When will I be charged?**
+A: On your billing date each month (or year for annual plans).
 
-**Considerations:**
-- Loses annual discount
-- Takes effect at renewal
-- Can't switch mid-year
-- Existing year honored
+**Q: Can I change my billing date?**
+A: Billing date is set at signup. Contact support for special requests.
 
-**How to Switch:**
-1. Subscription > Plan Details
-2. **"Change to Monthly at Renewal"**
-3. Confirmation message
-4. Switches on renewal date
+**Q: What if my card is declined?**
+A: Check with your bank, update card info, or try a different card.
 
-## Payment Receipts
+**Q: Do you store my credit card?**
+A: No, Stripe securely stores all payment information.
 
-Auto-emailed on each payment:
-- To account email
-- Within 5 minutes of charge
-- PDF attachment
-- Includes all details
+**Q: Can I get a refund?**
+A: Yes, within 30 days of initial purchase. See refund policy above.
 
-**Missing receipt?**
-1. Check spam folder
-2. Subscription > Billing History
-3. Download manually
-4. Or email support@mervinai.com
-
-## International Payments
-
-### Currency
-- All plans in USD
-- Bank handles conversion
-- Exchange rates vary
-- May incur foreign transaction fees
-
-### International Cards
-- Accepted worldwide
-- Address verification for some countries
-- May require phone verification
-- Contact support for issues
+**Q: How do I download invoices?**
+A: Go to Subscription > Billing History and download PDFs.
 
 ---
 
@@ -1440,534 +1645,294 @@ Payment questions? [Contact billing support](/support/get-support)
     content: `
 # Upgrading or Downgrading Your Plan
 
-Your business needs change, and your subscription should too. Here's how to upgrade or downgrade your Mervin AI plan anytime.
+Your business needs change, and your subscription should too. Change plans anytime with no penalties.
 
 ## Upgrading Your Plan
 
 ### When to Upgrade
 
-**You've hit your limits:**
-- Running out of estimates
-- Need more contracts
-- Team is growing
-- Need advanced features
+**Common Reasons:**
+- Hit your monthly limits
+- Need contract generation (upgrade from Free)
+- Want property verification
+- Need permit advisor access
+- Growing project volume
+- Want unlimited features
 
-**Automatic Prompts:**
-- At 80% of limit
-- When attempting to exceed
-- Via email notification
-- Dashboard banner
+**You'll see prompts:**
+- At 80% of your limit
+- When attempting to exceed limit
+- Dashboard notifications
+- Email reminders
 
 ### How to Upgrade
 
-#### Quick Upgrade
-1. Dashboard shows upgrade prompt
-2. Click **"Upgrade Now"**
-3. Select new plan
-4. Confirm change
-5. Immediate access
+#### Quick Upgrade (From Limit Prompt)
 
-#### Manual Upgrade
-1. Click profile > **"Subscription"**
-2. **"Change Plan"**
-3. View plan comparison
+1. See upgrade prompt when limit reached
+2. Click **"Upgrade Now"**
+3. Select new plan (Mero Patrón or Master Contractor)
+4. Enter payment method if needed
+5. Confirm upgrade
+6. Instant access to new limits
+
+#### Manual Upgrade (Anytime)
+
+1. Go to **Subscription** page
+2. Click **"View Plans"** or **"Upgrade"**
+3. Compare plan features
 4. Select higher tier
-5. Review prorated billing
+5. Review prorated charge
 6. Confirm upgrade
 
 ### Prorated Billing Explained
 
-**Mid-month upgrade:**
-- Pay difference for remaining days
-- Credit unused portion of old plan
-- Charged immediately
-- New limits apply instantly
+**Mid-month upgrades are prorated:**
 
 **Example:**
-- Currently on Starter ($29/mo)
-- 15 days into billing cycle
-- Upgrading to Professional ($79/mo)
-- Unused Starter credit: $14.50
-- Professional for 15 days: $39.50
-- Total charge today: $25.00
-- Next month: Full $79
+- Currently: Primo Chambeador (Free)
+- Upgrading to: Mero Patrón ($49.99/month)
+- 15 days into month (50% through billing cycle)
+- Today's charge: ~$25 (50% of $49.99)
+- Next month: Full $49.99
+
+**How it works:**
+- Credit for unused time on old plan (if paid)
+- Charge for remaining time on new plan
+- Fair pricing for mid-cycle changes
+- New limits effective immediately
 
 ### Immediate Benefits
 
-**After upgrading you get:**
+**After upgrading:**
 - ✅ Instant access to new features
-- ✅ Increased limits right away
-- ✅ New tools and capabilities
+- ✅ Limits increase right away
+- ✅ New monthly allowances reset
+- ✅ All data preserved
 - ✅ Enhanced support tier
-- ✅ Historical data preserved
 
-### Feature Unlock Timeline
-
-**Instant:**
-- Estimate/contract limits
-- User seats
-- Support level upgrade
-- Analytics access
-
-**Within 24 hours:**
-- White-label activation
-- API key generation
-- Custom domain setup
+**What resets immediately:**
+- Estimate limits (basic and AI)
+- Contract generation availability
+- Property verification credits
+- Permit advisor lookups
 
 ## Downgrading Your Plan
 
 ### When to Downgrade
 
-**Common reasons:**
-- Slower season
-- Reduced team size
+**Common Reasons:**
+- Lower project volume
 - Budget constraints
+- Seasonal slowdown
 - Don't need all features
+- Testing lower tier
 
-**Consider:**
+**Consider First:**
 - Will you lose needed features?
-- Are you near limits on lower tier?
+- Are your current usage levels sustainable on lower tier?
 - Seasonal fluctuations?
-- Annual vs monthly savings?
+- Annual plans save more
 
 ### How to Downgrade
 
-#### From Dashboard
-1. Subscription settings
-2. **"Change Plan"**
+1. Go to **Subscription** page
+2. Click **"Change Plan"**
 3. Select lower tier
-4. Review what you'll lose
-5. Confirm downgrade
+4. Review features you'll lose
+5. Choose timing
+6. Confirm downgrade
 
-**Timing Options:**
+### Downgrade Timing Options
 
-**Immediate Downgrade:**
+**Option 1: At Renewal (Recommended)**
+- Keep current features until billing date
+- No immediate changes
+- No refund (you paid for full period)
+- Automatic switch on renewal
+- Smoother transition
+
+**Option 2: Immediate Downgrade**
 - Takes effect right away
-- Prorated refund to account credit
+- Lose premium features immediately
+- Prorated credit to account
 - Use credit on next billing
-- Lost features immediately
-
-**Downgrade at Renewal:**
-- Keep current features until renewal
-- No refund (paid for full period)
-- Automatic switch on renewal date
-- Recommended option
+- Use if you won't need features
 
 ### What Happens to Your Data?
 
+**All data is preserved:**
+
 **Estimates & Contracts:**
-- All historical data preserved
-- View-only access to old documents
-- Can't create new if over limit
-- Exports available anytime
+- All historical documents saved
+- View and download anytime
+- Can't create new if over new limit
+- Wait for monthly reset or upgrade again
 
-**Users:**
-- Extra users deactivated
-- Can choose which users stay active
-- Deactivated users can reactivate if you upgrade
-- No data lost
+**Clients:**
+- Client database always unlimited
+- No data loss
+- All client information remains
 
-**Storage:**
-- Files remain accessible
-- Can't upload new if over limit
-- Download documents anytime
-- 30 days to reduce or upgrade
+**Saved Verifications:**
+- Past property verifications remain accessible
+- Permit research history saved
+- Can view but not create new (if over limit)
 
-### Feature Loss Warning
+### Feature Loss by Downgrade
 
-When downgrading, you may lose:
+**Master Contractor → Mero Patrón:**
+- ❌ Unlimited usage (now limited to monthly caps)
+- ✅ Keep: Contracts, verifications, permits (within limits)
 
-**Professional to Starter:**
-- ❌ Custom branding
-- ❌ Extra user seats
-- ❌ Advanced analytics
+**Mero Patrón → Primo Chambeador:**
+- ❌ Contract generation
 - ❌ Property verification
-- ❌ Priority support
-
-**Master to Professional:**
-- ❌ Unlimited limits
-- ❌ 24/7 phone support
-- ❌ API access
-- ❌ Dedicated account manager
-- ❌ White-label options
-
-### Prorated Refund Policy
-
-**Monthly plans:**
-- Credit applied to account
-- Used on next billing cycle
-- Can request cash refund
-- Processed in 5-7 days
-
-**Annual plans:**
-- Prorated based on months unused
-- Credited to account
-- Or refund to original payment method
-- 10-14 day processing
-
-## Switching Between Annual and Monthly
-
-### Monthly to Annual
-
-**Save 20%:**
-- Starter: Save $69/year
-- Professional: Save $189/year
-- Master: Save $359/year
-
-**How it works:**
-1. Click **"Switch to Annual"**
-2. See annual savings
-3. Charged immediately for year
-4. Credit for unused monthly time
-
-**Worth it if:**
-- Planning to use for full year
-- Want to save money
-- Prefer one payment annually
-
-### Annual to Monthly
-
-**Converts at renewal:**
-- Can't switch mid-year
-- Set to switch on renewal
-- Keeps annual pricing until then
-- Email reminder before switch
-
-## Pause or Cancel Subscription
-
-### Pausing (Not Available)
-
-Currently we don't offer pause feature, but you can:
-- Downgrade to Starter (lowest cost)
-- Cancel and restart later
-- Keep free account with view-only access
-
-### Canceling Completely
-
-**How to cancel:**
-1. Subscription > **"Cancel Subscription"**
-2. Select reason (helps us improve)
-3. Confirm cancellation
-4. Receive confirmation email
-
-**What happens:**
-- Service continues until period end
-- No future charges
-- Account becomes view-only
-- Data preserved for 90 days
-- Can reactivate anytime
-
-**Data export:**
-- Download all documents
-- Export client database
-- Save templates
-- Available until period end
-
-## Reactivating Canceled Account
-
-**Easy reactivation:**
-1. Log back in
-2. Click **"Reactivate"**
-3. Select plan
-4. Add payment method
-5. Immediate access
-
-**Your data:**
-- Preserved for 90 days after cancellation
-- Full restoration if within 90 days
-- After 90 days, create new account
+- ❌ Permit advisor
+- ✅ Keep: Basic estimates (5/month), AI estimates (1/month)
 
 ## Plan Change FAQs
 
-**Q: Can I change plans multiple times?**
-A: Yes! Change as often as needed. Each change is prorated.
+**Q: Can I change my mind after downgrading?**
+A: Yes! Upgrade back anytime. Your data is still there.
 
-**Q: Will I lose my data?**
-A: Never. All data is preserved regardless of plan changes.
+**Q: Will I lose my data when I downgrade?**
+A: No. All historical data is preserved. You just can't create new items if over the new limit.
 
 **Q: Can I upgrade mid-month?**
-A: Yes! You're charged a prorated amount and get instant access.
+A: Yes! You'll be charged a prorated amount and get instant access.
 
 **Q: What if I downgrade by accident?**
-A: Contact support within 24 hours for free upgrade restoration.
+A: Contact support within 24 hours for assistance.
 
-**Q: Do enterprise contracts allow plan changes?**
-A: Enterprise plans are custom. Contact your account manager.
+**Q: What happens to my usage limits when I upgrade?**
+A: They reset immediately to your new plan's limits.
 
 ## Getting Help with Plan Changes
 
-**Not sure which plan?**
-- Chat with Mervin AI
-- Email sales@mervinai.com
-- Schedule consultation
+**Not sure which plan is right?**
+
+**Options:**
+- Chat with Mervin AI assistant
+- Email: sales@mervinai.com
+- Support ticket
 - Review comparison chart
 
 **Billing questions?**
-- Email billing@mervinai.com
+- Email: billing@mervinai.com
 - Support ticket
-- Phone: 1-800-MERVIN-AI
-- Live chat during business hours
+
+**Response times:**
+- Paid plans: 4-hour response
+- Free plans: 24-hour response
+- Urgent issues: Mark as urgent
 
 ---
 
-Ready to change plans? [Manage subscription](/subscription)
+Ready to change plans? [Manage your subscription](/subscription)
     `
   },
   {
     id: '10',
-    title: 'PDF Generation Issues',
+    title: 'Getting Support',
     category: 'troubleshooting',
-    description: 'Resolve problems with document generation',
+    description: 'How to get help when you need it',
     icon: FileText,
-    relatedArticles: ['1', '5'],
+    relatedArticles: ['11', '3'],
     content: `
-# PDF Generation Issues
+# Getting Support
 
-Having trouble generating PDFs for estimates or contracts? Here are solutions to common problems.
+Need help with Mervin AI? Here's how to get assistance.
 
-## Common Symptoms
+## Available Support Channels
 
-- ❌ "Failed to generate PDF" error
-- ❌ PDF doesn't download
-- ❌ Blank or corrupted PDF
-- ❌ Missing content in PDF
-- ❌ Formatting looks wrong
+### Help Center
+- Browse articles
+- Search for solutions
+- Step-by-step guides
+- FAQs and tips
 
-## Quick Fixes (Try These First)
+### Email Support
+**Email:** support@mervinai.com
 
-### 1. Refresh the Page
-- Click browser refresh (Cmd/Ctrl + R)
-- Try generating again
-- Often resolves temporary glitches
+**What to include:**
+- Your account email
+- Description of issue
+- Screenshots (if applicable)
+- Browser/device information
+- Steps you've already tried
 
-### 2. Clear Browser Cache
-- Chrome: Settings > Privacy > Clear Browsing Data
-- Check "Cached images and files"
-- Time range: "Last hour"
-- Try generating again
+**Response times:**
+- Free plan: Within 24-48 hours
+- Paid plans: Within 4-8 hours
+- Urgent issues: Mark as priority
 
-### 3. Use Different Browser
-- Try Chrome, Firefox, or Safari
-- Sometimes browser-specific issues
-- If works in another browser, clear cache in original
+### Mervin AI Chat
+- Click the logo on home screen
+- Ask questions about features
+- Get construction advice
+- Research building codes
 
-### 4. Check Internet Connection
-- PDF generation requires stable connection
-- Try different network if possible
-- Close large downloads/uploads
+## Common Support Topics
 
-### 5. Disable Browser Extensions
-- Ad blockers can interfere
-- Privacy extensions may block
-- Disable temporarily and retry
+### Technical Issues
+- Can't access account
+- Feature not working
+- Error messages
+- Performance problems
 
-## Specific Error Messages
+### Billing Questions
+- Payment problems
+- Plan changes
+- Invoices
+- Refund requests
 
-### "Generation Timeout"
+### Feature Questions
+- How to use a feature
+- Feature availability
+- Plan limitations
+- Best practices
 
-**Cause:** Large or complex document taking too long
+## Self-Service Resources
 
-**Solutions:**
-1. Reduce number of line items
-2. Remove high-resolution images
-3. Simplify custom formatting
-4. Try again in a few minutes
+**Help Center:**
+- Comprehensive articles
+- Video tutorials (coming soon)
+- Best practices
+- Tips and tricks
 
-### "Template Error"
+**Account Dashboard:**
+- Usage tracking
+- Billing history
+- Plan information
+- Settings
 
-**Cause:** Issue with document template
+## Response Time Expectations
 
-**Solutions:**
-1. Select different template
-2. Use default template
-3. Contact support if custom template
-4. Clear and re-enter data
+**Free Plan (Primo Chambeador):**
+- Email: 24-48 hours
+- Standard priority
 
-### "Authentication Failed"
+**Paid Plans (Mero Patrón & Master Contractor):**
+- Email: 4-8 hours
+- Priority support
+- Faster resolution
 
-**Cause:** Session expired
+## Tips for Faster Support
 
-**Solutions:**
-1. Log out completely
-2. Clear cookies
-3. Log back in
-4. Try generating again
+✅ **Be Specific**: Describe the exact problem
 
-## PDF Content Issues
+✅ **Include Screenshots**: Visual aids help us understand
 
-### Blank PDF
+✅ **List Steps**: Tell us what you've already tried
 
-**Possible causes:**
-- Browser pop-up blocker
-- Missing required fields
-- Template corruption
+✅ **Provide Context**: Browser, device, when it started
 
-**Fix:**
-1. Allow pop-ups from mervinai.com
-2. Check all required fields filled
-3. Try different template
-4. Contact support
-
-### Missing Logo or Images
-
-**Possible causes:**
-- Image file too large
-- Unsupported image format
-- Image link broken
-
-**Fix:**
-1. Logo should be under 2MB
-2. Use JPG or PNG format
-3. Re-upload logo in Settings
-4. Check image still exists
-
-### Formatting Issues
-
-**Text cutoff or overlapping:**
-- Long company names (shorten)
-- Too many line items (split into pages)
-- Custom fonts not loading (use defaults)
-
-**Weird characters:**
-- Special characters not supported
-- Use standard ASCII characters
-- Remove emojis from descriptions
-
-## Email Delivery Issues
-
-### PDF Emails Not Sending
-
-**Check:**
-1. Client email address correct
-2. Not in spam/junk folder
-3. Email quota not exceeded (check plan limits)
-4. Domain not blacklisted
-
-**Test:**
-1. Send to your own email first
-2. Check delivery
-3. Then send to client
-
-### Emails Going to Spam
-
-**Solutions:**
-1. Ask client to whitelist @mervinai.com
-2. Add to contacts
-3. Check spam folder and mark "Not Spam"
-4. Use direct download link as backup
-
-## Advanced Troubleshooting
-
-### For Developers/Technical Users
-
-**Check Browser Console:**
-1. Open Developer Tools (F12)
-2. Go to Console tab
-3. Look for red errors
-4. Screenshot and send to support
-
-**Network Issues:**
-1. Open Network tab in Dev Tools
-2. Try generating PDF
-3. Look for failed requests (red)
-4. Check if 500 or 400 errors
-
-### Server-Side Issues
-
-**Symptoms:**
-- Everyone having same problem
-- Consistent failures
-- Error on all devices
-
-**Check:**
-1. Status page: status.mervinai.com
-2. Twitter: @MervinAI for updates
-3. Wait 15-30 minutes
-4. Contact support if persists
-
-## Browser-Specific Issues
-
-### Chrome
-- Disable "Download PDF files" setting
-- Allow pop-ups from mervinai.com
-- Update to latest version
-- Clear cache and cookies
-
-### Safari
-- Allow pop-ups and downloads
-- Enable JavaScript
-- Disable "Prevent cross-site tracking" temporarily
-- Update to latest macOS/iOS
-
-### Firefox
-- Set PDF handler to "Save File"
-- Allow pop-ups from mervinai.com
-- Disable Enhanced Tracking Protection for site
-- Clear recent history
-
-### Mobile Browsers
-- Use desktop mode for generation
-- Ensure enough storage space
-- Use native browser (not in-app browsers)
-- Download to device then share
-
-## Plan Limit Issues
-
-### Monthly Limit Reached
-
-**Error:** "Monthly PDF limit exceeded"
-
-**Solutions:**
-1. Wait until next billing cycle
-2. Upgrade plan for more PDFs
-3. Use existing PDFs in meantime
-4. Contact sales for one-time increase
-
-### Storage Limit
-
-**Error:** "Storage quota exceeded"
-
-**Solutions:**
-1. Delete old estimates/contracts
-2. Download and archive locally
-3. Upgrade storage capacity
-4. Contact support for options
-
-## Contact Support Checklist
-
-If none of above solutions work, contact support with:
-
-**Required Information:**
-- ✅ Error message (exact text or screenshot)
-- ✅ Browser and version
-- ✅ Operating system
-- ✅ Steps you've tried
-- ✅ When problem started
-- ✅ Estimate/Contract ID if applicable
-
-**Optional but Helpful:**
-- Browser console errors (screenshot)
-- Network tab errors
-- Different browser results
-- Different device results
-
-## Prevention Tips
-
-✅ **Keep software updated:** Browser, OS, app
-
-✅ **Stable internet:** Strong connection when generating
-
-✅ **Reasonable file sizes:** Compress images before upload
-
-✅ **Regular backups:** Download important PDFs periodically
-
-✅ **Test before clients:** Generate test PDFs regularly
-
-✅ **Monitor limits:** Watch usage to avoid hitting caps
+✅ **Account Email**: Always include your login email
 
 ---
 
-Still having issues? [Contact technical support](/support/get-support) - Select "Technical" category
+Need help now? [Contact support](/support/get-support)
     `
   },
   {
@@ -1976,7 +1941,7 @@ Still having issues? [Contact technical support](/support/get-support) - Select 
     category: 'troubleshooting',
     description: 'Get back into your account',
     icon: Settings,
-    relatedArticles: ['10', '12'],
+    relatedArticles: ['10', '3'],
     content: `
 # Login & Authentication Problems
 
@@ -1986,97 +1951,80 @@ Can't access your account? Here's how to resolve common login issues and regain 
 
 ### "Invalid Email or Password"
 
-**Causes:**
+**Most common causes:**
 - Typo in email or password
 - Caps Lock enabled
-- Copy-paste extra spaces
-- Wrong account
+- Copy-paste added spaces
+- Wrong account/email
 
 **Solutions:**
 
 **1. Check Email Format:**
-- Ensure complete email (include @domain.com)
+- Ensure complete email (@domain.com)
 - No spaces before or after
-- Correct domain (.com not .co)
+- Correct domain spelling
+- Try alternate emails you use
 
 **2. Check Password:**
-- Caps Lock off
-- Type instead of paste
+- Turn off Caps Lock
+- Type manually (don't copy-paste)
 - Check for extra spaces
-- Try password manager if used
+- Try password manager if you use one
 
-**3. Use Password Reset:**
-1. Click "Forgot Password?"
-2. Enter your email
+**3. Reset Password:**
+1. Click **"Forgot Password?"**
+2. Enter your email address
 3. Check inbox for reset link
-4. Check spam if not received
+4. Check spam folder if not received
 5. Link valid for 1 hour
+6. Create new password
 
-### "Account Locked"
-
-**Cause:** Too many failed login attempts
-
-**Auto-unlock:** 30 minutes
-
-**Immediate unlock:**
-1. Use "Forgot Password" to reset
-2. Or contact support with:
-   - Account email
-   - Reason for lockout
-   - Identity verification
-
-**Prevention:** Use password manager
-
-### "Email Not Found"
+### "Account Not Found"
 
 **Possible reasons:**
-- Typo in email
-- Different email used for signup
+- Email typo
+- Used different email for signup
+- Account never created
 - Account deleted
-- Never registered
 
 **Solutions:**
 
 **1. Try Other Email Addresses:**
-- Work vs personal email
+- Personal vs work email
 - Old email addresses
 - Email aliases
+- Common typo variations
 
-**2. Check Confirmation:**
-- Search inbox for "Mervin AI"
-- Check registration confirmation
-- Signup email shows correct address
+**2. Check Registration:**
+- Search email for "Mervin AI"
+- Look for welcome email
+- Verify signup was completed
 
 **3. Create New Account:**
-If never registered:
-1. Click "Sign Up"
-2. Use desired email
-3. New account created
-4. Start fresh
+- If never registered before
+- Click **"Sign Up"**
+- Use correct email
+- Set strong password
 
 ### Email Verification Required
 
-**First-time login requires verification:**
+**First login needs verification:**
 
+**Steps:**
 1. Check inbox for verification email
-2. Click "Verify Email" link
-3. If expired, request new one
-4. Check spam/junk folder
-5. Add noreply@mervinai.com to contacts
+2. Look for email from noreply@mervinai.com
+3. Click **"Verify Email"** link
+4. If expired, request new one
+5. Check spam/junk folder
 
 **Didn't receive email?**
 
-**Troubleshoot:**
-1. Check spam folder
-2. Verify email typed correctly
-3. Click "Resend Verification"
+1. Check spam/junk/promotions
+2. Verify email spelled correctly
+3. Click **"Resend Verification"**
 4. Wait 5-10 minutes
-5. Check email provider not blocking
-
-**Alternative:**
-- Use different email if available
-- Contact support for manual verification
-- Verify with phone number (if enabled)
+5. Add noreply@mervinai.com to contacts
+6. Try different email if continues
 
 ## Password Reset Issues
 
@@ -2084,750 +2032,346 @@ If never registered:
 
 **Check these:**
 - ✅ Spam/Junk folder
-- ✅ Email typed correctly
 - ✅ Promotions tab (Gmail)
+- ✅ Email typed correctly
 - ✅ Email provider not blocking
 - ✅ Inbox not full
 
-**Request again:**
+**Try again:**
 1. Wait 5 minutes between requests
-2. Try different browser
-3. Disable email filters temporarily
+2. Check all email folders
+3. Try different browser
 4. Add mervinai.com to safe senders
+5. Contact support if still no email
 
 ### Reset Link Expired
 
-**Links expire after 1 hour**
+**Password reset links expire after 1 hour**
 
 **Solution:**
 1. Request new reset link
-2. Use immediately
-3. Complete within 60 minutes
+2. Check email immediately
+3. Complete reset within 60 minutes
+4. Don't close the page
 
 ### Reset Link Not Working
 
-**Possible issues:**
+**Issues:**
 - Link wrapped/broken in email
-- Extra characters from email client
+- Extra characters added
 - Already used
 - Expired
 
 **Fix:**
-1. Copy entire URL
-2. Paste in browser address bar
-3. Or request new link
-4. Use different email client
-
-## Two-Factor Authentication (2FA) Issues
-
-### Lost Access to 2FA Device
-
-**Using Authenticator App:**
-
-**Recovery Options:**
-
-**1. Use Backup Codes:**
-- Found in Security Settings when you set up 2FA
-- One-time use codes
-- Keep in safe place
-
-**2. Recovery Phone:**
-- If set up, receive code via SMS
-- Enter when prompted
-
-**3. Contact Support:**
-If no backup access:
-- Email from registered address
-- Provide account details
-- Identity verification required
-- Manual 2FA reset (24-48 hours)
-
-### 2FA Code Not Working
-
-**Common causes:**
-- Time sync issue on phone
-- Wrong code entered
-- Code expired (30-second window)
-- Using old code
-
-**Solutions:**
-
-**1. Time Sync:**
-- Authenticator apps use device time
-- Ensure "Auto time zone" enabled
-- Sync time in app settings
-
-**2. Generate New Code:**
-- Wait for next 30-second cycle
-- Don't reuse old codes
-- Enter immediately
-
-**3. Check App:**
-- Ensure correct account selected
-- Some apps store multiple accounts
-- Look for "Mervin AI" entry
+1. Copy entire URL carefully
+2. Paste directly in browser address bar
+3. Or request fresh reset link
+4. Use desktop browser if on mobile
 
 ## Session Expired
 
-**"Please login again" message:**
+**"Please login again" message**
 
-**Causes:**
+**Why it happens:**
 - Inactive for extended period
-- Logged out for security
+- Security timeout
 - Password changed
-- IP address changed significantly
+- Logged out from another device
 
 **Normal behavior:**
-- Sessions expire after 7 days inactive
-- Refresh extends session
-- Security feature
+- Sessions expire for security
+- Timeout after inactivity
+- Required after password change
 
-**Solutions:**
+**Solution:**
 - Simply log back in
 - Enable "Remember Me" for longer sessions
-- Use password manager for quick login
+- Use password manager for quick access
 
-## "Account Suspended"
+## Account Suspended
 
-**Reasons for suspension:**
+**Reasons:**
 - Payment failed
 - Terms of Service violation
-- Fraudulent activity detected
+- Fraudulent activity
 - Chargeback issued
 
 **To resolve:**
 1. Check email for suspension notice
-2. Reason stated in email
-3. Follow instructions to resolve
-4. Or contact support immediately
+2. Reason stated in notification
+3. Follow instructions provided
+4. Contact support immediately
 
 **Payment-related:**
 - Update payment method
 - Resolve failed payment
-- Account reactivated automatically
+- Account auto-reactivates
 
 ## Browser Issues
 
 ### Cookies Disabled
 
-**Error:** "Please enable cookies"
+**Error:** "Please enable cookies to login"
 
-**Fix:**
+**Enable cookies:**
 
 **Chrome:**
 1. Settings > Privacy and Security
-2. Cookies and other site data
+2. Cookies and site data
 3. "Allow all cookies" or
-4. Add mervinai.com to allowed sites
+4. Add mervinai.com to allowed
 
 **Firefox:**
 1. Settings > Privacy & Security
 2. Cookies and Site Data
-3. Uncheck "Delete cookies when Firefox closes"
-4. Or add exception for mervinai.com
+3. Standard or Custom protection
+4. Don't block cookies from mervinai.com
 
 **Safari:**
 1. Preferences > Privacy
 2. Uncheck "Block all cookies"
-3. Or website-specific settings
+3. Or allow for mervinai.com
 
 ### JavaScript Disabled
 
-**Error:** "JavaScript required"
-
 **Enable JavaScript:**
 
-**Chrome/Firefox/Safari:**
+**All browsers:**
 1. Settings > Privacy/Security
 2. Site Settings > JavaScript
-3. Enable "Allowed"
+3. Enable "Allowed" or "Recommended"
+4. Refresh page
 
 ### Incognito/Private Mode
 
-**Sessions don't persist in private mode**
+**Sessions don't persist**
 
 **Solution:**
 - Use regular browser window
-- Or log in each session
+- Or log in each private session
 - Enable "Remember Me"
 
-## Multi-Device Issues
-
-### Different Devices Show Different Data
-
-**Possible causes:**
-- Not fully synced
-- Cached data
-- Logged into different accounts
-
-**Solutions:**
-
-**1. Verify Account:**
-- Check email on each device
-- Ensure same account
-
-**2. Force Refresh:**
-- Pull to refresh (mobile)
-- Cmd/Ctrl + Shift + R (desktop)
-- Clear cache
-
-**3. Log Out and In:**
-- Completely log out
-- Clear app data (mobile)
-- Log back in
-- Data should sync
-
-## Mobile App Issues
-
-### Can't Login on Mobile
-
-**Different from website:**
-
-**Check:**
-- Latest app version installed
-- Account created on web first
-- Same credentials as website
-- Internet connection stable
-
-**Solutions:**
-1. Update app to latest version
-2. Restart app
-3. Restart device
-4. Reinstall app
-5. Contact support if persists
-
-### Biometric Login Not Working
-
-**Face ID / Touch ID / Fingerprint:**
-
-**Requirements:**
-- Set up in app settings after first login
-- Device supports biometrics
-- Biometrics enrolled on device
-
-**Troubleshooting:**
-1. Re-enable in app settings
-2. Ensure device biometrics working
-3. Fall back to password
-4. Re-set up biometric login
-
-## Corporate/Enterprise Login
-
-### Single Sign-On (SSO) Issues
-
-**For enterprise accounts using SSO:**
-
-**Contact your IT department first**
-
-**Common issues:**
-- SSO configuration incomplete
-- Wrong SSO provider selected
-- Account not provisioned
-
-**Backup:**
-- Use email/password if enabled
-- Contact your account manager
-- IT can reset SSO
-
-## Still Can't Login?
+## Getting Help
 
 ### Contact Support
 
-**Provide this information:**
+**Email:** support@mervinai.com
 
-**Required:**
+**Include:**
 - Account email address
 - Description of problem
-- Error messages (screenshot)
-- Browser/app version
-- Device type
-
-**Helpful:**
-- When it started
-- What you've tried
-- Last successful login
-- Payment method on file (last 4 digits)
-
-**Contact methods:**
-- Support ticket (fastest): support.mervinai.com
-- Email: support@mervinai.com
-- Phone: 1-800-MERVIN-AI (business hours)
-- Live chat: Available 9am-5pm PT Mon-Fri
+- Error messages (screenshots)
+- Browser/device info
+- Steps already tried
 
 **Response times:**
-- Critical (can't login): 2 hours
-- Standard support: 24 hours
-- Free trial: 48 hours
+- Critical login issues: 2-4 hours
+- Standard: 24 hours
+- Free tier: 48 hours
 
 ---
 
-Need immediate assistance? [Open support ticket](/support/get-support) - Select "Urgent" for login issues
+Need immediate help? [Open support ticket](/support/get-support) - Mark as "Urgent" for login issues
     `
   },
   {
     id: '12',
-    title: 'Email Delivery Issues',
+    title: 'Troubleshooting Common Issues',
     category: 'troubleshooting',
-    description: 'Troubleshoot email sending problems',
+    description: 'Solutions to frequently encountered problems',
     icon: MessageSquare,
-    relatedArticles: ['10', '1'],
+    relatedArticles: ['10', '11'],
     content: `
-# Email Delivery Issues
+# Troubleshooting Common Issues
 
-Estimates and contracts not reaching your clients? Here's how to diagnose and fix email delivery problems.
+Common problems and their solutions to help you get back to work quickly.
 
-## Quick Diagnostics
+## Browser Issues
 
-### Test Email Delivery
+### Page Won't Load
 
-**Step 1: Send to yourself first**
-1. Create test estimate
-2. Enter your own email
-3. Send
-4. Check if received
+**Quick Fixes:**
+1. Refresh the page (F5 or Cmd/Ctrl + R)
+2. Clear browser cache
+3. Try different browser
+4. Check internet connection
+5. Restart browser
 
-**If you receive it:**
-- ✅ System is working
-- Issue is client-side
-- See Client Email Issues below
+### Features Not Working
 
-**If you don't receive it:**
-- ❌ System issue or configuration
-- See System Issues below
-
-## Common Client Email Issues
-
-### Email in Spam/Junk Folder
-
-**Most common reason for "not received"**
-
-**Why it happens:**
-- Aggressive spam filters
-- First-time sender
-- Attachment triggers filter
-- Domain reputation
+**Common causes:**
+- JavaScript disabled
+- Cookies blocked
+- Browser extensions interfering
+- Outdated browser
 
 **Solutions:**
+1. Enable JavaScript
+2. Allow cookies for mervinai.com
+3. Try incognito/private mode
+4. Update browser to latest version
+5. Disable extensions temporarily
 
-**For clients:**
-1. Check spam/junk folder
-2. Mark as "Not Spam"
-3. Add sender to contacts
-4. Whitelist @mervinai.com
+### Slow Performance
 
-**For you:**
-1. Ask client to check spam
-2. Send direct download link
-3. Use alternative email
-4. Add client to address book before sending
+**Improve speed:**
+- Close unnecessary tabs
+- Clear browser cache
+- Check internet speed
+- Restart browser
+- Use supported browser (Chrome, Firefox, Safari)
 
-### Email Blocked by Company Firewall
+## Account Issues
 
-**Corporate/enterprise email systems**
+### Can't Login
 
-**Symptoms:**
-- Bounces back immediately
-- "Blocked by policy" error
-- Works on personal email
+See our dedicated article: [Login & Authentication Problems](/support/help-center/article/11)
 
-**Solutions:**
+**Quick checks:**
+- Email and password correct
+- Caps Lock off
+- Cookies enabled
+- Account verified
 
-**Request IT whitelist:**
-- Domain: mervinai.com
-- Sender: noreply@mervinai.com
-- noreply@stripe.com (payment confirmations)
+### Session Keeps Expiring
 
-**Alternative:**
-- Use client's personal email
-- Share via text message link
-- Download and attach manually
-
-### Inbox Full
-
-**Rare but possible**
-
-**Error:** "Mailbox full" or 552 error
+**Normal behavior:**
+- Sessions timeout after inactivity
+- Security feature
 
 **Solutions:**
-- Ask client to clear inbox
-- Use alternative email
-- Text message link
-- Share via client portal
+- Enable "Remember Me" at login
+- Stay active in the application
+- Use password manager
 
-### Typo in Email Address
+## Feature Usage Issues
 
-**Human error**
+### Hit Monthly Limit
 
-**Common typos:**
-- Missing @ symbol
-- Wrong domain (.com vs .net)
-- Extra spaces
-- Transposed letters
-
-**Prevention:**
-1. Double-check email
-2. Send test to yourself first
-3. Confirm with client verbally
-4. Use auto-complete from saved clients
-
-## System Issues
-
-### "Failed to Send" Error
-
-**Immediate troubleshooting:**
-
-**1. Check your internet:**
-- Connection stable?
-- Try other websites
-- Restart router if needed
-
-**2. Try again:**
-- Click "Retry"
-- Wait 5 minutes
-- Try different browser
-
-**3. Check status:**
-- Visit status.mervinai.com
-- Check email service status
-- Twitter @MervinAI for updates
-
-### Email Quota Exceeded
-
-**Plan limits reached**
-
-**Error:** "Monthly email limit exceeded"
-
-**Check your plan:**
-- Starter: 50 emails/month
-- Professional: 200 emails/month
-- Master: Unlimited
+**What happens:**
+- Cannot create more items until reset
+- Upgrade prompt appears
+- All existing data remains accessible
 
 **Solutions:**
-1. Upgrade plan
-2. Wait for next billing cycle
-3. Use direct download links
-4. Request one-time increase
+1. Wait for monthly reset (on billing date)
+2. Upgrade to higher plan
+3. View existing data without creating new
 
-### From Address Rejected
-
-**Email authentication issue**
-
-**Error:** "Sender not authorized"
-
-**Causes:**
-- Custom domain misconfigured
-- SPF/DKIM records incorrect
-- Domain verification needed
-
-**Fix:**
-1. Use default @mervinai.com sender
-2. Contact support for custom domain help
-3. Verify domain ownership
-4. Update DNS records
-
-## Bounced Emails
-
-### Hard Bounce
-
-**Email address doesn't exist**
-
-**Reasons:**
-- Typo in address
-- Account closed
-- Domain doesn't exist
-
-**Identify:**
-- Immediate bounce back
-- "User unknown" error
-- "Domain not found"
-
-**Fix:**
-1. Verify email with client
-2. Update client record
-3. Resend to correct address
-
-### Soft Bounce
-
-**Temporary delivery failure**
-
-**Reasons:**
-- Mailbox temporarily full
-- Server temporarily down
-- Message too large
-
-**System behavior:**
-- Auto-retry for 24 hours
-- Up to 3 attempts
-- Final bounce if still failing
-
-**What to do:**
-1. Wait 24 hours
-2. System retries automatically
-3. If fails, try alternative email
-4. Or use download link
-
-## Attachment Issues
-
-### Attachments Too Large
-
-**Email size limits:**
-- Most providers: 25MB max
-- Corporate: Often 10MB
-- Mervin AI: 25MB per email
-
-**Our PDFs typically:**
-- 500KB - 2MB (normal)
-- 5MB+ (many photos)
-
-**If too large:**
-1. Remove high-res images
-2. Compress images before upload
-3. Use download link instead
-4. Split into multiple emails
-
-### Attachments Stripped
-
-**Some systems remove attachments**
-
-**Corporate security:**
-- .PDF blocked by policy
-- Attachments quarantined
-- Requires IT approval
-
-**Solutions:**
-1. Use direct download link
-2. Client portal access
-3. Physical mail if critical
-4. IT whitelist PDF from mervinai.com
-
-## Delivery Delays
-
-### Normal Delivery Times
-
-**Expected:**
-- Immediate to 5 minutes: Normal
-- 5-30 minutes: Sometimes happens
-- 30+ minutes: Investigate
-- 24+ hours: System issue
-
-**Factors affecting speed:**
-- Recipient server speed
-- Spam filter processing
-- Email size
-- Server load
-
-### Persistent Delays
-
-**All emails slow:**
+### Feature Not Available
 
 **Check:**
-1. System status page
-2. Your internet speed
-3. Multiple recipient servers unlikely all slow
+- Your current plan includes the feature
+- Monthly limit not exceeded
+- Feature is fully launched (not coming soon)
 
-**Report to support if:**
-- Consistent delays over 30 min
-- Affects all recipients
-- Started suddenly
-- Other users reporting same
+**Solutions:**
+- Upgrade plan if needed
+- Wait for monthly reset
+- Contact support for clarification
 
-## Email Formatting Issues
+## Data Issues
 
-### Broken Links
+### Missing Data
 
-**Links not clickable:**
+**Check:**
+- You're logged into correct account
+- Data exists in this environment
+- Filters or search applied
+- Correct date range selected
+
+**Solutions:**
+- Remove filters
+- Search by different criteria
+- Check other sections/pages
+- Contact support if data truly missing
+
+### Can't Save Changes
+
+**Common causes:**
+- Required fields empty
+- Invalid data format
+- Connection interrupted
+- Session expired
+
+**Solutions:**
+1. Fill all required fields
+2. Check data format (dates, emails, etc.)
+3. Refresh connection
+4. Log in again
+5. Try saving again
+
+## Connection Issues
+
+### "Network Error" Messages
+
+**Check:**
+1. Internet connection active
+2. Firewall not blocking mervinai.com
+3. VPN not interfering
+4. No network maintenance
+
+**Solutions:**
+- Refresh the page
+- Check other websites
+- Restart router
+- Try different network
+- Contact support if persists
+
+### Intermittent Connectivity
 
 **Causes:**
-- Email client stripping links
-- Plain text view
-- Security settings
+- Unstable internet
+- Network congestion
+- ISP issues
 
 **Solutions:**
-1. Use HTML email view
-2. Copy-paste URL into browser
-3. Access via client portal
-4. Generate new email
+- Use wired connection if possible
+- Close bandwidth-heavy applications
+- Contact ISP if consistent problem
 
-### Images Not Loading
+## Getting Help
 
-**Logo or images broken:**
-
-**Causes:**
-- Email blocks external images
-- "Load images" setting
-- Slow connection
-
-**Fix:**
-1. Click "Load images" in email
-2. Add sender to contacts
-3. Images then auto-load
-
-## Provider-Specific Issues
-
-### Gmail
-
-**Common issues:**
-- Promotional tab
-- Spam filter sensitive
-- Blocks suspected phishing
-
-**Solutions:**
-- Check Promotions tab
-- Drag to Primary inbox
-- Star important emails
-- Report "Not spam"
-
-### Outlook/Office 365
-
-**Corporate environments:**
-- Strict filtering
-- Policy-based blocks
-- IT-managed
-
-**Solutions:**
-- Check Junk folder
-- Whitelist with IT
-- Safe Senders list
-- Check quarantine
-
-### Yahoo/AOL
-
-**Legacy providers:**
-- Very aggressive filters
-- Often block automated emails
-
-**Solutions:**
-- Whitelist @mervinai.com
-- Check spam thoroughly
-- Consider different email
-- Add to contacts first
-
-### Mobile Email (iOS Mail, Android Gmail)
-
-**Push notification issues:**
-- Might not notify
-- Still in inbox
-- Check manually
-
-**Solutions:**
-- Refresh inbox
-- Check notification settings
-- Enable push for mervinai.com
-
-## Alternative Delivery Methods
-
-### When Email Fails
-
-**Option 1: Direct Download Link**
-1. Generate PDF
-2. Copy shareable link
-3. Send via text message
-4. Or paste in any messenger
-
-**Option 2: Client Portal**
-- Client logs into their portal
-- All documents available
-- No email needed
-- Automatic notifications
-
-**Option 3: Manual Download**
-1. Download PDF
-2. Attach to your own email
-3. Send from your business email
-4. Less automated but guaranteed delivery
-
-**Option 4: Physical Mail**
-- Print and mail
-- For sensitive clients
-- Older demographic
-- Legal requirements
-
-## Monitoring Email Delivery
-
-### Delivery Status Dashboard
-
-**Track sent emails:**
-1. Go to Estimates/Contracts
-2. Click email icon
-3. View delivery status
-
-**Statuses:**
-- ✅ Delivered: Successfully received
-- 📬 Sent: In transit
-- ⏳ Pending: Queued for delivery
-- ❌ Bounced: Failed delivery
-- 👁️ Opened: Client viewed (if tracking enabled)
-
-### Email Notifications
-
-**Get notified when:**
-- Email bounces
-- Client opens email
-- Client clicks link
-- Client views document
-
-**Enable:**
-1. Settings > Notifications
-2. Email Delivery Alerts
-3. Choose notification method
-
-## Prevention Best Practices
-
-✅ **Maintain Clean Client List:**
-- Regular update email addresses
-- Remove bounced addresses
-- Verify before important sends
-
-✅ **Warm Up New Domains:**
-- Don't send 100s immediately
-- Start small, increase gradually
-- Build sender reputation
-
-✅ **Test First:**
-- Send to yourself
-- Check formatting
-- Verify links work
-- Then send to client
-
-✅ **Provide Alternatives:**
-- Include download link in email
-- Mention client portal access
-- Offer text message backup
-
-✅ **Follow Up:**
-- Confirm receipt with client
-- Phone call for critical docs
-- Don't assume delivered
-
-✅ **Monitor Delivery:**
-- Check delivery status
-- Act on bounces quickly
-- Track patterns
-
-## Escalation to Support
+### When to Contact Support
 
 **Contact support if:**
-- Multiple bounces to different recipients
-- System-wide delivery issues
-- Authentication errors
-- Custom domain problems
-- API integration issues
+- Problem persists after troubleshooting
+- Error messages appear repeatedly
+- Data is missing or incorrect
+- Account is suspended
+- Billing issues
 
-**Provide:**
-- Email addresses affected
-- Error messages (screenshot)
-- Delivery status
-- Timeline of issue
-- Steps you've tried
+### How to Contact
 
-**Priority support for:**
-- Paid plans: 4-hour response
-- Free plans: 24-hour response
-- Urgent issues: Mark as urgent
+**Email:** support@mervinai.com
+
+**Include:**
+- Detailed description
+- Screenshots of errors
+- Steps to reproduce
+- Browser and OS info
+- Your account email
+
+**Response times:**
+- Paid plans: 4-8 hours
+- Free plans: 24-48 hours
+- Urgent issues: Mark as priority
+
+## Prevention Tips
+
+✅ **Keep browser updated**: Latest version prevents many issues
+
+✅ **Stable internet**: Strong connection reduces errors
+
+✅ **Allow cookies**: Required for proper functionality
+
+✅ **Enable JavaScript**: Essential for all features
+
+✅ **Regular backups**: Keep your own copies of important data
 
 ---
 
-Email still not working? [Contact support immediately](/support/get-support) - Select "Technical" + "Urgent"
+Still having issues? [Contact support](/support/get-support) - We're here to help!
     `
   }
 ];
@@ -2860,20 +2404,5 @@ export const helpCategories: HelpCategory[] = [
     description: 'Solutions to common issues',
     icon: HelpCircle,
     articles: helpArticles.filter(a => a.category === 'troubleshooting')
-  },
+  }
 ];
-
-// Helper function to get article by ID
-export function getArticleById(id: string): HelpArticle | undefined {
-  return helpArticles.find(article => article.id === id);
-}
-
-// Helper function to get related articles
-export function getRelatedArticles(articleId: string): HelpArticle[] {
-  const article = getArticleById(articleId);
-  if (!article || !article.relatedArticles) return [];
-  
-  return article.relatedArticles
-    .map(id => getArticleById(id))
-    .filter((a): a is HelpArticle => a !== undefined);
-}
