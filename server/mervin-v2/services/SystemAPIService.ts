@@ -248,19 +248,42 @@ export class SystemAPIService {
 
   /**
    * Consultar información de permisos usando endpoint /api/permits
+   * REGISTRA LA BÚSQUEDA EN HISTORIAL AUTOMÁTICAMENTE
    */
   async getPermitInfo(params: PermitParams): Promise<PermitInfo> {
     console.log('📋 [SYSTEM-API] Consultando permisos para:', params.projectAddress);
     
     try {
+      // 1. Consultar información de permisos
       const response = await this.client.post('/api/permits/check', {
         projectType: params.projectType,
         projectAddress: params.projectAddress,
         projectScope: params.projectScope
       });
 
+      const permitInfo = response.data;
       console.log('✅ [SYSTEM-API] Información de permisos obtenida');
-      return response.data as PermitInfo;
+      
+      // 2. Registrar búsqueda en historial usando /api/search/permits
+      try {
+        console.log('💾 [SYSTEM-API] Guardando búsqueda de permisos en historial...');
+        await this.client.post('/api/search/permits', {
+          query: `${params.projectType || 'General'} permit check`,
+          jurisdiction: params.jurisdiction || 'General',
+          permitType: params.permitType,
+          projectType: params.projectType,
+          address: params.projectAddress,
+          city: params.city,
+          state: params.state,
+          zipCode: params.zipCode
+        });
+        console.log('✅ [SYSTEM-API] Búsqueda de permisos guardada en historial exitosamente');
+      } catch (historyError: any) {
+        console.warn('⚠️ [SYSTEM-API] No se pudo guardar búsqueda en historial (continuando):', historyError.message);
+        // No lanzar error - la búsqueda fue exitosa
+      }
+      
+      return permitInfo as PermitInfo;
 
     } catch (error: any) {
       console.error('❌ [SYSTEM-API] Error consultando permisos:', error.message);
