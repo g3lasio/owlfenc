@@ -810,17 +810,9 @@ export default function Mervin() {
               
               {showModelSelector && canUseAgentMode && (
                 <div className="absolute top-full right-0 mt-2 bg-gray-800 border border-cyan-900/50 rounded-lg shadow-xl z-50 min-w-[200px] md:min-w-[180px]">
-                  {/* Plan Indicator Header */}
-                  <div className="px-4 py-2 border-b border-cyan-900/30 bg-gray-900/50">
-                    <div className="text-xs text-gray-400">Plan Actual</div>
-                    <div className="text-sm font-semibold text-cyan-400">
-                      {userPlan?.name || "Loading..."}
-                    </div>
-                  </div>
-                  
                   {/* Agent Mode Option */}
                   <button
-                    className={`w-full text-left px-4 py-4 md:px-3 md:py-2 flex items-center justify-between min-h-[52px] md:min-h-[auto] ${
+                    className={`w-full text-left px-4 py-4 md:px-3 md:py-2 rounded-t-lg flex items-center justify-between min-h-[52px] md:min-h-[auto] ${
                       selectedModel === "agent"
                         ? 'text-cyan-400 bg-cyan-900/20 hover:bg-cyan-900/30'
                         : 'text-cyan-400 hover:bg-gray-700'
