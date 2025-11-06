@@ -91,7 +91,6 @@ export default function Mervin() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<"legacy" | "agent">("agent");
   const [showModelSelector, setShowModelSelector] = useState(false);
   const [currentTask, setCurrentTask] = useState<AgentTask | null>(null);
   const [isOnboardingMode, setIsOnboardingMode] = useState(false);
@@ -122,9 +121,38 @@ export default function Mervin() {
     userId: currentUser?.uid || null,
   });
 
-  // Detect if user is free plan (Primo Chambeador)
-  const isFreeUser = userPlan?.id === 5 || userPlan?.name === "Primo Chambeador";
+  // ============================================================================
+  // RESTRICCIONES DE MODO AGENT VS LEGACY
+  // ============================================================================
+  // Free Trial (ID: 4) y Primo Chambeador (ID: 5) → SOLO Legacy Mode
+  // Mero Patrón (ID: 9) y Master Contractor (ID: 6) → Agent Mode (default)
+  const isFreeUser = userPlan?.id === 4 || userPlan?.id === 5 || 
+                      userPlan?.name === "Free Trial" || 
+                      userPlan?.name === "Primo Chambeador";
   const canUseAgentMode = !isFreeUser;
+  
+  // Auto-selección inteligente basada en plan del usuario
+  const getInitialModel = (): "legacy" | "agent" => {
+    if (isFreeUser) {
+      return "legacy"; // Free users SOLO pueden usar Legacy
+    }
+    return "agent"; // Usuarios pagos empiezan con Agent Mode
+  };
+  
+  const [selectedModel, setSelectedModel] = useState<"legacy" | "agent">(getInitialModel());
+  
+  // Forzar Legacy Mode para usuarios free (protección adicional)
+  useEffect(() => {
+    if (isFreeUser && selectedModel === "agent") {
+      console.log('⚠️ [MODE-PROTECTION] Free user detected in Agent Mode, forcing Legacy Mode');
+      setSelectedModel("legacy");
+      toast({
+        title: "Legacy Mode Activado",
+        description: "Tu plan actual solo tiene acceso a Chat Mode. Actualiza a Mero Patrón o Master Contractor para usar Agent Mode con todas las capacidades.",
+        variant: "default"
+      });
+    }
+  }, [isFreeUser, selectedModel, toast]);
 
   // Initialize Mervin V2 Agent (only if user has access and is in agent mode)
   const mervinAgent = useMervinAgent({
@@ -770,7 +798,8 @@ export default function Mervin() {
                 variant="outline"
                 size="icon"
                 className="bg-gray-800 text-cyan-500 border-cyan-900/50 hover:bg-gray-700"
-                onClick={() => setShowModelSelector(!showModelSelector)}
+                onClick={() => canUseAgentMode && setShowModelSelector(!showModelSelector)}
+                title={isFreeUser ? "Legacy Mode (Free Plan)" : selectedModel === "agent" ? "Agent Mode" : "Legacy Mode"}
               >
                 {selectedModel === "agent" ? (
                   <Brain className="w-5 h-5" />
@@ -779,43 +808,58 @@ export default function Mervin() {
                 )}
               </Button>
               
-              {showModelSelector && (
-                <div className="absolute top-full right-0 mt-2 bg-gray-800 border border-cyan-900/50 rounded-lg shadow-xl z-50 min-w-[160px] md:min-w-[150px]">
+              {showModelSelector && canUseAgentMode && (
+                <div className="absolute top-full right-0 mt-2 bg-gray-800 border border-cyan-900/50 rounded-lg shadow-xl z-50 min-w-[200px] md:min-w-[180px]">
+                  {/* Plan Indicator Header */}
+                  <div className="px-4 py-2 border-b border-cyan-900/30 bg-gray-900/50">
+                    <div className="text-xs text-gray-400">Plan Actual</div>
+                    <div className="text-sm font-semibold text-cyan-400">
+                      {userPlan?.name || "Loading..."}
+                    </div>
+                  </div>
+                  
+                  {/* Agent Mode Option */}
                   <button
-                    className={`w-full text-left px-4 py-4 md:px-3 md:py-2 rounded-t-lg flex items-center justify-between min-h-[52px] md:min-h-[auto] ${
-                      canUseAgentMode 
-                        ? 'text-cyan-400 hover:bg-gray-700' 
-                        : 'text-gray-500 cursor-not-allowed bg-gray-700/50'
+                    className={`w-full text-left px-4 py-4 md:px-3 md:py-2 flex items-center justify-between min-h-[52px] md:min-h-[auto] ${
+                      selectedModel === "agent"
+                        ? 'text-cyan-400 bg-cyan-900/20 hover:bg-cyan-900/30'
+                        : 'text-cyan-400 hover:bg-gray-700'
                     }`}
                     onClick={() => {
-                      if (canUseAgentMode) {
-                        setSelectedModel("agent");
-                        setShowModelSelector(false);
-                      } else {
-                        toast({
-                          title: "Upgrade Required",
-                          description: "Agent Mode is available for Mero Patrón and Master Contractor plans.",
-                          variant: "destructive"
-                        });
-                      }
+                      setSelectedModel("agent");
+                      setShowModelSelector(false);
                     }}
-                    disabled={!canUseAgentMode}
                   >
                     <div className="flex items-center">
                       <Brain className="w-5 h-5 md:w-4 md:h-4 mr-3 md:mr-2" />
-                      <span className="text-base md:text-sm">Agent Mode</span>
+                      <div>
+                        <div className="text-base md:text-sm font-medium">Agent Mode</div>
+                        <div className="text-xs text-gray-400">Full AI capabilities</div>
+                      </div>
                     </div>
-                    {!canUseAgentMode && <Lock className="w-4 h-4 text-yellow-500" />}
+                    {selectedModel === "agent" && <Check className="w-4 h-4 text-cyan-400" />}
                   </button>
+                  
+                  {/* Legacy Mode Option */}
                   <button
-                    className="w-full text-left px-4 py-4 md:px-3 md:py-2 text-cyan-400 hover:bg-gray-700 rounded-b-lg flex items-center min-h-[52px] md:min-h-[auto]"
+                    className={`w-full text-left px-4 py-4 md:px-3 md:py-2 rounded-b-lg flex items-center justify-between min-h-[52px] md:min-h-[auto] ${
+                      selectedModel === "legacy"
+                        ? 'text-cyan-400 bg-cyan-900/20 hover:bg-cyan-900/30'
+                        : 'text-gray-400 hover:bg-gray-700'
+                    }`}
                     onClick={() => {
                       setSelectedModel("legacy");
                       setShowModelSelector(false);
                     }}
                   >
-                    <Zap className="w-5 h-5 md:w-4 md:h-4 mr-3 md:mr-2" />
-                    <span className="text-base md:text-sm">Legacy</span>
+                    <div className="flex items-center">
+                      <Zap className="w-5 h-5 md:w-4 md:h-4 mr-3 md:mr-2" />
+                      <div>
+                        <div className="text-base md:text-sm font-medium">Chat Mode</div>
+                        <div className="text-xs text-gray-400">Simple conversation</div>
+                      </div>
+                    </div>
+                    {selectedModel === "legacy" && <Check className="w-4 h-4 text-cyan-400" />}
                   </button>
                 </div>
               )}
