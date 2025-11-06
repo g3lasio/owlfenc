@@ -33,7 +33,7 @@ router.post('/test-send', async (req, res) => {
     const testEmail = await resendService.sendEmail({
       to: req.body.testEmail || "admin@owlfenc.com",
       from: "onboarding@resend.dev",
-      subject: "Test - Sistema Owl Fence",
+      subject: "Test - Sistema Owl Fenc",
       html: "<h1>Test Email</h1><p>Email test funcionando correctamente</p>"
     });
     

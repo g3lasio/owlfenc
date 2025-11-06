@@ -22,7 +22,7 @@ const TermsOfService = () => {
 
             <h2 className="text-2xl font-semibold text-cyan-400 mb-4">2. Description of Service</h2>
             <p className="text-gray-300 mb-4">
-              Owl Fence provides a comprehensive platform for contractors, including project management, 
+              Owl Fenc provides a comprehensive platform for contractors, including project management, 
               contract generation, estimation tools, and AI-powered assistance for construction industry professionals.
             </p>
 
@@ -49,13 +49,13 @@ const TermsOfService = () => {
 
             <h2 className="text-2xl font-semibold text-cyan-400 mb-4">6. Intellectual Property</h2>
             <p className="text-gray-300 mb-4">
-              The service and its original content, features, and functionality are owned by Owl Fence 
+              The service and its original content, features, and functionality are owned by Owl Fenc 
               and are protected by international copyright, trademark, and other intellectual property laws.
             </p>
 
             <h2 className="text-2xl font-semibold text-cyan-400 mb-4">7. Limitation of Liability</h2>
             <p className="text-gray-300 mb-4">
-              In no event shall Owl Fence be liable for any indirect, incidental, special, consequential, 
+              In no event shall Owl Fenc be liable for any indirect, incidental, special, consequential, 
               or punitive damages, including without limitation, loss of profits, data, use, goodwill, 
               or other intangible losses.
             </p>

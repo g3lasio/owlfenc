@@ -319,7 +319,7 @@ export class TrialNotificationService {
       const emailContent = this.generateReminderEmailHTML(notification, isDay7);
       
       const { data, error } = await resend.emails.send({
-        from: 'Owl Fence AI <noreply@owlfenc.com>',
+        from: 'Owl Fenc AI <noreply@owlfenc.com>',
         to: [email],
         subject,
         html: emailContent,
@@ -355,7 +355,7 @@ export class TrialNotificationService {
       const emailContent = this.generateExpiryEmailHTML(notification);
       
       const { data, error } = await resend.emails.send({
-        from: 'Owl Fence AI <noreply@owlfenc.com>',
+        from: 'Owl Fenc AI <noreply@owlfenc.com>',
         to: [email],
         subject,
         html: emailContent,
@@ -451,7 +451,7 @@ export class TrialNotificationService {
       const emailContent = this.generateDowngradeEmailHTML(fromPlan);
       
       const { data, error } = await resend.emails.send({
-        from: 'Owl Fence AI <noreply@owlfenc.com>',
+        from: 'Owl Fenc AI <noreply@owlfenc.com>',
         to: [userEmail],
         subject,
         html: emailContent,
@@ -523,7 +523,7 @@ export class TrialNotificationService {
             
             ${isTrialDowngrade ? `
               <div class="info-box">
-                <p><strong>Your 14-day trial has ended.</strong> Your account has been automatically moved to our free "Primo" plan so you can continue using Owl Fence AI with basic features.</p>
+                <p><strong>Your 14-day trial has ended.</strong> Your account has been automatically moved to our free "Primo" plan so you can continue using Owl Fenc AI with basic features.</p>
               </div>
             ` : `
               <div class="warning-box">
@@ -677,7 +677,7 @@ export class TrialNotificationService {
             
             <h3>${isDay7 ? 'What\'s Next?' : 'Don\'t Miss Out!'}</h3>
             <p>${isDay7 
-              ? 'You\'ve got 7 more days to explore everything Owl Fence AI offers. Here\'s what you can still try:'
+              ? 'You\'ve got 7 more days to explore everything Owl Fenc AI offers. Here\'s what you can still try:'
               : 'Time is running out! Make sure you\'ve experienced these powerful features:'
             }</p>
             
@@ -744,10 +744,10 @@ export class TrialNotificationService {
         <div class="container">
           <div class="header">
             <h1>⏰ Your Trial Has Ended</h1>
-            <p>Continue your success with Owl Fence AI</p>
+            <p>Continue your success with Owl Fenc AI</p>
           </div>
           <div class="content">
-            <h2>Thanks for trying Owl Fence AI!</h2>
+            <h2>Thanks for trying Owl Fenc AI!</h2>
             <p>Your 14-day trial is complete. We hope you experienced the power of AI-driven construction management.</p>
             
             <p><strong>Your account has been moved to our free plan</strong> with basic features. To continue using all the premium tools you've tried, upgrade today!</p>

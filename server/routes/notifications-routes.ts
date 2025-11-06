@@ -133,8 +133,8 @@ router.post('/test', async (req: Request, res: Response) => {
       const success = await resendService.sendEmail({
         to: req.user?.email || 'test@example.com',
         from: process.env.EMAIL_FROM || 'noreply@owlfenc.com',
-        subject: 'Test Notification - Owl Fence',
-        html: '<p>This is a <strong>test notification</strong> from your Owl Fence dashboard.</p>'
+        subject: 'Test Notification - Owl Fenc',
+        html: '<p>This is a <strong>test notification</strong> from your Owl Fenc dashboard.</p>'
       });
       
       if (success) {

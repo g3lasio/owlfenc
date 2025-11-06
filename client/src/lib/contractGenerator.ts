@@ -333,7 +333,7 @@ export function generateContractHTML(data: ContractData): string {
  * @returns Datos formateados para generar el contrato
  */
 export function formatContractData(extractedData: any): ContractData {
-  const contractorName = extractedData.contratista?.nombre || 'Owl Fence Co.';
+  const contractorName = extractedData.contratista?.nombre || 'Owl Fenc Co.';
   const contractorAddress = extractedData.contratista?.direccion || '2901 Owens Ct, Fairfield, CA 94534 US';
   const contractorPhone = extractedData.contratista?.telefono || '(202) 549-3519';
   const contractorEmail = extractedData.contratista?.email || 'contact@owlfence.com';

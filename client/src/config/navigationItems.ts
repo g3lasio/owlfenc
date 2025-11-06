@@ -91,7 +91,7 @@ export const userNavigationConfig: NavigationSection[] = [
         icon: "ri-customer-service-2-line",
       },
       {
-        label: "Acerca de Owl Fence",
+        label: "Acerca de Owl Fenc",
         path: "/about-owlfenc",
         icon: "ri-store-3-line",
       },

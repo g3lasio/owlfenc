@@ -18,16 +18,16 @@ export default function LegalPolicy() {
             <section>
               <h2 className="text-2xl font-semibold mb-4 text-primary">1. Acceptance of Terms</h2>
               <p className="mb-4 leading-relaxed">
-                By accessing and using Owl Fence's website, AI-powered estimation tools, and related services (collectively, 
+                By accessing and using Owl Fenc's website, AI-powered estimation tools, and related services (collectively, 
                 the "Services"), you accept and agree to be bound by the terms and provision of this agreement. These Terms 
-                of Service ("Terms") constitute a legally binding agreement between you and Owl Fence Company ("we," "us," or "our").
+                of Service ("Terms") constitute a legally binding agreement between you and Owl Fenc Company ("we," "us," or "our").
               </p>
             </section>
 
             <section>
               <h2 className="text-2xl font-semibold mb-4 text-primary">2. Description of Services</h2>
               <p className="mb-4 leading-relaxed">
-                Owl Fence provides AI-powered fence estimation and contracting services, including but not limited to:
+                Owl Fenc provides AI-powered fence estimation and contracting services, including but not limited to:
               </p>
               <ul className="list-disc list-inside space-y-2 mb-4 ml-4">
                 <li>Automated fence estimation and project planning</li>
@@ -81,7 +81,7 @@ export default function LegalPolicy() {
               <h3 className="text-lg font-medium mb-3">Our Intellectual Property</h3>
               <p className="mb-4 leading-relaxed">
                 The Services and their original content, features, and functionality are and will remain the exclusive 
-                property of Owl Fence Company and its licensors. The Services are protected by copyright, trademark, 
+                property of Owl Fenc Company and its licensors. The Services are protected by copyright, trademark, 
                 and other laws.
               </p>
               
@@ -134,7 +134,7 @@ export default function LegalPolicy() {
             <section>
               <h2 className="text-2xl font-semibold mb-4 text-primary">9. Limitation of Liability</h2>
               <p className="mb-4 leading-relaxed">
-                To the fullest extent permitted by applicable law, Owl Fence Company shall not be liable for any 
+                To the fullest extent permitted by applicable law, Owl Fenc Company shall not be liable for any 
                 indirect, incidental, special, consequential, or punitive damages, including without limitation, 
                 loss of profits, data, use, goodwill, or other intangible losses.
               </p>
@@ -148,7 +148,7 @@ export default function LegalPolicy() {
             <section>
               <h2 className="text-2xl font-semibold mb-4 text-primary">10. Indemnification</h2>
               <p className="mb-4 leading-relaxed">
-                You agree to defend, indemnify, and hold harmless Owl Fence Company and its affiliates, officers, 
+                You agree to defend, indemnify, and hold harmless Owl Fenc Company and its affiliates, officers, 
                 directors, employees, and agents from and against any claims, damages, obligations, losses, 
                 liabilities, costs, or debt arising from your use of the Services or violation of these Terms.
               </p>
@@ -174,7 +174,7 @@ export default function LegalPolicy() {
               <h3 className="text-lg font-medium mb-3">Governing Law</h3>
               <p className="mb-4 leading-relaxed">
                 These Terms shall be governed by and construed in accordance with the laws of the jurisdiction 
-                where Owl Fence Company is registered, without regard to conflict of law principles.
+                where Owl Fenc Company is registered, without regard to conflict of law principles.
               </p>
               
               <h3 className="text-lg font-medium mb-3">Arbitration</h3>
@@ -208,7 +208,7 @@ export default function LegalPolicy() {
               </p>
               <div className="bg-muted/50 p-4 rounded-lg mb-4">
                 <p><strong>Email:</strong> legal@owlfenc.com</p>
-                <p><strong>Address:</strong> Owl Fence Legal Department</p>
+                <p><strong>Address:</strong> Owl Fenc Legal Department</p>
                 <p className="text-sm text-muted-foreground mt-2">
                   We will respond to your inquiry within 30 days.
                 </p>
@@ -219,7 +219,7 @@ export default function LegalPolicy() {
               <h2 className="text-2xl font-semibold mb-4 text-primary">16. Entire Agreement</h2>
               <p className="mb-4 leading-relaxed">
                 These Terms of Service, together with our Privacy Policy, constitute the sole and entire agreement 
-                between you and Owl Fence Company regarding the Services and supersede all prior and contemporaneous 
+                between you and Owl Fenc Company regarding the Services and supersede all prior and contemporaneous 
                 understandings, agreements, representations, and warranties.
               </p>
             </section>

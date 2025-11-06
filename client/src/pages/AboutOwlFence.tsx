@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 export default function AboutOwlFence() {
   return (
     <div className="container mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-4">Acerca de Owl Fence App</h1>
+      <h1 className="text-3xl font-bold mb-4">Acerca de Owl Fenc App</h1>
       <p className="text-muted-foreground mb-8">
         Una herramienta de estimación y gestión profesional para contratistas de cercas
       </p>
@@ -18,7 +18,7 @@ export default function AboutOwlFence() {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground mb-4">
-              Owl Fence App está diseñada específicamente para contratistas de cercas, 
+              Owl Fenc App está diseñada específicamente para contratistas de cercas, 
               ofreciendo una suite completa de herramientas para simplificar y mejorar cada 
               aspecto de su negocio.
             </p>
@@ -60,14 +60,14 @@ export default function AboutOwlFence() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Acerca de Owl Fence</CardTitle>
+            <CardTitle>Acerca de Owl Fenc</CardTitle>
             <CardDescription>
               Nuestra historia y visión
             </CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground mb-4">
-              Owl Fence fue fundada por contratistas de cercas experimentados que entendieron los desafíos 
+              Owl Fenc fue fundada por contratistas de cercas experimentados que entendieron los desafíos 
               únicos que enfrentan los profesionales en esta industria. Nuestra misión es proporcionar 
               herramientas tecnológicas que permitan a los contratistas de cercas competir efectivamente 
               en el mercado actual.

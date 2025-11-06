@@ -55,7 +55,7 @@ export function convertEstimateDataToTemplate(estimateData: any, companyData: an
   
   return {
     // Empresa
-    companyName: companyData.companyName || companyData.ownerName || 'Owl Fence',
+    companyName: companyData.companyName || companyData.ownerName || 'Owl Fenc',
     companyAddress: companyData.address || companyData.fullAddress || '',
     companyPhone: companyData.phone || companyData.mobilePhone || '',
     companyEmail: companyData.email || '',
@@ -332,7 +332,7 @@ export function generateUnifiedEstimateHTML(data: UnifiedTemplateData): string {
                 
                 <div class="info-block">
                     <h3>INFORMACIÓN DE LA EMPRESA</h3>
-                    <p><strong>${data.companyName || 'Owl Fence'}</strong></p>
+                    <p><strong>${data.companyName || 'Owl Fenc'}</strong></p>
                     ${data.companyAddress ? `<p>${data.companyAddress}</p>` : ''}
                     ${data.companyPhone ? `<p>Tel: ${data.companyPhone}</p>` : ''}
                     ${data.companyEmail ? `<p>Email: ${data.companyEmail}</p>` : ''}

@@ -339,7 +339,7 @@ export default function PropertyOwnershipVerifier() {
       pdf.setFontSize(7);
       pdf.setTextColor(148, 163, 184);
       pdf.setFont('helvetica', 'italic');
-      pdf.text('Owl Fence AI - Property Verification System', pageWidth / 2, footerY, { align: 'center' });
+      pdf.text('Owl Fenc AI - Property Verification System', pageWidth / 2, footerY, { align: 'center' });
 
       // Generar nombre de archivo seguro - coercer address a string de manera segura
       const addressStr = String(propertyDetails.address || '');
@@ -492,7 +492,7 @@ export default function PropertyOwnershipVerifier() {
       pdf.setFontSize(7);
       pdf.setTextColor(148, 163, 184);
       pdf.setFont('helvetica', 'italic');
-      pdf.text('Owl Fence AI - Property Verification System', pageWidth / 2, footerY, { align: 'center' });
+      pdf.text('Owl Fenc AI - Property Verification System', pageWidth / 2, footerY, { align: 'center' });
 
       // Generate safe filename
       const addressStr = String(item.address || '');

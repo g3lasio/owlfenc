@@ -87,7 +87,7 @@ router.post('/register/begin', async (req, res) => {
     const registrationOptions = {
       challenge,
       rp: {
-        name: 'Owl Fence Contractor Platform',
+        name: 'Owl Fenc Contractor Platform',
         id: rpId,
       },
       user: {

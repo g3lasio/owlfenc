@@ -1002,7 +1002,7 @@ router.get("/stripe/diagnostic", isAuthenticated, async (req: Request, res: Resp
               "❌ Activate Stripe Connect in your Stripe Dashboard",
               "Go to: Dashboard → Settings → Connect",
               "Enable Connect and complete the onboarding process",
-              "Make sure you're using the correct API keys (Owl Fence Company, not Chyrris Technologies)"
+              "Make sure you're using the correct API keys (Owl Fenc Company, not Chyrris Technologies)"
             ],
         environment: {
           nodeEnv: process.env.NODE_ENV || "development",

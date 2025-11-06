@@ -164,7 +164,7 @@ export default function Integrations() {
             </h1>
             
             <p className="text-lg text-muted-foreground mb-8">
-              Owl Fence integrates with industry-leading platforms to give you the most powerful 
+              Owl Fenc integrates with industry-leading platforms to give you the most powerful 
               construction management experience possible.
             </p>
           </div>
@@ -315,7 +315,7 @@ export default function Integrations() {
                 <div>
                   <h3 className="text-xl font-semibold mb-2">Sign Up</h3>
                   <p className="text-muted-foreground">
-                    Create your Owl Fence account and choose your plan. All integrations are included 
+                    Create your Owl Fenc account and choose your plan. All integrations are included 
                     based on your subscription tier.
                   </p>
                 </div>
@@ -389,19 +389,13 @@ export default function Integrations() {
               <h3 className="font-bold text-lg mb-4">Product</h3>
               <ul className="space-y-2">
                 <li>
-                  <Link href="/features">
-                    <a className="text-muted-foreground hover:text-primary transition-colors text-sm">Features</a>
-                  </Link>
+                  <Link href="/features" className="text-muted-foreground hover:text-primary transition-colors text-sm">Features</Link>
                 </li>
                 <li>
-                  <Link href="/pricing">
-                    <a className="text-muted-foreground hover:text-primary transition-colors text-sm">Pricing</a>
-                  </Link>
+                  <Link href="/pricing" className="text-muted-foreground hover:text-primary transition-colors text-sm">Pricing</Link>
                 </li>
                 <li>
-                  <Link href="/integrations">
-                    <a className="text-muted-foreground hover:text-primary transition-colors text-sm">Integrations</a>
-                  </Link>
+                  <Link href="/integrations" className="text-muted-foreground hover:text-primary transition-colors text-sm">Integrations</Link>
                 </li>
               </ul>
             </div>
@@ -409,9 +403,7 @@ export default function Integrations() {
               <h3 className="font-bold text-lg mb-4">Company</h3>
               <ul className="space-y-2">
                 <li>
-                  <Link href="/about-owlfenc">
-                    <a className="text-muted-foreground hover:text-primary transition-colors text-sm">About Us</a>
-                  </Link>
+                  <Link href="/about-owlfenc" className="text-muted-foreground hover:text-primary transition-colors text-sm">About Us</Link>
                 </li>
               </ul>
             </div>
@@ -419,14 +411,10 @@ export default function Integrations() {
               <h3 className="font-bold text-lg mb-4">Legal</h3>
               <ul className="space-y-2">
                 <li>
-                  <Link href="/privacy-policy">
-                    <a className="text-muted-foreground hover:text-primary transition-colors text-sm">Privacy Policy</a>
-                  </Link>
+                  <Link href="/privacy-policy" className="text-muted-foreground hover:text-primary transition-colors text-sm">Privacy Policy</Link>
                 </li>
                 <li>
-                  <Link href="/terms-of-service">
-                    <a className="text-muted-foreground hover:text-primary transition-colors text-sm">Terms of Service</a>
-                  </Link>
+                  <Link href="/terms-of-service" className="text-muted-foreground hover:text-primary transition-colors text-sm">Terms of Service</Link>
                 </li>
               </ul>
             </div>
@@ -442,7 +430,7 @@ export default function Integrations() {
             </div>
           </div>
           <div className="pt-8 border-t border-border/40 text-center text-sm text-muted-foreground">
-            <p>© 2025 Owl Fence. All rights reserved.</p>
+            <p>© 2025 Owl Fenc. All rights reserved.</p>
           </div>
         </div>
       </footer>

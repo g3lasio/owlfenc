@@ -77,7 +77,7 @@ export default function PublicHome() {
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               Whether you're building your first fence or managing a full construction company, 
-              Owl Fence is designed specifically for your needs
+              Owl Fenc is designed specifically for your needs
             </p>
           </div>
 
@@ -171,7 +171,7 @@ export default function PublicHome() {
               Everything You Need in One Platform
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Stop juggling multiple tools. Owl Fence brings all your construction management needs into one powerful system
+              Stop juggling multiple tools. Owl Fenc brings all your construction management needs into one powerful system
             </p>
           </div>
 
@@ -298,7 +298,7 @@ export default function PublicHome() {
               Ready to Transform Your Construction Business?
             </h2>
             <p className="text-lg text-muted-foreground mb-8">
-              Join contractors who are winning more jobs, saving time, and growing faster with Owl Fence
+              Join contractors who are winning more jobs, saving time, and growing faster with Owl Fenc
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/signup">
@@ -328,24 +328,18 @@ export default function PublicHome() {
               <h3 className="font-bold text-lg mb-4">Product</h3>
               <ul className="space-y-2">
                 <li>
-                  <Link href="/features">
-                    <a className="text-muted-foreground hover:text-primary transition-colors text-sm">
-                      Features
-                    </a>
+                  <Link href="/features" className="text-muted-foreground hover:text-primary transition-colors text-sm">
+                    Features
                   </Link>
                 </li>
                 <li>
-                  <Link href="/pricing">
-                    <a className="text-muted-foreground hover:text-primary transition-colors text-sm">
-                      Pricing
-                    </a>
+                  <Link href="/pricing" className="text-muted-foreground hover:text-primary transition-colors text-sm">
+                    Pricing
                   </Link>
                 </li>
                 <li>
-                  <Link href="/integrations">
-                    <a className="text-muted-foreground hover:text-primary transition-colors text-sm">
-                      Integrations
-                    </a>
+                  <Link href="/integrations" className="text-muted-foreground hover:text-primary transition-colors text-sm">
+                    Integrations
                   </Link>
                 </li>
               </ul>
@@ -354,17 +348,13 @@ export default function PublicHome() {
               <h3 className="font-bold text-lg mb-4">Company</h3>
               <ul className="space-y-2">
                 <li>
-                  <Link href="/about-owlfenc">
-                    <a className="text-muted-foreground hover:text-primary transition-colors text-sm">
-                      About Us
-                    </a>
+                  <Link href="/about-owlfenc" className="text-muted-foreground hover:text-primary transition-colors text-sm">
+                    About Us
                   </Link>
                 </li>
                 <li>
-                  <Link href="/about-mervin">
-                    <a className="text-muted-foreground hover:text-primary transition-colors text-sm">
-                      About Mervin AI
-                    </a>
+                  <Link href="/about-mervin" className="text-muted-foreground hover:text-primary transition-colors text-sm">
+                    About Mervin AI
                   </Link>
                 </li>
               </ul>
@@ -373,24 +363,18 @@ export default function PublicHome() {
               <h3 className="font-bold text-lg mb-4">Legal</h3>
               <ul className="space-y-2">
                 <li>
-                  <Link href="/privacy-policy">
-                    <a className="text-muted-foreground hover:text-primary transition-colors text-sm">
-                      Privacy Policy
-                    </a>
+                  <Link href="/privacy-policy" className="text-muted-foreground hover:text-primary transition-colors text-sm">
+                    Privacy Policy
                   </Link>
                 </li>
                 <li>
-                  <Link href="/terms-of-service">
-                    <a className="text-muted-foreground hover:text-primary transition-colors text-sm">
-                      Terms of Service
-                    </a>
+                  <Link href="/terms-of-service" className="text-muted-foreground hover:text-primary transition-colors text-sm">
+                    Terms of Service
                   </Link>
                 </li>
                 <li>
-                  <Link href="/legal-policy">
-                    <a className="text-muted-foreground hover:text-primary transition-colors text-sm">
-                      Legal Policy
-                    </a>
+                  <Link href="/legal-policy" className="text-muted-foreground hover:text-primary transition-colors text-sm">
+                    Legal Policy
                   </Link>
                 </li>
               </ul>
@@ -410,7 +394,7 @@ export default function PublicHome() {
             </div>
           </div>
           <div className="pt-8 border-t border-border/40 text-center text-sm text-muted-foreground">
-            <p>© 2025 Owl Fence. All rights reserved.</p>
+            <p>© 2025 Owl Fenc. All rights reserved.</p>
           </div>
         </div>
       </footer>

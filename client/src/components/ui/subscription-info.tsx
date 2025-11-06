@@ -109,7 +109,7 @@ export function SubscriptionInfo({
         <CardContent className={compact ? "pt-2" : ""}>
           <div className="p-4 bg-muted rounded-md text-center">
             <p className="mb-4">
-              Mejora a un plan premium para acceder a todas las funcionalidades de Owl Fence.
+              Mejora a un plan premium para acceder a todas las funcionalidades de Owl Fenc.
             </p>
             <Link href="/subscription">
               <Button>Ver planes disponibles</Button>

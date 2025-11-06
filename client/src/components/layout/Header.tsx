@@ -61,7 +61,7 @@ export default function Header() {
             />
             
             {/* Texto de respaldo si la imagen falla */}
-            <span className="text-xl font-bold text-primary hidden">Owl Fence</span>
+            <span className="text-xl font-bold text-primary hidden">Owl Fenc</span>
           </div>
           
           {/* Slogan */}

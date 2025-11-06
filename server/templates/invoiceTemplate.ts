@@ -353,7 +353,7 @@ export function generateInvoiceHtml(data: InvoiceData): string {
         
         <!-- Footer -->
         <div class="footer">
-            <p>Esta factura fue generada automáticamente por Mervin AI • Powered by Owl Fence Platform</p>
+            <p>Esta factura fue generada automáticamente por Mervin AI • Powered by Owl Fenc Platform</p>
             <p>Para preguntas sobre esta factura, contacte: ${data.contractorEmail} • ${data.contractorPhone}</p>
         </div>
     </div>

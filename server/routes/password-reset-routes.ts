@@ -153,7 +153,7 @@ router.post('/request', async (req, res) => {
             </div>
           </div>
           <div class="footer">
-            <p>&copy; ${new Date().getFullYear()} Owl Fence Platform. All rights reserved.</p>
+            <p>&copy; ${new Date().getFullYear()} Owl Fenc Platform. All rights reserved.</p>
             <p>This is an automated security email. Please do not reply.</p>
           </div>
         </div>
@@ -167,7 +167,7 @@ router.post('/request', async (req, res) => {
       to: email,
       subject: 'Reset Your Password - Action Required',
       html: emailHtml,
-      from: 'Owl Fence <noreply@owlfenc.com>'
+      from: 'Owl Fenc <noreply@owlfenc.com>'
     });
 
     if (emailSent) {

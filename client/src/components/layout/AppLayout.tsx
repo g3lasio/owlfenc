@@ -136,7 +136,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
             </Link>
             <span>|</span>
             <span className="font-medium">
-              © {new Date().getFullYear()} Owl Fence
+              © {new Date().getFullYear()} Owl Fenc
             </span>
           </div>
         </footer>

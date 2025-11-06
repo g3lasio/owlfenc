@@ -8136,7 +8136,7 @@ Output must be between 200-900 characters in English.`;
             </div>
             
             <div class="footer">
-              <p>Powered by Owl Fence Legal Defense System</p>
+              <p>Powered by Owl Fenc Legal Defense System</p>
               <p>Secure • Compliant • Professional</p>
             </div>
           </div>

@@ -1323,7 +1323,7 @@ export default function Profile() {
                       />
                       {companyInfo.email && (
                         <p className="text-xs text-gray-400 mt-2">
-                          Este email se usará para respuestas de clientes. Los estimados se envían desde la plataforma Owl Fence.
+                          Este email se usará para respuestas de clientes. Los estimados se envían desde la plataforma Owl Fenc.
                         </p>
                       )}
                     </div>

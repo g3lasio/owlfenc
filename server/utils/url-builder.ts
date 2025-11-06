@@ -60,7 +60,7 @@ function isProductionEnvironment(req: Request): boolean {
   
   // Detectores de producción
   const productionIndicators = [
-    // Dominios de producción de Owl Fence
+    // Dominios de producción de Owl Fenc
     'owlfenc.com',
     'app.owlfenc.com',
     'api.owlfenc.com',
@@ -115,7 +115,7 @@ export function buildSignatureUrls(req: Request, contractId: string): {
 }
 
 /**
- * Obtiene el dominio correcto donde está el servidor API/backend de Owl Fence
+ * Obtiene el dominio correcto donde está el servidor API/backend de Owl Fenc
  * CRÍTICO: Los URLs compartidos DEBEN apuntar al dominio donde corre Express/API
  * 
  * Configuración mediante variables de entorno (orden de prioridad):
@@ -124,7 +124,7 @@ export function buildSignatureUrls(req: Request, contractId: string): {
  * 3. req.get('host') - Host actual de la petición
  * 4. DEFAULT PRODUCTION: app.owlfenc.com (dominio verificado de producción)
  * 
- * ⚠️ IMPORTANTE: Owl Fence usa app.owlfenc.com como dominio principal de la aplicación
+ * ⚠️ IMPORTANTE: Owl Fenc usa app.owlfenc.com como dominio principal de la aplicación
  */
 function getBackendDomain(req: Request, context: string = ''): string {
   const currentHost = req.get('host') || 'localhost:5000';
@@ -149,7 +149,7 @@ function getBackendDomain(req: Request, context: string = ''): string {
   
   // 🦉 PRODUCCIÓN OWL FENCE: Si estamos en producción y no hay config, usar app.owlfenc.com
   if (isProductionEnvironment(req)) {
-    console.log(`🦉 [URL-BUILDER] ${context} - Producción detectada, usando dominio Owl Fence: app.owlfenc.com`);
+    console.log(`🦉 [URL-BUILDER] ${context} - Producción detectada, usando dominio Owl Fenc: app.owlfenc.com`);
     return 'app.owlfenc.com';
   }
   

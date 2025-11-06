@@ -3395,7 +3395,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
         // ===== CONTRACT INFORMATION - Información del contratista =====
         contractInformation: {
-          companyName: contractorInfo.company || "Owl Fence",
+          companyName: contractorInfo.company || "Owl Fenc",
           companyAddress: contractorInfo.address || "",
           companyCity: contractorInfo.city || "",
           companyState: contractorInfo.state || "",
@@ -3482,7 +3482,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         clientName: estimate.client.name || "",
         clientEmail: estimate.client.email || "",
         clientPhone: estimate.client.phone || "",
-        contractorCompanyName: contractorInfo.company || "Owl Fence",
+        contractorCompanyName: contractorInfo.company || "Owl Fenc",
         subtotal: estimate.subtotal, // CÁLCULOS SEGUROS: valores directos
         total: estimate.total, // CÁLCULOS SEGUROS: valores directos
         items: estimate.items.map((item, index) => ({
@@ -3977,7 +3977,7 @@ This link provides a professional view of your estimate that you can access anyt
         tax: estimate.tax || 0,
         taxRate: estimate.taxRate || 10,
         total: estimate.total || 0,
-        notes: estimate.notes || "Estimado generado por Owl Fence",
+        notes: estimate.notes || "Estimado generado por Owl Fenc",
       };
 
       console.log("🔍 [DEBUG-FRONTEND] Enviando datos al backend:", {

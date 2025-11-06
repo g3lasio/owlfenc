@@ -1050,7 +1050,7 @@ export class EstimateEmailService {
         // Enviar copia al contratista
         const copySuccess = await resendService.sendEmail({
           to: data.contractor.email,
-          from: `Owl Fence Platform <noreply@owlfenc.com>`,
+          from: `Owl Fenc Platform <noreply@owlfenc.com>`,
           subject: `[COPIA] Estimado ${data.estimateNumber} enviado a ${data.client.name}`,
           html: `
             <div style="background: #f0f9ff; padding: 20px; border-left: 4px solid #3b82f6; margin-bottom: 20px;">
@@ -1095,7 +1095,7 @@ export class EstimateEmailService {
       // Notificar al contratista sobre la aprobación
       const success = await resendService.sendEmail({
         to: approval.contractorEmail,
-        from: `Owl Fence Platform <notifications@owlfenc.com>`,
+        from: `Owl Fenc Platform <notifications@owlfenc.com>`,
         subject: `🎉 Estimado ${approval.estimateId} APROBADO por ${approval.clientName}`,
         html: `
           <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">

@@ -578,7 +578,7 @@ export default function Features() {
               Ready to Work Smarter?
             </h2>
             <p className="text-lg text-muted-foreground mb-8">
-              Start your free trial today and see how Owl Fence can transform your construction business
+              Start your free trial today and see how Owl Fenc can transform your construction business
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/signup">
@@ -605,19 +605,13 @@ export default function Features() {
               <h3 className="font-bold text-lg mb-4">Product</h3>
               <ul className="space-y-2">
                 <li>
-                  <Link href="/features">
-                    <a className="text-muted-foreground hover:text-primary transition-colors text-sm">Features</a>
-                  </Link>
+                  <Link href="/features" className="text-muted-foreground hover:text-primary transition-colors text-sm">Features</Link>
                 </li>
                 <li>
-                  <Link href="/pricing">
-                    <a className="text-muted-foreground hover:text-primary transition-colors text-sm">Pricing</a>
-                  </Link>
+                  <Link href="/pricing" className="text-muted-foreground hover:text-primary transition-colors text-sm">Pricing</Link>
                 </li>
                 <li>
-                  <Link href="/integrations">
-                    <a className="text-muted-foreground hover:text-primary transition-colors text-sm">Integrations</a>
-                  </Link>
+                  <Link href="/integrations" className="text-muted-foreground hover:text-primary transition-colors text-sm">Integrations</Link>
                 </li>
               </ul>
             </div>
@@ -625,9 +619,7 @@ export default function Features() {
               <h3 className="font-bold text-lg mb-4">Company</h3>
               <ul className="space-y-2">
                 <li>
-                  <Link href="/about-owlfenc">
-                    <a className="text-muted-foreground hover:text-primary transition-colors text-sm">About Us</a>
-                  </Link>
+                  <Link href="/about-owlfenc" className="text-muted-foreground hover:text-primary transition-colors text-sm">About Us</Link>
                 </li>
               </ul>
             </div>
@@ -635,14 +627,10 @@ export default function Features() {
               <h3 className="font-bold text-lg mb-4">Legal</h3>
               <ul className="space-y-2">
                 <li>
-                  <Link href="/privacy-policy">
-                    <a className="text-muted-foreground hover:text-primary transition-colors text-sm">Privacy Policy</a>
-                  </Link>
+                  <Link href="/privacy-policy" className="text-muted-foreground hover:text-primary transition-colors text-sm">Privacy Policy</Link>
                 </li>
                 <li>
-                  <Link href="/terms-of-service">
-                    <a className="text-muted-foreground hover:text-primary transition-colors text-sm">Terms of Service</a>
-                  </Link>
+                  <Link href="/terms-of-service" className="text-muted-foreground hover:text-primary transition-colors text-sm">Terms of Service</Link>
                 </li>
               </ul>
             </div>
@@ -658,7 +646,7 @@ export default function Features() {
             </div>
           </div>
           <div className="pt-8 border-t border-border/40 text-center text-sm text-muted-foreground">
-            <p>© 2025 Owl Fence. All rights reserved.</p>
+            <p>© 2025 Owl Fenc. All rights reserved.</p>
           </div>
         </div>
       </footer>

@@ -282,7 +282,7 @@ router.post('/refresh-session', async (req: Request, res: Response) => {
 
 // Email change confirmation email template
 function generateEmailChangeConfirmationEmail(newEmail: string, confirmationLink: string): { subject: string; html: string } {
-  const subject = 'Confirma tu nuevo email - Owl Fence';
+  const subject = 'Confirma tu nuevo email - Owl Fenc';
   
   const html = `
     <!DOCTYPE html>
@@ -406,7 +406,7 @@ function generateEmailChangeConfirmationEmail(newEmail: string, confirmationLink
         </div>
         
         <div class="footer">
-          <p>&copy; ${new Date().getFullYear()} Owl Fence LLC. Todos los derechos reservados.</p>
+          <p>&copy; ${new Date().getFullYear()} Owl Fenc LLC. Todos los derechos reservados.</p>
           <p>Sistema de cambio de email seguro | Encriptación HMAC</p>
         </div>
       </div>

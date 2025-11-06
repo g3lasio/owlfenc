@@ -12,7 +12,7 @@ export default function PublicHeader() {
         <div className="flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center space-x-2" data-testid="link-home">
             <div className="text-2xl font-bold bg-gradient-to-r from-primary to-cyan-400 bg-clip-text text-transparent">
-              Owl Fence
+              Owl Fenc
             </div>
           </Link>
 

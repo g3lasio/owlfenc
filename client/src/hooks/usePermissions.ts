@@ -59,11 +59,11 @@ export function useWatermark() {
   const getWatermarkText = (feature: 'estimates' | 'contracts'): string => {
     switch (feature) {
       case 'estimates':
-        return 'Generado con Owl Fence - Plan Gratuito';
+        return 'Generado con Owl Fenc - Plan Gratuito';
       case 'contracts':
-        return 'Contrato generado con Owl Fence';
+        return 'Contrato generado con Owl Fenc';
       default:
-        return 'Owl Fence';
+        return 'Owl Fenc';
     }
   };
 

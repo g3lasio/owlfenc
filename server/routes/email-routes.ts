@@ -108,7 +108,7 @@ router.post('/send-estimate-email', async (req, res) => {
             <div class="footer">
                 <p style="margin: 0; color: #6b7280; font-size: 14px;">
                     Este estimado es válido por 30 días desde la fecha de emisión.<br>
-                    Generado profesionalmente con Owl Fence Platform
+                    Generado profesionalmente con Owl Fenc Platform
                 </p>
             </div>
         </div>

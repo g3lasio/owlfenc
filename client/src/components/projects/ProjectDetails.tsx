@@ -229,7 +229,7 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
       // Preparar datos para la factura
       const invoiceData = {
         profile: {
-          company: "Owl Fence AI",
+          company: "Owl Fenc AI",
           email: project.clientEmail || "",
           phone: project.clientPhone || "",
           address: ""
