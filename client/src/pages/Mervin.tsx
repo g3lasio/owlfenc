@@ -765,22 +765,22 @@ export default function Mervin() {
       <div className="px-4 py-3 md:p-4 border-b border-cyan-900/30 bg-black/80 backdrop-blur-sm sticky top-0 z-40">
         <div className="flex items-center justify-between">
           {/* Spacer for alignment */}
-          <div className="w-[100px] md:w-[150px]"></div>
+          <div className="w-[88px] sm:w-[100px] md:w-[150px]"></div>
           
           {/* Centered Logo and Title */}
-          <div className="flex items-center gap-3 justify-center flex-1">
+          <div className="flex items-center gap-2 sm:gap-3 justify-center flex-1">
             <img
               src="https://i.postimg.cc/W4nKDvTL/logo-mervin.png"
               alt="Mervin AI"
-              className="w-8 h-8 md:w-10 md:h-10"
+              className="w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10"
             />
-            <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
               Mervin AI
             </h1>
           </div>
           
           {/* Model Selector and History */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {/* History Button */}
             <Button
               variant="outline"
@@ -809,13 +809,13 @@ export default function Mervin() {
               </Button>
               
               {showModelSelector && canUseAgentMode && (
-                <div className="absolute top-full right-0 mt-2 bg-gray-800 border border-cyan-900/50 rounded-lg shadow-xl z-50 min-w-[200px] md:min-w-[180px]">
+                <div className="absolute top-full right-0 mt-2 bg-gray-800 border border-cyan-900/50 rounded-lg shadow-xl z-50 w-[280px] sm:w-[240px] md:min-w-[200px]">
                   {/* Agent Mode Option */}
                   <button
-                    className={`w-full text-left px-4 py-4 md:px-3 md:py-2 rounded-t-lg flex items-center justify-between min-h-[52px] md:min-h-[auto] ${
+                    className={`w-full text-left px-4 py-3 md:px-3 md:py-2 rounded-t-lg flex items-center justify-between touch-manipulation ${
                       selectedModel === "agent"
-                        ? 'text-cyan-400 bg-cyan-900/20 hover:bg-cyan-900/30'
-                        : 'text-cyan-400 hover:bg-gray-700'
+                        ? 'text-cyan-400 bg-cyan-900/20 active:bg-cyan-900/30'
+                        : 'text-cyan-400 active:bg-gray-700'
                     }`}
                     onClick={() => {
                       setSelectedModel("agent");
@@ -823,21 +823,21 @@ export default function Mervin() {
                     }}
                   >
                     <div className="flex items-center">
-                      <Brain className="w-5 h-5 md:w-4 md:h-4 mr-3 md:mr-2" />
+                      <Brain className="w-5 h-5 md:w-4 md:h-4 mr-3 md:mr-2 flex-shrink-0" />
                       <div>
-                        <div className="text-base md:text-sm font-medium">Agent Mode</div>
+                        <div className="text-sm font-medium">Agent Mode</div>
                         <div className="text-xs text-gray-400">Full AI capabilities</div>
                       </div>
                     </div>
-                    {selectedModel === "agent" && <Check className="w-4 h-4 text-cyan-400" />}
+                    {selectedModel === "agent" && <Check className="w-4 h-4 text-cyan-400 flex-shrink-0 ml-2" />}
                   </button>
                   
                   {/* Legacy Mode Option */}
                   <button
-                    className={`w-full text-left px-4 py-4 md:px-3 md:py-2 rounded-b-lg flex items-center justify-between min-h-[52px] md:min-h-[auto] ${
+                    className={`w-full text-left px-4 py-3 md:px-3 md:py-2 rounded-b-lg flex items-center justify-between touch-manipulation ${
                       selectedModel === "legacy"
-                        ? 'text-cyan-400 bg-cyan-900/20 hover:bg-cyan-900/30'
-                        : 'text-gray-400 hover:bg-gray-700'
+                        ? 'text-cyan-400 bg-cyan-900/20 active:bg-cyan-900/30'
+                        : 'text-gray-400 active:bg-gray-700'
                     }`}
                     onClick={() => {
                       setSelectedModel("legacy");
@@ -845,13 +845,13 @@ export default function Mervin() {
                     }}
                   >
                     <div className="flex items-center">
-                      <Zap className="w-5 h-5 md:w-4 md:h-4 mr-3 md:mr-2" />
+                      <Zap className="w-5 h-5 md:w-4 md:h-4 mr-3 md:mr-2 flex-shrink-0" />
                       <div>
-                        <div className="text-base md:text-sm font-medium">Chat Mode</div>
+                        <div className="text-sm font-medium">Chat Mode</div>
                         <div className="text-xs text-gray-400">Simple conversation</div>
                       </div>
                     </div>
-                    {selectedModel === "legacy" && <Check className="w-4 h-4 text-cyan-400" />}
+                    {selectedModel === "legacy" && <Check className="w-4 h-4 text-cyan-400 flex-shrink-0 ml-2" />}
                   </button>
                 </div>
               )}
@@ -930,14 +930,14 @@ export default function Mervin() {
               {message.sender === "assistant" && (
                 <button
                   onClick={() => handleCopyMessage(message.id, message.content)}
-                  className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-700 hover:bg-gray-600 text-gray-300 p-1.5 rounded-lg shadow-lg"
+                  className="absolute -top-2 -right-2 md:opacity-0 md:group-hover:opacity-100 opacity-80 transition-opacity bg-gray-700 hover:bg-gray-600 text-gray-300 p-2 md:p-1.5 rounded-lg shadow-lg touch-manipulation"
                   title="Copiar mensaje"
                   data-testid={`button-copy-${message.id}`}
                 >
                   {copiedMessageId === message.id ? (
-                    <Check className="w-3.5 h-3.5 text-green-400" />
+                    <Check className="w-4 h-4 md:w-3.5 md:h-3.5 text-green-400" />
                   ) : (
-                    <Copy className="w-3.5 h-3.5" />
+                    <Copy className="w-4 h-4 md:w-3.5 md:h-3.5" />
                   )}
                 </button>
               )}
@@ -986,21 +986,21 @@ export default function Mervin() {
                 {attachedFiles.map((file, index) => (
                   <div
                     key={index}
-                    className="flex items-center gap-2 bg-gray-800/50 border border-cyan-900/30 rounded-lg px-3 py-2 text-sm"
+                    className="flex items-center gap-2 bg-gray-800/50 border border-cyan-900/30 rounded-lg px-3 py-2 text-xs sm:text-sm"
                   >
                     {file.type.startsWith('image/') ? (
-                      <ImageIcon className="h-4 w-4 text-cyan-400" />
+                      <ImageIcon className="h-4 w-4 text-cyan-400 flex-shrink-0" />
                     ) : file.type === 'application/pdf' ? (
-                      <FileText className="h-4 w-4 text-red-400" />
+                      <FileText className="h-4 w-4 text-red-400 flex-shrink-0" />
                     ) : (
-                      <File className="h-4 w-4 text-gray-400" />
+                      <File className="h-4 w-4 text-gray-400 flex-shrink-0" />
                     )}
-                    <span className="text-gray-300 max-w-[150px] truncate">
+                    <span className="text-gray-300 max-w-[120px] sm:max-w-[150px] truncate">
                       {file.name}
                     </span>
                     <button
                       onClick={() => handleRemoveFile(index)}
-                      className="text-gray-400 hover:text-red-400 transition-colors"
+                      className="text-gray-400 active:text-red-400 transition-colors touch-manipulation p-1"
                       title="Eliminar archivo"
                     >
                       <X className="h-4 w-4" />

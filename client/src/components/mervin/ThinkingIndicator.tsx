@@ -120,8 +120,8 @@ export function ThinkingIndicator({ currentAction }: ThinkingIndicatorProps) {
 
   return (
     <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500">
-      <Icon className="w-4 h-4 animate-pulse" />
-      <span className="text-sm">
+      <Icon className="w-4 h-4 sm:w-5 sm:h-5 animate-pulse flex-shrink-0" />
+      <span className="text-xs sm:text-sm">
         {text}
         <span className="inline-flex ml-0.5">
           <span className="animate-bounce" style={{ animationDelay: '0ms' }}>.</span>

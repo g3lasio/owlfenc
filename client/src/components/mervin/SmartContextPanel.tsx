@@ -49,10 +49,10 @@ export function SmartContextPanel({ activeEndpoints, currentModel, isProcessing 
         {activeEndpoints.length > 0 && (
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <Database className="w-3 h-3 text-blue-500" />
+              <Database className="w-3 h-3 text-blue-500 flex-shrink-0" />
               <span className="text-xs text-gray-600 dark:text-gray-400">Conectado a:</span>
             </div>
-            <div className="flex flex-wrap gap-1 ml-5">
+            <div className="flex flex-wrap gap-1 ml-3 sm:ml-5">
               {activeEndpoints.map((endpoint, index) => (
                 <Badge key={index} variant="secondary" className="text-xs">
                   {endpointLabels[endpoint] || endpoint}
