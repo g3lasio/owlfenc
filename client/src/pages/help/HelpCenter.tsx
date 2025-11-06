@@ -55,11 +55,11 @@ export default function HelpCenter() {
         <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 p-6 rounded-lg border">
           <div className="flex items-start justify-between">
             <div className="space-y-2">
-              <h2 className="text-xl font-semibold flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
+              <h2 className="text-xl font-semibold flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                <MessageSquare className="h-5 w-5 text-gray-900 dark:text-gray-100" />
                 Need personalized help?
               </h2>
-              <p className="text-muted-foreground">
+              <p className="text-gray-700 dark:text-gray-300">
                 Can't find what you're looking for? Submit a support ticket and our team will assist you.
               </p>
             </div>
