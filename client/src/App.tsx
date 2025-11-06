@@ -24,6 +24,11 @@ import TermsOfService from "@/pages/TermsOfService";
 import PricingSettings from "@/pages/PricingSettings";
 import Subscription from "@/pages/Subscription";
 import SubscriptionTest from "@/pages/SubscriptionTest";
+import PublicHome from "@/pages/PublicHome";
+import Features from "@/pages/Features";
+import Pricing from "@/pages/Pricing";
+import Integrations from "@/pages/Integrations";
+import SmartHomeRoute from "@/components/routing/SmartHomeRoute";
 
 import Billing from "./pages/Billing";
 import History from "@/pages/History";
@@ -159,7 +164,15 @@ function MainAppRouter() {
         <SidebarProvider>
           <AppLayout>
             <Switch>
-              {/* Rutas públicas con layout mínimo */}
+              {/* Landing Page - Smart Route (public for visitors, redirects to /home for authenticated users) */}
+              <Route path="/" component={SmartHomeRoute} />
+              
+              {/* Public Landing Pages */}
+              <Route path="/features" component={Features} />
+              <Route path="/pricing" component={Pricing} />
+              <Route path="/integrations" component={Integrations} />
+
+              {/* Auth & Account - Public Routes */}
               <Route path="/login" component={() => <AuthPage />} />
               <Route path="/signup" component={() => <AuthPage />} />
               <Route path="/recuperar-password" component={RecuperarPassword} />
@@ -169,14 +182,16 @@ function MainAppRouter() {
               <Route path="/webauthn-popup" component={WebAuthnPopup} />
               <Route path="/auth-diagnostic" component={AuthDiagnostic} />
               
+              {/* About & Legal - Public Routes */}
               <Route path="/about-owlfenc" component={AboutOwlFence} />
               <Route path="/about-mervin" component={AboutMervin} />
               <Route path="/legal-policy" component={LegalPolicy} />
               <Route path="/privacy-policy" component={PrivacyPolicy} />
               <Route path="/terms-of-service" component={TermsOfService} />
 
-              {/* Rutas protegidas */}
-              <Route path="/" component={() => <ProtectedRoute component={Home} />} />
+              {/* Dashboard - Protected Route (redirects unauthenticated users to /) */}
+              <Route path="/home" component={() => <ProtectedRoute component={Home} />} />
+              <Route path="/dashboard" component={() => <ProtectedRoute component={Home} />} />
               <Route path="/mervin" component={() => <ProtectedRoute component={Mervin} />} />
               <Route path="/projects">
                 {() => <ProtectedRoute component={Projects} />}
