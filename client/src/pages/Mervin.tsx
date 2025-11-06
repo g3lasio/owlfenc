@@ -566,10 +566,17 @@ export default function Mervin() {
     }, 300);
   };
   
-  const handleSaveCurrentConversation = async () => {
+  const handleSaveCurrentConversation = useCallback(async () => {
     if (!currentUser?.uid || messages.length < 2) return;
     
     try {
+      console.log('💾 [CONVERSATION-SAVE] Attempting to save conversation...', {
+        messageCount: messages.length,
+        activeConversationId: conversationManager.activeConversationId,
+        aiModel: currentAIModel,
+        category: suggestionContext,
+      });
+      
       // Convert Mervin messages to conversation format
       const conversationMessages = messages.map(msg => ({
         id: msg.id,
@@ -586,22 +593,26 @@ export default function Mervin() {
       // Save or update conversation
       if (conversationManager.activeConversationId) {
         // Update existing conversation
+        console.log('💾 [CONVERSATION-SAVE] Updating existing conversation:', conversationManager.activeConversationId);
         await conversationManager.addMessages(
           conversationManager.activeConversationId,
           conversationMessages
         );
+        console.log('✅ [CONVERSATION-SAVE] Conversation updated successfully');
       } else {
         // Create new conversation
-        await conversationManager.createConversation(
+        console.log('💾 [CONVERSATION-SAVE] Creating new conversation...');
+        const result = await conversationManager.createConversation(
           conversationMessages,
           aiModel,
           category as any
         );
+        console.log('✅ [CONVERSATION-SAVE] New conversation created:', result?.conversationId);
       }
     } catch (error) {
-      console.error('❌ Error saving conversation:', error);
+      console.error('❌ [CONVERSATION-SAVE] Error saving conversation:', error);
     }
-  };
+  }, [currentUser?.uid, messages, conversationManager, currentAIModel, suggestionContext]);
   
   const handleDeleteConversation = async (conversationId: string) => {
     try {
@@ -708,7 +719,7 @@ export default function Mervin() {
       console.log('💾 [AUTO-SAVE] Saving conversation (every 3 messages)');
       handleSaveCurrentConversation();
     }
-  }, [messages.length]);
+  }, [messages.length, handleSaveCurrentConversation]);
   
   // Save conversation when loading stops (after receiving Mervin's response)
   useEffect(() => {
@@ -716,7 +727,7 @@ export default function Mervin() {
       console.log('💾 [AUTO-SAVE] Saving conversation (after response completed)');
       handleSaveCurrentConversation();
     }
-  }, [isLoading]);
+  }, [isLoading, messages.length, handleSaveCurrentConversation]);
 
   return (
     <div className="flex flex-col h-full bg-black text-white">
