@@ -48,11 +48,13 @@ export class SystemAPIService {
   /**
    * Verificar propiedad usando endpoint /api/property/details
    * Este endpoint usa Atom para obtener información real
+   * REGISTRA LA BÚSQUEDA EN HISTORIAL AUTOMÁTICAMENTE
    */
   async verifyProperty(params: PropertyParams): Promise<PropertyData> {
     console.log('🏠 [SYSTEM-API] Verificando propiedad:', params.address);
     
     try {
+      // 1. Verificar propiedad usando el endpoint existente
       const response = await this.client.get('/api/property/details', {
         params: {
           address: params.address,
@@ -61,8 +63,25 @@ export class SystemAPIService {
       });
 
       console.log('✅ [SYSTEM-API] Propiedad verificada exitosamente');
-      console.log('📊 [SYSTEM-API] Datos de propiedad:', JSON.stringify(response.data, null, 2));
-      return response.data as PropertyData;
+      
+      const propertyData = response.data;
+      
+      // 2. Registrar búsqueda en historial usando /api/search/property
+      try {
+        console.log('💾 [SYSTEM-API] Guardando búsqueda de propiedad en historial...');
+        await this.client.post('/api/search/property', {
+          address: params.address,
+          city: propertyData.property?.address?.city,
+          state: propertyData.property?.address?.state,
+          zipCode: propertyData.property?.address?.zip
+        });
+        console.log('✅ [SYSTEM-API] Búsqueda guardada en historial exitosamente');
+      } catch (historyError: any) {
+        console.warn('⚠️ [SYSTEM-API] No se pudo guardar en historial (continuando):', historyError.message);
+        // No lanzar error - la búsqueda fue exitosa aunque no se guardó en historial
+      }
+      
+      return propertyData as PropertyData;
 
     } catch (error: any) {
       console.error('❌ [SYSTEM-API] Error verificando propiedad:', error.message);
@@ -75,6 +94,7 @@ export class SystemAPIService {
 
   /**
    * Crear estimado usando endpoint /api/estimates
+   * NOTA: El endpoint POST /api/estimates YA guarda automáticamente en Firebase historial
    */
   async createEstimate(params: EstimateParams): Promise<EstimateCalculation> {
     console.log('📊 [SYSTEM-API] Creando estimado para:', params.clientName);
@@ -87,7 +107,7 @@ export class SystemAPIService {
         phone: params.clientPhone
       });
 
-      // 2. Crear el estimado
+      // 2. Crear el estimado (se guarda automáticamente en historial Firebase)
       const response = await this.client.post('/api/estimates', {
         userId: this.userId,
         clientId: client.id,
@@ -96,7 +116,7 @@ export class SystemAPIService {
       });
 
       const estimate = response.data as EstimateCalculation;
-      console.log('✅ [SYSTEM-API] Estimado creado:', estimate.id);
+      console.log('✅ [SYSTEM-API] Estimado creado y guardado en historial:', estimate.id);
 
       // 3. Enviar email si se requiere
       if (params.sendEmail && params.clientEmail) {
@@ -139,6 +159,7 @@ export class SystemAPIService {
 
   /**
    * Crear contrato usando endpoint /api/contracts
+   * REGISTRA EN HISTORIAL AUTOMÁTICAMENTE usando /api/contracts/save
    */
   async createContract(params: ContractParams, contractContent: string): Promise<Contract> {
     console.log('📄 [SYSTEM-API] Creando contrato para:', params.clientName);
@@ -165,6 +186,35 @@ export class SystemAPIService {
 
       const contract = response.data as Contract;
       console.log('✅ [SYSTEM-API] Contrato creado:', contract.id);
+      
+      // 3. Guardar en historial usando /api/contracts/save
+      try {
+        console.log('💾 [SYSTEM-API] Guardando contrato en historial...');
+        await this.client.post('/api/contracts/save', {
+          contractData: {
+            contractData: {
+              clientName: params.clientName,
+              clientAddress: params.clientAddress || '',
+              projectType: params.projectType || 'Construction Project',
+              projectDescription: params.projectDescription || '',
+              projectLocation: params.projectAddress || '',
+              contractorName: params.contractorName || '',
+              totalAmount: params.amount?.toString() || '0',
+              clientPhone: params.clientPhone || '',
+              clientEmail: params.clientEmail || '',
+              startDate: params.startDate || new Date().toISOString(),
+              completionDate: params.endDate || new Date().toISOString()
+            },
+            html: contractContent
+          },
+          name: `Contract for ${params.clientName}`,
+          status: 'generated'
+        });
+        console.log('✅ [SYSTEM-API] Contrato guardado en historial exitosamente');
+      } catch (historyError: any) {
+        console.warn('⚠️ [SYSTEM-API] No se pudo guardar contrato en historial (continuando):', historyError.message);
+        // No lanzar error - el contrato fue creado exitosamente
+      }
 
       return contract;
 
