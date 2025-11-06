@@ -29,6 +29,7 @@ interface AuthContextType {
   error: string | null;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  logout: () => Promise<void>; // Alias para compatibilidad con código legacy
   refreshSession: () => Promise<void>;
 }
 
@@ -247,6 +248,7 @@ export function AuthSessionProvider({ children }: AuthSessionProviderProps) {
     error,
     signIn,
     signOut,
+    logout: signOut, // Alias para compatibilidad con código legacy
     refreshSession
   };
 

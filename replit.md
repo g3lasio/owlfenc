@@ -19,7 +19,8 @@ This AI-powered platform automates legal document and permit management for cont
 ### Frontend
 - **Technology Stack**: React.js with TypeScript, Tailwind CSS, Wouter for routing, TanStack Query for data management.
 - **UI/UX Decisions**: Mobile optimization, conversational onboarding via Mervin AI, smart action system (slash commands, contextual suggestions), adaptive UI, integrated AI model selectors. Redesigned Project Details view with merged tabs and enhanced functionality.
-- **Authentication Architecture**: Complete migration to AuthSessionProvider with cookie-based sessions, eliminating Legacy AuthContext.tsx. Single source of truth: `@/components/auth/AuthSessionProvider.tsx`.
+- **Authentication Architecture**: Complete migration to AuthSessionProvider with cookie-based sessions, eliminating Legacy AuthContext.tsx. Single source of truth: `@/components/auth/AuthSessionProvider.tsx`. Includes `logout` alias for backward compatibility with legacy code.
+- **Public Landing Page System**: Strategic marketing pages completely separated from protected product. Four public pages: PublicHome (hero, target audience, features showcase), Features (detailed capabilities organized in tabs), Pricing (3-tier comparison with real plan data from permissions-config.ts), Integrations (Stripe, ATTOM, AI models, etc.). Uses PublicHeader for consistent navigation. SmartHomeRoute intelligently routes `/` to landing for visitors, redirects authenticated users to `/home` dashboard. All product routes protected via ProtectedRoute component. Critical security: landing is public marketing, product requires authentication and is valuable IP.
 
 ### Backend
 - **Server Framework**: Express.js.
