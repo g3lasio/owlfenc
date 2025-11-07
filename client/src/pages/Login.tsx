@@ -496,7 +496,11 @@ export default function AuthPage() {
               className={`flex-1 flex items-center justify-center text-xs font-semibold relative z-10 rounded-l-full transition-colors ${
                 authMode === "login" ? "text-white" : "text-muted-foreground"
               }`}
-              onClick={() => authMode !== "login" && toggleAuthMode()}
+              onClick={() => {
+                if (authMode !== "login") {
+                  navigate("/login");
+                }
+              }}
             >
               {t("auth.login")}
             </button>
@@ -504,7 +508,11 @@ export default function AuthPage() {
               className={`flex-1 flex items-center justify-center text-xs font-semibold relative z-10 rounded-r-full transition-colors ${
                 authMode === "signup" ? "text-white" : "text-muted-foreground"
               }`}
-              onClick={() => authMode !== "signup" && toggleAuthMode()}
+              onClick={() => {
+                if (authMode !== "signup") {
+                  navigate("/signup");
+                }
+              }}
             >
               {t("auth.signup")}
             </button>
