@@ -26,7 +26,8 @@ export function registerSubscriptionControlRoutes(app: any) {
       }
       let userId = await userMappingService.getInternalUserId(firebaseUid);
       if (!userId) {
-        userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+        const mappingResult = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+        userId = mappingResult?.id || null;
       }
       if (!userId) {
         return res.status(500).json({ error: 'Error creando mapeo de usuario', success: false });
@@ -81,7 +82,8 @@ export function registerSubscriptionControlRoutes(app: any) {
       }
       let userId = await userMappingService.getInternalUserId(firebaseUid);
       if (!userId) {
-        userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+        const mappingResult = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+        userId = mappingResult?.id || null;
       }
       if (!userId) {
         return res.status(500).json({ error: 'Error creando mapeo de usuario', success: false });
@@ -118,7 +120,8 @@ export function registerSubscriptionControlRoutes(app: any) {
       }
       let userId = await userMappingService.getInternalUserId(firebaseUid);
       if (!userId) {
-        userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+        const mappingResult = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+        userId = mappingResult?.id || null;
       }
       if (!userId) {
         return res.status(500).json({ error: 'Error creando mapeo de usuario', success: false });
@@ -160,7 +163,8 @@ export function registerSubscriptionControlRoutes(app: any) {
       }
       let userId = await userMappingService.getInternalUserId(firebaseUid);
       if (!userId) {
-        userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+        const mappingResult = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+        userId = mappingResult?.id || null;
       }
       if (!userId) {
         return res.status(500).json({ error: 'Error creando mapeo de usuario', success: false });
@@ -201,10 +205,11 @@ export function registerSubscriptionControlRoutes(app: any) {
 
       let userId = await userMappingService.getInternalUserId(firebaseUid);
       if (!userId) {
-        userId = await userMappingService.createMapping(
+        const mappingResult = await userMappingService.createMapping(
           firebaseUid, 
           req.firebaseUser?.email || `${firebaseUid}@firebase.auth`
         );
+        userId = mappingResult?.id || null;
       }
 
       if (!userId) {
@@ -222,20 +227,17 @@ export function registerSubscriptionControlRoutes(app: any) {
       }
 
       // Activar el plan gratuito usando robustSubscriptionService
-      const subscription = await robustSubscriptionService.activateUserPlan(userId, planId);
+      const subscriptionData = await robustSubscriptionService.activateUserPlan(userId, planId);
       
       console.log(`✅ [SUBSCRIPTION-CONTROL] Plan gratuito activado exitosamente para usuario ${userId}`);
       
       res.json({
         success: true,
         message: 'Plan gratuito Primo Chambeador activado correctamente',
-        planId: planId,
-        planName: 'Primo Chambeador',
-        subscription: {
-          id: subscription.subscription.id,
-          status: subscription.subscription.status,
-          planId: subscription.subscription.planId
-        }
+        planId: subscriptionData.planId,
+        planName: subscriptionData.planName,
+        status: subscriptionData.status,
+        isActive: subscriptionData.isActive
       });
 
     } catch (error) {
