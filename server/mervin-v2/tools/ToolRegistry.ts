@@ -76,6 +76,23 @@ export class ToolRegistry {
   }
   
   /**
+   * Ejecutar una herramienta CON SLOT-FILLING automático desde snapshot
+   * Este es el método principal que debe usar MervinOrchestrator
+   */
+  async executeToolWithSnapshot(toolName: string, params: any, snapshot: UserSnapshot): Promise<ToolResult> {
+    console.log(`🔧 [TOOL-WITH-SNAPSHOT] Ejecutando ${toolName} con slot-filling...`);
+    
+    // 1. Auto-completar parámetros desde snapshot
+    const completedParams = this.autoCompleteParameters(toolName, params, snapshot);
+    
+    console.log(`📋 [SLOT-FILLING] Parámetros originales:`, params);
+    console.log(`✨ [SLOT-FILLING] Parámetros completados:`, completedParams);
+    
+    // 2. Ejecutar herramienta con parámetros completados
+    return await this.executeTool(toolName, completedParams, snapshot);
+  }
+
+  /**
    * Ejecutar una herramienta
    */
   async executeTool(toolName: string, params: any, snapshot: UserSnapshot): Promise<ToolResult> {
