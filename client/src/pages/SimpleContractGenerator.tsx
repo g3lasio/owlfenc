@@ -88,6 +88,31 @@ interface CompletedContract {
   signedPdfPath?: string;
 }
 
+// 🔧 CURRENCY NORMALIZATION: Detects and fixes values stored in cents (100× too large)
+function normalizeCurrency(value: number | undefined | null): number {
+  if (value == null || value === 0) return 0;
+  
+  const tolerance = 0.5; // Small tolerance for floating point comparison
+  
+  // If value appears to be in cents (too large for typical currency):
+  // Check if dividing by 100 gives a more reasonable value
+  if (value > 1000) {
+    const normalized = value / 100;
+    
+    // Additional heuristic: if original value has no decimal places but
+    // normalized value would have exactly 2 decimal places, it's likely cents
+    const hasNoDecimals = Math.abs(value - Math.round(value)) < tolerance;
+    const normalizedHas2Decimals = Math.abs((normalized * 100) - Math.round(normalized * 100)) < tolerance;
+    
+    if (hasNoDecimals || normalizedHas2Decimals) {
+      console.log(`💰 [NORMALIZE] Converting ${value} (cents) → ${normalized} (dollars)`);
+      return normalized;
+    }
+  }
+  
+  return value;
+}
+
 // Simple 3-step contract generator without complex state management
 export default function SimpleContractGenerator() {
   const [, setLocation] = useLocation();
@@ -1871,12 +1896,14 @@ export default function SimpleContractGenerator() {
         setContractData(contractDataFromHistory);
 
         // Set editable data from contract history
-        // CRITICAL FIX: Check if projectTotal was saved in formFields or directly in financials
-        const savedProjectTotal = 
+        // CRITICAL FIX: Normalize projectTotal from possible cents storage
+        const rawProjectTotal = 
           (contractDataFromHistory.formFields as any)?.projectTotal ||
           contractDataFromHistory.financials?.total || 
           0;
-        const contractTotal = savedProjectTotal;
+        const contractTotal = normalizeCurrency(rawProjectTotal);
+        
+        console.log(`💰 [CONTRACT-LOAD] Raw total: ${rawProjectTotal} → Normalized: ${contractTotal}`);
 
         // Ensure payment milestones always have amount field defined
         let paymentMilestones = contractDataFromHistory.paymentTerms || [
@@ -1894,25 +1921,34 @@ export default function SimpleContractGenerator() {
           },
         ];
 
-        // Fix any milestones that don't have amount field or have it as undefined
+        // 🔧 ROBUST MILESTONE NORMALIZATION
         paymentMilestones = paymentMilestones.map((milestone: any) => {
-          let calculatedAmount = milestone.amount ?? (contractTotal * (milestone.percentage || 0)) / 100;
+          const percentage = milestone.percentage || 0;
+          const expectedAmount = (contractTotal * percentage) / 100;
           
-          // 🔧 FIX: Detect if amount is in cents (malformed data from old contracts)
-          // If amount is > 1000 AND is exactly percentage * total (without /100), it's in cents
-          if (calculatedAmount > 1000 && contractTotal > 0) {
-            const expectedInCents = contractTotal * (milestone.percentage || 0);
-            const tolerance = 0.01; // Allow small floating point errors
+          // If milestone has a saved amount, normalize it
+          let finalAmount: number;
+          if (milestone.amount != null) {
+            const normalizedSaved = normalizeCurrency(milestone.amount);
             
-            if (Math.abs(calculatedAmount - expectedInCents) < tolerance) {
-              console.log(`💰 FIXING MILESTONE: Amount ${calculatedAmount} is in cents, converting to ${calculatedAmount / 100}`);
-              calculatedAmount = calculatedAmount / 100;
+            // If normalized amount is close to expected, use it
+            // Otherwise recalculate from percentage
+            const tolerance = Math.abs(expectedAmount * 0.02); // 2% tolerance
+            if (Math.abs(normalizedSaved - expectedAmount) <= tolerance) {
+              finalAmount = normalizedSaved;
+              console.log(`💰 [MILESTONE] Using normalized saved amount: ${milestone.amount} → ${finalAmount} (expected: ${expectedAmount})`);
+            } else {
+              finalAmount = expectedAmount;
+              console.log(`💰 [MILESTONE] Saved amount ${milestone.amount} (normalized: ${normalizedSaved}) doesn't match expected ${expectedAmount}, recalculating`);
             }
+          } else {
+            finalAmount = expectedAmount;
+            console.log(`💰 [MILESTONE] No saved amount, calculating: ${contractTotal} × ${percentage}% = ${finalAmount}`);
           }
           
           return {
             ...milestone,
-            amount: calculatedAmount,
+            amount: finalAmount,
           };
         });
 
