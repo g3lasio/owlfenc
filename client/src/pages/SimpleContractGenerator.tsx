@@ -88,28 +88,26 @@ interface CompletedContract {
   signedPdfPath?: string;
 }
 
-// 🔧 CURRENCY NORMALIZATION: Detects and fixes values stored in cents (100× too large)
+// 🔧 DEFINITIVE CURRENCY NORMALIZATION
+// ONLY converts values that are CLEARLY in cents (integer >= 10000 with no decimals)
+// Values already in dollars (with decimals or < 10000) pass through unchanged
 function normalizeCurrency(value: number | undefined | null): number {
   if (value == null || value === 0) return 0;
   
-  const tolerance = 0.5; // Small tolerance for floating point comparison
+  // KEY INSIGHT: Values in cents are ALWAYS integers (no decimal places)
+  // Values in dollars typically have decimals OR are small amounts
+  const isInteger = Math.abs(value - Math.round(value)) < 0.001;
   
-  // If value appears to be in cents (too large for typical currency):
-  // Check if dividing by 100 gives a more reasonable value
-  if (value > 1000) {
+  // ONLY convert if:
+  // 1. Value is an integer (no decimals)
+  // 2. Value is >= 10000 (unlikely to be a dollar amount this large without decimals)
+  if (isInteger && value >= 10000) {
     const normalized = value / 100;
-    
-    // Additional heuristic: if original value has no decimal places but
-    // normalized value would have exactly 2 decimal places, it's likely cents
-    const hasNoDecimals = Math.abs(value - Math.round(value)) < tolerance;
-    const normalizedHas2Decimals = Math.abs((normalized * 100) - Math.round(normalized * 100)) < tolerance;
-    
-    if (hasNoDecimals || normalizedHas2Decimals) {
-      console.log(`💰 [NORMALIZE] Converting ${value} (cents) → ${normalized} (dollars)`);
-      return normalized;
-    }
+    console.log(`💰 [NORMALIZE] ${value} (cents-integer) → ${normalized} (dollars)`);
+    return normalized;
   }
   
+  // Otherwise, value is already in correct format (dollars)
   return value;
 }
 
