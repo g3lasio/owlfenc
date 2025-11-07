@@ -51,13 +51,6 @@ type LoginFormValues = {
   rememberMe: boolean;
 };
 
-type SignupFormValues = {
-  name: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-};
-
 export default function AuthPage() {
   const [, navigate] = useLocation();
   const {
@@ -74,11 +67,9 @@ export default function AuthPage() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [loginMethod, setLoginMethod] = useState<"email" | "otp">(
     "email",
   );
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showSessionUnlock, setShowSessionUnlock] = useState(false);
   const [sessionUnlockInfo, setSessionUnlockInfo] = useState<{
