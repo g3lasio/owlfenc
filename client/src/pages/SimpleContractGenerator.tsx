@@ -357,7 +357,7 @@ export default function SimpleContractGenerator() {
     } finally {
       setIsLoadingHistory(false);
     }
-  }, [currentUser?.uid, currentUser?.uid, toast]);
+  }, [currentUser?.uid, toast]);
 
   // Load completed contracts from both contract history and dual signature system
   const loadCompletedContracts = useCallback(async () => {
@@ -589,7 +589,7 @@ export default function SimpleContractGenerator() {
     } finally {
       setIsLoadingDrafts(false);
     }
-  }, [currentUser?.uid, currentUser?.uid, toast]);
+  }, [currentUser?.uid, toast]);
 
   const loadInProgressContracts = useCallback(async () => {
     // 🔐 CRITICAL: ONLY use currentUser.uid for authenticated API calls
@@ -658,11 +658,14 @@ export default function SimpleContractGenerator() {
 
   // Load projects from Firebase (same logic as ProjectToContractSelector)
   const loadProjectsFromFirebase = useCallback(async () => {
-    // ✅ CRITICAL: Get effective UID from Firebase Auth OR profile
-    const effectiveUid = currentUser?.uid || currentUser?.uid;
+    // ✅ CRITICAL FIX: Only use currentUser.uid
+    const effectiveUid = currentUser?.uid;
     
-    // ✅ FIXED: Resilient auth check
-    if (!effectiveUid && !profile?.email) return;
+    // ✅ FIXED: Exit early if no valid UID - prevents invalid Firebase query
+    if (!effectiveUid) {
+      console.log("⏳ Waiting for Firebase Auth to initialize before loading projects...");
+      return;
+    }
 
     try {
       setIsLoading(true);
@@ -851,7 +854,7 @@ export default function SimpleContractGenerator() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentUser?.uid, currentUser?.uid, toast]);
+  }, [currentUser?.uid, toast]);
 
   // Resend signature links
   const resendSignatureLinks = useCallback(
@@ -2017,12 +2020,13 @@ export default function SimpleContractGenerator() {
 
       let allProjects: any[] = [];
 
-      // 1. Load from estimates collection (primary source) - ORDERED BY DATE DESC
-      console.log("📋 Loading from estimates collection (ordered by date - newest first)...");
+      // 1. Load from estimates collection (primary source)
+      console.log("📋 Loading from estimates collection...");
       const estimatesQuery = query(
         collection(db, "estimates"),
-        where("firebaseUserId", "==", effectiveUid),
-        orderBy("createdAt", "desc"), // ✅ Most recent estimates first
+        where("firebaseUserId", "==", effectiveUid)
+        // Note: orderBy removed to avoid composite index requirement
+        // Sorting will be done client-side after data is fetched
       );
 
       const estimatesSnapshot = await getDocs(estimatesQuery);
@@ -2145,8 +2149,15 @@ export default function SimpleContractGenerator() {
         return isValidProject;
       });
 
-      setProjects(validProjects);
-      console.log(`✅ Total loaded: ${validProjects.length} valid projects`);
+      // Sort by createdAt descending (most recent first) - client-side sorting
+      const sortedProjects = validProjects.sort((a: any, b: any) => {
+        const dateA = a.createdAt?.toDate?.() || a.createdAt || new Date(0);
+        const dateB = b.createdAt?.toDate?.() || b.createdAt || new Date(0);
+        return new Date(dateB).getTime() - new Date(dateA).getTime();
+      });
+
+      setProjects(sortedProjects);
+      console.log(`✅ Total loaded: ${sortedProjects.length} valid projects (sorted by date)`);
 
       if (validProjects.length === 0) {
         console.log(
@@ -2170,26 +2181,30 @@ export default function SimpleContractGenerator() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentUser?.uid, currentUser?.uid, toast]);
+  }, [currentUser?.uid, toast]);
 
   // ✅ SINGLE SOURCE OF TRUTH: Real-time listener for ESTIMATES only (matching EstimateWizard)
   useEffect(() => {
-    // ✅ CRITICAL: Get effective UID from Firebase Auth OR profile
-    const effectiveUid = currentUser?.uid || currentUser?.uid;
+    // ✅ CRITICAL FIX: Only use currentUser.uid - don't execute if undefined
+    const effectiveUid = currentUser?.uid;
     
-    // ✅ FIXED: Resilient auth check for real-time listener
-    if (!effectiveUid && !profile?.email) return;
+    // ✅ FIXED: Exit early if no valid UID - prevents invalid Firebase query
+    if (!effectiveUid) {
+      console.log("⏳ Waiting for Firebase Auth to initialize before setting up listener...");
+      return;
+    }
 
     console.log(
       "🔄 Setting up real-time ESTIMATES listener for user:",
-      effectiveUid || 'profile_user',
+      effectiveUid,
       "(ESTIMATES ONLY - matching EstimateWizard History - ordered by date)",
     );
 
     const estimatesQuery = query(
       collection(db, "estimates"),
-      where("firebaseUserId", "==", effectiveUid),
-      orderBy("createdAt", "desc"), // ✅ Most recent estimates first
+      where("firebaseUserId", "==", effectiveUid)
+      // Note: orderBy removed to avoid composite index requirement
+      // Sorting will be done client-side after data is fetched
     );
 
     // Real-time listener with enhanced error handling and data validation
@@ -2318,9 +2333,16 @@ export default function SimpleContractGenerator() {
             return isValid;
           });
 
-          setProjects(approvedProjects);
+          // Sort by createdAt descending (most recent first) - client-side sorting
+          const sortedProjects = approvedProjects.sort((a: any, b: any) => {
+            const dateA = a.createdAt?.toDate?.() || a.createdAt || new Date(0);
+            const dateB = b.createdAt?.toDate?.() || b.createdAt || new Date(0);
+            return new Date(dateB).getTime() - new Date(dateA).getTime();
+          });
+
+          setProjects(sortedProjects);
           console.log(
-            `📊 Real-time update from ESTIMATES: ${approvedProjects.length} validated estimates (matching EstimateWizard History)`,
+            `📊 Real-time update from ESTIMATES: ${sortedProjects.length} validated estimates (matching EstimateWizard History)`,
           );
           setIsLoading(false);
         } catch (processError) {
@@ -2332,26 +2354,48 @@ export default function SimpleContractGenerator() {
           });
         }
       },
-      (error) => {
-        console.error("❌ Firebase listener connection error:", error);
+      (error: any) => {
+        console.error("❌ Firebase listener error:", error);
         console.error("❌ Error details:", {
           code: error.code,
-          message: (error as Error).message,
+          message: error.message,
           timestamp: new Date().toISOString(),
         });
 
-        toast({
-          title: "Error de Conexión",
-          description: "Conexión Firebase perdida. Intentando reconectar...",
-          variant: "destructive",
-        });
+        // ✅ FIXED: Distinguish error types - only show connection errors to user
+        if (error.code === 'permission-denied' || error.code === 'unauthenticated') {
+          console.error("🔒 Firebase permission error - user may need to re-authenticate");
+          toast({
+            title: "Error de Autenticación",
+            description: "Por favor, cierra sesión y vuelve a iniciar sesión.",
+            variant: "destructive",
+          });
+        } else if (error.code === 'unavailable' || error.message?.includes('network')) {
+          console.error("🌐 Firebase network error - connection issue");
+          toast({
+            title: "Error de Conexión",
+            description: "Verifica tu conexión a internet e intenta de nuevo.",
+            variant: "destructive",
+          });
+        } else if (error.code === 'invalid-argument') {
+          console.error("⚙️ Firebase configuration error - invalid query parameter:", error.message);
+          // Don't show toast for configuration errors - these should be fixed in code
+        } else {
+          console.error("❌ Firebase unexpected error:", error);
+          toast({
+            title: "Error",
+            description: "Ocurrió un error al cargar los datos. Intenta recargar la página.",
+            variant: "destructive",
+          });
+        }
+        
         setIsLoading(false);
       },
     );
 
     // Cleanup listener on unmount
     return () => unsubscribe();
-  }, [currentUser?.uid, currentUser?.uid, toast]);
+  }, [currentUser?.uid, toast]);
 
   // Initialize editable data when project is selected
   useEffect(() => {
