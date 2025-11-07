@@ -1895,12 +1895,26 @@ export default function SimpleContractGenerator() {
         ];
 
         // Fix any milestones that don't have amount field or have it as undefined
-        paymentMilestones = paymentMilestones.map((milestone: any) => ({
-          ...milestone,
-          amount:
-            milestone.amount ??
-            (contractTotal * (milestone.percentage || 0)) / 100,
-        }));
+        paymentMilestones = paymentMilestones.map((milestone: any) => {
+          let calculatedAmount = milestone.amount ?? (contractTotal * (milestone.percentage || 0)) / 100;
+          
+          // 🔧 FIX: Detect if amount is in cents (malformed data from old contracts)
+          // If amount is > 1000 AND is exactly percentage * total (without /100), it's in cents
+          if (calculatedAmount > 1000 && contractTotal > 0) {
+            const expectedInCents = contractTotal * (milestone.percentage || 0);
+            const tolerance = 0.01; // Allow small floating point errors
+            
+            if (Math.abs(calculatedAmount - expectedInCents) < tolerance) {
+              console.log(`💰 FIXING MILESTONE: Amount ${calculatedAmount} is in cents, converting to ${calculatedAmount / 100}`);
+              calculatedAmount = calculatedAmount / 100;
+            }
+          }
+          
+          return {
+            ...milestone,
+            amount: calculatedAmount,
+          };
+        });
 
         setEditableData({
           clientName:
