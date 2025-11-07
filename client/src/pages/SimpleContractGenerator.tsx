@@ -1976,7 +1976,7 @@ export default function SimpleContractGenerator() {
       return (
         contract.clientName.toLowerCase().includes(searchLower) ||
         contract.projectType.toLowerCase().includes(searchLower) ||
-        (contract.contractData.project?.description || "")
+        (contract.contractData?.project?.description || "")
           .toLowerCase()
           .includes(searchLower)
       );
