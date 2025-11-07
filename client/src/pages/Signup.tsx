@@ -69,6 +69,7 @@ export default function Signup() {
   const [otpCode, setOtpCode] = useState(['', '', '', '', '', '']);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
+  const [showNicknameSuggestion, setShowNicknameSuggestion] = useState(false);
 
   // Configurar el formulario
   const form = useForm<SignupFormValues>({
@@ -102,9 +103,9 @@ export default function Signup() {
         await register(data.email, data.password, data.name);
         toast({
           title: "Registro exitoso",
-          description: "Tu cuenta ha sido creada correctamente.",
+          description: "Ahora elige tu plan para empezar.",
         });
-        navigate("/");
+        navigate("/subscription");
       } else {
         // Enviar OTP para registro
         const response = await fetch('/api/otp/send-registration', {
@@ -177,10 +178,10 @@ export default function Signup() {
         
         toast({
           title: "Registro exitoso",
-          description: "Tu cuenta ha sido creada correctamente.",
+          description: "Ahora elige tu plan para empezar.",
         });
         
-        navigate("/");
+        navigate("/subscription");
       } else {
         toast({
           variant: "destructive",
@@ -354,11 +355,26 @@ export default function Signup() {
                                 placeholder="Ej: El Flaco, El Pantera, El Gordo"
                                 {...field}
                                 className="h-11 rounded-lg border-primary/20 focus:border-primary focus:ring-1 focus:ring-primary bg-card"
+                                onChange={(e) => {
+                                  field.onChange(e);
+                                  if (e.target.value) {
+                                    setShowNicknameSuggestion(false);
+                                  }
+                                }}
                               />
                             </FormControl>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Usa un apodo que te identifique en la comunidad
-                            </p>
+                            {showNicknameSuggestion && !field.value && (
+                              <div className="mt-2 p-3 bg-primary/10 border border-primary/30 rounded-lg">
+                                <p className="text-sm text-primary">
+                                  ¿Sin apodo todavía? No te preocupes, puedes agregarlo después o dejarlo así. Solo queríamos asegurarnos de que no se te olvidara.
+                                </p>
+                              </div>
+                            )}
+                            {!showNicknameSuggestion && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Usa un apodo que te identifique en la comunidad
+                              </p>
+                            )}
                             <FormMessage />
                           </FormItem>
                         )}
@@ -386,7 +402,17 @@ export default function Signup() {
                       <Button
                         type="button"
                         className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium text-base mt-2"
-                        onClick={() => setFormStep("account")}
+                        onClick={() => {
+                          const currentNickname = form.getValues("nickname");
+                          const currentName = form.getValues("name");
+                          
+                          if (!currentNickname && currentName && currentName.length >= 3) {
+                            setShowNicknameSuggestion(true);
+                            setTimeout(() => setShowNicknameSuggestion(false), 8000);
+                          }
+                          
+                          setFormStep("account");
+                        }}
                       >
                         Continuar
                       </Button>

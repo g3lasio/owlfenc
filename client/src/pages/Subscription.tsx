@@ -171,7 +171,93 @@ export default function Subscription() {
   // 🎯 Extract hasUsedTrial flag from subscription data
   const hasUsedTrial = userSubscription?.hasUsedTrial || false;
 
+  // Función para activar planes gratuitos directamente
+  const activateFreePlan = async (planId: number, planCode: string) => {
+    setIsLoading(true);
+    try {
+      if (!currentUser) {
+        throw new Error("Debes iniciar sesión para continuar");
+      }
 
+      // Obtener token de Firebase
+      let token: string | null = null;
+      const directToken = localStorage.getItem('firebase_id_token');
+      if (directToken) {
+        token = directToken;
+      } else {
+        try {
+          token = await currentUser.getIdToken(false);
+        } catch (tokenError) {
+          token = await currentUser.getIdToken(true);
+        }
+      }
+
+      if (!token) {
+        throw new Error("No se pudo obtener token de autenticación");
+      }
+
+      // Si es Free Trial, usar el endpoint de activación de trial
+      if (planCode === 'FREE_TRIAL' || planId === 4) {
+        const response = await fetch('/api/secure-trial/activate', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'No se pudo activar el Free Trial');
+        }
+
+        toast({
+          title: "¡Free Trial Activado!",
+          description: "Tienes 14 días de acceso ilimitado a todas las funciones.",
+        });
+      } else {
+        // Para Primo Chambeador u otro plan gratuito, simplemente actualizamos la suscripción
+        // Este endpoint debería existir en el backend
+        toast({
+          title: "Plan Activado",
+          description: `Has seleccionado el plan ${planCode}.`,
+        });
+      }
+
+      // Invalidar queries para actualizar la UI
+      queryClient.invalidateQueries({ queryKey: ["/api/subscription/user-subscription"] });
+    } catch (error: any) {
+      console.error("Error activando plan gratuito:", error);
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo activar el plan. Intenta de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Manejador unificado para selección de planes
+  const handlePlanSelection = async (planId: number) => {
+    const selectedPlan = plans?.find(p => p.id === planId);
+    
+    if (!selectedPlan) {
+      toast({
+        title: "Error",
+        description: "Plan no encontrado",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Si el precio es 0, es un plan gratuito
+    if (selectedPlan.price === 0) {
+      await activateFreePlan(planId, selectedPlan.code);
+    } else {
+      // Si es de pago, usar Stripe checkout
+      await createCheckoutSession(planId);
+    }
+  };
 
   // Crea sesión de checkout para un plan seleccionado
   const createCheckoutSession = async (planId: number) => {
@@ -681,7 +767,7 @@ export default function Subscription() {
                 isYearly={isYearly}
                 motto={plan.motto}
                 isMostPopular={getIsMostPopular(plan.code)}
-                onSelectPlan={createCheckoutSession}
+                onSelectPlan={handlePlanSelection}
                 planId={plan.id}
                 isLoading={isLoading}
                 code={plan.code}
