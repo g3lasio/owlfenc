@@ -1899,7 +1899,7 @@ export default function SimpleContractGenerator() {
           (contractDataFromHistory.formFields as any)?.projectTotal ||
           contractDataFromHistory.financials?.total || 
           0;
-        const contractTotal = normalizeCurrency(rawProjectTotal);
+        let contractTotal = normalizeCurrency(rawProjectTotal);
         
         console.log(`💰 [CONTRACT-LOAD] Raw total: ${rawProjectTotal} → Normalized: ${contractTotal}`);
 
@@ -1919,7 +1919,7 @@ export default function SimpleContractGenerator() {
           },
         ];
 
-        // 🔧 ROBUST MILESTONE NORMALIZATION
+        // 🔧 ROBUST MILESTONE NORMALIZATION WITH AUTO-CORRECTION
         paymentMilestones = paymentMilestones.map((milestone: any) => {
           const percentage = milestone.percentage || 0;
           const expectedAmount = (contractTotal * percentage) / 100;
@@ -1936,8 +1936,8 @@ export default function SimpleContractGenerator() {
               finalAmount = normalizedSaved;
               console.log(`💰 [MILESTONE] Using normalized saved amount: ${milestone.amount} → ${finalAmount} (expected: ${expectedAmount})`);
             } else {
-              finalAmount = expectedAmount;
-              console.log(`💰 [MILESTONE] Saved amount ${milestone.amount} (normalized: ${normalizedSaved}) doesn't match expected ${expectedAmount}, recalculating`);
+              finalAmount = normalizedSaved; // USE SAVED VALUE instead of recalculating
+              console.log(`💰 [MILESTONE] Using saved amount ${milestone.amount} (normalized: ${normalizedSaved}) over expected ${expectedAmount} - will auto-correct total`);
             }
           } else {
             finalAmount = expectedAmount;
@@ -1949,6 +1949,19 @@ export default function SimpleContractGenerator() {
             amount: finalAmount,
           };
         });
+
+        // 🔧 AUTO-CORRECT PROJECT TOTAL if milestones sum doesn't match
+        // This fixes cases where projectTotal was saved incorrectly in Firebase
+        const milestonesSum = paymentMilestones.reduce((sum: number, m: any) => sum + (m.amount || 0), 0);
+        const totalPercentage = paymentMilestones.reduce((sum: number, m: any) => sum + (m.percentage || 0), 0);
+        
+        if (totalPercentage === 100 && milestonesSum > 0) {
+          const tolerance = Math.abs(contractTotal * 0.05); // 5% tolerance
+          if (Math.abs(milestonesSum - contractTotal) > tolerance) {
+            console.log(`🔧 [AUTO-CORRECT] ProjectTotal ${contractTotal} doesn't match milestones sum ${milestonesSum}, correcting...`);
+            contractTotal = milestonesSum;
+          }
+        }
 
         setEditableData({
           clientName:
