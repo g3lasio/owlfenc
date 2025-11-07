@@ -34,6 +34,7 @@ import EstimatesDashboard from "@/pages/EstimatesDashboard";
 import EstimateGenerator from "@/pages/EstimateGenerator";
 import MisEstimados from "@/pages/MisEstimados";
 import AuthPage from "@/pages/Login"; // Renombrado el import aunque el archivo sigue siendo Login.tsx
+import Signup from "@/pages/Signup";
 import RecuperarPassword from "@/pages/RecuperarPassword";
 import ResetPassword from "@/pages/ResetPassword";
 import EmailLinkCallback from "@/pages/EmailLinkCallback";
@@ -180,7 +181,7 @@ function MainAppRouter() {
 
               {/* Auth & Account - Public Routes */}
               <Route path="/login" component={() => <AuthPage />} />
-              <Route path="/signup" component={() => <AuthPage />} />
+              <Route path="/signup" component={Signup} />
               <Route path="/recuperar-password" component={RecuperarPassword} />
               <Route path="/forgot-password" component={RecuperarPassword} />
               <Route path="/reset-password" component={ResetPassword} />
