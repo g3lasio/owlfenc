@@ -23,7 +23,7 @@ export interface MervinRequest {
 }
 
 export interface MervinResponse {
-  type: 'CONVERSATION' | 'TASK_COMPLETED' | 'TASK_ERROR' | 'NEEDS_MORE_INFO';
+  type: 'CONVERSATION' | 'TASK_COMPLETED' | 'TASK_ERROR' | 'NEEDS_MORE_INFO' | 'NEEDS_CONFIRMATION';
   message: string;
   data?: any;
   executionTime?: number;

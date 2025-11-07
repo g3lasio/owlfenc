@@ -78,7 +78,6 @@ export class SystemAPIService {
         console.log('✅ [SYSTEM-API] Búsqueda guardada en historial exitosamente');
       } catch (historyError: any) {
         console.warn('⚠️ [SYSTEM-API] No se pudo guardar en historial (continuando):', historyError.message);
-        // No lanzar error - la búsqueda fue exitosa aunque no se guardó en historial
       }
       
       return propertyData as PropertyData;
@@ -158,90 +157,65 @@ export class SystemAPIService {
   // ============= CONTRACTS =============
 
   /**
-   * Crear contrato usando endpoint /api/contracts
-   * REGISTRA EN HISTORIAL AUTOMÁTICAMENTE usando /api/contracts/save
+   * Crear contrato usando endpoint /api/dual-signature/initiate
+   * ✅ FIXED: Ahora usa el endpoint correcto que SÍ existe
    */
   async createContract(params: ContractParams, contractContent: string): Promise<Contract> {
     console.log('📄 [SYSTEM-API] Creando contrato para:', params.clientName);
     
     try {
-      // 1. Buscar o crear cliente
-      let client = await this.findOrCreateClient({
-        name: params.clientName,
-        email: params.clientEmail
-      });
+      // Preparar datos para dual signature
+      const contractData = {
+        contractorName: 'OwlFence Inc.', // TODO: Obtener de settings
+        contractorEmail: 'contractor@owlfence.com', // TODO: Obtener de settings
+        contractorCompany: 'OwlFence Inc.', // TODO: Obtener de settings
+        contractorPhone: '',
+        clientName: params.clientName,
+        clientEmail: params.clientEmail || '',
+        clientPhone: '',
+        clientAddress: '',
+        projectDescription: params.projectType || 'Construction Project',
+        totalAmount: params.amount || 0,
+        startDate: params.startDate || new Date().toISOString(),
+        completionDate: params.endDate || new Date().toISOString()
+      };
 
-      // 2. Crear el contrato
-      const response = await this.client.post('/api/contracts', {
+      // Llamar al endpoint de dual signature que SÍ existe
+      const response = await this.client.post('/api/dual-signature/initiate', {
         userId: this.userId,
-        clientId: client.id,
-        content: contractContent,
-        amount: params.amount,
-        projectType: params.projectType,
-        projectAddress: params.projectAddress,
-        startDate: params.startDate,
-        endDate: params.endDate,
-        specialTerms: params.specialTerms
+        contractHTML: contractContent,
+        contractData
       });
 
-      const contract = response.data as Contract;
-      console.log('✅ [SYSTEM-API] Contrato creado:', contract.id);
+      console.log('✅ [SYSTEM-API] Contrato creado con dual-signature:', response.data.contractId);
       
-      // 3. Guardar en historial usando /api/contracts/save
-      try {
-        console.log('💾 [SYSTEM-API] Guardando contrato en historial...');
-        await this.client.post('/api/contracts/save', {
-          contractData: {
-            contractData: {
-              clientName: params.clientName,
-              clientAddress: params.clientAddress || '',
-              projectType: params.projectType || 'Construction Project',
-              projectDescription: params.projectDescription || '',
-              projectLocation: params.projectAddress || '',
-              contractorName: params.contractorName || '',
-              totalAmount: params.amount?.toString() || '0',
-              clientPhone: params.clientPhone || '',
-              clientEmail: params.clientEmail || '',
-              startDate: params.startDate || new Date().toISOString(),
-              completionDate: params.endDate || new Date().toISOString()
-            },
-            html: contractContent
-          },
-          name: `Contract for ${params.clientName}`,
-          status: 'generated'
-        });
-        console.log('✅ [SYSTEM-API] Contrato guardado en historial exitosamente');
-      } catch (historyError: any) {
-        console.warn('⚠️ [SYSTEM-API] No se pudo guardar contrato en historial (continuando):', historyError.message);
-        // No lanzar error - el contrato fue creado exitosamente
-      }
-
-      return contract;
+      return {
+        id: response.data.contractId,
+        content: contractContent,
+        clientId: '',
+        amount: params.amount || 0,
+        contractorSignUrl: response.data.contractorSignUrl,
+        clientSignUrl: response.data.clientSignUrl,
+        message: response.data.message
+      } as Contract;
 
     } catch (error: any) {
       console.error('❌ [SYSTEM-API] Error creando contrato:', error.message);
+      console.error('❌ [SYSTEM-API] Response:', error.response?.data);
       throw new Error(`Error creando contrato: ${error.response?.data?.error || error.message}`);
     }
   }
 
   /**
-   * Generar PDF de contrato
+   * Generar PDF de contrato (deprecated - dual signature genera PDF automáticamente)
    */
   async generateContractPDF(contractId: string): Promise<PDF> {
-    console.log('📄 [SYSTEM-API] Generando PDF de contrato:', contractId);
+    console.log('📄 [SYSTEM-API] PDF generado automáticamente por dual-signature');
     
-    try {
-      const response = await this.client.post('/api/contracts/pdf', {
-        contractId
-      });
-
-      console.log('✅ [SYSTEM-API] PDF generado exitosamente');
-      return response.data as PDF;
-
-    } catch (error: any) {
-      console.error('❌ [SYSTEM-API] Error generando PDF:', error.message);
-      throw new Error(`Error generando PDF: ${error.response?.data?.error || error.message}`);
-    }
+    return {
+      url: `/api/dual-signature/download/${contractId}`,
+      id: contractId
+    } as PDF;
   }
 
   // ============= PERMITS =============
@@ -269,18 +243,13 @@ export class SystemAPIService {
         console.log('💾 [SYSTEM-API] Guardando búsqueda de permisos en historial...');
         await this.client.post('/api/search/permits', {
           query: `${params.projectType || 'General'} permit check`,
-          jurisdiction: params.jurisdiction || 'General',
-          permitType: params.permitType,
+          jurisdiction: 'General',
           projectType: params.projectType,
-          address: params.projectAddress,
-          city: params.city,
-          state: params.state,
-          zipCode: params.zipCode
+          address: params.projectAddress
         });
         console.log('✅ [SYSTEM-API] Búsqueda de permisos guardada en historial exitosamente');
       } catch (historyError: any) {
         console.warn('⚠️ [SYSTEM-API] No se pudo guardar búsqueda en historial (continuando):', historyError.message);
-        // No lanzar error - la búsqueda fue exitosa
       }
       
       return permitInfo as PermitInfo;

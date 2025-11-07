@@ -21,6 +21,9 @@ import { FileProcessorService } from '../services/FileProcessorService';
 import { WorkflowEngine } from '../workflows/WorkflowEngine';
 import { SystemAPIStepAdapter } from '../workflows/adapters/SystemAPIStepAdapter';
 import { EstimateWorkflow } from '../workflows/definitions/EstimateWorkflow';
+import { snapshotService, type UserSnapshot } from '../services/SnapshotService';
+import { toolRegistry } from '../tools/ToolRegistry';
+import { registerCoreTools } from '../tools/CoreTools';
 
 import type {
   MervinRequest,
@@ -45,6 +48,7 @@ export class MervinOrchestrator {
   private workflowEngine: WorkflowEngine;
   private progress: ProgressStreamService | null = null;
   private userId: string;
+  private snapshot: UserSnapshot | null = null;
 
   constructor(userId: string, authHeaders: Record<string, string> = {}, baseURL?: string) {
     this.userId = userId;
@@ -60,6 +64,10 @@ export class MervinOrchestrator {
     
     // Registrar step adapters
     this.workflowEngine.registerStepAdapter(new SystemAPIStepAdapter());
+    
+    // Registrar herramientas principales (incluyendo baseURL)
+    registerCoreTools(userId, authHeaders, baseURL);
+    console.log('🔧 [MERVIN-ORCHESTRATOR] Tools registered:', toolRegistry.getAllTools().map(t => t.name));
   }
 
   /**
@@ -83,6 +91,21 @@ export class MervinOrchestrator {
     console.log('=================================\n');
 
     try {
+      // 🆕 PASO 0: Obtener snapshot del contexto del usuario
+      // Esto permite a Mervin conocer historial, preferencias, etc ANTES de procesar
+      this.progress?.sendMessage('📸 Loading your context...');
+      this.snapshot = await snapshotService.getSnapshot(request.userId);
+      
+      console.log('📸 [SNAPSHOT] Contexto cargado:', {
+        estimates: this.snapshot.estimates.total,
+        contracts: this.snapshot.contracts.total,
+        propertySearches: this.snapshot.searchHistory.properties.length,
+        permitSearches: this.snapshot.searchHistory.permits.length
+      });
+      
+      // Log del resumen para que AI pueda usarlo
+      console.log(this.snapshot.contextSummary);
+
       // Generar contexto de archivos si existen
       let filesContext = '';
       if (request.attachments && request.attachments.length > 0) {
@@ -182,7 +205,7 @@ export class MervinOrchestrator {
   }
 
   /**
-   * Flujo: Tarea Ejecutable
+   * Flujo: Tarea Ejecutable - CON TOOL REGISTRY Y SLOT-FILLING
    */
   private async handleExecutableTask(
     request: MervinRequest,
@@ -190,50 +213,96 @@ export class MervinOrchestrator {
     filesContext: string = ''
   ): Promise<MervinResponse> {
     const taskType = analysis.taskType!;
+    const startTime = Date.now();
     
     try {
-      // PASO 1: Extraer parámetros (incluir archivos)
+      // PASO 1: Mapear taskType a tool name
+      const toolName = this.mapTaskTypeToTool(taskType);
+      const tool = toolRegistry.getTool(toolName);
+      
+      if (!tool) {
+        throw new Error(`Tool not found: ${toolName} for task ${taskType}`);
+      }
+
+      console.log(`🔧 [TOOL-EXECUTION] Using tool: ${toolName}`);
+
+      // PASO 2: Extraer parámetros del input con ChatGPT
       this.progress?.sendMessage('📋 Extracting required information...');
       const inputWithFiles = request.input + filesContext;
-      const params = await this.chatgpt.extractParameters(inputWithFiles, taskType);
+      const rawParams = await this.chatgpt.extractParameters(inputWithFiles, taskType);
 
-      console.log('📋 [PARAMS]', params);
+      console.log('📋 [RAW-PARAMS]', rawParams);
 
-      // PASO 2: Verificar si tenemos toda la información
-      const validation = this.validateParameters(params, taskType);
-      if (!validation.isValid) {
-        console.warn(`⚠️ [VALIDATION-FAILED] Missing fields for ${taskType}:`, validation.missingFields);
+      // PASO 3: Ejecutar con ToolRegistry (incluye slot-filling automático)
+      // ToolRegistry detectará parámetros faltantes y los inferirá del snapshot
+      this.progress?.sendMessage(`🔍 Checking requirements...`);
+      
+      const result = await toolRegistry.executeToolWithSnapshot(
+        toolName,
+        rawParams,
+        this.snapshot!
+      );
+
+      console.log('✅ [TOOL-RESULT]', result);
+
+      // PASO 4: Si requiere confirmación, generar Action Card
+      if (tool.requiresConfirmation && result.success) {
+        this.progress?.sendMessage('⚠️ This action requires confirmation');
         
-        const message = `I need more information:\n${validation.missingFields.join('\n')}`;
+        const confirmationCard = this.generateConfirmationCard(tool, rawParams, result);
+        
+        return {
+          type: 'NEEDS_CONFIRMATION',
+          message: `Please confirm this ${taskType} action:`,
+          data: {
+            tool: toolName,
+            params: rawParams,
+            preview: result.data,
+            confirmationCard
+          },
+          suggestedActions: ['Confirm', 'Cancel', 'Modify']
+        };
+      }
+
+      // PASO 5: Si faltaron parámetros requeridos, pedir al usuario
+      if (!result.success && result.error?.includes('Missing required parameter')) {
+        const message = `I need more information: ${result.error}`;
         this.progress?.sendComplete(message);
         
         return {
           type: 'NEEDS_MORE_INFO',
           message,
-          suggestedActions: validation.missingFields
+          suggestedActions: [result.error]
         };
       }
 
-      // PASO 3: Ejecutar tarea
-      this.progress?.sendMessage(`⚙️ Executing task: ${taskType}...`);
-      const taskResult = await this.executeTask(taskType, params);
+      // PASO 6: Si falló, reportar error
+      if (!result.success) {
+        throw new Error(result.error || 'Tool execution failed');
+      }
 
-      console.log('✅ [TASK-RESULT]', taskResult);
-
-      // PASO 4: Generar respuesta final profesional con Claude
+      // PASO 7: Generar respuesta final profesional con Claude
       this.progress?.sendMessage('✨ Generating final response...');
+      const taskResult: TaskResult = {
+        success: true,
+        data: result.data,
+        executionTime: Date.now() - startTime,
+        stepsCompleted: [],
+        endpointsUsed: result.metadata?.endpointsUsed || []
+      };
+
       const finalMessage = await this.claude.generateCompletionMessage(
         taskResult,
         analysis.language
       );
 
-      this.progress?.sendComplete(finalMessage, taskResult.data);
+      this.progress?.sendComplete(finalMessage, result.data);
 
       return {
         type: 'TASK_COMPLETED',
         message: finalMessage,
-        data: taskResult.data,
-        executionTime: taskResult.executionTime
+        data: result.data,
+        executionTime: Date.now() - startTime
       };
 
     } catch (error: any) {
@@ -241,6 +310,37 @@ export class MervinOrchestrator {
       this.progress?.sendError(`Error executing ${taskType}: ${error.message}`);
       throw new Error(`Error ejecutando tarea ${taskType}: ${error.message}`);
     }
+  }
+
+  /**
+   * Mapear taskType a nombre de herramienta
+   */
+  private mapTaskTypeToTool(taskType: TaskType): string {
+    const mapping: Record<TaskType, string> = {
+      'estimate': 'create_estimate',
+      'contract': 'create_contract',
+      'permit': 'get_permit_info',
+      'property': 'verify_property'
+    };
+    
+    return mapping[taskType] || taskType;
+  }
+
+  /**
+   * Generar tarjeta de confirmación para acciones críticas
+   */
+  private generateConfirmationCard(tool: any, params: any, result: any) {
+    return {
+      type: 'action_confirmation',
+      action: tool.name,
+      title: `Confirm ${tool.name.replace('_', ' ')}`,
+      description: tool.description,
+      parameters: params,
+      preview: result.data,
+      warnings: tool.name === 'create_contract' ? 
+        ['This will create a legally binding contract', 'Signature links will be sent to both parties'] : 
+        []
+    };
   }
 
   /**
@@ -296,8 +396,8 @@ export class MervinOrchestrator {
       const inputWithFiles = request.input + filesContext;
       const initialContext = await this.chatgpt.extractParameters(inputWithFiles, 'estimate');
       
-      // Agregar userId al context
-      initialContext.userId = this.userId;
+      // Agregar userId al context (casting para agregar propiedad extra)
+      (initialContext as any).userId = this.userId;
       
       console.log('📋 [WORKFLOW] Initial context extracted:', initialContext);
 
