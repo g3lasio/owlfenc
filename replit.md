@@ -32,7 +32,8 @@ This AI-powered platform automates legal document and permit management for cont
 - **Tool-Calling Architecture**: Enables Mervin to execute real tasks with contextual understanding.
     - **SnapshotService**: Centralizes user context (history, preferences, catalog) for AI situational awareness.
     - **ToolRegistry**: Dynamic tool execution system with intelligent slot-filling, supporting confirmation flows for critical actions.
-    - **CoreTools**: Registered tools like create_estimate, create_contract, verify_property.
+    - **CoreTools**: Registered tools like create_estimate, create_contract, verify_property, get_permit_info, find_client.
+    - **Robustness Features** (Nov 2025): Multi-layer validation system prevents "workflow not found" errors. ChatGPT receives available tools in analysis context, validates workflows before execution, and automatically falls back to tools if workflow missing. TelemetryService tracks tool executions, workflow fallbacks, and errors for proactive monitoring. Routing prioritizes tools over workflows for faster, more reliable execution.
 - **WorkflowEngine**: Multi-step process automation system enabling Mervin to replicate UI workflows conversationally.
     - **Architecture**: Declarative TypeScript workflow definitions, Redis-based session storage.
     - **Capabilities**: Multi-step data collection, conditional branching, automatic retries, real-time progress. Implemented workflows include `EstimateWorkflow`.
