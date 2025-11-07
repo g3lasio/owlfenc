@@ -159,13 +159,6 @@ export default function AuthPage() {
     }
   }, [currentUser, authLoading]);
   
-  // Estado para signup
-  const [signupData, setSignupData] = useState({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: ""
-  });
   
   // Esquemas de validación dentro del componente para tener acceso a t()
   const loginSchema = z.object({
@@ -174,17 +167,6 @@ export default function AuthPage() {
     rememberMe: z.boolean().default(false),
   });
 
-  const signupSchema = z
-    .object({
-      name: z.string().min(1, "El nombre es requerido"),
-      email: z.string().min(1, "Email es requerido").email("Email inválido"),
-      password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
-      confirmPassword: z.string().min(1, "Confirmar contraseña es requerido"),
-    })
-    .refine((data) => data.password === data.confirmPassword, {
-      message: "Las contraseñas no coinciden",
-      path: ["confirmPassword"],
-    });
   
 
   // Configurar el formulario de login
@@ -325,97 +307,9 @@ export default function AuthPage() {
     }
   };
 
-  // Función de registro completamente nueva y simple
-  const handleSignupSubmit = async () => {
-    setIsLoading(true);
-    try {
-      clearError();
-      
-      // Validaciones básicas
-      if (!signupData.name.trim()) {
-        throw new Error("El nombre es requerido");
-      }
-      if (!signupData.email.trim()) {
-        throw new Error("El email es requerido");
-      }
-      if (!signupData.password.trim()) {
-        throw new Error("La contraseña es requerida");
-      }
-      if (signupData.password.length < 6) {
-        throw new Error("La contraseña debe tener al menos 6 caracteres");
-      }
-      if (signupData.password !== signupData.confirmPassword) {
-        throw new Error("Las contraseñas no coinciden");
-      }
-
-      console.log("Creando cuenta para:", signupData.email);
-
-      // Usar la función register del contexto de auth
-      const user = await register(signupData.email, signupData.password, signupData.name);
-      
-      console.log("Cuenta creada exitosamente:", user.email);
-      
-      toast({
-        title: "Cuenta creada",
-        description: "Tu cuenta ha sido creada exitosamente.",
-      });
-      
-      showSuccessEffect();
-      
-    } catch (err: any) {
-      console.error("Error creando cuenta:", err);
-      toast({
-        variant: "destructive",
-        title: "Error al crear cuenta",
-        description: err.message || "No se pudo crear la cuenta. Intenta de nuevo.",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
 
 
-  // Toggle entre login y signup con efecto de escaneo Stark Tech
-  const toggleAuthMode = () => {
-    // Activar la transición
-    setIsTransitioning(true);
-
-    // Efecto de escaneo holográfico estilo Jarvis/Friday
-    if (cardRef.current) {
-      // Aplicar efecto de escaneo
-      cardRef.current.classList.add("stark-scan-effect");
-
-      // Reproducir sonido de transición tipo UI de Iron Man (sutil)
-      const audio = new Audio();
-      audio.volume = 0.2;
-      audio.src =
-        "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tAwAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAAFDgCenp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6e//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAVBAAAAAAAABQ5+7pVfAAAA//tAxAAABIQTe3UQAAJ4QW/84YAkAEAQBAEAfB8H3/ggCAIB8EAQdwfggGCD4IBgg7g+D4Pg+D4IAgf///CLveKAgCAIZO4IAgCAIAgH///uCH///wnPggCAJleKAgCAIf/hAEAQ/8Jz4PwQBAMP/hAEAQBAEP////CLu4PggCAf/8IBggyvoIBggydzBB8HwfggCAf/+EAQBAEDnwQDCh4QZUuCX+DIEzSK1u4WPyuNIpNLqPQ5HBMZCcdhELhgkCpLig2CZFcUzBCt3DtAYRRJlgliYRFZ4qF2UJuJg5BoCpALShTAoO0fTdBxGwaNr5e8iFQEEGxTMjl8yrtvCJZQGPh0TyeQzcl9sbUMvcvVDTpYnCcvvgOFRsIhfE/DT3W1e+MvkNWOzHyrfOCKyxzEVWtjIm5lmYu/qpurKWaS6vIZw5LdfL53K7qqtbqVYysJV8L2pM1pLuXc3Fn8xbxE3nsZTN5qljUutm/17Ln6Rltq2/2b//tAxLEAE/YdW9mMAJOkPqz7N7ADU+26plSqVLc2qiuWwsz8rmsPSllbK6W+6mqJVy2XFspRKZvMzJXMg3i0aXy2P4vL622K8nBvFuvVktlJt9aQdI1P4rE/FVUPQVRHbEf/+lEITv9oCQIAUD/9/pv/AAD8UGACRbv6BRR//8gA//+h9//WTIIAEL0BkKFGaGdl7fxfLZvLZvLZvLZvLZvLZvLZvLZvLZvLZvLZvLZvLZvLZvLZvLaVJZm5fy/l7Y4EEBBCwQIz+X9jgQQEEDfxTLZvKkmQAAAAAAA4c8X///////xz///////////8c////////+DP6A";
-
-      // Reproducir el audio
-      audio.play().catch((e) => console.log("Audio play prevented: ", e));
-    }
-
-    // Retraso para cambiar de modo
-    setTimeout(() => {
-      // Cambiar entre login y signup
-      setAuthMode(authMode === "login" ? "signup" : "login");
-
-      // Limpiar los formularios
-      loginForm.reset();
-      setSignupData({ name: "", email: "", password: "", confirmPassword: "" });
-      setShowPassword(false);
-      clearError();
-
-      // Desactivar la transición después de completarla
-      setTimeout(() => {
-        setIsTransitioning(false);
-        if (cardRef.current) {
-          cardRef.current.classList.remove("stark-scan-effect");
-        }
-      }, 600);
-    }, 400);
-  };
 
 
   return (
@@ -476,7 +370,7 @@ export default function AuthPage() {
           <div
             className="absolute top-1 bottom-1 w-[48%] bg-primary rounded-full transition-all duration-500 ease-spring shadow-lg"
             style={{
-              left: authMode === "login" ? "2px" : "calc(52% - 2px)",
+              left: "2px", // Siempre en posición Login
               boxShadow: "0 0 15px 2px rgba(0, 255, 255, 0.5)",
               filter: "brightness(1.1)",
             }}
@@ -484,26 +378,13 @@ export default function AuthPage() {
 
           <div className="absolute inset-0 flex items-stretch">
             <button
-              className={`flex-1 flex items-center justify-center text-xs font-semibold relative z-10 rounded-l-full transition-colors ${
-                authMode === "login" ? "text-white" : "text-muted-foreground"
-              }`}
-              onClick={() => {
-                if (authMode !== "login") {
-                  navigate("/login");
-                }
-              }}
+              className="flex-1 flex items-center justify-center text-xs font-semibold relative z-10 rounded-l-full transition-colors text-white"
             >
               {t("auth.login")}
             </button>
             <button
-              className={`flex-1 flex items-center justify-center text-xs font-semibold relative z-10 rounded-r-full transition-colors ${
-                authMode === "signup" ? "text-white" : "text-muted-foreground"
-              }`}
-              onClick={() => {
-                if (authMode !== "signup") {
-                  navigate("/signup");
-                }
-              }}
+              className="flex-1 flex items-center justify-center text-xs font-semibold relative z-10 rounded-r-full transition-colors text-muted-foreground"
+              onClick={() => navigate("/signup")}
             >
               {t("auth.signup")}
             </button>
@@ -513,33 +394,21 @@ export default function AuthPage() {
         {/* Tarjeta principal con estilo Stark Industries/Iron Man */}
         <Card
           ref={cardRef}
-          className={`relative border border-primary/20 shadow-xl  rounded-xl backdrop-blur-sm bg-card/80 transition-all duration-500 ${
-            isTransitioning ? "stark-card-transitioning" : ""
-          }`}
+          className="relative border border-primary/20 shadow-xl rounded-xl backdrop-blur-sm bg-card/80"
         >
           {/* Cabecera con efecto futurista */}
           <CardHeader className="bg-gradient-to-r from-primary/20 to-accent/20 px-6 py-5 border-b border-primary/20 relative">
-            {/* Línea de escaneo para efecto Jarvis */}
-            <div
-              className={`absolute inset-0 stark-scan-line pointer-events-none ${isTransitioning ? "scanning" : ""}`}
-            ></div>
 
             <CardTitle className="text-2xl font-semibold text-center stark-text-glow">
-              {authMode === "login" ? t("auth.login") : t("auth.createAccount")}
+              {t("auth.login")}
             </CardTitle>
             <CardDescription className="text-center text-muted-foreground">
-              {authMode === "login"
-                ? t("auth.alreadyAccount")
-                : t("auth.noAccount")}
+              {t("auth.alreadyAccount")}
             </CardDescription>
 
             {/* Icono de estado en la esquina */}
             <div className="absolute top-4 right-4">
-              {authMode === "login" ? (
-                <RiShieldKeyholeLine className="h-5 w-5 text-primary stark-icon-pulse" />
-              ) : (
-                <RiUserLine className="h-5 w-5 text-primary stark-icon-pulse" />
-              )}
+              <RiShieldKeyholeLine className="h-5 w-5 text-primary stark-icon-pulse" />
             </div>
           </CardHeader>
 
@@ -555,9 +424,8 @@ export default function AuthPage() {
                 />
               ) : (
                 <>
-                  {/* Formulario de login/signup normal */}
-                  {authMode === "login" ? (
-                loginMethod === "email" ? (
+                  {/* Formulario de login normal */}
+                {loginMethod === "email" ? (
                   <Form {...loginForm}>
                     <form
                       onSubmit={loginForm.handleSubmit(onLoginSubmit)}
@@ -769,99 +637,14 @@ export default function AuthPage() {
                     }}
                     onBack={() => setLoginMethod("email")}
                   />
-                )
-              ) : (
-                <div className="space-y-4">
-                  {/* Nombre */}
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      {t("auth.name")}
-                    </label>
-                    <input
-                      type="text"
-                      value={signupData.name}
-                      onChange={(e) => setSignupData({...signupData, name: e.target.value})}
-                      placeholder="Tu nombre"
-                      className="border p-2 hover:border-primary rounded-md block w-full bg-card/50 border-muted-foreground/30 focus-visible:ring-primary"
-                      disabled={isLoading}
-                    />
-                  </div>
-
-                  {/* Email */}
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      {t("auth.email")}
-                    </label>
-                    <input
-                      type="email"
-                      value={signupData.email}
-                      onChange={(e) => setSignupData({...signupData, email: e.target.value})}
-                      placeholder="tu@email.com"
-                      className="border p-2 hover:border-primary rounded-md block w-full bg-card/50 border-muted-foreground/30 focus-visible:ring-primary"
-                      disabled={isLoading}
-                    />
-                  </div>
-
-                  {/* Password */}
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      {t("auth.password")}
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        value={signupData.password}
-                        onChange={(e) => setSignupData({...signupData, password: e.target.value})}
-                        placeholder="••••••••"
-                        className="border p-2 hover:border-primary rounded-md block w-full bg-card/50 border-muted-foreground/30 focus-visible:ring-primary pr-10"
-                        disabled={isLoading}
-                      />
-                      <button
-                        type="button"
-                        className="absolute right-3 top-1/2 -translate-y-1/2"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? (
-                          <RiEyeOffLine className="h-5 w-5 text-muted-foreground" />
-                        ) : (
-                          <RiEyeLine className="h-5 w-5 text-muted-foreground" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Confirm Password */}
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      {t("auth.confirmPassword")}
-                    </label>
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      value={signupData.confirmPassword}
-                      onChange={(e) => setSignupData({...signupData, confirmPassword: e.target.value})}
-                      placeholder="••••••••"
-                      className="border p-2 hover:border-primary rounded-md block w-full bg-card/50 border-muted-foreground/30 focus-visible:ring-primary"
-                      disabled={isLoading}
-                    />
-                  </div>
-
-                  {/* Submit Button */}
-                  <Button
-                    onClick={handleSignupSubmit}
-                    className="w-full h-10 bg-primary hover:bg-primary/80 text-black font-semibold"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? "Creando cuenta..." : t("auth.createAccount")}
-                  </Button>
-                </div>
-              )}
+                )}
                 </>
               )}
             </div>
           </CardContent>
 
           <CardFooter className="px-6 py-4 flex items-center justify-center border-t border-primary/20 bg-muted/10">
-            {authMode === "login" && loginMethod === "otp" ? (
+            {loginMethod === "otp" ? (
               <button
                 type="button"
                 className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-sm font-medium transition-all duration-300 border border-primary/30 min-w-[90px] justify-center"
