@@ -68,28 +68,24 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
   console.log('🔐 [UNIFIED-CLIENT-SERVICE] Fetching with unified authentication...');
   
   let token: string | null = null;
-  let useBypass = false;
   
   try {
     token = await getAuthToken();
     console.log('✅ [UNIFIED-CLIENT-SERVICE] Got authentication token');
   } catch (error) {
-    console.warn('⚠️ [UNIFIED-CLIENT-SERVICE] Token failed, using bypass mode:', error);
-    useBypass = true;
+    console.error('❌ [UNIFIED-CLIENT-SERVICE] Authentication failed - no token available:', error);
+    throw new Error('Usuario no autenticado. Por favor, inicia sesión nuevamente.');
+  }
+  
+  if (!token) {
+    throw new Error('Usuario no autenticado. Por favor, inicia sesión nuevamente.');
   }
   
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`,
     ...options.headers as Record<string, string>,
   };
-  
-  if (token && !useBypass) {
-    headers['Authorization'] = `Bearer ${token}`;
-  } else {
-    // TEMPORARY: Use bypass until authentication is fully resolved
-    headers['x-bypass-uid'] = 'qztot1YEy3UWz605gIH2iwwWhW53';
-    console.log('🔧 [UNIFIED-CLIENT-SERVICE] Using bypass mode for PostgreSQL access');
-  }
   
   const response = await fetch(url, {
     ...options,
