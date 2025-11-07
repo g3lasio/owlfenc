@@ -16,6 +16,8 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { 
   User as FirebaseUser,
   signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  updateProfile,
   signOut as firebaseSignOut,
   onAuthStateChanged,
   onIdTokenChanged
@@ -31,6 +33,8 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   logout: () => Promise<void>; // Alias para compatibilidad con código legacy
   refreshSession: () => Promise<void>;
+  register: (email: string, password: string, name: string) => Promise<void>;
+  clearError: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -161,6 +165,51 @@ export function AuthSessionProvider({ children }: AuthSessionProviderProps) {
   };
 
   /**
+   * Maneja el registro de nuevo usuario
+   */
+  const register = async (email: string, password: string, name: string): Promise<void> => {
+    try {
+      setError(null);
+      setLoading(true);
+
+      console.log('📝 [AUTH-SESSION] Iniciando registro para:', email);
+
+      // 1. Crear usuario en Firebase
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      console.log('✅ [AUTH-SESSION] Usuario creado en Firebase:', userCredential.user.uid);
+
+      // 2. Actualizar perfil con el nombre
+      await updateProfile(userCredential.user, { displayName: name });
+      console.log('✅ [AUTH-SESSION] Perfil actualizado con nombre:', name);
+
+      // 3. Establecer sesión en el servidor
+      const sessionCreated = await establishServerSession(userCredential.user);
+      
+      if (!sessionCreated) {
+        throw new Error('No se pudo establecer la sesión en el servidor');
+      }
+
+      setSessionEstablished(true);
+      setUser(userCredential.user);
+      
+      console.log('✅ [AUTH-SESSION] Registro completado exitosamente');
+    } catch (err: any) {
+      console.error('❌ [AUTH-SESSION] Error en registro:', err);
+      setError(err.message || 'Error al registrar usuario');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Limpia el error actual
+   */
+  const clearError = (): void => {
+    setError(null);
+  };
+
+  /**
    * Maneja el logout
    */
   const signOut = async (): Promise<void> => {
@@ -249,7 +298,9 @@ export function AuthSessionProvider({ children }: AuthSessionProviderProps) {
     signIn,
     signOut,
     logout: signOut, // Alias para compatibilidad con código legacy
-    refreshSession
+    refreshSession,
+    register,
+    clearError
   };
 
   return (

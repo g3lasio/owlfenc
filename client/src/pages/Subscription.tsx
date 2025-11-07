@@ -214,17 +214,36 @@ export default function Subscription() {
           title: "¡Free Trial Activado!",
           description: "Tienes 14 días de acceso ilimitado a todas las funciones.",
         });
+      } else if (planId === 5 || planCode === 'PRIMO_CHAMBEADOR' || planCode === 'primo_chambeador') {
+        // Para Primo Chambeador (plan gratuito por defecto)
+        const response = await fetch('/api/subscription/activate-free-plan', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ planId }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'No se pudo activar el plan gratuito');
+        }
+
+        toast({
+          title: "¡Bienvenido!",
+          description: "Has activado el plan Primo Chambeador. ¡Empieza a usar la plataforma!",
+        });
       } else {
-        // Para Primo Chambeador u otro plan gratuito, simplemente actualizamos la suscripción
-        // Este endpoint debería existir en el backend
+        // Otro plan gratuito desconocido
         toast({
           title: "Plan Activado",
           description: `Has seleccionado el plan ${planCode}.`,
         });
       }
 
-      // Invalidar queries para actualizar la UI
-      queryClient.invalidateQueries({ queryKey: ["/api/subscription/user-subscription"] });
+      // Invalidar queries para actualizar la UI (con userEmail para que coincida con la clave exacta)
+      queryClient.invalidateQueries({ queryKey: ["/api/subscription/user-subscription", userEmail] });
     } catch (error: any) {
       console.error("Error activando plan gratuito:", error);
       toast({

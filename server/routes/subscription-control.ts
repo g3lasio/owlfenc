@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { subscriptionControlService } from '../services/subscriptionControlService';
+import { robustSubscriptionService } from '../services/robustSubscriptionService';
 import { verifyFirebaseAuth } from '../middleware/firebase-auth';
 import { userMappingService } from '../services/userMappingService';
 import { DatabaseStorage } from '../DatabaseStorage';
@@ -182,6 +183,65 @@ export function registerSubscriptionControlRoutes(app: any) {
       console.error('❌ [SUBSCRIPTION-CONTROL] Error getting usage summary:', error);
       res.status(500).json({ 
         error: 'Error getting usage summary',
+        success: false 
+      });
+    }
+  });
+
+  // Activar plan gratuito (Primo Chambeador) directamente
+  app.post('/api/subscription/activate-free-plan', verifyFirebaseAuth, async (req: Request, res: Response) => {
+    try {
+      const { planId } = req.body;
+      
+      // 🔐 SECURITY: Obtener userId del usuario autenticado
+      const firebaseUid = req.firebaseUser?.uid;
+      if (!firebaseUid) {
+        return res.status(401).json({ error: 'Usuario no autenticado', success: false });
+      }
+
+      let userId = await userMappingService.getInternalUserId(firebaseUid);
+      if (!userId) {
+        userId = await userMappingService.createMapping(
+          firebaseUid, 
+          req.firebaseUser?.email || `${firebaseUid}@firebase.auth`
+        );
+      }
+
+      if (!userId) {
+        return res.status(500).json({ error: 'Error creando mapeo de usuario', success: false });
+      }
+
+      console.log(`🆓 [SUBSCRIPTION-CONTROL] Activating free plan ${planId} for user ${userId}`);
+
+      // Verificar que el plan sea gratuito (ID 5 = Primo Chambeador)
+      if (planId !== 5) {
+        return res.status(400).json({ 
+          error: 'Este endpoint solo puede activar el plan gratuito Primo Chambeador',
+          success: false 
+        });
+      }
+
+      // Activar el plan gratuito usando robustSubscriptionService
+      const subscription = await robustSubscriptionService.activateUserPlan(userId, planId);
+      
+      console.log(`✅ [SUBSCRIPTION-CONTROL] Plan gratuito activado exitosamente para usuario ${userId}`);
+      
+      res.json({
+        success: true,
+        message: 'Plan gratuito Primo Chambeador activado correctamente',
+        planId: planId,
+        planName: 'Primo Chambeador',
+        subscription: {
+          id: subscription.subscription.id,
+          status: subscription.subscription.status,
+          planId: subscription.subscription.planId
+        }
+      });
+
+    } catch (error) {
+      console.error('❌ [SUBSCRIPTION-CONTROL] Error activating free plan:', error);
+      res.status(500).json({ 
+        error: 'Error activating free plan',
         success: false 
       });
     }
