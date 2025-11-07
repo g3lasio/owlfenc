@@ -332,14 +332,145 @@ export default function PropertyOwnershipVerifier() {
         pdf.addImage(imgData, 'PNG', 10, yPosition, imgWidth, imgHeight);
       }
 
-      // Footer en última página
-      const totalPages = pdf.internal.pages.length - 1;
-      pdf.setPage(totalPages);
-      const footerY = pageHeight - 10;
+      // Agregar página adicional con mensaje estilo Stark Industries
+      pdf.addPage();
+      
+      // Fondo tecnológico con gradiente simulado
+      pdf.setFillColor(15, 23, 42); // slate-900 base
+      pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+      
+      // Bordes metálicos estilo Stark (dorado/cobre)
+      pdf.setDrawColor(212, 175, 55); // Dorado
+      pdf.setLineWidth(0.5);
+      pdf.rect(10, 10, pageWidth - 20, pageHeight - 20);
+      
+      // Esquinas con acento rojo Stark
+      pdf.setDrawColor(220, 38, 38); // Rojo intenso
+      pdf.setLineWidth(1);
+      // Esquina superior izquierda
+      pdf.line(10, 10, 20, 10);
+      pdf.line(10, 10, 10, 20);
+      // Esquina superior derecha
+      pdf.line(pageWidth - 20, 10, pageWidth - 10, 10);
+      pdf.line(pageWidth - 10, 10, pageWidth - 10, 20);
+      // Esquina inferior izquierda
+      pdf.line(10, pageHeight - 10, 20, pageHeight - 10);
+      pdf.line(10, pageHeight - 20, 10, pageHeight - 10);
+      // Esquina inferior derecha
+      pdf.line(pageWidth - 20, pageHeight - 10, pageWidth - 10, pageHeight - 10);
+      pdf.line(pageWidth - 10, pageHeight - 20, pageWidth - 10, pageHeight - 10);
+      
+      // Título principal con gradiente (simulado con colores)
+      let currentY = 25;
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(212, 175, 55); // Dorado
+      pdf.text('SISTEMA DE VERIFICACIÓN DE PROPIEDAD', pageWidth / 2, currentY, { align: 'center' });
+      
+      currentY += 8;
+      pdf.setFontSize(12);
+      pdf.setTextColor(220, 38, 38); // Rojo Stark
+      pdf.text('Tecnología de Protección para Contratistas', pageWidth / 2, currentY, { align: 'center' });
+      
+      // Línea separadora dorada
+      currentY += 8;
+      pdf.setDrawColor(212, 175, 55);
+      pdf.setLineWidth(0.3);
+      pdf.line(20, currentY, pageWidth - 20, currentY);
+      
+      // Contenido principal en blanco/gris claro
+      currentY += 12;
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(226, 232, 240); // slate-200
+      
+      const leftMargin = 20;
+      const rightMargin = pageWidth - 20;
+      const textWidth = rightMargin - leftMargin;
+      
+      // Párrafo 1
+      const line1 = 'Este sistema combina algoritmos avanzados de inteligencia artificial, modelos predictivos de';
+      const line2 = 'riesgo y bases de datos oficiales de propiedad para ofrecerte información precisa, verificable y en';
+      const line3 = 'tiempo real sobre quién es el verdadero dueño del terreno o inmueble.';
+      
+      pdf.text(line1, leftMargin, currentY, { maxWidth: textWidth });
+      currentY += 5;
+      pdf.text(line2, leftMargin, currentY, { maxWidth: textWidth });
+      currentY += 5;
+      pdf.text(line3, leftMargin, currentY, { maxWidth: textWidth });
+      
+      currentY += 10;
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(220, 38, 38); // Rojo destacado
+      const commitment = 'Nuestro compromiso es estar del lado del contratista, dándole herramientas tecnológicas que lo';
+      const commitment2 = 'protejan de fraudes, pérdidas y tratos falsos.';
+      pdf.text(commitment, leftMargin, currentY, { maxWidth: textWidth });
+      currentY += 5;
+      pdf.text(commitment2, leftMargin, currentY, { maxWidth: textWidth });
+      
+      // Sección de consejos con fondo destacado
+      currentY += 15;
+      pdf.setFillColor(30, 41, 59); // slate-800
+      pdf.roundedRect(15, currentY - 5, pageWidth - 30, 55, 2, 2, 'F');
+      
+      // Borde dorado para la caja de consejos
+      pdf.setDrawColor(212, 175, 55);
+      pdf.setLineWidth(0.5);
+      pdf.roundedRect(15, currentY - 5, pageWidth - 30, 55, 2, 2, 'S');
+      
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(11);
+      pdf.setTextColor(212, 175, 55); // Dorado
+      pdf.text('⚡ Consejos de Oro Antes de Lanzarte al Jale:', leftMargin, currentY);
+      
+      currentY += 8;
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(226, 232, 240); // Blanco/gris claro
+      
+      const tips = [
+        '• Si el nombre no coincide con el del dueño, aguas, no firmes nada todavía.',
+        '• Jamás entregues materiales ni arranques el trabajo sin contrato firmado.',
+        '• Usa siempre Owl Fenc – Property Ownership Verifier antes de dar un estimado o aceptar',
+        '  un proyecto.'
+      ];
+      
+      tips.forEach(tip => {
+        pdf.text(tip, leftMargin + 2, currentY, { maxWidth: textWidth - 4 });
+        currentY += 6;
+      });
+      
+      // Frase inspiradora con estilo especial
+      currentY += 12;
+      pdf.setFontSize(11);
+      pdf.setFont('helvetica', 'bold-italic');
+      pdf.setTextColor(212, 175, 55); // Dorado
+      pdf.text('💬 "La confianza se construye con datos, no con promesas." 🦉', pageWidth / 2, currentY, { 
+        align: 'center',
+        maxWidth: textWidth 
+      });
+      
+      // Powered by Mervin AI - Footer estilo tech
+      const footerY = pageHeight - 20;
+      
+      // Línea separadora dorada arriba del footer
+      pdf.setDrawColor(212, 175, 55);
+      pdf.setLineWidth(0.3);
+      pdf.line(20, footerY - 5, pageWidth - 20, footerY - 5);
+      
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(220, 38, 38); // Rojo Stark
+      pdf.text('POWERED BY', pageWidth / 2, footerY, { align: 'center' });
+      
+      pdf.setFontSize(14);
+      pdf.setTextColor(212, 175, 55); // Dorado
+      pdf.text('MERVIN AI', pageWidth / 2, footerY + 6, { align: 'center' });
+      
       pdf.setFontSize(7);
-      pdf.setTextColor(148, 163, 184);
-      pdf.setFont('helvetica', 'italic');
-      pdf.text('Owl Fenc AI - Property Verification System', pageWidth / 2, footerY, { align: 'center' });
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(148, 163, 184); // slate-400
+      pdf.text('Advanced Artificial Intelligence for Contractor Protection', pageWidth / 2, footerY + 11, { align: 'center' });
 
       // Generar nombre de archivo seguro - coercer address a string de manera segura
       const addressStr = String(propertyDetails.address || '');
