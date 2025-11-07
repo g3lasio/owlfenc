@@ -24,11 +24,6 @@ import TermsOfService from "@/pages/TermsOfService";
 import PricingSettings from "@/pages/PricingSettings";
 import Subscription from "@/pages/Subscription";
 import SubscriptionTest from "@/pages/SubscriptionTest";
-import PublicHome from "@/pages/PublicHome";
-import Features from "@/pages/Features";
-import Pricing from "@/pages/Pricing";
-import Integrations from "@/pages/Integrations";
-import SmartHomeRoute from "@/components/routing/SmartHomeRoute";
 
 import Billing from "./pages/Billing";
 import History from "@/pages/History";
@@ -164,13 +159,13 @@ function MainAppRouter() {
         <SidebarProvider>
           <AppLayout>
             <Switch>
-              {/* Landing Page - Smart Route (public for visitors, redirects to /home for authenticated users) */}
-              <Route path="/" component={SmartHomeRoute} />
-              
-              {/* Public Landing Pages */}
-              <Route path="/features" component={Features} />
-              <Route path="/pricing" component={Pricing} />
-              <Route path="/integrations" component={Integrations} />
+              {/* Root redirects to login - main app requires authentication */}
+              <Route path="/">
+                {() => {
+                  const { user } = useAuth();
+                  return user ? <Redirect to="/home" /> : <Redirect to="/login" />;
+                }}
+              </Route>
 
               {/* Auth & Account - Public Routes */}
               <Route path="/login" component={() => <AuthPage />} />
