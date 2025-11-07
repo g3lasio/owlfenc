@@ -39,6 +39,57 @@ import type {
   FileAttachment
 } from '../types/mervin-types';
 
+// 📊 TELEMETRÍA Y MÉTRICAS PARA ROBUSTEZ
+interface TelemetryEvent {
+  type: 'workflow_fallback' | 'tool_execution' | 'error' | 'success';
+  timestamp: Date;
+  details: any;
+}
+
+class TelemetryService {
+  private static events: TelemetryEvent[] = [];
+  private static readonly MAX_EVENTS = 1000;
+
+  static log(type: TelemetryEvent['type'], details: any) {
+    const event: TelemetryEvent = { type, timestamp: new Date(), details };
+    this.events.push(event);
+    
+    // Mantener solo los últimos 1000 eventos
+    if (this.events.length > this.MAX_EVENTS) {
+      this.events = this.events.slice(-this.MAX_EVENTS);
+    }
+
+    // Logging estructurado según tipo
+    switch (type) {
+      case 'workflow_fallback':
+        console.warn(`🔄 [TELEMETRY-FALLBACK] ${details.workflow} → ${details.tool}`);
+        console.warn(`   Reason: ${details.reason}`);
+        break;
+      case 'tool_execution':
+        console.log(`📊 [TELEMETRY-TOOL] ${details.tool} (${details.duration}ms)`);
+        break;
+      case 'error':
+        console.error(`❌ [TELEMETRY-ERROR] ${details.operation}: ${details.error}`);
+        break;
+      case 'success':
+        console.log(`✅ [TELEMETRY-SUCCESS] ${details.operation} (${details.duration}ms)`);
+        break;
+    }
+  }
+
+  static getMetrics() {
+    const now = Date.now();
+    const last24h = this.events.filter(e => now - e.timestamp.getTime() < 86400000);
+    
+    return {
+      totalEvents: last24h.length,
+      fallbacks: last24h.filter(e => e.type === 'workflow_fallback').length,
+      errors: last24h.filter(e => e.type === 'error').length,
+      successRate: last24h.filter(e => e.type === 'success').length / last24h.length
+    };
+  }
+}
+
 export class MervinOrchestrator {
   private chatgpt: ChatGPTService;
   private claude: ClaudeService;
@@ -237,13 +288,23 @@ export class MervinOrchestrator {
       // ToolRegistry detectará parámetros faltantes y los inferirá del snapshot
       this.progress?.sendMessage(`🔍 Checking requirements...`);
       
+      const toolStartTime = Date.now();
       const result = await toolRegistry.executeToolWithSnapshot(
         toolName,
         rawParams,
         this.snapshot!
       );
+      const toolDuration = Date.now() - toolStartTime;
 
       console.log('✅ [TOOL-RESULT]', result);
+      
+      // 📊 TELEMETRÍA: Registrar ejecución de herramienta
+      TelemetryService.log('tool_execution', {
+        tool: toolName,
+        duration: toolDuration,
+        success: result.success,
+        timestamp: new Date().toISOString()
+      });
 
       // PASO 4: Si requiere confirmación, generar Action Card
       if (tool.requiresConfirmation && result.success) {
@@ -320,7 +381,9 @@ export class MervinOrchestrator {
       'estimate': 'create_estimate',
       'contract': 'create_contract',
       'permit': 'get_permit_info',
-      'property': 'verify_property'
+      'property': 'verify_property',
+      'conversation': 'conversation',
+      'research': 'research'
     };
     
     return mapping[taskType] || taskType;
@@ -390,6 +453,49 @@ export class MervinOrchestrator {
     
     try {
       console.log(`🎬 [WORKFLOW] Starting workflow: ${workflowType}`);
+      
+      // 🛡️ VALIDACIÓN PREVENTIVA: Verificar que el workflow existe
+      const availableWorkflows = ['estimate_wizard']; // Solo workflows registrados
+      
+      if (!availableWorkflows.includes(workflowType)) {
+        console.warn(`⚠️ [WORKFLOW-FALLBACK] Workflow '${workflowType}' no existe`);
+        console.log(`🔄 [WORKFLOW-FALLBACK] Intentando usar herramienta equivalente...`);
+        
+        // 🔄 FALLBACK INTELIGENTE: Mapear a herramienta equivalente
+        const taskTypeFromWorkflow = this.mapWorkflowToTaskType(workflowType);
+        
+        if (taskTypeFromWorkflow) {
+          console.log(`✅ [WORKFLOW-FALLBACK] Redirigiendo a task type: ${taskTypeFromWorkflow}`);
+          
+          // 📊 TELEMETRÍA: Registrar fallback
+          TelemetryService.log('workflow_fallback', {
+            workflow: workflowType,
+            tool: taskTypeFromWorkflow,
+            reason: `Workflow '${workflowType}' no existe en WorkflowEngine`,
+            timestamp: new Date().toISOString()
+          });
+          
+          // Crear un análisis modificado para usar el flujo de herramientas
+          const modifiedAnalysis: QuickAnalysis = {
+            ...analysis,
+            isWorkflow: false,
+            workflowType: null,
+            isExecutableTask: true,
+            taskType: taskTypeFromWorkflow
+          };
+          
+          this.progress?.sendMessage(`🔧 Using optimized execution path...`);
+          return await this.handleExecutableTask(request, modifiedAnalysis, filesContext);
+        } else {
+          // 📊 TELEMETRÍA: Registrar error
+          TelemetryService.log('error', {
+            operation: 'workflow_fallback',
+            error: `No existe herramienta equivalente para workflow '${workflowType}'`
+          });
+          throw new Error(`Workflow '${workflowType}' no existe y no hay herramienta equivalente disponible`);
+        }
+      }
+      
       this.progress?.sendMessage(`🎬 Iniciando workflow: ${workflowType}...`);
 
       // Extraer contexto inicial del input con ChatGPT
@@ -619,10 +725,29 @@ export class MervinOrchestrator {
   // ============= HELPERS =============
 
   /**
+   * Mapear workflow inexistente a task type equivalente
+   */
+  private mapWorkflowToTaskType(workflowType: string): TaskType | null {
+    const mapping: Record<string, TaskType> = {
+      'contract_generator': 'contract',
+      'permit_advisor': 'permit',
+      'property_verifier': 'property',
+      'estimate_wizard': 'estimate'
+    };
+    
+    return mapping[workflowType] || null;
+  }
+
+  /**
    * Análisis inicial rápido con ChatGPT
    */
   private async analyzeInput(input: string): Promise<QuickAnalysis> {
-    return await this.chatgpt.analyzeQuick(input);
+    // Obtener herramientas disponibles del ToolRegistry
+    const availableTools = toolRegistry.getAllTools().map(t => 
+      `${t.name}: ${t.description}`
+    );
+    
+    return await this.chatgpt.analyzeQuick(input, availableTools);
   }
 
   /**
