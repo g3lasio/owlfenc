@@ -162,7 +162,18 @@ function MainAppRouter() {
               {/* Root redirects to login - main app requires authentication */}
               <Route path="/">
                 {() => {
-                  const { user } = useAuth();
+                  const { user, loading } = useAuth();
+                  
+                  // Show loading spinner while auth state is being determined
+                  if (loading) {
+                    return (
+                      <div className="flex items-center justify-center min-h-screen">
+                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+                      </div>
+                    );
+                  }
+                  
+                  // Redirect based on auth state
                   return user ? <Redirect to="/home" /> : <Redirect to="/login" />;
                 }}
               </Route>
