@@ -1,0 +1,62 @@
+// FIREBASE STORAGE SECURITY RULES
+// Controls who can upload and download files from Firebase Storage
+
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // PROFILE PHOTOS - USER SPECIFIC
+    // Allow authenticated users to upload/read their own profile photos
+    match /profile-photos/{userId}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // COMPANY LOGOS - USER SPECIFIC
+    // Allow authenticated users to upload/read their own company logos
+    match /company-logos/{userId}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // DOCUMENTS - USER SPECIFIC
+    // Allow authenticated users to upload/read their own documents
+    match /documents/{userId}/{fileName} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // PROJECT FILES - USER SPECIFIC
+    // Allow authenticated users to manage their project files
+    match /projects/{userId}/{allPaths=**} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // CONTRACT FILES - USER SPECIFIC
+    // Allow authenticated users to manage their contract files
+    match /contracts/{userId}/{allPaths=**} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // ESTIMATE FILES - USER SPECIFIC
+    // Allow authenticated users to manage their estimate files
+    match /estimates/{userId}/{allPaths=**} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // DEFAULT DENY
+    // All other paths are denied by default
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

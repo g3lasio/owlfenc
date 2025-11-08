@@ -527,11 +527,11 @@ export default function Profile() {
       return;
     }
 
-    // Validar tamaño del archivo (máximo 5MB)
-    if (file.size > 5 * 1024 * 1024) {
+    // Validar tamaño del archivo (máximo 2MB para base64)
+    if (file.size > 2 * 1024 * 1024) {
       toast({
         title: "Archivo muy grande",
-        description: "La foto de perfil debe ser menor a 5MB",
+        description: "La foto de perfil debe ser menor a 2MB",
         variant: "destructive",
       });
       return;
@@ -549,29 +549,46 @@ export default function Profile() {
 
     setUploadingPhoto(true);
     try {
-      console.log("📸 [PROFILE-PHOTO] Subiendo foto de perfil a Firebase Storage...");
+      console.log("📸 [PROFILE-PHOTO] Procesando foto de perfil...");
       
-      // Subir archivo a Firebase Storage en la carpeta profile-photos
-      const userId = currentUser.uid;
-      const photoURL = await uploadFile(file, `profile-photos/${userId}`);
+      // Convertir la imagen a base64 para almacenarla directamente
+      const base64Photo = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const result = e.target?.result as string;
+          resolve(result);
+        };
+        reader.onerror = () => {
+          reject(new Error("Error leyendo el archivo"));
+        };
+        reader.readAsDataURL(file);
+      });
+
+      console.log("✅ [PROFILE-PHOTO] Foto procesada exitosamente");
       
-      console.log("✅ [PROFILE-PHOTO] Foto subida exitosamente:", photoURL);
+      // Actualizar el estado con la imagen en base64
+      const updatedInfo = {
+        ...companyInfo,
+        profilePhoto: base64Photo,
+      };
       
-      // Actualizar el estado con la URL permanente
-      setCompanyInfo((prev) => ({
-        ...prev,
-        profilePhoto: photoURL,
-      }));
+      setCompanyInfo(updatedInfo);
+
+      // Guardar inmediatamente en Firestore
+      if (updateProfile) {
+        await updateProfile(updatedInfo);
+        console.log("💾 [PROFILE-PHOTO] Foto guardada en Firestore");
+      }
 
       toast({
-        title: "Foto subida",
-        description: "Tu foto de perfil se ha subido correctamente. No olvides hacer clic en 'Save Changes'.",
+        title: "Foto actualizada",
+        description: "Tu foto de perfil se ha actualizado correctamente.",
       });
     } catch (error) {
-      console.error("❌ [PROFILE-PHOTO] Error subiendo foto:", error);
+      console.error("❌ [PROFILE-PHOTO] Error procesando foto:", error);
       toast({
         title: "Error",
-        description: "No se pudo subir la foto de perfil. Inténtalo de nuevo.",
+        description: "No se pudo procesar la foto de perfil. Inténtalo de nuevo.",
         variant: "destructive",
       });
     } finally {
@@ -593,11 +610,11 @@ export default function Profile() {
       return;
     }
 
-    // Validar tamaño del archivo (máximo 10MB)
-    if (file.size > 10 * 1024 * 1024) {
+    // Validar tamaño del archivo (máximo 5MB para base64)
+    if (file.size > 5 * 1024 * 1024) {
       toast({
         title: "Archivo muy grande",
-        description: "El documento debe ser menor a 10MB",
+        description: "El documento debe ser menor a 5MB",
         variant: "destructive",
       });
       return;
@@ -605,22 +622,39 @@ export default function Profile() {
 
     setUploadingDocument(true);
     try {
-      console.log(`📄 [DOCUMENT-UPLOAD] Subiendo documento ${documentType} a Firebase Storage...`);
+      console.log(`📄 [DOCUMENT-UPLOAD] Procesando documento ${documentType}...`);
       
-      // Subir archivo a Firebase Storage en la carpeta documents con nombre único
-      const userId = currentUser.uid;
-      const documentURL = await uploadFile(file, `documents/${userId}`);
+      // Convertir el documento a base64 para almacenarlo directamente
+      const base64Document = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const result = e.target?.result as string;
+          resolve(result);
+        };
+        reader.onerror = () => {
+          reject(new Error("Error leyendo el archivo"));
+        };
+        reader.readAsDataURL(file);
+      });
       
-      console.log(`✅ [DOCUMENT-UPLOAD] Documento ${documentType} subido exitosamente:`, documentURL);
+      console.log(`✅ [DOCUMENT-UPLOAD] Documento ${documentType} procesado exitosamente`);
       
-      // Actualizar el estado con la URL permanente
-      setCompanyInfo((prev) => ({
-        ...prev,
+      // Actualizar el estado con el documento en base64
+      const updatedInfo = {
+        ...companyInfo,
         documents: {
-          ...prev.documents,
-          [documentType]: documentURL,
+          ...companyInfo.documents,
+          [documentType]: base64Document,
         },
-      }));
+      };
+      
+      setCompanyInfo(updatedInfo);
+
+      // Guardar inmediatamente en Firestore
+      if (updateProfile) {
+        await updateProfile(updatedInfo);
+        console.log(`💾 [DOCUMENT-UPLOAD] Documento ${documentType} guardado en Firestore`);
+      }
 
       toast({
         title: "Documento subido",
