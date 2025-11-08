@@ -55,40 +55,15 @@ export default function Subscription() {
   }, [userEmail, toast, queryClient]);
 
   // Obtenemos la información de la suscripción actual del usuario
+  // ✅ OPTIMIZACIÓN: Usando sistema de autenticación con timeout para evitar bloqueos infinitos
   const { data: userSubscription, isLoading: isLoadingUserSubscription } =
-    useQuery({
+    useQuery<any>({
       queryKey: ["/api/subscription/user-subscription", userEmail],
-      queryFn: async () => {
-        if (!currentUser) throw new Error("User authentication required");
-        
-        // Obtener token directamente del usuario actual
-        let token: string;
-        try {
-          token = await currentUser.getIdToken(false);
-        } catch (tokenError) {
-          // Intentar con force refresh si falla
-          try {
-            token = await currentUser.getIdToken(true);
-          } catch (retryError) {
-            throw new Error("No se pudo obtener token de autenticación");
-          }
-        }
-        
-        if (!token) throw new Error("No se pudo obtener token de autenticación");
-        
-        const response = await fetch("/api/subscription/user-subscription", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-        });
-        
-        if (!response.ok) throw new Error("Failed to fetch subscription");
-        return response.json();
-      },
-      enabled: !!currentUser,
-      throwOnError: false,
+      enabled: !!currentUser && !!userEmail,
+      retry: 2, // Solo 2 intentos para no bloquear por mucho tiempo
+      retryDelay: 1000, // 1 segundo entre intentos
+      staleTime: 30000, // 30 segundos de cache
+      gcTime: 60000, // 1 minuto en cache
     });
 
   // 🎯 Extract hasUsedTrial flag from subscription data
@@ -510,23 +485,9 @@ export default function Subscription() {
   // Determinar cuál plan marcar como el más popular (El Mero Patrón)
   const getIsMostPopular = (planCode: string) => planCode === "mero_patron";
 
-  const isLoadingData = isLoadingUserSubscription;
-  
-  // Con planes embebidos, nunca hay loading ni errores de carga de planes
-  if (isLoadingData) {
-    return (
-      <div className="container max-w-6xl mx-auto py-12">
-        <div className="flex flex-col items-center justify-center min-h-[60vh] p-4 space-y-4">
-          <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          <div className="text-center space-y-2">
-            <p className="text-lg font-medium">
-              Cargando información de tu suscripción...
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // ✅ CRÍTICO: NO bloquear la UI completa mientras carga la suscripción
+  // La página debe renderizarse inmediatamente con los planes disponibles
+  // La información de suscripción se carga de forma asíncrona
 
   // Obtener el plan activo del usuario
   const getActivePlanId = () => {
@@ -570,8 +531,15 @@ export default function Subscription() {
 
 
 
-      {/* Mostrar información de la suscripción actual SIEMPRE */}
-      {userSubscription && (
+      {/* Mostrar información de la suscripción actual (carga asíncrona) */}
+      {isLoadingUserSubscription ? (
+        <div className="bg-muted/50 rounded-lg p-6 mb-10 text-center">
+          <div className="flex items-center justify-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Cargando información de tu suscripción...</p>
+          </div>
+        </div>
+      ) : userSubscription && (
         <div className="bg-muted/50 rounded-lg p-6 mb-10 text-center">
           <h3 className="text-lg font-medium mb-2">
             {activePlanId === null || activePlanId === undefined 
