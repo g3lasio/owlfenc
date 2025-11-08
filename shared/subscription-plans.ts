@@ -23,8 +23,6 @@ export interface SubscriptionPlan {
   features: string[];
   isActive: boolean;
   interval: 'monthly' | 'yearly';
-  stripePriceIdMonthly?: string;  // ID del precio mensual en Stripe
-  stripePriceIdYearly?: string;   // ID del precio anual en Stripe
 }
 
 /**
@@ -73,7 +71,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     description: "Plan profesional con límites generosos para contratistas establecidos",
     motto: "Para contratistas profesionales",
     price: 4999,        // $49.99/mes
-    yearlyPrice: 49999, // $499.99/año (ahorro de ~16%)
+    yearlyPrice: 50988, // $509.88/año (15% de descuento: $49.99 * 12 * 0.85)
     features: [
       "Estimados ilimitados",
       "50 contratos/mes",
@@ -84,9 +82,6 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     ],
     isActive: true,
     interval: 'monthly',
-    // Estos IDs se deben configurar en Stripe
-    stripePriceIdMonthly: process.env.STRIPE_PRICE_MERO_PATRON_MONTHLY || '',
-    stripePriceIdYearly: process.env.STRIPE_PRICE_MERO_PATRON_YEARLY || '',
   },
   {
     id: 6,
@@ -95,7 +90,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     description: "Plan premium con acceso ilimitado",
     motto: "Sin límites para profesionales",
     price: 9999,         // $99.99/mes
-    yearlyPrice: 106000, // $1,060/año (ahorro de ~11%)
+    yearlyPrice: 101989, // $1,019.89/año (15% de descuento: $99.99 * 12 * 0.85)
     features: [
       "Todo ilimitado",
       "Soporte prioritario 24/7",
@@ -107,9 +102,6 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     ],
     isActive: true,
     interval: 'monthly',
-    // Estos IDs se deben configurar en Stripe
-    stripePriceIdMonthly: process.env.STRIPE_PRICE_MASTER_MONTHLY || '',
-    stripePriceIdYearly: process.env.STRIPE_PRICE_MASTER_YEARLY || '',
   }
 ];
 
