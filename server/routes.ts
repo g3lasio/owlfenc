@@ -4958,45 +4958,63 @@ Output must be between 200-900 characters in English.`;
           userName,
         } = validationResult.data;
 
-        // Verificar que el plan existe usando hardcoded plans for now
+        // ✅ PLANES SINCRONIZADOS CON LA BASE DE DATOS (subscription_plans table)
         const subscriptionPlans = [
           {
-            id: 1,
+            id: 4,
+            name: "Free Trial",
+            price: 0,
+            yearlyPrice: 0,
+            interval: "monthly",
+            features: [
+              "Acceso completo por 14 días",
+              "Todas las funciones premium",
+              "Sin compromiso de pago",
+              "Cancela en cualquier momento"
+            ],
+          },
+          {
+            id: 5,
             name: "Primo Chambeador",
             price: 0,
             yearlyPrice: 0,
             interval: "monthly",
             features: [
-              "10 basic estimates",
-              "3 AI estimates",
-              "3 contracts (watermarked)",
-              "Basic features",
+              "5 estimados básicos/mes (con marca de agua)",
+              "1 estimado con IA/mes (con marca de agua)",
+              "5 proyectos/mes",
+              "Funcionalidades básicas"
             ],
           },
           {
-            id: 2,
+            id: 9,
             name: "Mero Patrón",
-            price: 10000, // $100.00 USD/month
-            yearlyPrice: 120000, // $1200.00 USD/year (12 months)
+            price: 4999, // $49.99/mes
+            yearlyPrice: 50988, // $509.88/año (15% descuento)
             interval: "monthly",
             features: [
-              "Unlimited basic estimates",
-              "50 AI estimates/month",
-              "Complete invoicing",
-              "Mervin AI 7.0",
+              "Estimados ilimitados",
+              "50 contratos/mes",
+              "Verificación de propiedades",
+              "Mervin AI 7.0 incluido",
+              "Sin marcas de agua",
+              "Soporte prioritario"
             ],
           },
           {
-            id: 3,
+            id: 6,
             name: "Master Contractor",
-            price: 10000, // $100.00 USD/month
-            yearlyPrice: 120000, // $1200.00 USD/year (12 months)
+            price: 9999, // $99.99/mes
+            yearlyPrice: 101989, // $1,019.89/año (15% descuento)
             interval: "monthly",
             features: [
-              "Complete management features",
-              "Automated reminders",
-              "QuickBooks integration",
-              "Predictive analysis",
+              "Todo ilimitado",
+              "Soporte prioritario 24/7",
+              "Sin marcas de agua",
+              "Integración QuickBooks",
+              "Análisis predictivo",
+              "Gestión completa de proyectos",
+              "Recordatorios automatizados"
             ],
           },
         ];

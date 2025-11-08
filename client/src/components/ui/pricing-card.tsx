@@ -195,7 +195,7 @@ export function PricingCard({
               onClick={() => onSelectPlan(planId)}
               disabled={isLoading}
             >
-              {isLoading ? "Procesando..." : "⬆️ UPGRADE"}
+              {isLoading ? "Procesando..." : (code === 'FREE_TRIAL' ? "Start Free Trial" : "⬆️ UPGRADE")}
             </Button>
           ) : actionType === 'downgrade' ? (
             <Button 
@@ -217,7 +217,7 @@ export function PricingCard({
               onClick={() => onSelectPlan(planId)}
               disabled={isLoading}
             >
-              {isLoading ? "Procesando..." : "Seleccionar Plan"}
+              {isLoading ? "Procesando..." : (code === 'FREE_TRIAL' ? "Start Free Trial" : "Seleccionar Plan")}
             </Button>
           )}
         </div>

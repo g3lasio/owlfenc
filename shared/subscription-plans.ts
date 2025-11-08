@@ -34,12 +34,12 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     id: 4,
     name: "Free Trial",
     code: "FREE_TRIAL",
-    description: "7 días gratis - límites básicos",
+    description: "14 días gratis - acceso completo",
     motto: "Prueba antes de comprar",
     price: 0,
     yearlyPrice: 0,
     features: [
-      "Acceso completo por 7 días",
+      "Acceso completo por 14 días",
       "Todas las funciones premium",
       "Sin compromiso de pago",
       "Cancela en cualquier momento"
