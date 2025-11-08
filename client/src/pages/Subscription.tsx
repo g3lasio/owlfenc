@@ -7,18 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-
-interface SubscriptionPlan {
-  id: number;
-  name: string;
-  description: string;
-  price: number;
-  yearlyPrice: number;
-  features: string[];
-  motto: string;
-  code: string;
-  isActive: boolean;
-}
+import { getActivePlans, type SubscriptionPlan } from "@shared/subscription-plans";
 
 export default function Subscription() {
   const [isYearly, setIsYearly] = useState(false);
@@ -27,6 +16,13 @@ export default function Subscription() {
   const queryClient = useQueryClient();
   const { currentUser } = useAuth();
   const userEmail = currentUser?.email || "";
+
+  // ✅ ALTERNATIVA 1: Planes embebidos - carga instantánea sin fetch
+  const plans = getActivePlans();
+  const isLoadingPlans = false; // Siempre false porque los planes están embebidos
+  const plansError = null; // Nunca hay error porque no hay fetch
+
+  console.log("⚡ [SUBSCRIPTION-INSTANT] Planes cargados instantáneamente:", plans.length);
 
   // Check for successful payment and refresh subscription status
   useEffect(() => {
@@ -57,79 +53,6 @@ export default function Subscription() {
     
     checkSuccessRedirect();
   }, [userEmail, toast, queryClient]);
-
-  // Obtenemos los planes disponibles con timeout robusto y retry automático
-  const {
-    data: plans,
-    isLoading: isLoadingPlans,
-    error: plansError,
-  } = useQuery<SubscriptionPlan[]>({
-    queryKey: ["/api/subscription/plans"],
-    queryFn: async ({ signal }) => {
-      const controller = new AbortController();
-      
-      // Timeout promise que rechaza y aborta el fetch después de 10 segundos
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => {
-          controller.abort();
-          reject(new Error("Timeout: La carga de planes tardó más de 10 segundos. Por favor, recarga la página."));
-        }, 10000);
-      });
-      
-      // Fetch promise con AbortController
-      const fetchPromise = fetch("/api/subscription/plans", { 
-        signal: controller.signal 
-      }).then(async (response) => {
-        if (!response.ok) {
-          throw new Error(`Error HTTP ${response.status}: No se pudieron cargar los planes`);
-        }
-        
-        const data = await response.json();
-        console.log("✅ [PLANS] Planes cargados exitosamente:", data.length);
-        return data;
-      });
-      
-      // Promise.race: el primero en resolverse/rechazarse gana
-      try {
-        return await Promise.race([fetchPromise, timeoutPromise]);
-      } catch (error: any) {
-        console.error("❌ [PLANS] Error cargando planes:", error.message);
-        throw error;
-      }
-    },
-    staleTime: 1000 * 60 * 5, // Cache por 5 minutos
-    gcTime: 1000 * 60 * 10, // Mantener en cache 10 minutos
-    retry: 2, // Reintentar 2 veces si falla
-    retryDelay: 1000, // Esperar 1 segundo entre reintentos
-  });
-
-  // Handle plans data changes
-  useEffect(() => {
-    if (plans) {
-      if (plans.length === 0) {
-        console.warn("No se encontraron planes disponibles");
-        toast({
-          title: "Planes no disponibles",
-          description:
-            "No hay planes de suscripción disponibles en este momento.",
-          variant: "destructive",
-        });
-      }
-    }
-  }, [plans, toast]);
-
-  // Handle plans error
-  useEffect(() => {
-    if (plansError) {
-      console.error("Error cargando planes:", plansError);
-      toast({
-        title: "Error al cargar planes",
-        description:
-          "Por favor, actualice la página o contacte a soporte si el problema persiste.",
-        variant: "destructive",
-      });
-    }
-  }, [plansError, toast]);
 
   // Obtenemos la información de la suscripción actual del usuario
   const { data: userSubscription, isLoading: isLoadingUserSubscription } =
@@ -587,21 +510,9 @@ export default function Subscription() {
   // Determinar cuál plan marcar como el más popular (El Mero Patrón)
   const getIsMostPopular = (planCode: string) => planCode === "mero_patron";
 
-  // Debug logging to identify loading issues
-  useEffect(() => {
-    console.log("🔍 [SUBSCRIPTION-DEBUG] Plans state:", {
-      isLoadingPlans,
-      hasPlans: !!plans,
-      plansCount: Array.isArray(plans) ? plans.length : 0,
-      plansError: plansError?.message,
-    });
-  }, [isLoadingPlans, plans, plansError]);
-
-  const isLoadingData = isLoadingPlans || isLoadingUserSubscription;
+  const isLoadingData = isLoadingUserSubscription;
   
-  // 🐛 FIX: Only mark as error if we explicitly have an error OR if loading finished with no data
-  const hasError = !!plansError || (!isLoadingPlans && plans !== undefined && (!Array.isArray(plans) || plans.length === 0));
-
+  // Con planes embebidos, nunca hay loading ni errores de carga de planes
   if (isLoadingData) {
     return (
       <div className="container max-w-6xl mx-auto py-12">
@@ -609,33 +520,9 @@ export default function Subscription() {
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
           <div className="text-center space-y-2">
             <p className="text-lg font-medium">
-              Cargando planes de suscripción...
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Los planes se cargan desde cache ultra-rápido (generalmente &lt;100ms)
+              Cargando información de tu suscripción...
             </p>
           </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (hasError) {
-    return (
-      <div className="container max-w-6xl py-12">
-        <div className="flex flex-col items-center justify-center min-h-[60vh] p-4">
-          <div className="text-red-500 mb-4">
-            <i className="ri-error-warning-line text-4xl"></i>
-          </div>
-          <h2 className="text-xl font-semibold mb-2">
-            Error al cargar los planes
-          </h2>
-          <p className="text-muted-foreground mb-4">
-            {plansError?.message || "No se pudieron cargar los planes de suscripción."}
-          </p>
-          <Button onClick={() => window.location.reload()}>
-            Reintentar
-          </Button>
         </div>
       </div>
     );
