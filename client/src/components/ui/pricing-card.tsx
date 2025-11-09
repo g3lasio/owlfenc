@@ -21,6 +21,7 @@ interface PricingCardProps {
   expirationDate?: Date;
   currentUserPlanId?: number;
   onManageSubscription?: () => void;
+  hasUsedTrial?: boolean;
 }
 
 export function PricingCard({
@@ -40,9 +41,13 @@ export function PricingCard({
   expirationDate,
   currentUserPlanId = 1,
   onManageSubscription,
+  hasUsedTrial = false,
 }: PricingCardProps) {
   const currentPrice = isYearly ? yearlyPrice / 100 : price / 100;
   const period = isYearly ? "/año" : "/mes";
+  
+  // Determinar si este plan ofrece trial (plan de pago y usuario no ha usado trial)
+  const isTrialEligible = price > 0 && !hasUsedTrial;
   
   // Determinar el tipo de acción según el plan actual del usuario
   const getActionType = () => {
@@ -112,6 +117,11 @@ export function PricingCard({
               <>
                 <span className="text-3xl font-bold">{formatPrice(currentPrice)}</span>
                 <span className="text-muted-foreground ml-1">{period}</span>
+                {isTrialEligible && (
+                  <div className="mt-2 text-sm font-semibold text-primary">
+                    🎁 14 días gratis, luego {formatPrice(currentPrice)}{period}
+                  </div>
+                )}
               </>
             )}
           </div>

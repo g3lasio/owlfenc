@@ -649,6 +649,7 @@ export default function Subscription() {
                 expirationDate={plan.id === activePlanId ? (expirationDate || undefined) : undefined}
                 currentUserPlanId={activePlanId}
                 onManageSubscription={createCustomerPortal}
+                hasUsedTrial={hasUsedTrial}
               />
             ))
         ) : (
