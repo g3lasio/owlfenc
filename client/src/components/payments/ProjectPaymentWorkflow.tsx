@@ -119,6 +119,7 @@ export default function ProjectPaymentWorkflow({
     sendEmail: true,
   });
   const [generatedLink, setGeneratedLink] = useState<string>("");
+  const [visibleProjects, setVisibleProjects] = useState<number>(3);
 
   // Helper functions
   const formatCurrency = (amount: number) => {
@@ -265,33 +266,48 @@ export default function ProjectPaymentWorkflow({
               return null;
             })()}
             {projects && projects.length > 0 ? (
-              <div className="grid gap-4">
-                {projects.slice(0, 10).map((project) => (
-                  <div
-                    key={project.id}
-                    className="p-4 border border-gray-700 rounded-lg hover:border-cyan-400 transition-colors cursor-pointer"
-                    onClick={() => handleProjectSelect(project)}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="space-y-1">
-                        <h4 className="font-medium text-white">{project.clientName}</h4>
-                        <p className="text-sm text-gray-400">{project.projectType}</p>
-                        <p className="text-xs text-gray-500">{project.address}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-cyan-400">
-                          {formatCurrency(project.totalPrice || 0)}
-                        </p>
-                        <Badge
-                          variant={project.paymentStatus === "paid" ? "default" : "secondary"}
-                          className="text-xs"
-                        >
-                          {project.paymentStatus || "pending"}
-                        </Badge>
+              <div className="space-y-4">
+                <div className="grid gap-4">
+                  {projects.slice(0, visibleProjects).map((project) => (
+                    <div
+                      key={project.id}
+                      className="p-4 border border-gray-700 rounded-lg hover:border-cyan-400 transition-colors cursor-pointer"
+                      onClick={() => handleProjectSelect(project)}
+                      data-testid={`project-item-${project.id}`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="space-y-1">
+                          <h4 className="font-medium text-white">{project.clientName}</h4>
+                          <p className="text-sm text-gray-400">{project.projectType}</p>
+                          <p className="text-xs text-gray-500">{project.address}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-cyan-400">
+                            {formatCurrency(project.totalPrice || 0)}
+                          </p>
+                          <Badge
+                            variant={project.paymentStatus === "paid" ? "default" : "secondary"}
+                            className="text-xs"
+                          >
+                            {project.paymentStatus || "pending"}
+                          </Badge>
+                        </div>
                       </div>
                     </div>
+                  ))}
+                </div>
+                {visibleProjects < projects.length && (
+                  <div className="flex justify-center pt-2">
+                    <Button
+                      onClick={() => setVisibleProjects(prev => prev + 3)}
+                      variant="outline"
+                      className="bg-gray-800 border-gray-600 text-cyan-400 hover:bg-gray-700 hover:text-cyan-300"
+                      data-testid="button-see-more-projects"
+                    >
+                      Ver más proyectos ({projects.length - visibleProjects} restantes)
+                    </Button>
                   </div>
-                ))}
+                )}
               </div>
             ) : (
               <div className="text-center py-8">
