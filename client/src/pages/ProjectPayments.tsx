@@ -779,7 +779,7 @@ const ProjectPayments: React.FC = () => {
               <ProjectPaymentWorkflow
                 projects={projects}
                 payments={payments}
-                onCreatePayment={createPaymentMutation.mutate}
+                onCreatePayment={createPaymentMutation.mutateAsync}
                 onSendInvoice={sendInvoiceMutation.mutate}
                 isCreatingPayment={createPaymentMutation.isPending}
               />
