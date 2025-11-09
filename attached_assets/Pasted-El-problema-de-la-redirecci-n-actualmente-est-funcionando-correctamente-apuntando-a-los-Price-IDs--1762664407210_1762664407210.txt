@@ -1,0 +1,57 @@
+El problema de la redirección actualmente está funcionando correctamente, apuntando a los Price IDs correctos tanto para los planes mensuales como anuales.
+Sin embargo, hay un problema serio que necesito que analices y ayudemos a resolver con precisión, para evitar errores conceptuales y de flujo de cobro.
+
+⚠️ Problema principal: el manejo del Free Trial
+El botón “Start Free Trial” (para nuevos usuarios) está redirigiendo directamente al checkout, lo que significa que Stripe intenta cobrar inmediatamente el monto del plan, cuando en realidad no debería hacerlo.
+El comportamiento correcto debería ser:
+
+
+El usuario inicia su Free Trial de 14 días sin ningún cargo inicial.
+
+
+Durante ese periodo, disfruta de los beneficios completos del plan seleccionado (Mero Patrón o Master Contractor).
+
+
+Al finalizar los 14 días:
+
+
+Si el usuario mantiene la suscripción, se realiza el cobro automático según el plan elegido.
+
+
+Si el usuario cancela antes de que termine el periodo, su cuenta debe degradarse automáticamente al plan gratuito (Primo Chambeador) y perder los beneficios premium.
+
+
+
+
+Además, es fundamental que el usuario vea claramente los precios y condiciones antes de iniciar el trial, para evitar malentendidos o quejas por cobros inesperados.
+
+🎯 Lo que necesito definir contigo
+Quiero que me propongas 2 o 3 soluciones viables (o una definitiva) para manejar correctamente este flujo de Free Trial con Stripe.
+La solución debe contemplar:
+
+
+Que el usuario no sea cobrado al iniciar el trial.
+
+
+Que el cobro automático ocurra solo al finalizar el periodo de prueba.
+
+
+Que una vez el usuario haya usado su Free Trial, no pueda volver a solicitarlo.
+
+
+Que las únicas opciones disponibles después sean los tres planes regulares:
+
+
+Primo Chambeador (Gratis)
+
+
+Mero Patrón ($49.99 / $509.88 anual)
+
+
+Master Contractor ($99.99 / $1,019.89 anual)
+
+
+
+
+
+Necesito que me ayudes a entender cuál es la forma correcta de estructurar esto en Stripe, tanto a nivel de suscripciones (Subscription API) como de UX lógica, para que el sistema sea consistente, transparente y a prueba de errores.Humanize 320 words
