@@ -1,0 +1,34 @@
+Tengo varias preguntas importantes relacionadas con el manejo de suscripciones, pagos y notificaciones automáticas dentro del sistema:
+
+
+Facturación e Invoices:
+Cuando un usuario realiza su pago mensual o anual, ¿quién se encarga de generar y enviar el recibo o invoice?
+Quiero saber si eso lo está manejando directamente Stripe (con sus notificaciones automáticas por correo), o si nosotros debemos gestionar la generación y envío del comprobante desde nuestra plataforma.
+
+
+Pagos exitosos:
+Cuando un pago se ejecuta correctamente, ¿quién le notifica al usuario que su pago fue procesado con éxito?
+Idealmente, el sistema debería enviar un correo de confirmación con el recibo, y también mostrar una notificación dentro del panel del usuario (por ejemplo: “Tu pago de $49.99 se procesó exitosamente. Gracias por continuar con Owl Fenc Pro.”).
+
+
+Pagos fallidos o rechazados:
+Si una suscripción falla por falta de fondos o una tarjeta declinada, ¿quién debe alertar al usuario?
+Stripe puede manejar parte de esto automáticamente, pero necesitamos decidir si también enviamos nuestras propias notificaciones personalizadas para mantener una comunicación clara y profesional con el usuario (por ejemplo: “Tu método de pago fue rechazado, actualízalo para evitar la suspensión de tu cuenta.”).
+
+
+Inicio de suscripción (Onboarding de plan):
+Cuando un usuario activa una suscripción por primera vez o cambia de plan, debería recibir un mensaje de bienvenida automático, acompañado de un resumen breve de los beneficios incluidos en su plan (por ejemplo: cantidad de estimados, DeepSearch, contratos, etc.).
+Este mensaje podría enviarse vía correo electrónico y también mostrarse dentro del dashboard la primera vez que inicia sesión tras activar el plan.
+
+
+
+En resumen, quiero definir con claridad:
+
+
+Qué tareas maneja Stripe automáticamente (facturación, correos de pago, recordatorios).
+
+
+Qué tareas debemos manejar nosotros directamente desde la app (notificaciones personalizadas, mensajes de bienvenida, alertas visuales, upgrades/downgrades).
+
+
+El objetivo es tener un ecosistema de suscripciones profesional, automatizado y transparente, donde el usuario reciba confirmaciones, alertas y mensajes relevantes en cada etapa del ciclo de pago, sin dejar espacio para confusiones o silencios del sistema.Humanize 331 words
