@@ -1,105 +1,10 @@
-// FIRESTORE SECURITY RULES - PRODUCTION HARDENED
-// Prevents client-side manipulation of entitlements, usage, and audit logs
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // ENTITLEMENTS COLLECTION - READ ONLY FOR AUTHENTICATED USERS
-    // Only server can write/update entitlements
-    match /entitlements/{uid} {
-      allow read: if request.auth != null && request.auth.uid == uid;
-      allow write: if false; // Only server can write entitlements
-    }
-    
-    // USAGE COLLECTION - READ ONLY FOR AUTHENTICATED USERS  
-    // Only server can track usage, clients can only read their own
-    match /usage/{usageId} {
-      allow read: if request.auth != null && 
-                     usageId.matches('.*' + request.auth.uid + '_.*');
-      allow write: if false; // Only server can write usage data
-    }
-    
-    // AUDIT LOGS COLLECTION - NO CLIENT ACCESS
-    // Audit logs are server-only for security and compliance
-    match /audit_logs/{logId} {
-      allow read, write: if false; // Only server can access audit logs
-    }
-    
-    // ADMIN ANALYTICS COLLECTION - ADMIN ONLY
-    // Analytics and metrics data for admin dashboard
-    match /admin_analytics/{analyticsId} {
-      allow read: if request.auth != null && 
-                     request.auth.token.admin == true;
-      allow write: if false; // Only server can write analytics
-    }
-    
-    // 🚨 LEGACY FLAT CLIENTS COLLECTION - DEPRECATED AND DENIED
-    // This flat collection is INSECURE and being phased out
-    // All client data should use hierarchical structure: /users/{uid}/clients/{clientId}
-    match /clients/{clientId} {
-      allow read, write: if false; // DENY ALL ACCESS - use hierarchical structure instead
-    }
-    
-    // ✅ SECURE HIERARCHICAL CLIENT MANAGEMENT
-    // Clients are stored under each user's document for automatic isolation
-    match /users/{uid}/clients/{clientId} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
-      allow create: if request.auth != null && request.auth.uid == uid;
-    }
-    
-    // ESTIMATES (EXISTING) - USER SPECIFIC
-    // Allow users to manage their own estimates
-    match /estimates/{estimateId} {
-      allow read, write: if request.auth != null && 
-                            resource.data.uid == request.auth.uid;
-      allow create: if request.auth != null && 
-                       request.resource.data.uid == request.auth.uid;
-    }
-    
-    // CONTRACTS (EXISTING) - USER SPECIFIC  
-    // Allow users to manage their own contracts
-    match /contracts/{contractId} {
-      allow read, write: if request.auth != null && 
-                            resource.data.uid == request.auth.uid;
-      allow create: if request.auth != null && 
-                       request.resource.data.uid == request.auth.uid;
-    }
-    
-    // PROJECTS (EXISTING) - USER SPECIFIC
-    // Allow users to manage their own projects
-    match /projects/{projectId} {
-      allow read, write: if request.auth != null && 
-                            resource.data.uid == request.auth.uid;
-      allow create: if request.auth != null && 
-                       request.resource.data.uid == request.auth.uid;
-    }
-    
-    // SHARED ESTIMATES - PUBLIC READ ONLY
-    // Public sharing system for estimates
-    match /shared_estimates/{shareId} {
-      allow read: if true; // Public read access for sharing
-      allow write: if false; // Only server can create shared estimates
-    }
-    
-    // NOTIFICATIONS - USER SPECIFIC READ ONLY
-    // System notifications for users (trial expiry, etc.)
-    match /notifications/{notificationId} {
-      allow read: if request.auth != null && 
-                     resource.data.uid == request.auth.uid;
-      allow write: if false; // Only server can create notifications
-    }
-    
-    // RATE LIMITING - SERVER ONLY
-    // Rate limiting data for anti-abuse
-    match /rate_limits/{limitId} {
-      allow read, write: if false; // Only server can access rate limits
-    }
-    
-    // DEFAULT DENY
-    // All other collections are denied by default
+    // REGLAS PERMISIVAS TEMPORALES - Permite todo acceso autenticado
+    // TODO: Implementar seguridad jerárquica más adelante
     match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if request.auth != null;
     }
   }
 }

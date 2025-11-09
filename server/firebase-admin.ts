@@ -33,6 +33,7 @@ if (getApps().length === 0) {
 }
 
 // Exportar instancias para uso en otros módulos
+export { adminApp };
 export const adminAuth = getAuth(adminApp);
 export const db = getFirestore(adminApp);
 

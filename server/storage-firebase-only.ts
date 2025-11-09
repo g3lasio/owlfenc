@@ -5,7 +5,7 @@
  * IMPORTANTE: Usa Firebase Admin SDK para bypasear reglas de Firestore
  */
 
-import * as admin from 'firebase-admin';
+import { adminApp } from './firebase-admin';
 import { 
   FirebaseClient, 
   InsertFirebaseClient, 
@@ -42,13 +42,13 @@ class FirebaseOnlyManager implements IFirebaseOnlyManager {
     console.log('🔥 [FIREBASE-MANAGER] Inicializando arquitectura Firebase-only con Admin SDK...');
     
     try {
-      // Usar el Admin SDK que ya está inicializado globalmente
+      // Usar la instancia de Admin SDK que ya está inicializada
       // El Admin SDK bypasea las reglas de Firestore
-      if (!admin.apps.length) {
-        throw new Error('❌ Firebase Admin SDK no inicializado. Debe inicializarse en server/index.ts');
+      if (!adminApp) {
+        throw new Error('❌ Firebase Admin SDK no inicializado en server/firebase-admin.ts');
       }
       
-      this.firebaseApp = admin.app();
+      this.firebaseApp = adminApp;
       console.log('✅ [FIREBASE-MANAGER] Usando Firebase Admin SDK (bypasea reglas de Firestore)');
       
       // Inicializar storage con Admin SDK
