@@ -1672,8 +1672,9 @@ Output must be between 200-900 characters in English.`;
   // app.use("/api/contracts", contractRoutes); // OLD PostgreSQL routes - DISABLED
   app.use("/api/contracts", contractsFirebaseRoutes); // NEW Firebase-only routes
 
-  // Registrar rutas de clientes
-  app.use("/api/clients", clientRoutes);
+  // 🚨 DEPRECATED: Old client routes using flat collection - DISABLED for security
+  // app.use("/api/clients", clientRoutes); 
+  // Now using secure hierarchical routes defined below (lines ~6060-6229)
   
   // Registrar rutas de importación inteligente con IA
   app.use("/api/intelligent-import", intelligentImportRoutes);

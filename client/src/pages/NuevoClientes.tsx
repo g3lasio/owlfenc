@@ -71,16 +71,16 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useProfile } from "@/hooks/use-profile";
 import { apiRequest } from "@/lib/queryClient";
-// Importaciones de Firebase
+// Importaciones del servicio de clientes unificado
 import {
   getClients,
-  saveClient,
+  createClient as saveClient,
   updateClient,
   deleteClient,
   importClientsFromCsv,
   importClientsFromVcf,
-} from "../lib/clientFirebase";
-import { importClientsFromCsvWithAI } from "../services/clientService";
+  importClientsFromCsvWithAI
+} from "../services/clientService";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 
 

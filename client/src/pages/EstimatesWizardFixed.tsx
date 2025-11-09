@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { getClients as getFirebaseClients, saveClient } from '@/lib/clientFirebase';
+import { getClients as getFirebaseClients, createClient as saveClient } from '@/services/clientService';
 import { collection, query, where, getDocs, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { 

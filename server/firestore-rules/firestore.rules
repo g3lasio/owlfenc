@@ -34,13 +34,18 @@ service cloud.firestore {
       allow write: if false; // Only server can write analytics
     }
     
-    // CLIENT MANAGEMENT (EXISTING) - USER SPECIFIC
-    // Allow users to manage their own clients
+    // 🚨 LEGACY FLAT CLIENTS COLLECTION - DEPRECATED AND DENIED
+    // This flat collection is INSECURE and being phased out
+    // All client data should use hierarchical structure: /users/{uid}/clients/{clientId}
     match /clients/{clientId} {
-      allow read, write: if request.auth != null && 
-                            resource.data.uid == request.auth.uid;
-      allow create: if request.auth != null && 
-                       request.resource.data.uid == request.auth.uid;
+      allow read, write: if false; // DENY ALL ACCESS - use hierarchical structure instead
+    }
+    
+    // ✅ SECURE HIERARCHICAL CLIENT MANAGEMENT
+    // Clients are stored under each user's document for automatic isolation
+    match /users/{uid}/clients/{clientId} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow create: if request.auth != null && request.auth.uid == uid;
     }
     
     // ESTIMATES (EXISTING) - USER SPECIFIC

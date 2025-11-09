@@ -71,7 +71,7 @@ import {
   contractHistoryService,
   ContractHistoryEntry,
 } from "@/services/contractHistoryService";
-import { getClients as getFirebaseClients } from "@/lib/clientFirebase";
+import { getClients as getFirebaseClients } from "@/services/clientService";
 
 // Interface for completed contracts
 interface CompletedContract {
