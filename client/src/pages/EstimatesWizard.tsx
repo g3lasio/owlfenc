@@ -31,10 +31,7 @@ import { DeepSearchChat } from "@/components/DeepSearchChat";
 // Usar el logo correcto de OWL FENCE
 const mervinLogoUrl =
   "https://ik.imagekit.io/lp5czyx2a/ChatGPT%20Image%20May%2010,%202025,%2005_35_38%20PM.png?updatedAt=1748157114019";
-import {
-  getClients as getFirebaseClients,
-  saveClient,
-} from "@/lib/clientFirebase";
+import * as clientService from "@/services/clientService";
 import {
   collection,
   query,
@@ -1879,7 +1876,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
   const loadClients = async () => {
     try {
       setIsLoadingClients(true);
-      const clientsData = await getFirebaseClients();
+      const clientsData = await clientService.getClients();
       // @ts-ignore - Temporarily disable type checking for client mapping
       setClients(clientsData);
     } catch (error) {
@@ -3001,7 +2998,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       };
 
       console.log("💾 Guardando nuevo cliente:", clientData);
-      const savedClient = await saveClient(clientData);
+      const savedClient = await clientService.createClient(clientData);
       console.log("✅ Cliente guardado exitosamente:", savedClient);
 
       const clientWithId = {
