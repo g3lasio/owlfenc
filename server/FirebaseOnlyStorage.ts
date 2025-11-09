@@ -2,24 +2,10 @@
  * 🔥 FIREBASE-ONLY STORAGE SYSTEM
  * Sistema unificado que usa únicamente Firebase Firestore
  * Elimina completamente la dependencia de PostgreSQL
+ * IMPORTANTE: Usa Firebase Admin SDK para bypasear reglas de Firestore
  */
 
-import { 
-  getFirestore, 
-  collection, 
-  doc, 
-  getDoc, 
-  getDocs, 
-  setDoc, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
-  where, 
-  orderBy, 
-  Timestamp,
-  writeBatch
-} from 'firebase/firestore';
+import * as admin from 'firebase-admin';
 import { 
   FirebaseClient, 
   InsertFirebaseClient, 
@@ -42,11 +28,11 @@ interface IFirebaseOnlyStorage {
 }
 
 export class FirebaseOnlyStorage implements IFirebaseOnlyStorage {
-  private db: any;
+  private db: admin.firestore.Firestore;
 
-  constructor(firebaseApp: any) {
-    this.db = getFirestore(firebaseApp);
-    console.log('🔥 [FIREBASE-STORAGE] Inicializado con arquitectura unificada Firebase-only');
+  constructor(firebaseApp: admin.app.App) {
+    this.db = firebaseApp.firestore();
+    console.log('🔥 [FIREBASE-STORAGE] Inicializado con Firebase Admin SDK (bypasea reglas de Firestore)');
   }
 
   /**
@@ -56,9 +42,12 @@ export class FirebaseOnlyStorage implements IFirebaseOnlyStorage {
     try {
       console.log(`🔄 [FIREBASE-STORAGE] Obteniendo clientes para UID: ${firebaseUid}`);
       
-      const clientsRef = collection(this.db, FIREBASE_COLLECTIONS.USERS, firebaseUid, FIREBASE_COLLECTIONS.CLIENTS);
-      const clientsQuery = query(clientsRef, orderBy('createdAt', 'desc'));
-      const snapshot = await getDocs(clientsQuery);
+      const clientsRef = this.db
+        .collection(FIREBASE_COLLECTIONS.USERS)
+        .doc(firebaseUid)
+        .collection(FIREBASE_COLLECTIONS.CLIENTS);
+      
+      const snapshot = await clientsRef.orderBy('createdAt', 'desc').get();
       
       const clients: FirebaseClient[] = [];
       snapshot.forEach((doc) => {
@@ -95,15 +84,20 @@ export class FirebaseOnlyStorage implements IFirebaseOnlyStorage {
     try {
       console.log(`🔄 [FIREBASE-STORAGE] Obteniendo cliente ${clientId} para UID: ${firebaseUid}`);
       
-      const clientRef = doc(this.db, FIREBASE_COLLECTIONS.USERS, firebaseUid, FIREBASE_COLLECTIONS.CLIENTS, clientId);
-      const clientDoc = await getDoc(clientRef);
+      const clientRef = this.db
+        .collection(FIREBASE_COLLECTIONS.USERS)
+        .doc(firebaseUid)
+        .collection(FIREBASE_COLLECTIONS.CLIENTS)
+        .doc(clientId);
       
-      if (!clientDoc.exists()) {
+      const clientDoc = await clientRef.get();
+      
+      if (!clientDoc.exists) {
         console.log(`⚠️ [FIREBASE-STORAGE] Cliente ${clientId} no encontrado`);
         return null;
       }
       
-      const data = clientDoc.data();
+      const data = clientDoc.data()!;
       const client: FirebaseClient = {
         id: data.id,
         clientId: data.clientId,
@@ -150,12 +144,17 @@ export class FirebaseOnlyStorage implements IFirebaseOnlyStorage {
         state: client.state || '',
         zipCode: client.zipCode || '',
         notes: client.notes || '',
-        createdAt: Timestamp.fromDate(now),
-        updatedAt: Timestamp.fromDate(now)
+        createdAt: admin.firestore.Timestamp.fromDate(now),
+        updatedAt: admin.firestore.Timestamp.fromDate(now)
       };
       
-      const clientRef = doc(this.db, FIREBASE_COLLECTIONS.USERS, firebaseUid, FIREBASE_COLLECTIONS.CLIENTS, clientId);
-      await setDoc(clientRef, clientData);
+      const clientRef = this.db
+        .collection(FIREBASE_COLLECTIONS.USERS)
+        .doc(firebaseUid)
+        .collection(FIREBASE_COLLECTIONS.CLIENTS)
+        .doc(clientId);
+      
+      await clientRef.set(clientData);
       
       const newClient: FirebaseClient = {
         ...clientData,
@@ -179,22 +178,27 @@ export class FirebaseOnlyStorage implements IFirebaseOnlyStorage {
     try {
       console.log(`🔄 [FIREBASE-STORAGE] Actualizando cliente ${clientId} para UID: ${firebaseUid}`);
       
-      const clientRef = doc(this.db, FIREBASE_COLLECTIONS.USERS, firebaseUid, FIREBASE_COLLECTIONS.CLIENTS, clientId);
-      const clientDoc = await getDoc(clientRef);
+      const clientRef = this.db
+        .collection(FIREBASE_COLLECTIONS.USERS)
+        .doc(firebaseUid)
+        .collection(FIREBASE_COLLECTIONS.CLIENTS)
+        .doc(clientId);
       
-      if (!clientDoc.exists()) {
+      const clientDoc = await clientRef.get();
+      
+      if (!clientDoc.exists) {
         throw new Error(`Cliente ${clientId} no encontrado`);
       }
       
       const updateData = {
         ...updates,
-        updatedAt: Timestamp.fromDate(new Date())
+        updatedAt: admin.firestore.Timestamp.fromDate(new Date())
       };
       
-      await updateDoc(clientRef, updateData);
+      await clientRef.update(updateData);
       
       // Obtener datos actualizados
-      const updatedDoc = await getDoc(clientRef);
+      const updatedDoc = await clientRef.get();
       const data = updatedDoc.data()!;
       
       const updatedClient: FirebaseClient = {
@@ -228,14 +232,19 @@ export class FirebaseOnlyStorage implements IFirebaseOnlyStorage {
     try {
       console.log(`🔄 [FIREBASE-STORAGE] Eliminando cliente ${clientId} para UID: ${firebaseUid}`);
       
-      const clientRef = doc(this.db, FIREBASE_COLLECTIONS.USERS, firebaseUid, FIREBASE_COLLECTIONS.CLIENTS, clientId);
-      const clientDoc = await getDoc(clientRef);
+      const clientRef = this.db
+        .collection(FIREBASE_COLLECTIONS.USERS)
+        .doc(firebaseUid)
+        .collection(FIREBASE_COLLECTIONS.CLIENTS)
+        .doc(clientId);
       
-      if (!clientDoc.exists()) {
+      const clientDoc = await clientRef.get();
+      
+      if (!clientDoc.exists) {
         throw new Error(`Cliente ${clientId} no encontrado`);
       }
       
-      await deleteDoc(clientRef);
+      await clientRef.delete();
       
       console.log(`✅ [FIREBASE-STORAGE] Cliente ${clientId} eliminado exitosamente`);
       
@@ -252,15 +261,15 @@ export class FirebaseOnlyStorage implements IFirebaseOnlyStorage {
     try {
       console.log(`🔄 [FIREBASE-STORAGE] Obteniendo datos de usuario: ${firebaseUid}`);
       
-      const userRef = doc(this.db, FIREBASE_COLLECTIONS.USERS, firebaseUid);
-      const userDoc = await getDoc(userRef);
+      const userRef = this.db.collection(FIREBASE_COLLECTIONS.USERS).doc(firebaseUid);
+      const userDoc = await userRef.get();
       
-      if (!userDoc.exists()) {
+      if (!userDoc.exists) {
         console.log(`⚠️ [FIREBASE-STORAGE] Usuario ${firebaseUid} no encontrado`);
         return null;
       }
       
-      const data = userDoc.data();
+      const data = userDoc.data()!;
       const userData: FirebaseUser = {
         firebaseUid: data.firebaseUid,
         email: data.email,
@@ -292,7 +301,7 @@ export class FirebaseOnlyStorage implements IFirebaseOnlyStorage {
     try {
       console.log(`🔄 [FIREBASE-STORAGE] Creando usuario: ${firebaseUid}`);
       
-      const userRef = doc(this.db, FIREBASE_COLLECTIONS.USERS, firebaseUid);
+      const userRef = this.db.collection(FIREBASE_COLLECTIONS.USERS).doc(firebaseUid);
       const now = new Date();
       
       const userDataToSave = {
@@ -306,11 +315,11 @@ export class FirebaseOnlyStorage implements IFirebaseOnlyStorage {
         city: userData.city,
         state: userData.state,
         zipCode: userData.zipCode,
-        createdAt: Timestamp.fromDate(now),
-        updatedAt: Timestamp.fromDate(now)
+        createdAt: admin.firestore.Timestamp.fromDate(now),
+        updatedAt: admin.firestore.Timestamp.fromDate(now)
       };
       
-      await setDoc(userRef, userDataToSave);
+      await userRef.set(userDataToSave);
       
       const newUser: FirebaseUser = {
         ...userDataToSave,

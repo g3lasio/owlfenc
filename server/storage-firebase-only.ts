@@ -1,10 +1,11 @@
 /**
  * 🔥 STORAGE UNIFICADO FIREBASE-ONLY
  * Sistema completamente migrado que usa únicamente Firebase
- * Elimina toda dependencia de PostgreSQL
+ * Elimina completamente la dependencia de PostgreSQL
+ * IMPORTANTE: Usa Firebase Admin SDK para bypasear reglas de Firestore
  */
 
-import { initializeApp } from 'firebase/app';
+import * as admin from 'firebase-admin';
 import { 
   FirebaseClient, 
   InsertFirebaseClient, 
@@ -13,15 +14,6 @@ import {
   FIREBASE_COLLECTIONS 
 } from '../shared/firebase-schema';
 import FirebaseOnlyStorage from './FirebaseOnlyStorage';
-
-// Configuración Firebase usando variables de entorno
-const firebaseConfig = {
-  apiKey: process.env.VITE_FIREBASE_API_KEY,
-  authDomain: `${process.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
-  projectId: process.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: `${process.env.VITE_FIREBASE_PROJECT_ID}.firebasestorage.app`,
-  appId: process.env.VITE_FIREBASE_APP_ID,
-};
 
 // Interfaz unificada para operaciones Firebase-only
 export interface IFirebaseOnlyManager {
@@ -47,19 +39,21 @@ class FirebaseOnlyManager implements IFirebaseOnlyManager {
   private initialized: boolean = false;
 
   constructor() {
-    console.log('🔥 [FIREBASE-MANAGER] Inicializando arquitectura Firebase-only...');
+    console.log('🔥 [FIREBASE-MANAGER] Inicializando arquitectura Firebase-only con Admin SDK...');
     
     try {
-      // Verificar que tenemos todas las credenciales necesarias
-      this.validateEnvironment();
+      // Usar el Admin SDK que ya está inicializado globalmente
+      // El Admin SDK bypasea las reglas de Firestore
+      if (!admin.apps.length) {
+        throw new Error('❌ Firebase Admin SDK no inicializado. Debe inicializarse en server/index.ts');
+      }
       
-      // Inicializar Firebase
-      this.firebaseApp = initializeApp(firebaseConfig);
-      console.log('✅ [FIREBASE-MANAGER] Firebase App inicializado');
+      this.firebaseApp = admin.app();
+      console.log('✅ [FIREBASE-MANAGER] Usando Firebase Admin SDK (bypasea reglas de Firestore)');
       
-      // Inicializar storage
+      // Inicializar storage con Admin SDK
       this.storage = new FirebaseOnlyStorage(this.firebaseApp);
-      console.log('✅ [FIREBASE-MANAGER] Firebase Storage inicializado');
+      console.log('✅ [FIREBASE-MANAGER] Firebase Storage inicializado con Admin SDK');
       
       this.initialized = true;
       console.log('🎉 [FIREBASE-MANAGER] Sistema unificado Firebase-only listo');
@@ -71,19 +65,8 @@ class FirebaseOnlyManager implements IFirebaseOnlyManager {
   }
 
   private validateEnvironment(): void {
-    const requiredVars = [
-      'VITE_FIREBASE_API_KEY',
-      'VITE_FIREBASE_PROJECT_ID', 
-      'VITE_FIREBASE_APP_ID'
-    ];
-
-    for (const varName of requiredVars) {
-      if (!process.env[varName]) {
-        throw new Error(`❌ Variable de entorno requerida: ${varName}`);
-      }
-    }
-
-    console.log('✅ [FIREBASE-MANAGER] Todas las variables de entorno están configuradas');
+    // Admin SDK usa service account, no necesita estas variables
+    console.log('✅ [FIREBASE-MANAGER] Firebase Admin SDK configurado globalmente');
   }
 
   private ensureInitialized(): void {
