@@ -27,6 +27,45 @@ export interface WebhookResult {
   error?: string;
 }
 
+/**
+ * TESTABLE HELPER: Mark trial usage for subscription
+ * Exported for integration testing
+ * @param uid Firebase UID of user
+ * @param subscription Stripe subscription object
+ */
+export async function markTrialUsageForSubscription(
+  uid: string,
+  subscription: Stripe.Subscription
+): Promise<void> {
+  const hasTrial = subscription.status === 'trialing' || 
+                  (subscription.trial_end && subscription.trial_end > Math.floor(Date.now() / 1000));
+  
+  if (hasTrial) {
+    console.log(`🎁 [TRIAL-HELPER] Marking hasUsedTrial=true for user: ${uid}`);
+    
+    if (!pgDb) {
+      console.error(`🚨 [TRIAL-HELPER] CRITICAL: PostgreSQL unavailable`);
+      throw new Error('PostgreSQL unavailable - cannot persist trial flag');
+    }
+    
+    const updateResult = await pgDb
+      .update(users)
+      .set({ 
+        hasUsedTrial: true,
+        trialStartDate: new Date()
+      })
+      .where(eq(users.firebaseUid, uid));
+    
+    // ✅ FAIL-FAST: If no rows updated, user doesn't exist in PostgreSQL
+    if (!updateResult.rowCount || updateResult.rowCount === 0) {
+      console.error(`🚨 [TRIAL-HELPER] CRITICAL: User ${uid} not found in PostgreSQL`);
+      throw new Error(`User ${uid} not found in PostgreSQL`);
+    }
+    
+    console.log(`✅ [TRIAL-HELPER] Successfully marked hasUsedTrial=true for user: ${uid}`);
+  }
+}
+
 export class StripeWebhookService {
   
   /**
@@ -350,28 +389,11 @@ export class StripeWebhookService {
     // Stripe will retry until PostgreSQL persists the flag successfully
     
     if (hasTrial) {
-      console.log(`🎁 [STRIPE-WEBHOOK] Subscription has FREE TRIAL - marking hasUsedTrial=true for user: ${uid}`);
+      console.log(`🎁 [STRIPE-WEBHOOK] Subscription has FREE TRIAL for user: ${uid}`);
       console.log(`🎁 [STRIPE-WEBHOOK] Trial status: ${subscription.status}, Trial end: ${subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : 'N/A'}`);
       
-      if (!pgDb) {
-        console.error(`🚨 [STRIPE-WEBHOOK] CRITICAL: PostgreSQL unavailable - failing webhook for retry`);
-        throw new Error('PostgreSQL unavailable - cannot persist trial flag');
-      }
-      
-      // ✅ PERMANENT FLAG: Mark hasUsedTrial=true in PostgreSQL
-      // ANY error (connection, timeout, constraint) will throw and fail webhook
-      const updateResult = await pgDb
-        .update(users)
-        .set({ 
-          hasUsedTrial: true,
-          trialStartDate: new Date()
-        })
-        .where(eq(users.firebaseUid, uid));
-      
-      if (!updateResult.rowCount || updateResult.rowCount === 0) {
-        console.error(`🚨 [STRIPE-WEBHOOK] CRITICAL: User ${uid} not found in PostgreSQL - failing webhook`);
-        throw new Error(`User ${uid} not found in PostgreSQL`);
-      }
+      // Use testable helper - ANY error will throw and fail webhook
+      await markTrialUsageForSubscription(uid, subscription);
       
       console.log(`✅ [STRIPE-WEBHOOK] hasUsedTrial flag PERMANENTLY set for ${uid}`);
       result.action = 'trial_started_flag_set';

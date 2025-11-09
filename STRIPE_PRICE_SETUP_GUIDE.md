@@ -431,6 +431,273 @@ limits: PLAN_LIMITS[PLAN_IDS.PRIMO_CHAMBEADOR]
 
 ---
 
+## 🧪 **MANUAL QA TESTING CHECKLIST**
+
+### **Local/Development Testing (Simulation-Based)**
+
+This checklist validates trial logic WITHOUT requiring external Stripe infrastructure.
+
+#### **✅ Backend Validation (Database & API)**
+
+**Test 1: Database Schema Verification**
+```sql
+-- Verify columns exist
+SELECT column_name, data_type, column_default 
+FROM information_schema.columns 
+WHERE table_name = 'users' 
+AND column_name IN ('has_used_trial', 'trial_start_date');
+
+-- Expected output:
+-- has_used_trial | boolean | false
+-- trial_start_date | timestamp without time zone | NULL
+```
+
+**Test 2: Trial Eligibility Logic (Code Review)**
+```typescript
+// server/services/stripeService.ts
+// Verify trial_period_days is added ONLY when:
+// - !user.hasUsedTrial
+// - priceAmount > 0
+
+✅ Code location: lines ~150-160 in createCheckoutSession
+✅ Expected behavior: trial_period_days: 14 added to subscription_data
+```
+
+**Test 3: Webhook Fail-Fast Pattern (Code Review)**
+```typescript
+// server/services/stripeWebhookService.ts
+// Verify:
+// 1. No try-catch around hasUsedTrial update
+// 2. Throws error if user not found during trial
+// 3. PostgreSQL error propagates to Stripe
+
+✅ Code location: handleSubscriptionCreated function
+✅ Expected behavior: Webhook returns 400 if PostgreSQL fails
+```
+
+**Test 4: Auto-Downgrade Logic (Code Review)**
+```typescript
+// server/services/stripeWebhookService.ts
+// Verify downgrade uses:
+// - PLAN_IDS.PRIMO_CHAMBEADOR (not hardcoded 'primo')
+// - PLAN_NAMES[PLAN_IDS.PRIMO_CHAMBEADOR]
+// - PLAN_LIMITS[PLAN_IDS.PRIMO_CHAMBEADOR]
+
+✅ Code location: handleSubscriptionDeleted, handleSubscriptionUpdated
+✅ Expected behavior: User downgraded to Plan ID 5 with correct limits
+```
+
+#### **✅ Frontend Validation**
+
+**Test 5: UI Trial Messaging (Manual Check)**
+1. Navigate to `/subscription` page
+2. For each paid plan (Mero Patrón, Master Contractor):
+   - ✅ If user has `has_used_trial=false`: Shows "🎁 14 días gratis, luego $X/mes"
+   - ✅ If user has `has_used_trial=true`: Shows NO trial message, only "$X/mes"
+3. For free plan (Primo Chambeador):
+   - ✅ Shows "GRATIS" regardless of `has_used_trial` value
+
+**Test 6: hasUsedTrial Prop Passing**
+```typescript
+// client/src/pages/Subscription.tsx
+// Verify:
+const hasUsedTrial = userSubscription?.hasUsedTrial || false;
+
+// Passed to PricingCard:
+<PricingCard
+  hasUsedTrial={hasUsedTrial}
+  // ... other props
+/>
+```
+
+---
+
+### **Staging/Production Testing (Full E2E with Stripe)**
+
+This requires external infrastructure setup. **Do NOT run in local development**.
+
+#### **Prerequisites:**
+- ✅ Stripe test mode configured
+- ✅ ngrok or Replit port forwarding for webhooks
+- ✅ Test account with `has_used_trial=false`
+- ✅ Stripe test card: `4242 4242 4242 4242`
+
+#### **Test Scenario A: First Trial (New User)**
+
+**Step 1: Verify User Eligibility**
+```sql
+SELECT email, has_used_trial, trial_start_date 
+FROM users 
+WHERE email = 'test@example.com';
+
+-- Expected:
+-- has_used_trial = false
+-- trial_start_date = NULL
+```
+
+**Step 2: Initiate Checkout**
+1. Navigate to `/subscription`
+2. Select "Mero Patrón" plan
+3. Click "Start Free Trial"
+4. **Expected UI**: "🎁 14 días gratis, luego $49.99/mes"
+5. Complete Stripe checkout with test card
+
+**Step 3: Verify Webhook Processed**
+```sql
+SELECT email, has_used_trial, trial_start_date 
+FROM users 
+WHERE email = 'test@example.com';
+
+-- Expected:
+-- has_used_trial = true
+-- trial_start_date = [timestamp of subscription creation]
+```
+
+**Step 4: Verify Firebase Entitlements**
+```
+Firestore: entitlements/{uid}
+{
+  planId: 4,  // FREE_TRIAL
+  planName: 'Free Trial',
+  stripeSubscriptionId: 'sub_...',
+  subscriptionStatus: 'trialing',
+  trialEnd: [14 days from now]
+}
+```
+
+**Step 5: Verify Stripe Dashboard**
+- Subscription created with status: `trialing`
+- Trial period: 14 days
+- No charge on card
+
+---
+
+#### **Test Scenario B: Returning User (Ineligible)**
+
+**Step 1: Verify User Ineligibility**
+```sql
+SELECT email, has_used_trial 
+FROM users 
+WHERE email = 'returning@example.com';
+
+-- Expected:
+-- has_used_trial = true
+```
+
+**Step 2: Attempt Checkout**
+1. Navigate to `/subscription`
+2. Select "Mero Patrón" plan
+3. **Expected UI**: NO trial message, only "$49.99/mes"
+4. Complete Stripe checkout
+
+**Step 3: Verify Immediate Charge**
+- Stripe dashboard: Subscription status `active` (not `trialing`)
+- Card charged immediately: $49.99
+
+---
+
+#### **Test Scenario C: Trial Cancellation & Auto-Downgrade**
+
+**Step 1: Cancel Trial Subscription**
+1. Navigate to Stripe Customer Portal
+2. Cancel subscription
+3. Stripe webhook fires: `customer.subscription.deleted`
+
+**Step 2: Verify Auto-Downgrade**
+```sql
+SELECT email, has_used_trial, trial_start_date 
+FROM users 
+WHERE email = 'test@example.com';
+
+-- Expected:
+-- has_used_trial = true (STILL true)
+-- trial_start_date = [original timestamp]
+```
+
+**Step 3: Verify Firebase Entitlements**
+```
+Firestore: entitlements/{uid}
+{
+  planId: 5,  // PRIMO_CHAMBEADOR
+  planName: 'Primo Chambeador',
+  limits: {
+    basicEstimates: 5,
+    aiEstimates: 1,
+    contracts: 0,
+    propertyVerifications: 0
+  }
+}
+```
+
+**Step 4: Verify User Cannot Retry Trial**
+1. Navigate to `/subscription`
+2. Select any paid plan
+3. **Expected UI**: NO trial message
+4. Checkout requires immediate payment
+
+---
+
+### **Expected Database State Transitions**
+
+#### **State 1: New User (Never Used Trial)**
+```sql
+has_used_trial: false
+trial_start_date: NULL
+```
+
+#### **State 2: User Starts Trial**
+```sql
+has_used_trial: true  ← CHANGED via webhook
+trial_start_date: '2025-11-09 12:00:00'  ← CHANGED via webhook
+```
+
+#### **State 3: Trial Converts to Paid**
+```sql
+has_used_trial: true  ← STAYS true (permanent)
+trial_start_date: '2025-11-09 12:00:00'  ← UNCHANGED
+```
+
+#### **State 4: Trial Cancelled (Auto-Downgrade)**
+```sql
+has_used_trial: true  ← STAYS true (permanent)
+trial_start_date: '2025-11-09 12:00:00'  ← UNCHANGED
+```
+
+**CRITICAL**: `has_used_trial` flag is PERMANENT. Once set to `true`, it NEVER resets.
+
+---
+
+### **Webhook Event Logs (Evidence)**
+
+When testing in staging, verify these webhook events in logs:
+
+**Event 1: customer.subscription.created (with trial)**
+```
+✅ Subscription created: sub_xxx
+✅ Status: trialing
+✅ Trial end: 2025-11-23
+✅ User flagged: has_used_trial=true
+✅ PostgreSQL updated successfully
+```
+
+**Event 2: customer.subscription.updated (trial → active)**
+```
+✅ Subscription updated: sub_xxx
+✅ Status: active (trial ended)
+✅ Payment successful
+✅ Entitlements preserved
+```
+
+**Event 3: customer.subscription.deleted**
+```
+✅ Subscription cancelled: sub_xxx
+✅ Auto-downgrade triggered
+✅ New plan: Primo Chambeador (ID: 5)
+✅ Limits applied: basicEstimates=5, contracts=0
+```
+
+---
+
 ## 🔗 **Additional Resources**
 
 - [Stripe Products Documentation](https://stripe.com/docs/products-prices/overview)
