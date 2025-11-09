@@ -594,6 +594,224 @@ export class ResendEmailService {
   }
 
   /**
+   * Enviar email de bienvenida cuando se activa una cuenta o suscripción
+   * Tono mexicano, motivador y auténtico
+   */
+  async sendWelcomeEmail(params: {
+    userEmail: string;
+    userName: string;
+    planName: string;
+    planFeatures: string[];
+  }): Promise<boolean> {
+    try {
+      console.log('🎉 [WELCOME-EMAIL] Enviando email de bienvenida a:', params.userEmail);
+      
+      const subject = '¡Bienvenido a Owl Fenc, compa! 🦉';
+      
+      const html = `
+      <!DOCTYPE html>
+      <html lang="es-MX">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Bienvenido a Owl Fenc</title>
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #1f2937;
+            background-color: #f9fafb;
+            margin: 0;
+            padding: 0;
+          }
+          .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+          }
+          .header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: #ffffff;
+            padding: 40px 30px;
+            text-align: center;
+          }
+          .header h1 {
+            margin: 0;
+            font-size: 32px;
+            font-weight: 700;
+          }
+          .header .emoji {
+            font-size: 48px;
+            margin-bottom: 10px;
+            display: block;
+          }
+          .content {
+            padding: 40px 30px;
+          }
+          .welcome-message {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border-left: 4px solid #f59e0b;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+          }
+          .welcome-message p {
+            margin: 0;
+            font-size: 16px;
+            line-height: 1.8;
+            color: #78350f;
+          }
+          .features {
+            background-color: #f3f4f6;
+            padding: 25px;
+            border-radius: 8px;
+            margin: 25px 0;
+          }
+          .features h3 {
+            margin: 0 0 15px 0;
+            color: #1f2937;
+            font-size: 18px;
+          }
+          .features ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+          }
+          .features li {
+            padding: 8px 0;
+            color: #374151;
+            font-size: 15px;
+          }
+          .features li:before {
+            content: "✅ ";
+            margin-right: 8px;
+          }
+          .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #3b82f6 0%, #1e3a8a 100%);
+            color: #ffffff;
+            padding: 14px 32px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            margin: 20px 0;
+            text-align: center;
+          }
+          .motivational-quote {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border-left: 4px solid #3b82f6;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 8px;
+            font-style: italic;
+            color: #1e3a8a;
+          }
+          .footer {
+            background-color: #f3f4f6;
+            padding: 25px 30px;
+            text-align: center;
+            color: #6b7280;
+            font-size: 14px;
+            border-top: 1px solid #e5e7eb;
+          }
+          .footer p {
+            margin: 5px 0;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <span class="emoji">🦉</span>
+            <h1>¡Bienvenido a Owl Fenc!</h1>
+          </div>
+          
+          <div class="content">
+            <p>Hola <strong>${params.userName || 'Compa'}</strong>,</p>
+            
+            <div class="welcome-message">
+              <p>
+                <strong>¡Bienvenido a Owl Fenc, compa!</strong><br><br>
+                Aquí las oportunidades no se esperan… <strong>se construyen</strong>.<br>
+                Tu cuenta ya está activa y lista para empezar a generar grandes resultados.<br><br>
+                Gracias por confiar en nosotros — ahora sí, <strong>a darle duro y con todo</strong>.
+              </p>
+            </div>
+            
+            <p>
+              Has activado el plan <strong>${params.planName}</strong> y tienes acceso completo a todas estas herramientas profesionales:
+            </p>
+            
+            <div class="features">
+              <h3>🚀 Tus Beneficios Activos:</h3>
+              <ul>
+                ${params.planFeatures.map(feature => `<li>${feature}</li>`).join('')}
+              </ul>
+            </div>
+            
+            <div class="motivational-quote">
+              <p>
+                "El éxito no es cuestión de suerte, es cuestión de echarle ganas y usar las herramientas correctas.<br>
+                Con Owl Fenc, tienes todo lo que necesitas para crecer tu negocio como contratista."
+              </p>
+            </div>
+            
+            <center>
+              <a href="https://${process.env.REPLIT_DOMAINS?.split(',')[0] || 'app.owlfenc.com'}/dashboard" class="cta-button" style="color: #ffffff;">
+                🎯 Comenzar Ahora →
+              </a>
+            </center>
+            
+            <p style="margin-top: 30px;">
+              <strong>¿Necesitas ayuda?</strong><br>
+              Nuestro equipo está listo para apoyarte en lo que necesites.
+            </p>
+            
+            <p>
+              📧 Email: <strong>support@owlfenc.com</strong><br>
+              💬 Chat en vivo: Disponible en el dashboard
+            </p>
+            
+            <p style="margin-top: 30px;">
+              ¡A darle con todo!<br>
+              <strong>El equipo de Owl Fenc</strong> 🦉
+            </p>
+          </div>
+          
+          <div class="footer">
+            <p>&copy; 2025 Owl Fenc. Todos los derechos reservados.</p>
+            <p>Herramientas profesionales para contratistas que construyen su futuro.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+      `;
+
+      const result = await this.sendEmail({
+        to: params.userEmail,
+        subject,
+        html,
+        from: `Owl Fenc <${this.noReplyEmail}>`,
+        replyTo: this.supportEmail
+      });
+
+      if (result) {
+        console.log('✅ [WELCOME-EMAIL] Email de bienvenida enviado exitosamente');
+      } else {
+        console.error('❌ [WELCOME-EMAIL] Error enviando email de bienvenida');
+      }
+
+      return result;
+    } catch (error) {
+      console.error('❌ [WELCOME-EMAIL] Error en sendWelcomeEmail:', error);
+      return false;
+    }
+  }
+
+  /**
    * Verificar el estado del servicio
    */
   async healthCheck(): Promise<boolean> {

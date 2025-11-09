@@ -14,6 +14,7 @@ import { db as pgDb } from '../db.js';
 import { users } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 import { PLAN_IDS, PLAN_LIMITS, PLAN_NAMES } from '@shared/permissions-config';
+import { resendService } from './resendService.js';
 
 // Initialize Stripe with centralized configuration
 const stripe = createStripeClient();
@@ -424,6 +425,44 @@ export class StripeWebhookService {
           undefined,
           undefined
         );
+        
+        // 🎉 Send welcome email with Mexican motivational tone
+        try {
+          console.log('🎉 [STRIPE-WEBHOOK] Sending welcome email for new subscription...');
+          
+          // Get user name from Firebase or use email
+          let userName = 'Compa';
+          try {
+            const userDoc = await db.collection('users').doc(uid).get();
+            if (userDoc.exists && userDoc.data()?.name) {
+              userName = userDoc.data()!.name;
+            }
+          } catch (nameError) {
+            console.warn('⚠️ [STRIPE-WEBHOOK] Could not fetch user name, using default');
+          }
+          
+          // Get plan features from centralized config
+          const planLimits = PLAN_LIMITS[planInfo.planId];
+          const planFeatures = [
+            `Estimados con IA: ${planLimits.aiEstimates === -1 ? 'Ilimitados' : planLimits.aiEstimates}`,
+            `Contratos legales: ${planLimits.contracts === -1 ? 'Ilimitados' : planLimits.contracts}`,
+            `Verificación de propiedades: ${planLimits.propertyVerifications === -1 ? 'Ilimitada' : planLimits.propertyVerifications}`,
+            `Advisor de permisos: ${planLimits.permitAdvisor === -1 ? 'Ilimitado' : planLimits.permitAdvisor}`,
+            `Proyectos activos: ${planLimits.projects === -1 ? 'Ilimitados' : planLimits.projects}`
+          ];
+          
+          await resendService.sendWelcomeEmail({
+            userEmail: user.email || '',
+            userName,
+            planName: planInfo.planName,
+            planFeatures
+          });
+          
+          console.log('✅ [STRIPE-WEBHOOK] Welcome email sent successfully');
+        } catch (emailError) {
+          console.error('⚠️ [STRIPE-WEBHOOK] Non-critical: Failed to send welcome email:', emailError);
+          // Don't fail webhook for email errors
+        }
       }
     } catch (entitlementsError) {
       console.error('⚠️ [STRIPE-WEBHOOK] Non-critical error updating entitlements:', entitlementsError);
