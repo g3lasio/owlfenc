@@ -210,9 +210,231 @@ Before deploying to production:
 
 ---
 
+## 🎁 **FREE TRIAL SYSTEM**
+
+### **Overview**
+All paid plans (Mero Patrón, Master Contractor) include a **14-day free trial** using Stripe's native `trial_period_days` feature. Users can only use the trial **once per account** (lifetime restriction).
+
+---
+
+### **How It Works**
+
+#### **1. Trial Eligibility Check**
+When a user initiates checkout for a paid plan:
+
+```typescript
+// server/services/stripeService.ts
+if (!user.hasUsedTrial && priceAmount > 0) {
+  // ✅ User is eligible for trial
+  sessionParams.subscription_data = {
+    trial_period_days: 14
+  };
+}
+```
+
+**Rules:**
+- ✅ First-time users → Get 14-day trial
+- ❌ Users who already used trial → NO trial (full charge immediately)
+- ❌ Free plans (Primo Chambeador) → NO trial
+
+---
+
+#### **2. Trial Tracking (Webhook)**
+When Stripe creates a subscription with trial:
+
+```typescript
+// server/services/stripeWebhookService.ts
+if (subscription.status === 'trialing') {
+  // Mark hasUsedTrial=true in PostgreSQL
+  await pgDb.update(users)
+    .set({ hasUsedTrial: true, trialStartDate: new Date() })
+    .where(eq(users.firebaseUid, uid));
+}
+```
+
+**Fail-Fast Guarantee:**
+- If PostgreSQL is down → webhook returns 400
+- Stripe retries → Eventually persists flag
+- **Impossible** for user to have trial without `hasUsedTrial=true`
+
+---
+
+#### **3. Trial Conversion / Cancellation**
+
+**After 14 days:**
+
+**A) User Keeps Subscription (Conversion):**
+- Stripe auto-bills using stored payment method
+- Subscription status changes: `trialing` → `active`
+- User continues on paid plan
+- `hasUsedTrial` remains `true` (permanent)
+
+**B) User Cancels During Trial:**
+- Subscription status changes: `trialing` → `canceled`
+- Webhook triggers auto-downgrade
+- User downgraded to **Primo Chambeador** (Plan ID 5)
+- Limits: 5 basic estimates/month, 1 AI estimate, 0 contracts
+- `hasUsedTrial` remains `true` (cannot retry)
+
+**C) Payment Fails After Trial:**
+- Stripe attempts to charge card
+- If fails → `subscription.status` becomes `past_due`
+- Webhook auto-downgrades to Primo Chambeador
+- `hasUsedTrial` remains `true`
+
+---
+
+#### **4. UI Messaging**
+
+**Pricing Cards (client/src/components/ui/pricing-card.tsx):**
+
+```typescript
+// For paid plans when hasUsedTrial=false:
+<div className="mt-2 text-sm font-semibold text-primary">
+  🎁 14 días gratis, luego {formatPrice(currentPrice)}{period}
+</div>
+```
+
+**Display Logic:**
+- Show trial message ONLY if:
+  - Plan price > 0 (paid plan)
+  - User hasn't used trial (`hasUsedTrial=false`)
+- Hide message if:
+  - Free plan
+  - User already used trial
+  - User is on current plan
+
+---
+
+### **Database Schema**
+
+**PostgreSQL (`users` table):**
+```sql
+hasUsedTrial    BOOLEAN DEFAULT FALSE   -- Permanent flag, never reset
+trialStartDate  TIMESTAMP              -- When trial started (for analytics)
+```
+
+**Firebase (`entitlements` collection):**
+```typescript
+{
+  planId: 4,              // FREE_TRIAL plan during trial
+  planName: 'Free Trial',
+  stripeSubscriptionId: 'sub_xxx',
+  subscriptionStatus: 'trialing',
+  trialEnd: '2025-11-23T00:00:00Z'
+}
+```
+
+---
+
+### **Webhook Events Flow**
+
+**1. customer.subscription.created (with trial)**
+```
+✅ User starts trial
+✅ Webhook marks hasUsedTrial=true
+✅ Firebase entitlements set to Free Trial (Plan ID 4)
+✅ User gets unlimited access for 14 days
+```
+
+**2. customer.subscription.updated (trial ends)**
+```
+Case A: status='active' (payment succeeded)
+  ✅ User continues on paid plan
+  ✅ Entitlements stay or upgrade
+  
+Case B: status='canceled' (user cancelled)
+  ✅ Webhook downgrades to Primo Chambeador
+  ✅ User loses premium features
+```
+
+**3. customer.subscription.deleted**
+```
+✅ Webhook downgrades to Primo Chambeador
+✅ Security operations triggered
+✅ Downgrade notification email sent
+```
+
+---
+
+### **Testing the Free Trial**
+
+#### **Test Scenario 1: First Trial (Eligible User)**
+1. Create new user account
+2. Verify `hasUsedTrial=false` in database
+3. Go to `/subscription` page
+4. Select "Mero Patrón" plan
+5. **Expected UI**: "🎁 14 días gratis, luego $49.99/mes"
+6. Click "Start Free Trial"
+7. Complete Stripe checkout (use test card `4242 4242 4242 4242`)
+8. **Verify**:
+   - Stripe subscription created with `status='trialing'`
+   - `hasUsedTrial=true` in PostgreSQL
+   - Entitlements show Free Trial (Plan ID 4)
+   - Trial ends in 14 days
+
+#### **Test Scenario 2: Returning User (Ineligible)**
+1. Use account with `hasUsedTrial=true`
+2. Go to `/subscription` page
+3. Select "Mero Patrón" plan
+4. **Expected UI**: NO trial message, only "$49.99/mes"
+5. Click button
+6. **Verify**:
+   - Stripe checkout shows FULL price (no trial)
+   - Immediate charge of $49.99
+
+#### **Test Scenario 3: Trial Cancellation**
+1. Start trial (Scenario 1)
+2. Go to Stripe Customer Portal
+3. Cancel subscription
+4. **Verify**:
+   - Webhook receives `customer.subscription.deleted`
+   - User auto-downgraded to Primo Chambeador
+   - `hasUsedTrial` still `true`
+   - User cannot start another trial
+
+---
+
+### **Configuration**
+
+**Trial Duration:**
+```typescript
+// server/services/stripeService.ts
+subscription_data: {
+  trial_period_days: 14  // Can be changed to any value
+}
+```
+
+**Downgrade Target Plan:**
+```typescript
+// server/services/stripeWebhookService.ts
+planId: PLAN_IDS.PRIMO_CHAMBEADOR,  // Plan ID 5
+planName: PLAN_NAMES[PLAN_IDS.PRIMO_CHAMBEADOR],  // 'Primo Chambeador'
+limits: PLAN_LIMITS[PLAN_IDS.PRIMO_CHAMBEADOR]
+```
+
+---
+
+### **Troubleshooting**
+
+#### **Error: "You've already used your free trial"**
+**Cause**: `hasUsedTrial=true` in database  
+**Fix**: This is intentional - only one trial per user lifetime
+
+#### **Error: Trial not marked in database**
+**Cause**: Webhook failed or PostgreSQL was down  
+**Fix**: Check webhook logs, Stripe will retry automatically
+
+#### **User has trial but hasUsedTrial=false**
+**Cause**: Impossible due to fail-fast webhook design  
+**Fix**: If this happens, check PostgreSQL connectivity and webhook logs
+
+---
+
 ## 🔗 **Additional Resources**
 
 - [Stripe Products Documentation](https://stripe.com/docs/products-prices/overview)
 - [Stripe Prices API Reference](https://stripe.com/docs/api/prices)
+- [Stripe Trial Periods](https://stripe.com/docs/billing/subscriptions/trials)
 - [Stripe Test Cards](https://stripe.com/docs/testing)
 - [Replit Secrets Management](https://docs.replit.com/programming-ide/workspace-features/secrets)
