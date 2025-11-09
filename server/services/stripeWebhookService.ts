@@ -13,6 +13,7 @@ import { createStripeClient } from '../config/stripe.js';
 import { db as pgDb } from '../db.js';
 import { users } from '@shared/schema';
 import { eq } from 'drizzle-orm';
+import { PLAN_IDS, PLAN_LIMITS, PLAN_NAMES } from '@shared/permissions-config';
 
 // Initialize Stripe with centralized configuration
 const stripe = createStripeClient();
@@ -126,10 +127,11 @@ export class StripeWebhookService {
       
       const currentEntitlements = entitlementsDoc.data();
       const currentPlan = currentEntitlements?.planName;
+      const freePlanName = PLAN_NAMES[PLAN_IDS.PRIMO_CHAMBEADOR];
       
       // Don't downgrade if already on free plan
-      if (currentPlan === 'primo') {
-        console.log(`ℹ️ [STRIPE-WEBHOOK] User ${uid} already on free plan`);
+      if (currentPlan === freePlanName) {
+        console.log(`ℹ️ [STRIPE-WEBHOOK] User ${uid} already on free plan (${freePlanName})`);
         result.success = true;
         result.action = 'no_downgrade_needed';
         return;
@@ -142,7 +144,7 @@ export class StripeWebhookService {
       await securityOptimizationService.handlePlanChangeSecurityOperations(
         uid,
         currentPlan,
-        'primo',
+        PLAN_NAMES[PLAN_IDS.PRIMO_CHAMBEADOR],
         'payment_failed',
         undefined, // IP not available in webhook
         undefined  // User agent not available in webhook
@@ -183,7 +185,7 @@ export class StripeWebhookService {
       // Get current entitlements for security operations
       const entitlementsDoc = await db.collection('entitlements').doc(uid).get();
       const currentEntitlements = entitlementsDoc.exists() ? entitlementsDoc.data() : null;
-      const oldPlan = currentEntitlements?.planName || 'primo';
+      const oldPlan = currentEntitlements?.planName || PLAN_NAMES[PLAN_IDS.PRIMO_CHAMBEADOR];
       
       // Update user entitlements based on subscription status
       if (subscription.status === 'active') {
@@ -210,7 +212,7 @@ export class StripeWebhookService {
           await securityOptimizationService.handlePlanChangeSecurityOperations(
             uid,
             oldPlan,
-            'primo',
+            PLAN_NAMES[PLAN_IDS.PRIMO_CHAMBEADOR],
             'stripe_downgrade',
             undefined, // IP not available in webhook
             undefined  // User agent not available in webhook
@@ -252,7 +254,7 @@ export class StripeWebhookService {
       
       if (entitlementsDoc.exists()) {
         const currentEntitlements = entitlementsDoc.data();
-        const oldPlan = currentEntitlements?.planName || 'primo';
+        const oldPlan = currentEntitlements?.planName || PLAN_NAMES[PLAN_IDS.PRIMO_CHAMBEADOR];
         
         await this.downgradeUserToFreePlan(uid, currentEntitlements, 'subscription_canceled');
         result.action = 'downgraded_subscription_canceled';
@@ -261,7 +263,7 @@ export class StripeWebhookService {
         await securityOptimizationService.handlePlanChangeSecurityOperations(
           uid,
           oldPlan,
-          'primo',
+          PLAN_NAMES[PLAN_IDS.PRIMO_CHAMBEADOR],
           'subscription_canceled',
           undefined, // IP not available in webhook
           undefined  // User agent not available in webhook
@@ -381,7 +383,8 @@ export class StripeWebhookService {
     // We use try-catch to allow graceful degradation for Firebase operations
     try {
       const entitlementsDoc = await db.collection('entitlements').doc(uid).get();
-      const oldPlan = entitlementsDoc.exists() ? entitlementsDoc.data()?.planName || 'primo' : 'primo';
+      const freePlanName = PLAN_NAMES[PLAN_IDS.PRIMO_CHAMBEADOR];
+      const oldPlan = entitlementsDoc.exists() ? entitlementsDoc.data()?.planName || freePlanName : freePlanName;
       
       if (subscription.status === 'active' || subscription.status === 'trialing') {
         const planInfo = this.determinePlanFromSubscription(subscription);
@@ -469,24 +472,17 @@ export class StripeWebhookService {
     reason: string
   ): Promise<void> {
     try {
-      console.log(`⬇️ [STRIPE-WEBHOOK] Downgrading user ${uid} to free plan (reason: ${reason})`);
+      console.log(`⬇️ [STRIPE-WEBHOOK] Downgrading user ${uid} to Primo Chambeador (reason: ${reason})`);
       
-      // Update entitlements to free plan
+      // Get correct plan limits from centralized config
+      const freePlanLimits = PLAN_LIMITS[PLAN_IDS.PRIMO_CHAMBEADOR];
+      
+      // Update entitlements to Primo Chambeador (free plan)
       const updatedEntitlements = {
         ...currentEntitlements,
-        planId: 1,
-        planName: 'primo',
-        limits: {
-          basicEstimates: 5,
-          aiEstimates: 2,
-          contracts: 2,
-          propertyVerifications: 3,
-          permitAdvisor: 3,
-          projects: 5,
-          invoices: 10,
-          paymentTracking: 20,
-          deepsearch: 5
-        },
+        planId: PLAN_IDS.PRIMO_CHAMBEADOR,  // 5
+        planName: PLAN_NAMES[PLAN_IDS.PRIMO_CHAMBEADOR],  // 'Primo Chambeador'
+        limits: freePlanLimits,
         downgradedAt: admin.firestore.FieldValue.serverTimestamp(),
         downgradedReason: reason,
         previousPlan: {
@@ -588,8 +584,8 @@ export class StripeWebhookService {
             planName: previousEntitlements.planName
           },
           toPlan: {
-            planId: 1,
-            planName: 'primo'
+            planId: PLAN_IDS.PRIMO_CHAMBEADOR,  // 5
+            planName: PLAN_NAMES[PLAN_IDS.PRIMO_CHAMBEADOR]  // 'Primo Chambeador'
           },
           reason,
           source: 'stripe_webhook',
