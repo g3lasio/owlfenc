@@ -248,4 +248,62 @@ export function registerSubscriptionControlRoutes(app: any) {
       });
     }
   });
+
+  // Verificar estado de suspensión por pago fallido
+  app.get('/api/subscription/suspension-status', verifyFirebaseAuth, async (req: Request, res: Response) => {
+    try {
+      const firebaseUid = req.firebaseUser?.uid;
+      if (!firebaseUid) {
+        return res.status(401).json({ error: 'Usuario no autenticado', success: false });
+      }
+
+      console.log(`🔍 [SUSPENSION-CHECK] Checking suspension status for user: ${firebaseUid}`);
+
+      // Import Firebase Admin
+      const { db: firebaseDb } = await import('../lib/firebase-admin.js');
+      
+      // Check Firestore entitlements for downgrade reason
+      const entitlementsDoc = await firebaseDb.collection('entitlements').doc(firebaseUid).get();
+      
+      if (!entitlementsDoc.exists) {
+        console.log(`ℹ️ [SUSPENSION-CHECK] No entitlements found for user ${firebaseUid}`);
+        return res.json({
+          success: true,
+          isSuspended: false,
+          reason: null,
+          message: 'No suspension found'
+        });
+      }
+
+      const entitlements = entitlementsDoc.data();
+      const downgradedReason = entitlements?.downgradedReason;
+      const downgradedAt = entitlements?.downgradedAt;
+      const planId = entitlements?.planId;
+
+      // Check if user was downgraded due to payment issues
+      const isSuspended = downgradedReason && [
+        'payment_failed',
+        'subscription_inactive',
+        'subscription_canceled'
+      ].includes(downgradedReason);
+
+      console.log(`📊 [SUSPENSION-CHECK] User ${firebaseUid} - Suspended: ${isSuspended}, Reason: ${downgradedReason}`);
+
+      res.json({
+        success: true,
+        isSuspended: !!isSuspended,
+        reason: downgradedReason || null,
+        downgradedAt: downgradedAt ? new Date(downgradedAt._seconds * 1000).toISOString() : null,
+        currentPlanId: planId || 5, // Default to Primo Chambeador
+        message: isSuspended ? 'Account suspended due to payment issues' : 'Account active'
+      });
+
+    } catch (error) {
+      console.error('❌ [SUSPENSION-CHECK] Error checking suspension status:', error);
+      res.status(500).json({ 
+        error: 'Error checking suspension status',
+        success: false 
+      });
+    }
+  });
 }

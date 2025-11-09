@@ -71,6 +71,7 @@ import { Redirect, useLocation } from "wouter";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { PaymentBlockModal } from "@/components/subscription/PaymentBlockModal";
 
 // 🔧 FIX: Global error handler for unhandled promises - DESHABILITADO TEMPORALMENTE
 // setupGlobalErrorHandlers(); // ❌ COMENTADO: Estaba silenciando errores legítimos del agente
@@ -91,6 +92,27 @@ function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
   const [location] = useLocation();
   const { toast } = useToast();
   const userEmail = user?.email || "";
+  const [showSuspensionModal, setShowSuspensionModal] = useState(false);
+
+  // Verificar estado de suspensión por pago fallido
+  const { data: suspensionStatus } = useQuery<{
+    success: boolean;
+    isSuspended: boolean;
+    reason?: 'payment_failed' | 'subscription_inactive' | 'subscription_canceled';
+    downgradedAt?: string;
+  }>({
+    queryKey: ['/api/subscription/suspension-status'],
+    enabled: !!user && authStable,
+    staleTime: 30000, // 30 segundos de cache
+    retry: 1
+  });
+
+  // Mostrar modal de suspensión si el usuario está suspendido
+  useEffect(() => {
+    if (suspensionStatus?.isSuspended && authStable) {
+      setShowSuspensionModal(true);
+    }
+  }, [suspensionStatus, authStable]);
 
   // Estabilizar el estado de auth para evitar redirecciones por cambios temporales
   useEffect(() => {
@@ -131,7 +153,17 @@ function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
   }
 
   // Renderiza el componente si el usuario está autenticado y tiene un plan
-  return <Component />;
+  return (
+    <>
+      <Component />
+      <PaymentBlockModal
+        isOpen={showSuspensionModal}
+        onClose={() => setShowSuspensionModal(false)}
+        reason={suspensionStatus?.reason}
+        nextBillingDate={suspensionStatus?.downgradedAt}
+      />
+    </>
+  );
 }
 
 
