@@ -489,64 +489,7 @@ const ProjectPayments: React.FC = () => {
       if (!response.ok) {
         const errorData = await response.json();
         console.error("💳 [STRIPE-CONNECT-EXPRESS] Error:", errorData);
-        
-        // Check if needs TEST keys (using livemode keys in development)
-        if (errorData.needsTestKeys) {
-          toast({
-            title: "🔐 Credenciales de Desarrollo Requeridas",
-            description: "Necesitas usar credenciales de PRUEBA de Stripe para desarrollo.",
-            variant: "destructive",
-            duration: 10000,
-          });
-          
-          // Show detailed instructions
-          setTimeout(() => {
-            alert(
-              "🔐 IMPORTANTE: Necesitas Credenciales de PRUEBA de Stripe\n\n" +
-              "Actualmente estás usando credenciales de PRODUCCIÓN (livemode), " +
-              "las cuales requieren HTTPS y pueden generar cobros reales.\n\n" +
-              "📋 SOLUCIÓN:\n" +
-              "1. Ve a: https://dashboard.stripe.com/test/apikeys\n" +
-              "2. Copia tus claves de PRUEBA:\n" +
-              "   - Secret key (empieza con 'sk_test_...')\n" +
-              "   - Publishable key (empieza con 'pk_test_...')\n" +
-              "3. Actualiza tus Secrets en Replit:\n" +
-              "   - STRIPE_SECRET_KEY = sk_test_...\n" +
-              "   - STRIPE_PUBLISHABLE_KEY = pk_test_...\n\n" +
-              "✅ Las credenciales de prueba te permiten:\n" +
-              "   - Probar sin riesgo de cobros reales\n" +
-              "   - Crear cuentas Express de prueba\n" +
-              "   - Simular pagos completos\n\n" +
-              "💡 Usa credenciales de PRODUCCIÓN solo cuando publiques tu app."
-            );
-          }, 500);
-          return;
-        }
-        
-        // Check if needs Connect activation
-        if (errorData.needsConnectActivation) {
-          toast({
-            title: "⚙️ Configuración Necesaria",
-            description: "Por favor activa Stripe Connect en tu cuenta. Sigue la guía que se mostrará.",
-            variant: "destructive",
-            duration: 8000,
-          });
-          
-          // Show activation guide
-          setTimeout(() => {
-            alert(
-              "📋 GUÍA RÁPIDA: Activar Stripe Connect\n\n" +
-              "1. Ve a: https://dashboard.stripe.com/connect\n" +
-              "2. Haz clic en 'Get Started' o 'Comenzar'\n" +
-              "3. Completa el formulario (tipo de plataforma: Marketplace/Platform)\n" +
-              "4. Una vez activado, regresa aquí y presiona 'Connect Bank Account' nuevamente\n\n" +
-              "⏱️ Tiempo estimado: 2-3 minutos"
-            );
-          }, 500);
-          return;
-        }
-        
-        throw new Error(errorData.error || "Error al conectar con Stripe");
+        throw new Error(errorData.error || errorData.message || "Error al conectar con Stripe");
       }
 
       const data = await response.json();

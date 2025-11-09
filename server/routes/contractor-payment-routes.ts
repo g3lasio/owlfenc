@@ -658,48 +658,30 @@ router.post("/stripe/connect", isAuthenticated, async (req: Request, res: Respon
     const refreshUrl = `${baseUrl}/project-payments?tab=settings&refresh=true`;
     const returnUrl = `${baseUrl}/project-payments?tab=settings&connected=true`;
     
-    // SECURITY CHECK: Stripe livemode requires HTTPS
-    const stripeKey = process.env.STRIPE_SECRET_KEY || '';
-    const isLiveMode = stripeKey.startsWith('sk_live_');
-    const isHttps = baseUrl.startsWith('https://');
-    
-    if (isLiveMode && !isHttps) {
-      console.error("🚨 [STRIPE-CONNECT-EXPRESS] SECURITY ERROR: Livemode keys require HTTPS");
-      return res.status(400).json({
-        error: "Stripe livemode requires HTTPS",
-        details: "You are using Stripe production keys in a non-HTTPS environment. For development, please use Stripe TEST keys (sk_test_...) instead. Production keys should only be used in published apps with HTTPS.",
-        solution: "Get your TEST keys from: https://dashboard.stripe.com/test/apikeys",
-        needsTestKeys: true
-      });
-    }
-    
-    console.log(`🔐 [STRIPE-CONNECT-EXPRESS] Mode: ${isLiveMode ? 'LIVE' : 'TEST'}, HTTPS: ${isHttps}`);
+    console.log(`🔗 [STRIPE-CONNECT-EXPRESS] Base URL: ${baseUrl}`);
     console.log(`🔗 [STRIPE-CONNECT-EXPRESS] Return URL: ${returnUrl}`);
+    console.log(`🔗 [STRIPE-CONNECT-EXPRESS] Refresh URL: ${refreshUrl}`);
     
     let accountId = user.stripeConnectAccountId;
     
-    // If user already has a Stripe Connect account, check its status
+    // If user already has a Stripe Connect account, use Express Dashboard login link
     if (accountId) {
       try {
         // Verify the account still exists and get its status
         const account = await stripe.accounts.retrieve(accountId);
         
-        // Determine the appropriate link type based on account status
-        const linkType = account.details_submitted ? 'account_update' : 'account_onboarding';
+        console.log(`✅ [STRIPE-CONNECT-EXPRESS] Account exists: ${accountId}`);
+        console.log(`📊 [STRIPE-CONNECT-EXPRESS] Details submitted: ${account.details_submitted}`);
+        console.log(`💳 [STRIPE-CONNECT-EXPRESS] Charges enabled: ${account.charges_enabled}`);
         
-        // Create account link for existing account
-        const accountLink = await stripe.accountLinks.create({
-          account: accountId,
-          refresh_url: refreshUrl,
-          return_url: returnUrl,
-          type: linkType,
-        });
+        // For Express accounts, use Express Dashboard login link (no redirect URI needed)
+        const loginLink = await stripe.accounts.createLoginLink(accountId);
         
-        console.log(`✅ [STRIPE-CONNECT] Existing account link created - Type: ${linkType}`);
+        console.log(`✅ [STRIPE-CONNECT-EXPRESS] Dashboard login link created for existing account`);
         
         return res.json({
           success: true,
-          url: accountLink.url,
+          url: loginLink.url,
           accountId: accountId,
           isExisting: true,
           accountStatus: {
@@ -707,13 +689,11 @@ router.post("/stripe/connect", isAuthenticated, async (req: Request, res: Respon
             payoutsEnabled: account.payouts_enabled,
             detailsSubmitted: account.details_submitted,
           },
-          message: linkType === 'account_update' 
-            ? "Redirecting to manage your Stripe account" 
-            : "Complete your Stripe account setup",
+          message: "Redirecting to your Stripe Express Dashboard",
         });
       } catch (stripeError: any) {
         // If account doesn't exist anymore, create a new one below
-        console.warn("⚠️ [STRIPE-CONNECT] Existing account not found, creating new one");
+        console.warn("⚠️ [STRIPE-CONNECT-EXPRESS] Existing account not found, creating new one");
         accountId = null;
       }
     }
