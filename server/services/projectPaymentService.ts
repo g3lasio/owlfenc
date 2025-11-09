@@ -1,16 +1,10 @@
 import Stripe from 'stripe';
 import { ProjectPayment, InsertProjectPayment, Project } from '@shared/schema';
 import { storage } from '../storage';
-import { getStripeConfig } from '../config/stripe';
+import { createStripeClient } from '../config/stripe';
 
-// Get Stripe configuration (supports Organization API keys with Stripe-Account header)
-const config = getStripeConfig();
-
-// Initialize Stripe with PRODUCTION secret key
-const stripe = new Stripe(config.apiKey, {
-  apiVersion: '2023-10-16' as any, // Use a compatible version
-  stripeAccount: config.stripeAccount,
-});
+// Initialize Stripe with centralized configuration
+const stripe = createStripeClient();
 
 // Options for creating a project payment checkout
 interface ProjectPaymentCheckoutOptions {

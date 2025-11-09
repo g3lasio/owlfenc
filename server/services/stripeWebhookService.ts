@@ -9,15 +9,10 @@ import { db, admin } from '../lib/firebase-admin.js';
 import { trialNotificationService } from './trialNotificationService.js';
 import { productionUsageService } from './productionUsageService.js';
 import { securityOptimizationService } from './securityOptimizationService.js';
-import { getStripeConfig } from '../config/stripe.js';
+import { createStripeClient } from '../config/stripe.js';
 
-// Get Stripe configuration (supports Organization API keys with Stripe-Account header)
-const config = getStripeConfig();
-
-const stripe = new Stripe(config.apiKey, {
-  apiVersion: "2023-10-16",
-  stripeAccount: config.stripeAccount,
-});
+// Initialize Stripe with centralized configuration
+const stripe = createStripeClient();
 
 export interface WebhookResult {
   success: boolean;

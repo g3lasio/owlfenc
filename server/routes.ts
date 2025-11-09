@@ -5232,12 +5232,10 @@ Output must be between 200-900 characters in English.`;
       console.log(`🔔 [WEBHOOK] Body length:`, req.body.length);
 
       let event: Stripe.Event;
-      const { getStripeConfig, getStripeWebhookSecret } = await import('./config/stripe');
-      const config = getStripeConfig();
-      const stripe = new Stripe(config.apiKey, {
-        apiVersion: "2024-06-20",
-        stripeAccount: config.stripeAccount,
-      });
+      const { createStripeClient, getStripeWebhookSecret } = await import('./config/stripe');
+      
+      // Use centralized Stripe client factory
+      const stripe = createStripeClient();
 
       try {
         // In test mode, skip signature verification for debugging
@@ -5331,12 +5329,10 @@ Output must be between 200-900 characters in English.`;
       }
 
       // Get subscription details from Stripe
-      const { getStripeConfig } = await import('./config/stripe');
-      const config = getStripeConfig();
-      const stripe = new Stripe(config.apiKey, {
-        apiVersion: "2024-06-20",
-        stripeAccount: config.stripeAccount,
-      });
+      const { createStripeClient } = await import('./config/stripe');
+      
+      // Use centralized Stripe client factory
+      const stripe = createStripeClient();
 
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);
       console.log(

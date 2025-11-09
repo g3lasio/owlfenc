@@ -8,15 +8,10 @@
  */
 
 import Stripe from 'stripe';
-import { getStripeConfig, getStripeSecretKey } from '../config/stripe.js';
+import { createStripeClient, getStripeSecretKey } from '../config/stripe.js';
 
-// Get Stripe configuration
-const config = getStripeConfig();
-
-const stripe = new Stripe(config.apiKey, {
-  apiVersion: '2023-10-16' as any, // Will be updated to 2025-06-30.basil
-  stripeAccount: config.stripeAccount,
-});
+// Initialize Stripe with centralized configuration
+const stripe = createStripeClient();
 
 export interface StripeHealthStatus {
   mode: 'test' | 'live' | 'unknown';

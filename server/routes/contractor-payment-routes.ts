@@ -914,21 +914,19 @@ router.post("/:paymentId/resend", isAuthenticated, async (req: Request, res: Res
  */
 router.get("/stripe/diagnostic", isAuthenticated, async (req: Request, res: Response) => {
   try {
-    const { getStripeConfig, getStripePublishableKey, getStripeWebhookSecret } = await import('../config/stripe');
-    const config = getStripeConfig();
+    const { createStripeClient, getStripePublishableKey, getStripeWebhookSecret, getStripeSecretKey } = await import('../config/stripe');
     
-    const stripe = new Stripe(config.apiKey, {
-      apiVersion: "2024-11-20.acacia" as any,
-      stripeAccount: config.stripeAccount,
-    });
+    // Use centralized Stripe client factory
+    const stripe = createStripeClient();
 
     // Get the secret key prefix to identify which account is being used
-    const keyPrefix = config.apiKey.substring(0, 15);
-    const keyType = config.apiKey.startsWith("sk_live_") 
+    const keyPrefix = getStripeSecretKey().substring(0, 15);
+    const secretKey = getStripeSecretKey();
+    const keyType = secretKey.startsWith("sk_live_") 
       ? "LIVE" 
-      : config.apiKey.startsWith("sk_test_")
+      : secretKey.startsWith("sk_test_")
       ? "TEST"
-      : config.apiKey.startsWith("sk_org_")
+      : secretKey.startsWith("sk_org_")
       ? "ORGANIZATION"
       : "UNKNOWN";
 

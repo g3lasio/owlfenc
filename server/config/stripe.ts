@@ -4,6 +4,14 @@
  * Supports Organization API keys with Stripe-Account header
  */
 
+import Stripe from 'stripe';
+
+/**
+ * Centralized Stripe API Version
+ * Using latest stable API version for compile-time type safety
+ */
+export const STRIPE_API_VERSION = '2025-06-30.basil' as const;
+
 /**
  * Get Stripe Secret Key with fallback support
  * Supports both STRIPE_SECRET_KEY and STRIPE_API_KEY
@@ -74,6 +82,18 @@ export function getStripeConfig(): { apiKey: string; stripeAccount?: string } {
 }
 
 /**
+ * Create Stripe client with centralized configuration
+ * All Stripe instances should use this factory for consistency
+ */
+export function createStripeClient(): Stripe {
+  const config = getStripeConfig();
+  return new Stripe(config.apiKey, {
+    apiVersion: STRIPE_API_VERSION,
+    stripeAccount: config.stripeAccount,
+  });
+}
+
+/**
  * Log Stripe configuration status
  */
 export function logStripeConfig(): void {
@@ -94,6 +114,7 @@ export function logStripeConfig(): void {
   console.log("🔑 [STRIPE-CONFIG] Configuration loaded successfully");
   console.log(`🔑 [STRIPE-CONFIG] Secret Key: ${secretKey.substring(0, 15)}...`);
   console.log(`🔑 [STRIPE-CONFIG] Environment: ${keyType} MODE`);
+  console.log(`🔑 [STRIPE-CONFIG] API Version: ${STRIPE_API_VERSION}`);
   console.log(`🔑 [STRIPE-CONFIG] Publishable Key: ${publishableKey ? "✅ Configured" : "⚠️  Not configured"}`);
   console.log(`🔑 [STRIPE-CONFIG] Webhook Secret: ${webhookSecret ? "✅ Configured" : "⚠️  Not configured"}`);
   

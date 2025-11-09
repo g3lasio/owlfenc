@@ -5,14 +5,10 @@ import { storage } from '../storage';
 import Stripe from 'stripe';
 import express from 'express';
 import { isAuthenticated } from '../middleware/auth';
-import { getStripeConfig } from '../config/stripe';
+import { createStripeClient } from '../config/stripe';
 
-// Initialize Stripe with PRODUCTION key (supports Organization API keys)
-const config = getStripeConfig();
-const stripe = new Stripe(config.apiKey, {
-  apiVersion: '2023-10-16' as any,
-  stripeAccount: config.stripeAccount,
-});
+// Initialize Stripe with centralized configuration
+const stripe = createStripeClient();
 
 // Schema for validating payment link creation
 const createPaymentLinkSchema = z.object({

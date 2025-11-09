@@ -6,17 +6,11 @@ import {
 } from "@shared/schema";
 import { storage } from "../storage";
 import { firebaseSubscriptionService } from "./firebaseSubscriptionService";
-import { getStripeConfig, logStripeConfig } from "../config/stripe";
+import { createStripeClient, logStripeConfig } from "../config/stripe";
 import { stripeHealthService } from "./stripeHealthService";
 
-// Get Stripe configuration (supports Organization API keys with Stripe-Account header)
-const config = getStripeConfig();
-
-// Initialize Stripe with the configured key
-const stripe = new Stripe(config.apiKey, {
-  apiVersion: "2023-10-16" as any,
-  stripeAccount: config.stripeAccount,
-});
+// Initialize Stripe with centralized configuration
+const stripe = createStripeClient();
 
 // Log configuration
 logStripeConfig();
