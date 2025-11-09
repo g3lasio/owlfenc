@@ -54,6 +54,7 @@ This AI-powered platform automates legal document and permit management for cont
 - **Legal Defense Access Control System**: Enterprise-grade subscription-based access control.
 - **PDF Digital Signature System**: Premium PDF service with robust signature embedding and a dual signature completion workflow.
 - **Stripe Connect**: Payment system configured for Stripe Organization API keys.
+- **Stripe Integration (Nov 2025)**: Production-ready subscription system with health guardrails, centralized API version (2025-06-30.basil), and Price ID registry. Features startup validation against Stripe API, mode-aware price mappings (LIVE/TEST), environment variable overrides, and fail-fast deployment protection. All 4 production Price IDs validated and operational.
 
 ## External Dependencies
 - Firebase (Firestore, Admin SDK)
