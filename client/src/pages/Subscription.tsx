@@ -618,15 +618,15 @@ export default function Subscription() {
         {Array.isArray(plans) ? (
           plans
             .filter((plan: SubscriptionPlan) => {
-              // Only filter by isActive - show ALL active plans
-              const shouldShow = plan.isActive === true || plan.isActive === undefined;
-              console.log(`📋 [PLAN-FILTER] ${plan.name} (ID: ${plan.id}): isActive=${plan.isActive}, showing=${shouldShow}`);
-              
-              // Hide Free Trial only if user already used it OR currently has it active
-              if (plan.id === 4 && (hasUsedTrial || activePlanId === 4)) {
-                console.log(`🚫 [SUBSCRIPTION] Hiding Free Trial - hasUsedTrial: ${hasUsedTrial}, activePlanId: ${activePlanId}`);
+              // Hide Free Trial ALWAYS - it's not shown as a separate card
+              if (plan.id === 4 || plan.code === 'FREE_TRIAL') {
+                console.log(`🚫 [SUBSCRIPTION] Free Trial always hidden - not shown as separate card`);
                 return false;
               }
+              
+              // Only show active plans
+              const shouldShow = plan.isActive === true || plan.isActive === undefined;
+              console.log(`📋 [PLAN-FILTER] ${plan.name} (ID: ${plan.id}): isActive=${plan.isActive}, showing=${shouldShow}`);
               
               return shouldShow;
             })

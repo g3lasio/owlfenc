@@ -196,10 +196,8 @@ export function PricingCard({
               disabled={isLoading}
             >
               {isLoading ? "Procesando..." : (
-                code === 'FREE_TRIAL' ? "Start Free Trial" :
                 code === 'PRIMO_CHAMBEADOR' ? "Get Started Free" :
-                code === 'mero_patron' ? "Start Free Trial" :
-                "⬆️ UPGRADE"
+                "Start Free Trial"
               )}
             </Button>
           ) : actionType === 'downgrade' ? (
@@ -223,10 +221,8 @@ export function PricingCard({
               disabled={isLoading}
             >
               {isLoading ? "Procesando..." : (
-                code === 'FREE_TRIAL' ? "Start Free Trial" :
                 code === 'PRIMO_CHAMBEADOR' ? "Get Started Free" :
-                code === 'mero_patron' ? "Start Free Trial" :
-                "Seleccionar Plan"
+                "Start Free Trial"
               )}
             </Button>
           )}
