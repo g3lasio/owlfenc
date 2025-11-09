@@ -141,6 +141,7 @@ import { registerTrialNotificationRoutes } from "./routes/trial-notifications"; 
 import { analyticsRouter } from './analytics-service'; // Import analytics service for system monitoring
 // import legalDefenseRoutes from "./routes/legal-defense-routes"; // Temporarily disabled for horizontal navigation
 import unifiedContractRoutes from "./routes/unifiedContractRoutes"; // Import Unified Contract Management routes
+import stripeHealthRoutes from "./routes/stripe-health"; // Import Stripe Health Check routes
 import pdfContractProcessorRoutes from "./routes/pdf-contract-processor"; // Import PDF Contract Processor routes
 import centralizedEmailRoutes from "./routes/centralized-email-routes"; // Import Centralized Email routes
 import dualSignatureRoutes from "./routes/dualSignatureRoutes"; // Import Dual Signature routes
@@ -1747,6 +1748,10 @@ Output must be between 200-900 characters in English.`;
   // Registrar rutas del sistema de pagos para contratistas
   // Contractor Payment Routes with FIREBASE authentication middleware
   app.use("/api/contractor-payments", contractorPaymentRoutes); // REMOVED AUTH
+
+  // Registrar rutas de health check de Stripe
+  console.log("🔍 [STRIPE-HEALTH] Registrando endpoints de health check...");
+  app.use("/api/stripe-health", stripeHealthRoutes);
 
   // Rutas centralizadas ya registradas en server/index.ts para evitar conflictos de middleware
 

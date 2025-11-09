@@ -2,6 +2,7 @@ import Stripe from 'stripe';
 import { storage } from '../storage';
 import type { ProjectPayment, InsertProjectPayment } from '@shared/schema';
 import { getStripeConfig } from '../config/stripe';
+import { stripeHealthService } from './stripeHealthService';
 
 // Get Stripe configuration (supports Organization API keys with Stripe-Account header)
 const config = getStripeConfig();
@@ -73,6 +74,9 @@ export class ContractorPaymentService {
    * Payments go directly to the contractor's connected Stripe account
    */
   async createProjectPayment(request: CreateProjectPaymentRequest): Promise<PaymentLinkResponse> {
+    // 🔒 CRITICAL GUARDRAIL: Verify platform Stripe account can process payments
+    await stripeHealthService.assertCanProcessPayments();
+
     // Get project details
     const project = await storage.getProject(request.projectId);
     if (!project) {

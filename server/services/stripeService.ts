@@ -7,6 +7,7 @@ import {
 import { storage } from "../storage";
 import { firebaseSubscriptionService } from "./firebaseSubscriptionService";
 import { getStripeConfig, logStripeConfig } from "../config/stripe";
+import { stripeHealthService } from "./stripeHealthService";
 
 // Get Stripe configuration (supports Organization API keys with Stripe-Account header)
 const config = getStripeConfig();
@@ -150,6 +151,9 @@ class StripeService {
       console.log(
         `[${new Date().toISOString()}] Iniciando checkout - Plan ID: ${options.planId}, Ciclo: ${options.billingCycle}`,
       );
+
+      // 🔒 CRITICAL GUARDRAIL: Verify Stripe account can process payments
+      await stripeHealthService.assertCanProcessPayments();
 
       // Primero verificar la conexión con Stripe
       const isConnected = await this.verifyStripeConnection();
