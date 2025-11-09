@@ -160,33 +160,43 @@ class StripeService {
       }
 
       // Use hardcoded plans with both monthly and yearly pricing
+      // IMPORTANT: These IDs MUST match the database (subscription_plans table)
       const subscriptionPlans = [
         {
-          id: 1,
+          id: 4,
+          name: "Free Trial",
+          price: 0,
+          yearlyPrice: 0,
+          interval: "monthly",
+          code: "FREE_TRIAL",
+          description: "14 días gratis - acceso completo",
+        },
+        {
+          id: 5,
           name: "Primo Chambeador",
           price: 0,
           yearlyPrice: 0,
           interval: "monthly",
-          code: "primo-chambeador",
-          description: "Plan básico con funcionalidades esenciales",
+          code: "PRIMO_CHAMBEADOR",
+          description: "Ningún trabajo es pequeño cuando tu espíritu es grande",
         },
         {
-          id: 2,
+          id: 9,
           name: "Mero Patrón",
           price: 4999, // $49.99 in cents (monthly)
-          yearlyPrice: 49999, // $499.99 in cents (yearly)
+          yearlyPrice: 50988, // $509.88 in cents (yearly - 15% discount)
           interval: "monthly",
-          code: "mero-patron",
-          description: "Plan avanzado para contratistas profesionales",
+          code: "mero_patron",
+          description: "Para contratistas profesionales",
         },
         {
-          id: 3,
+          id: 6,
           name: "Master Contractor",
           price: 9999, // $99.99 in cents (monthly)
-          yearlyPrice: 99999, // $999.99 in cents (yearly)
+          yearlyPrice: 101989, // $1,019.89 in cents (yearly - 15% discount)
           interval: "monthly",
-          code: "master-contractor",
-          description: "Plan completo con todas las funcionalidades",
+          code: "MASTER_CONTRACTOR",
+          description: "Sin límites para profesionales",
         },
       ];
 
