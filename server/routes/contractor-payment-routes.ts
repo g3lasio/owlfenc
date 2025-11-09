@@ -632,7 +632,7 @@ router.post("/stripe/connect", isAuthenticated, async (req: Request, res: Respon
     }
     
     const firebaseUid = req.firebaseUser.uid;
-    console.log("🔐 [STRIPE-CONNECT] Authenticated user:", firebaseUid);
+    console.log("🔐 [STRIPE-CONNECT-EXPRESS] Iniciando configuración de pagos");
     
     // Convert Firebase UID to database user ID
     const { userMappingService } = await import('../services/userMappingService');
@@ -648,13 +648,33 @@ router.post("/stripe/connect", isAuthenticated, async (req: Request, res: Respon
     // Get Stripe instance
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
     
-    // Determine the base URL for redirects
+    // Determine the base URL for redirects (ALWAYS use HTTPS in Replit)
     const baseUrl = process.env.REPLIT_DOMAINS 
       ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
-      : (process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000');
+      : process.env.REPLIT_DEV_DOMAIN 
+        ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+        : 'http://localhost:5000';
     
     const refreshUrl = `${baseUrl}/project-payments?tab=settings&refresh=true`;
     const returnUrl = `${baseUrl}/project-payments?tab=settings&connected=true`;
+    
+    // SECURITY CHECK: Stripe livemode requires HTTPS
+    const stripeKey = process.env.STRIPE_SECRET_KEY || '';
+    const isLiveMode = stripeKey.startsWith('sk_live_');
+    const isHttps = baseUrl.startsWith('https://');
+    
+    if (isLiveMode && !isHttps) {
+      console.error("🚨 [STRIPE-CONNECT-EXPRESS] SECURITY ERROR: Livemode keys require HTTPS");
+      return res.status(400).json({
+        error: "Stripe livemode requires HTTPS",
+        details: "You are using Stripe production keys in a non-HTTPS environment. For development, please use Stripe TEST keys (sk_test_...) instead. Production keys should only be used in published apps with HTTPS.",
+        solution: "Get your TEST keys from: https://dashboard.stripe.com/test/apikeys",
+        needsTestKeys: true
+      });
+    }
+    
+    console.log(`🔐 [STRIPE-CONNECT-EXPRESS] Mode: ${isLiveMode ? 'LIVE' : 'TEST'}, HTTPS: ${isHttps}`);
+    console.log(`🔗 [STRIPE-CONNECT-EXPRESS] Return URL: ${returnUrl}`);
     
     let accountId = user.stripeConnectAccountId;
     

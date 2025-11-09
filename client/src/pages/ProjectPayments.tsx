@@ -490,6 +490,39 @@ const ProjectPayments: React.FC = () => {
         const errorData = await response.json();
         console.error("💳 [STRIPE-CONNECT-EXPRESS] Error:", errorData);
         
+        // Check if needs TEST keys (using livemode keys in development)
+        if (errorData.needsTestKeys) {
+          toast({
+            title: "🔐 Credenciales de Desarrollo Requeridas",
+            description: "Necesitas usar credenciales de PRUEBA de Stripe para desarrollo.",
+            variant: "destructive",
+            duration: 10000,
+          });
+          
+          // Show detailed instructions
+          setTimeout(() => {
+            alert(
+              "🔐 IMPORTANTE: Necesitas Credenciales de PRUEBA de Stripe\n\n" +
+              "Actualmente estás usando credenciales de PRODUCCIÓN (livemode), " +
+              "las cuales requieren HTTPS y pueden generar cobros reales.\n\n" +
+              "📋 SOLUCIÓN:\n" +
+              "1. Ve a: https://dashboard.stripe.com/test/apikeys\n" +
+              "2. Copia tus claves de PRUEBA:\n" +
+              "   - Secret key (empieza con 'sk_test_...')\n" +
+              "   - Publishable key (empieza con 'pk_test_...')\n" +
+              "3. Actualiza tus Secrets en Replit:\n" +
+              "   - STRIPE_SECRET_KEY = sk_test_...\n" +
+              "   - STRIPE_PUBLISHABLE_KEY = pk_test_...\n\n" +
+              "✅ Las credenciales de prueba te permiten:\n" +
+              "   - Probar sin riesgo de cobros reales\n" +
+              "   - Crear cuentas Express de prueba\n" +
+              "   - Simular pagos completos\n\n" +
+              "💡 Usa credenciales de PRODUCCIÓN solo cuando publiques tu app."
+            );
+          }, 500);
+          return;
+        }
+        
         // Check if needs Connect activation
         if (errorData.needsConnectActivation) {
           toast({
