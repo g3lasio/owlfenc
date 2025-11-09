@@ -25,6 +25,9 @@ export function PaymentBlockModal({
 }: PaymentBlockModalProps) {
   const [, setLocation] = useLocation();
 
+  // Modal es NO-DISMISSIBLE si onClose es undefined (bloqueo por pago fallido)
+  const isDismissible = onClose !== undefined;
+
   const getMessage = () => {
     switch (reason) {
       case 'payment_failed':
@@ -62,16 +65,21 @@ export function PaymentBlockModal({
 
   const handleUpdatePayment = () => {
     setLocation('/subscription');
-    if (onClose) onClose();
+    // Solo cerrar modal si es dismissible
+    if (isDismissible && onClose) onClose();
   };
 
   const handleViewPlans = () => {
     setLocation('/subscription');
-    if (onClose) onClose();
+    // Solo cerrar modal si es dismissible
+    if (isDismissible && onClose) onClose();
   };
 
   return (
-    <AlertDialog open={isOpen} onOpenChange={onClose}>
+    <AlertDialog 
+      open={isOpen} 
+      onOpenChange={isDismissible ? onClose : undefined}
+    >
       <AlertDialogContent className="max-w-md">
         <AlertDialogHeader>
           <div className="flex items-center justify-center mb-4">

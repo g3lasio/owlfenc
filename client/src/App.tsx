@@ -95,7 +95,7 @@ function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
   const [showSuspensionModal, setShowSuspensionModal] = useState(false);
 
   // Verificar estado de suspensión por pago fallido
-  const { data: suspensionStatus } = useQuery<{
+  const { data: suspensionStatus, isLoading: isSuspensionLoading } = useQuery<{
     success: boolean;
     isSuspended: boolean;
     reason?: 'payment_failed' | 'subscription_inactive' | 'subscription_canceled';
@@ -138,8 +138,8 @@ function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
   // ⚠️ TEMPORARY DISABLE: Guard de selección de plan desactivado para debugging
   // TODO: Re-implementar cuando se solucione el problema de carga
   
-  // Show loading spinner while auth is not stable
-  if (loading || !authStable) {
+  // Show loading spinner while auth is not stable OR while checking suspension status
+  if (loading || !authStable || isSuspensionLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
@@ -152,16 +152,37 @@ function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
     return <Redirect to="/login" />;
   }
 
-  // Renderiza el componente si el usuario está autenticado y tiene un plan
+  // 🚨 BLOQUEO REAL: Si el usuario está suspendido por pago fallido, bloquear acceso a todo excepto subscription
+  const isOnSubscriptionPage = location === '/subscription' || location === '/billing';
+  const isSuspended = suspensionStatus?.isSuspended && authStable;
+  
+  if (isSuspended && !isOnSubscriptionPage) {
+    // Usuario suspendido intentando acceder a otras páginas - bloquear y mostrar modal NO-DISMISSIBLE
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <PaymentBlockModal
+          isOpen={true}
+          onClose={undefined} // Modal NO-DISMISSIBLE - usuario debe actualizar pago
+          reason={suspensionStatus?.reason}
+          nextBillingDate={suspensionStatus?.downgradedAt}
+        />
+      </div>
+    );
+  }
+
+  // Renderiza el componente si el usuario está autenticado y no está suspendido (o está en página de suscripción)
   return (
     <>
       <Component />
-      <PaymentBlockModal
-        isOpen={showSuspensionModal}
-        onClose={() => setShowSuspensionModal(false)}
-        reason={suspensionStatus?.reason}
-        nextBillingDate={suspensionStatus?.downgradedAt}
-      />
+      {/* Mostrar modal informativo si está suspendido pero en página de suscripción */}
+      {isSuspended && isOnSubscriptionPage && (
+        <PaymentBlockModal
+          isOpen={showSuspensionModal}
+          onClose={() => setShowSuspensionModal(false)}
+          reason={suspensionStatus?.reason}
+          nextBillingDate={suspensionStatus?.downgradedAt}
+        />
+      )}
     </>
   );
 }
