@@ -10,6 +10,9 @@ import { trialNotificationService } from './trialNotificationService.js';
 import { productionUsageService } from './productionUsageService.js';
 import { securityOptimizationService } from './securityOptimizationService.js';
 import { createStripeClient } from '../config/stripe.js';
+import { db as pgDb } from '../db.js';
+import { users } from '@shared/schema';
+import { eq } from 'drizzle-orm';
 
 // Initialize Stripe with centralized configuration
 const stripe = createStripeClient();
@@ -313,106 +316,148 @@ export class StripeWebhookService {
    * Handle subscription creation - set up entitlements
    */
   private async handleSubscriptionCreated(event: Stripe.Event, result: WebhookResult): Promise<void> {
-    try {
-      const subscription = event.data.object as Stripe.Subscription;
-      const customerId = subscription.customer as string;
-      
-      console.log(`🆕 [STRIPE-WEBHOOK] Subscription created for customer: ${customerId}`);
-      
-      const user = await this.findUserByStripeCustomerId(customerId);
-      
-      if (!user) {
-        console.warn(`⚠️ [STRIPE-WEBHOOK] User not found for new subscription: ${customerId}`);
+    const subscription = event.data.object as Stripe.Subscription;
+    const customerId = subscription.customer as string;
+    
+    console.log(`🆕 [STRIPE-WEBHOOK] Subscription created for customer: ${customerId}`);
+    
+    // Detect trial BEFORE user lookup to determine fail-fast behavior
+    const hasTrial = subscription.status === 'trialing' || 
+                    (subscription.trial_end && subscription.trial_end > Math.floor(Date.now() / 1000));
+    
+    const user = await this.findUserByStripeCustomerId(customerId);
+    
+    if (!user) {
+      if (hasTrial) {
+        // 🚨 CRITICAL: Trial subscription with no resolvable UID → MUST fail webhook
+        // This surfaces missing-mapping bugs early and ensures Stripe retries
+        console.error(`🚨 [STRIPE-WEBHOOK] CRITICAL: Trial subscription for unknown customer ${customerId} - failing webhook`);
+        throw new Error(`Cannot resolve user for trialing subscription ${subscription.id}. Missing customer mapping.`);
+      } else {
+        // Non-trial subscription - safe to skip (user might not be in our system)
+        console.warn(`⚠️ [STRIPE-WEBHOOK] User not found for non-trial subscription: ${customerId}`);
         result.success = true;
         return;
       }
+    }
+    
+    const uid = user.uid;
+    result.userId = uid;
+
+    // 🎁 CRITICAL SECTION: Trial tracking - ANY error here fails webhook
+    // Stripe will retry until PostgreSQL persists the flag successfully
+    
+    if (hasTrial) {
+      console.log(`🎁 [STRIPE-WEBHOOK] Subscription has FREE TRIAL - marking hasUsedTrial=true for user: ${uid}`);
+      console.log(`🎁 [STRIPE-WEBHOOK] Trial status: ${subscription.status}, Trial end: ${subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : 'N/A'}`);
       
-      const uid = user.uid;
-      result.userId = uid;
+      if (!pgDb) {
+        console.error(`🚨 [STRIPE-WEBHOOK] CRITICAL: PostgreSQL unavailable - failing webhook for retry`);
+        throw new Error('PostgreSQL unavailable - cannot persist trial flag');
+      }
       
-      // Get current entitlements to determine old plan
+      // ✅ PERMANENT FLAG: Mark hasUsedTrial=true in PostgreSQL
+      // ANY error (connection, timeout, constraint) will throw and fail webhook
+      const updateResult = await pgDb
+        .update(users)
+        .set({ 
+          hasUsedTrial: true,
+          trialStartDate: new Date()
+        })
+        .where(eq(users.firebaseUid, uid));
+      
+      if (!updateResult.rowCount || updateResult.rowCount === 0) {
+        console.error(`🚨 [STRIPE-WEBHOOK] CRITICAL: User ${uid} not found in PostgreSQL - failing webhook`);
+        throw new Error(`User ${uid} not found in PostgreSQL`);
+      }
+      
+      console.log(`✅ [STRIPE-WEBHOOK] hasUsedTrial flag PERMANENTLY set for ${uid}`);
+      result.action = 'trial_started_flag_set';
+    } else {
+      console.log(`ℹ️ [STRIPE-WEBHOOK] Subscription created without trial for user: ${uid}`);
+    }
+    
+    // 🔹 NON-CRITICAL SECTION: Entitlements - errors here don't fail webhook
+    // We use try-catch to allow graceful degradation for Firebase operations
+    try {
       const entitlementsDoc = await db.collection('entitlements').doc(uid).get();
       const oldPlan = entitlementsDoc.exists() ? entitlementsDoc.data()?.planName || 'primo' : 'primo';
       
-      // Set up entitlements based on subscription
-      if (subscription.status === 'active') {
+      if (subscription.status === 'active' || subscription.status === 'trialing') {
         const planInfo = this.determinePlanFromSubscription(subscription);
         await this.upgradeUserFromSubscription(uid, subscription);
-        result.action = 'entitlements_created';
         
-        // Execute security operations for new subscription (upgrade from free)
+        if (!result.action) {
+          result.action = 'entitlements_created';
+        }
+        
         await securityOptimizationService.handlePlanChangeSecurityOperations(
           uid,
           oldPlan,
           planInfo.planName,
           'subscription_created',
-          undefined, // IP not available in webhook
-          undefined  // User agent not available in webhook
+          undefined,
+          undefined
         );
       }
-      
-      result.success = true;
-      
-    } catch (error) {
-      console.error('❌ [STRIPE-WEBHOOK] Error handling subscription creation:', error);
-      result.error = error instanceof Error ? error.message : 'Unknown error';
+    } catch (entitlementsError) {
+      console.error('⚠️ [STRIPE-WEBHOOK] Non-critical error updating entitlements:', entitlementsError);
+      // Don't fail webhook - trial flag already persisted successfully
     }
+    
+    result.success = true;
   }
   
   /**
    * Find user by Stripe customer ID
+   * CRITICAL: Does NOT catch errors - database failures propagate to caller
+   * This ensures webhook fails when Firebase/PostgreSQL is down
    */
   private async findUserByStripeCustomerId(customerId: string): Promise<{ uid: string; email?: string } | null> {
-    try {
-      // In a real implementation, you'd store the stripe customer ID in your user records
-      // For now, we'll simulate this lookup
-      
-      // Check if we have a mapping in Firestore
-      const customerMappingSnapshot = await db.collection('stripe_customers')
-        .where('customerId', '==', customerId)
+    // Check if we have a mapping in Firestore
+    // Any Firebase error will throw and fail the webhook
+    const customerMappingSnapshot = await db.collection('stripe_customers')
+      .where('customerId', '==', customerId)
+      .limit(1)
+      .get();
+    
+    if (!customerMappingSnapshot.empty) {
+      const mapping = customerMappingSnapshot.docs[0].data();
+      return {
+        uid: mapping.uid,
+        email: mapping.email
+      };
+    }
+    
+    // If no mapping found, try to get customer details from Stripe
+    const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
+    
+    if (customer.email) {
+      // Try to find user by email in Firebase Auth or users collection
+      // Any Firebase error will throw and fail the webhook
+      const userSnapshot = await db.collection('users')
+        .where('email', '==', customer.email)
         .limit(1)
         .get();
       
-      if (!customerMappingSnapshot.empty) {
-        const mapping = customerMappingSnapshot.docs[0].data();
-        return {
-          uid: mapping.uid,
-          email: mapping.email
-        };
-      }
-      
-      // If no mapping found, try to get customer details from Stripe
-      const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
-      
-      if (customer.email) {
-        // Try to find user by email in Firebase Auth or users collection
-        const userSnapshot = await db.collection('users')
-          .where('email', '==', customer.email)
-          .limit(1)
-          .get();
+      if (!userSnapshot.empty) {
+        const userData = userSnapshot.docs[0].data();
+        const uid = userSnapshot.docs[0].id;
         
-        if (!userSnapshot.empty) {
-          const userData = userSnapshot.docs[0].data();
-          const uid = userSnapshot.docs[0].id;
-          
-          // Create mapping for future lookups
-          await db.collection('stripe_customers').doc(customerId).set({
-            customerId,
-            uid,
-            email: customer.email,
-            createdAt: admin.firestore.FieldValue.serverTimestamp()
-          });
-          
-          return { uid, email: customer.email };
-        }
+        // Create mapping for future lookups
+        await db.collection('stripe_customers').doc(customerId).set({
+          customerId,
+          uid,
+          email: customer.email,
+          createdAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+        
+        return { uid, email: customer.email };
       }
-      
-      return null;
-      
-    } catch (error) {
-      console.error('❌ [STRIPE-WEBHOOK] Error finding user by customer ID:', error);
-      return null;
     }
+    
+    // User genuinely not found (not an error - just doesn't exist)
+    return null;
   }
   
   /**

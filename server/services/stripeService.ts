@@ -3,12 +3,15 @@ import {
   SubscriptionPlan,
   UserSubscription,
   PaymentHistory,
+  users,
 } from "@shared/schema";
 import { storage } from "../storage";
 import { firebaseSubscriptionService } from "./firebaseSubscriptionService";
 import { createStripeClient, logStripeConfig } from "../config/stripe";
 import { stripeHealthService } from "./stripeHealthService";
 import { getPriceIdForPlan } from "../config/stripePriceRegistry";
+import { db } from "../db";
+import { eq } from "drizzle-orm";
 
 // Initialize Stripe with centralized configuration
 const stripe = createStripeClient();
@@ -158,6 +161,40 @@ class StripeService {
         );
       }
 
+      // 🛡️ CRITICAL: Verificar si el usuario ya usó su Free Trial
+      // Solo aplica para planes de pago (ID 6 o 9)
+      const isPaidPlan = options.planId === 6 || options.planId === 9;
+      let userHasUsedTrial = false;
+      
+      if (isPaidPlan && db) {
+        console.log(
+          `[${new Date().toISOString()}] Verificando hasUsedTrial para usuario: ${options.userId}`,
+        );
+        
+        const userRecord = await db
+          .select({ hasUsedTrial: users.hasUsedTrial })
+          .from(users)
+          .where(eq(users.firebaseUid, options.userId))
+          .limit(1);
+        
+        if (userRecord.length > 0) {
+          userHasUsedTrial = userRecord[0].hasUsedTrial;
+          console.log(
+            `[${new Date().toISOString()}] Usuario ${options.userId} - hasUsedTrial: ${userHasUsedTrial}`,
+          );
+          
+          if (userHasUsedTrial) {
+            console.log(
+              `[${new Date().toISOString()}] ⚠️ Usuario ${options.userId} ya usó su Free Trial - creando checkout sin trial`,
+            );
+          }
+        } else {
+          console.log(
+            `[${new Date().toISOString()}] ⚠️ Usuario ${options.userId} no encontrado en PostgreSQL - asumiendo sin trial usado`,
+          );
+        }
+      }
+
       // Use hardcoded plans with both monthly and yearly pricing
       // IMPORTANT: These IDs MUST match the database (subscription_plans table)
       const subscriptionPlans = [
@@ -231,8 +268,8 @@ class StripeService {
           `[${new Date().toISOString()}] Using Stripe Price ID: ${priceId} for ${plan.name} (${options.billingCycle} billing)`,
         );
 
-        // Create checkout session with Price ID (best practice)
-        const session = await stripe.checkout.sessions.create({
+        // 🎯 Prepare checkout session configuration
+        const sessionConfig: Stripe.Checkout.SessionCreateParams = {
           payment_method_types: ["card"],
           line_items: [
             {
@@ -250,7 +287,49 @@ class StripeService {
             planId: options.planId.toString(),
             billingCycle: options.billingCycle,
           },
-        });
+        };
+
+        // ✅ FREE TRIAL: Agregar trial_period_days si usuario NO ha usado su trial
+        if (isPaidPlan && !userHasUsedTrial) {
+          console.log(
+            `[${new Date().toISOString()}] 🎁 AGREGANDO FREE TRIAL de 14 días para ${options.userId}`,
+          );
+          
+          sessionConfig.subscription_data = {
+            trial_period_days: 14,
+            trial_settings: {
+              end_behavior: {
+                missing_payment_method: 'cancel' // Auto-cancela si no hay método de pago
+              }
+            },
+            metadata: {
+              is_trial: 'true',
+              trial_days: '14',
+              original_plan_id: options.planId.toString(),
+            },
+          };
+
+          // Agregar metadata adicional para tracking
+          sessionConfig.metadata = {
+            ...sessionConfig.metadata,
+            includes_trial: 'true',
+            trial_period_days: '14',
+          };
+        } else if (isPaidPlan && userHasUsedTrial) {
+          console.log(
+            `[${new Date().toISOString()}] ⚠️ Usuario ya usó trial - checkout directo sin periodo de prueba`,
+          );
+          
+          // Marcar en metadata que NO incluye trial
+          sessionConfig.metadata = {
+            ...sessionConfig.metadata,
+            includes_trial: 'false',
+            trial_already_used: 'true',
+          };
+        }
+
+        // Create checkout session
+        const session = await stripe.checkout.sessions.create(sessionConfig);
 
         if (!session || !session.url) {
           throw new Error("No se pudo crear la sesión de checkout");
