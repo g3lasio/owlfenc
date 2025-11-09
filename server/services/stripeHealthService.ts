@@ -9,6 +9,7 @@
 
 import Stripe from 'stripe';
 import { createStripeClient, getStripeSecretKey } from '../config/stripe.js';
+import { validatePriceRegistry } from '../config/stripePriceRegistry.js';
 
 // Initialize Stripe with centralized configuration
 const stripe = createStripeClient();
@@ -267,11 +268,34 @@ export class StripeHealthService {
 // Export singleton instance
 export const stripeHealthService = new StripeHealthService();
 
-// Log health status on startup
+// Startup validation: Check health and validate price registry
 setTimeout(async () => {
   try {
+    // First, check platform account health
     await stripeHealthService.logHealthStatus();
+    
+    // Then, validate price registry configuration
+    console.log('🔍 [STRIPE-STARTUP] Validating Price Registry...');
+    const validation = await validatePriceRegistry();
+    
+    if (!validation.valid) {
+      console.error('❌ [STRIPE-STARTUP] Price Registry validation FAILED!');
+      console.error(`   Found ${validation.errors.length} critical errors:`);
+      validation.errors.forEach(err => console.error(`   - ${err}`));
+      
+      // In production, this should prevent startup
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('Price Registry validation failed in production. Cannot start server.');
+      } else {
+        console.warn('⚠️  [STRIPE-STARTUP] Continuing in development mode despite validation errors');
+      }
+    } else {
+      console.log('✅ [STRIPE-STARTUP] Price Registry validated successfully');
+    }
   } catch (error) {
-    console.error('❌ [STRIPE-HEALTH] Failed to check startup health:', error);
+    console.error('❌ [STRIPE-STARTUP] Failed to complete startup validation:', error);
+    if (process.env.NODE_ENV === 'production') {
+      throw error; // Fail fast in production
+    }
   }
 }, 2000); // 2 second delay to let server initialize

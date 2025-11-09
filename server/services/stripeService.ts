@@ -8,6 +8,7 @@ import { storage } from "../storage";
 import { firebaseSubscriptionService } from "./firebaseSubscriptionService";
 import { createStripeClient, logStripeConfig } from "../config/stripe";
 import { stripeHealthService } from "./stripeHealthService";
+import { getPriceIdForPlan } from "../config/stripePriceRegistry";
 
 // Initialize Stripe with centralized configuration
 const stripe = createStripeClient();
@@ -207,7 +208,7 @@ class StripeService {
         `[${new Date().toISOString()}] Plan encontrado: ${plan.name} (${plan.code})`,
       );
 
-      // Handle free plan separately
+      // Handle free plan separately - no Stripe checkout needed
       if (plan.price === 0) {
         console.log(
           `[${new Date().toISOString()}] Plan gratuito seleccionado, redirigiendo a success`,
@@ -216,33 +217,26 @@ class StripeService {
       }
 
       try {
-        // Determine the correct price based on billing cycle
-        const unitAmount =
-          options.billingCycle === "yearly"
-            ? (plan as any).yearly_price || plan.price * 12
-            : plan.price;
+        // Get Price ID from centralized registry
+        const priceId = getPriceIdForPlan(options.planId, options.billingCycle);
+        
+        if (!priceId) {
+          throw new Error(
+            `No Price ID configured for plan ${plan.name} (${options.billingCycle} billing). ` +
+            `Please configure Stripe Prices in stripePriceRegistry.ts`
+          );
+        }
 
         console.log(
-          `[${new Date().toISOString()}] Using price: $${unitAmount / 100} for ${options.billingCycle} billing`,
+          `[${new Date().toISOString()}] Using Stripe Price ID: ${priceId} for ${plan.name} (${options.billingCycle} billing)`,
         );
 
-        // Create checkout session with inline price data
+        // Create checkout session with Price ID (best practice)
         const session = await stripe.checkout.sessions.create({
           payment_method_types: ["card"],
           line_items: [
             {
-              price_data: {
-                currency: "usd",
-                product_data: {
-                  name: plan.name,
-                  description: plan.description,
-                },
-                unit_amount: unitAmount,
-                recurring: {
-                  interval:
-                    options.billingCycle === "yearly" ? "year" : "month",
-                },
-              },
+              price: priceId,  // Use pre-configured Price ID instead of inline price_data
               quantity: 1,
             },
           ],
