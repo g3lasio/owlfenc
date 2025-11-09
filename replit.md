@@ -55,6 +55,8 @@ This AI-powered platform automates legal document and permit management for cont
 - **PDF Digital Signature System**: Premium PDF service with robust signature embedding and a dual signature completion workflow.
 - **Stripe Connect**: Payment system configured for Stripe Organization API keys.
 - **Stripe Integration (Nov 2025)**: Production-ready subscription system with health guardrails, centralized API version (2025-06-30.basil), and Price ID registry. Features startup validation against Stripe API, mode-aware price mappings (LIVE/TEST), environment variable overrides, and fail-fast deployment protection. All 4 production Price IDs validated and operational.
+- **Welcome Email System (Nov 2025)**: Automated onboarding email system using Resend. Triggers on `customer.subscription.created` webhook with authentic Mexican motivational tone ("¡Bienvenido a Owl Fenc, compa! Aquí las oportunidades no se esperan… se construyen."). Features professional HTML template, async sending with error handling, and integrated with subscription lifecycle.
+- **Payment Failure Blocking System (Nov 2025)**: Real-time account suspension system for payment failures. Features: (1) Firestore-backed suspension detection via `downgradedReason` field, (2) Global ProtectedRoute integration with TanStack Query polling (30s staleTime), (3) Non-dismissible PaymentBlockModal with authentic Mexican messaging, (4) Immediate lockout blocking all premium routes except /subscription and /billing, (5) Loading state gating prevents access window during query resolution. Modal redirects to payment update page while maintaining suspension state until backend clears `downgradedReason`.
 
 ## External Dependencies
 - Firebase (Firestore, Admin SDK)
