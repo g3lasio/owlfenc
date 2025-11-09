@@ -4980,10 +4980,16 @@ Output must be between 200-900 characters in English.`;
             yearlyPrice: 0,
             interval: "monthly",
             features: [
-              "5 estimados básicos/mes (con marca de agua)",
-              "1 estimado con IA/mes (con marca de agua)",
-              "5 proyectos/mes",
-              "Funcionalidades básicas"
+              "5 basic estimates per month (With watermark)",
+              "1 AI estimate per month (With watermark)",
+              "3 DeepSearch queries",
+              "Legal contracts",
+              "Property verification",
+              "Project management",
+              "Invoicing",
+              "Payment tracking",
+              "Permit advisor",
+              "Community support"
             ],
           },
           {
@@ -4993,12 +4999,16 @@ Output must be between 200-900 characters in English.`;
             yearlyPrice: 50988, // $509.88/año (15% descuento)
             interval: "monthly",
             features: [
-              "Estimados ilimitados",
-              "50 contratos/mes",
-              "Verificación de propiedades",
-              "Mervin AI 7.0 incluido",
-              "Sin marcas de agua",
-              "Soporte prioritario"
+              "50 basic estimates per month (No watermark)",
+              "20 AI estimates per month (No watermark)",
+              "50 DeepSearch queries",
+              "50 legal contracts per month",
+              "15 property verifications",
+              "Unlimited projects",
+              "Unlimited invoicing",
+              "Basic payment tracking",
+              "10 permit advisor queries",
+              "Email support"
             ],
           },
           {
@@ -5008,13 +5018,18 @@ Output must be between 200-900 characters in English.`;
             yearlyPrice: 101989, // $1,019.89/año (15% descuento)
             interval: "monthly",
             features: [
-              "Todo ilimitado",
-              "Soporte prioritario 24/7",
-              "Sin marcas de agua",
-              "Integración QuickBooks",
-              "Análisis predictivo",
-              "Gestión completa de proyectos",
-              "Recordatorios automatizados"
+              "Unlimited basic estimates (No watermark)",
+              "Unlimited AI estimates (No watermark)",
+              "Unlimited DeepSearch",
+              "Unlimited legal contracts",
+              "Unlimited property verifications",
+              "Unlimited projects",
+              "Unlimited invoicing",
+              "Pro payment tracking",
+              "Unlimited permit advisor",
+              "Priority support",
+              "QuickBooks integration",
+              "Advanced analytics"
             ],
           },
         ];
