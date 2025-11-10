@@ -686,12 +686,60 @@ router.post("/stripe/connect", isAuthenticated, async (req: Request, res: Respon
       });
     }
     
-    // Determine the base URL for redirects (ALWAYS use HTTPS in Replit)
-    const baseUrl = process.env.REPLIT_DOMAINS 
-      ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
-      : process.env.REPLIT_DEV_DOMAIN 
-        ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-        : 'http://localhost:5000';
+    // Determine the base URL for redirects
+    // SECURITY: Use ONLY trusted, whitelisted sources to prevent Host Header Injection
+    // CRITICAL: Stripe LIVE mode REQUIRES HTTPS - no exceptions
+    const isLiveMode = process.env.STRIPE_SECRET_KEY?.startsWith('sk_live_');
+    let baseUrl: string | null = null;
+    
+    // Priority 1: Explicit APP_BASE_URL (most secure, recommended for production)
+    if (process.env.APP_BASE_URL) {
+      baseUrl = process.env.APP_BASE_URL;
+      console.log(`🔗 [STRIPE-CONNECT] Using APP_BASE_URL: ${baseUrl}`);
+    }
+    // Priority 2: REPLIT_DOMAINS (trusted Replit environment variable)
+    else if (process.env.REPLIT_DOMAINS) {
+      const domain = process.env.REPLIT_DOMAINS.split(',')[0];
+      baseUrl = `https://${domain}`;
+      console.log(`🔗 [STRIPE-CONNECT] Using REPLIT_DOMAINS: ${baseUrl}`);
+    }
+    // Priority 3: REPLIT_DEV_DOMAIN (trusted Replit dev environment)
+    else if (process.env.REPLIT_DEV_DOMAIN) {
+      baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
+      console.log(`🔗 [STRIPE-CONNECT] Using REPLIT_DEV_DOMAIN: ${baseUrl}`);
+    }
+    // Development fallback: localhost (ONLY if not in LIVE mode)
+    else if (!isLiveMode) {
+      baseUrl = 'http://localhost:5000';
+      console.warn(`⚠️ [STRIPE-CONNECT] Using localhost fallback (development only)`);
+    }
+    
+    // SECURITY: Reject request if no trusted base URL available in LIVE mode
+    if (!baseUrl) {
+      console.error(`❌ [STRIPE-CONNECT] CRITICAL: No trusted base URL configured for LIVE mode`);
+      console.error(`❌ [STRIPE-CONNECT] Set APP_BASE_URL, REPLIT_DOMAINS, or REPLIT_DEV_DOMAIN environment variable`);
+      return res.status(500).json({
+        success: false,
+        error: "Server configuration error",
+        message: "Payment system is not properly configured. Please contact support.",
+        details: process.env.NODE_ENV === 'development' 
+          ? "No APP_BASE_URL, REPLIT_DOMAINS, or REPLIT_DEV_DOMAIN configured in LIVE mode" 
+          : undefined
+      });
+    }
+    
+    // SECURITY: Enforce HTTPS in LIVE mode
+    if (isLiveMode && !baseUrl.startsWith('https://')) {
+      console.error(`❌ [STRIPE-CONNECT] CRITICAL: Base URL must use HTTPS in LIVE mode: ${baseUrl}`);
+      return res.status(500).json({
+        success: false,
+        error: "Server configuration error",
+        message: "Payment system security requirement not met. Please contact support.",
+        details: process.env.NODE_ENV === 'development' 
+          ? "Base URL must use HTTPS in LIVE mode" 
+          : undefined
+      });
+    }
     
     const refreshUrl = `${baseUrl}/project-payments?tab=settings&refresh=true`;
     const returnUrl = `${baseUrl}/project-payments?tab=settings&connected=true`;
