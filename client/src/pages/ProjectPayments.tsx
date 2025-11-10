@@ -108,9 +108,11 @@ const ProjectPayments: React.FC = () => {
   const [activeTab, setActiveTab] = useState("workflow");
   const [, navigate] = useLocation();
   
-  // Verificar permisos de payment tracking
+  // Verificar permisos de payment tracking Y cuenta Stripe conectada
   const { hasAccess, userPlan, showUpgradeModal } = usePermissions();
   const hasPaymentTrackingAccess = hasAccess('paymentTracking');
+  
+  // CRITICAL: Payment Workflow requires BOTH paid plan AND Stripe Connect account
   const canUsePaymentTracking = hasPaymentTrackingAccess;
   
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
@@ -342,9 +344,10 @@ const ProjectPayments: React.FC = () => {
       },
     });
 
-  // Fetch Stripe account status
+  // Fetch Stripe account status - REQUIRED for Payment Workflow access
   const { data: stripeAccountStatus, isLoading: stripeLoading } = useQuery({
     queryKey: ["/api/contractor-payments/stripe/account-status"],
+    enabled: canUsePaymentTracking, // Only fetch if user has payment tracking access
     queryFn: async () => {
       try {
         const response = await apiRequest(
@@ -378,6 +381,11 @@ const ProjectPayments: React.FC = () => {
     retry: 2,
     retryDelay: 1000,
   });
+  
+  // CRITICAL ACCESS CONTROL: Check if user has Stripe Connect account
+  const hasStripeAccount = stripeAccountStatus?.hasStripeAccount || false;
+  const isStripeAccountActive = stripeAccountStatus?.accountDetails?.fullyActive || false;
+  const canUsePaymentWorkflow = canUsePaymentTracking && hasStripeAccount;
 
   // Create payment mutation
   const createPaymentMutation = useMutation({
@@ -775,7 +783,38 @@ const ProjectPayments: React.FC = () => {
 
           {/* Simplified Payment Workflow Tab */}
           <TabsContent value="workflow" className="space-y-6">
-            {canUsePaymentTracking ? (
+            {!canUsePaymentTracking ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <Lock className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+                  <p className="text-gray-400">Esta función requiere un plan pagado</p>
+                  <Button
+                    onClick={showUpgradeModal}
+                    className="mt-4 bg-cyan-400 text-black hover:bg-cyan-300"
+                  >
+                    Upgrade Plan
+                  </Button>
+                </div>
+              </div>
+            ) : !canUsePaymentWorkflow ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center space-y-4">
+                  <Building2 className="w-12 h-12 text-cyan-400 mx-auto" />
+                  <div>
+                    <p className="text-white font-semibold mb-2">Conecta tu cuenta Stripe</p>
+                    <p className="text-gray-400 text-sm mb-4">
+                      Para usar Payment Workflow necesitas conectar tu cuenta Stripe
+                    </p>
+                  </div>
+                  <Button
+                    onClick={() => setActiveTab("settings")}
+                    className="bg-cyan-400 text-black hover:bg-cyan-300"
+                  >
+                    Ir a Settings para conectar Stripe
+                  </Button>
+                </div>
+              </div>
+            ) : (
               <ProjectPaymentWorkflow
                 projects={projects}
                 payments={payments}
@@ -783,13 +822,6 @@ const ProjectPayments: React.FC = () => {
                 onSendInvoice={sendInvoiceMutation.mutate}
                 isCreatingPayment={createPaymentMutation.isPending}
               />
-            ) : (
-              <div className="flex items-center justify-center py-12">
-                <div className="text-center">
-                  <Lock className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-                  <p className="text-gray-400">Esta función requiere un plan pagado</p>
-                </div>
-              </div>
             )}
           </TabsContent>
 

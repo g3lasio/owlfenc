@@ -112,6 +112,38 @@ interface ProjectPaymentWorkflowProps {
   isCreatingPayment: boolean;
 }
 
+// Device detection utility - SSR/Jest safe
+const detectMobileDevice = () => {
+  // SSR/Jest safety: Check if window and navigator exist
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+    return {
+      isMobile: false,
+      isTablet: false,
+      hasNFC: false,
+      hasApplePay: false,
+      canUseTapToPay: false,
+      isDesktop: true, // Default to desktop in SSR
+    };
+  }
+  
+  const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(userAgent);
+  const isTablet = /iPad|Android/i.test(userAgent) && !/Mobile/i.test(userAgent);
+  
+  // Check for NFC/Tap-to-Pay capabilities
+  const hasNFC = typeof window !== 'undefined' && 'NDEFReader' in window; // Android Web NFC
+  const hasApplePay = typeof window !== 'undefined' && typeof (window as any).ApplePaySession !== 'undefined';
+  
+  return {
+    isMobile,
+    isTablet,
+    hasNFC,
+    hasApplePay,
+    canUseTapToPay: isMobile && (hasNFC || hasApplePay),
+    isDesktop: !isMobile && !isTablet,
+  };
+};
+
 export default function ProjectPaymentWorkflow({
   projects,
   payments,
@@ -120,6 +152,9 @@ export default function ProjectPaymentWorkflow({
   isCreatingPayment,
 }: ProjectPaymentWorkflowProps) {
   const { toast } = useToast();
+  
+  // Device detection
+  const deviceInfo = detectMobileDevice();
   
   // Mode state
   const [workflowMode, setWorkflowMode] = useState<WorkflowMode>("express");
@@ -560,19 +595,41 @@ export default function ProjectPaymentWorkflow({
                 <div className="space-y-3">
                   <Label className="text-white text-lg">How do you want to collect payment?</Label>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* Terminal / Tap-to-Pay */}
-                    <Button
-                      onClick={() => handleMethodSelect("terminal")}
-                      variant="outline"
-                      className="h-32 flex flex-col items-center justify-center gap-3 bg-gray-800 border-2 border-gray-600 hover:border-cyan-400 hover:bg-gray-700 text-white transition-all"
-                      data-testid="button-method-terminal"
-                    >
-                      <Smartphone className="h-12 w-12 text-cyan-400" />
-                      <div className="text-center">
-                        <div className="font-semibold text-lg">💳 Terminal</div>
-                        <div className="text-xs text-gray-400">Tap-to-Pay</div>
-                      </div>
-                    </Button>
+                    {/* Terminal / Tap-to-Pay - DISABLED: Not implemented */}
+                    <div className="relative">
+                      <Button
+                        onClick={() => {
+                          if (!deviceInfo.isMobile) {
+                            toast({
+                              title: "Dispositivo no compatible",
+                              description: "Terminal/Tap-to-Pay requiere dispositivo móvil con NFC o Apple Pay",
+                              variant: "destructive",
+                            });
+                          } else {
+                            toast({
+                              title: "Próximamente",
+                              description: "Terminal/Tap-to-Pay estará disponible pronto",
+                            });
+                          }
+                        }}
+                        disabled={true}
+                        variant="outline"
+                        className="h-32 w-full flex flex-col items-center justify-center gap-3 bg-gray-900 border-2 border-gray-700 text-gray-500 opacity-50 cursor-not-allowed"
+                        data-testid="button-method-terminal"
+                      >
+                        <Smartphone className="h-12 w-12 text-gray-500" />
+                        <div className="text-center">
+                          <div className="font-semibold text-lg">💳 Terminal</div>
+                          <div className="text-xs text-gray-500">Tap-to-Pay</div>
+                          <Badge className="mt-2 bg-gray-700 text-gray-400 text-[10px]">Próximamente</Badge>
+                        </div>
+                      </Button>
+                      {deviceInfo.isDesktop && (
+                        <div className="absolute top-2 right-2">
+                          <AlertCircle className="h-4 w-4 text-amber-500" />
+                        </div>
+                      )}
+                    </div>
 
                     {/* Payment Link */}
                     <Button
@@ -867,27 +924,27 @@ export default function ProjectPaymentWorkflow({
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Terminal */}
-                  <Card 
-                    className={`cursor-pointer transition-all ${
-                      paymentMethod === "terminal" 
-                        ? "bg-cyan-900/30 border-cyan-400 border-2" 
-                        : "bg-gray-800 border-gray-600 hover:border-cyan-400"
-                    }`}
-                    onClick={() => setPaymentMethod("terminal")}
-                    data-testid="card-method-terminal"
-                  >
-                    <CardContent className="pt-6 text-center space-y-3">
-                      <Smartphone className="h-16 w-16 text-cyan-400 mx-auto" />
-                      <h3 className="font-semibold text-white text-lg">💳 Terminal</h3>
-                      <p className="text-gray-400 text-sm">
-                        Accept payment with Tap-to-Pay directly from your device
-                      </p>
-                      {paymentMethod === "terminal" && (
-                        <CheckCircle className="h-6 w-6 text-cyan-400 mx-auto" />
-                      )}
-                    </CardContent>
-                  </Card>
+                  {/* Terminal - DISABLED: Not implemented */}
+                  <div className="relative">
+                    <Card 
+                      className="bg-gray-900 border-gray-700 opacity-50 cursor-not-allowed"
+                      data-testid="card-method-terminal"
+                    >
+                      <CardContent className="pt-6 text-center space-y-3">
+                        <Smartphone className="h-16 w-16 text-gray-500 mx-auto" />
+                        <h3 className="font-semibold text-gray-500 text-lg">💳 Terminal</h3>
+                        <p className="text-gray-600 text-sm">
+                          Tap-to-Pay requiere dispositivo móvil
+                        </p>
+                        <Badge className="bg-gray-700 text-gray-400 text-[10px]">Próximamente</Badge>
+                      </CardContent>
+                    </Card>
+                    {deviceInfo.isDesktop && (
+                      <div className="absolute top-2 right-2">
+                        <AlertCircle className="h-4 w-4 text-amber-500" />
+                      </div>
+                    )}
+                  </div>
 
                   {/* Payment Link */}
                   <Card 
