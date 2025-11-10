@@ -628,25 +628,63 @@ router.get("/stripe/account-status", isAuthenticated, async (req: Request, res: 
 router.post("/stripe/connect", isAuthenticated, async (req: Request, res: Response) => {
   try {
     if (!req.firebaseUser) {
-      return res.status(401).json({ error: "User not authenticated" });
+      console.error("❌ [STRIPE-CONNECT] No Firebase user in request");
+      return res.status(401).json({ 
+        success: false,
+        error: "User not authenticated" 
+      });
     }
     
     const firebaseUid = req.firebaseUser.uid;
+    const userEmail = req.firebaseUser.email || `${firebaseUid}@firebase.auth`;
     console.log("🔐 [STRIPE-CONNECT-EXPRESS] Iniciando configuración de pagos");
+    console.log(`📧 [STRIPE-CONNECT-EXPRESS] User: ${userEmail}`);
     
-    // Convert Firebase UID to database user ID
-    const { userMappingService } = await import('../services/userMappingService');
-    const dbUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(firebaseUid);
-    
-    // Get user from database to check for existing Stripe Connect account
-    const user = await storage.getUser(dbUserId);
-    
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
+    // Validate Stripe secret key
+    if (!process.env.STRIPE_SECRET_KEY) {
+      console.error("❌ [STRIPE-CONNECT] STRIPE_SECRET_KEY not configured");
+      return res.status(500).json({ 
+        success: false,
+        error: "Stripe configuration error. Please contact support." 
+      });
     }
 
     // Get Stripe instance
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    
+    // Convert Firebase UID to database user ID
+    let dbUserId: number;
+    try {
+      const { userMappingService } = await import('../services/userMappingService');
+      dbUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(firebaseUid);
+      console.log(`✅ [STRIPE-CONNECT-EXPRESS] Database user ID: ${dbUserId}`);
+    } catch (mappingError: any) {
+      console.error("❌ [STRIPE-CONNECT] User mapping error:", mappingError);
+      return res.status(500).json({ 
+        success: false,
+        error: "Failed to map user account. Please try again." 
+      });
+    }
+    
+    // Get user from database to check for existing Stripe Connect account
+    let user;
+    try {
+      user = await storage.getUser(dbUserId);
+      if (!user) {
+        console.error(`❌ [STRIPE-CONNECT] User not found in database: ${dbUserId}`);
+        return res.status(404).json({ 
+          success: false,
+          error: "User profile not found. Please contact support." 
+        });
+      }
+      console.log(`✅ [STRIPE-CONNECT-EXPRESS] User found: ${user.email}`);
+    } catch (storageError: any) {
+      console.error("❌ [STRIPE-CONNECT] Storage error:", storageError);
+      return res.status(500).json({ 
+        success: false,
+        error: "Database error. Please try again." 
+      });
+    }
     
     // Determine the base URL for redirects (ALWAYS use HTTPS in Replit)
     const baseUrl = process.env.REPLIT_DOMAINS 
@@ -667,6 +705,8 @@ router.post("/stripe/connect", isAuthenticated, async (req: Request, res: Respon
     // If user already has a Stripe Connect account, use Express Dashboard login link
     if (accountId) {
       try {
+        console.log(`🔍 [STRIPE-CONNECT-EXPRESS] Checking existing account: ${accountId}`);
+        
         // Verify the account still exists and get its status
         const account = await stripe.accounts.retrieve(accountId);
         
@@ -692,44 +732,127 @@ router.post("/stripe/connect", isAuthenticated, async (req: Request, res: Respon
           message: "Redirecting to your Stripe Express Dashboard",
         });
       } catch (stripeError: any) {
-        // If account doesn't exist anymore, create a new one below
-        console.warn("⚠️ [STRIPE-CONNECT-EXPRESS] Existing account not found, creating new one");
-        accountId = null;
+        // Differentiate between account not found vs other errors
+        // Check multiple conditions for robustness across Stripe SDK versions
+        const isResourceMissing = 
+          // Primary check: Stripe error type and code
+          (stripeError.type === 'StripeInvalidRequestError' && stripeError.code === 'resource_missing') ||
+          // Fallback: Message content (for older SDK versions or API changes)
+          (stripeError.message && (
+            stripeError.message.includes('No such account') ||
+            stripeError.message.includes('does not exist') ||
+            stripeError.message.includes('not found')
+          )) ||
+          // HTTP status code check (404 = not found)
+          (stripeError.statusCode === 404 || stripeError.status === 404);
+        
+        if (isResourceMissing) {
+          // Account truly doesn't exist - safe to create new one
+          console.warn(`⚠️ [STRIPE-CONNECT-EXPRESS] Account not found: ${stripeError.message}`);
+          console.warn("⚠️ [STRIPE-CONNECT-EXPRESS] Will create a new account");
+          accountId = null;
+        } else {
+          // Could be network error, API issue, permission error - don't create duplicate
+          console.error(`❌ [STRIPE-CONNECT-EXPRESS] Stripe API error (not missing resource): ${stripeError.message}`);
+          console.error(`❌ [STRIPE-CONNECT-EXPRESS] Error type: ${stripeError.type}, Code: ${stripeError.code}, Status: ${stripeError.statusCode}`);
+          
+          // Return error instead of creating potential duplicate
+          return res.status(500).json({
+            success: false,
+            error: "Failed to verify existing Stripe account",
+            message: "Unable to check your Stripe account status. Please try again in a moment.",
+            details: process.env.NODE_ENV === 'development' ? stripeError.message : undefined,
+            errorType: stripeError.type,
+            errorCode: stripeError.code
+          });
+        }
       }
     }
     
     // Create a new Stripe Express Connect account
     console.log("🆕 [STRIPE-CONNECT] Creating new Stripe Express account");
-    const account = await stripe.accounts.create({
-      type: 'express',
-      email: user.email,
-      country: 'US', // Default to US, can be made configurable
-      capabilities: {
-        card_payments: { requested: true },
-        transfers: { requested: true },
-      },
-      business_type: 'individual', // Can be made configurable
-      metadata: {
-        firebase_uid: firebaseUid,
-        user_id: dbUserId.toString(),
-        app: 'PermitAdvisor',
-      }
-    });
+    console.log(`📧 [STRIPE-CONNECT] Email: ${user.email}`);
+    
+    let account;
+    try {
+      account = await stripe.accounts.create({
+        type: 'express',
+        email: user.email,
+        country: 'US', // Default to US, can be made configurable
+        capabilities: {
+          card_payments: { requested: true },
+          transfers: { requested: true },
+        },
+        business_type: 'individual', // Can be made configurable
+        metadata: {
+          firebase_uid: firebaseUid,
+          user_id: dbUserId.toString(),
+          app: 'OwlFenc',
+        }
+      });
+      console.log(`✅ [STRIPE-CONNECT] Account created: ${account.id}`);
+    } catch (createError: any) {
+      console.error("❌ [STRIPE-CONNECT] Account creation failed:", createError.message);
+      console.error("❌ [STRIPE-CONNECT] Error details:", createError);
+      return res.status(500).json({
+        success: false,
+        error: "Failed to create Stripe account",
+        message: createError.message || "Unable to create payment account. Please try again.",
+        details: process.env.NODE_ENV === 'development' ? createError.message : undefined
+      });
+    }
 
     // Store the Stripe Connect account ID in the database
-    await storage.updateUser(dbUserId, {
-      stripeConnectAccountId: account.id
-    });
+    // CRITICAL: This must succeed before returning success to client
+    try {
+      await storage.updateUser(dbUserId, {
+        stripeConnectAccountId: account.id
+      });
+      console.log(`✅ [STRIPE-CONNECT] Account ID stored in database`);
+    } catch (updateError: any) {
+      console.error("❌ [STRIPE-CONNECT] CRITICAL: Failed to store account ID in database:", updateError);
+      console.error("❌ [STRIPE-CONNECT] Rolling back Stripe account to prevent orphan:", account.id);
+      
+      // ROLLBACK: Delete the Stripe account we just created since we can't persist it
+      try {
+        await stripe.accounts.del(account.id);
+        console.log(`✅ [STRIPE-CONNECT] Stripe account ${account.id} deleted successfully (rollback)`);
+      } catch (deleteError: any) {
+        console.error(`❌ [STRIPE-CONNECT] Failed to rollback Stripe account ${account.id}:`, deleteError.message);
+        console.error(`⚠️ [STRIPE-CONNECT] ORPHANED ACCOUNT - Manual cleanup required: ${account.id}`);
+        // Even if rollback fails, still return error to user
+      }
+      
+      // FATAL ERROR: Cannot proceed without persisting the account ID
+      return res.status(500).json({
+        success: false,
+        error: "Failed to save account connection",
+        message: "Unable to complete account setup. Please try again. If this persists, contact support.",
+        details: process.env.NODE_ENV === 'development' ? updateError.message : undefined
+      });
+    }
 
     // Create account link for onboarding
-    const accountLink = await stripe.accountLinks.create({
-      account: account.id,
-      refresh_url: refreshUrl,
-      return_url: returnUrl,
-      type: 'account_onboarding',
-    });
+    let accountLink;
+    try {
+      accountLink = await stripe.accountLinks.create({
+        account: account.id,
+        refresh_url: refreshUrl,
+        return_url: returnUrl,
+        type: 'account_onboarding',
+      });
+      console.log(`✅ [STRIPE-CONNECT] Onboarding link created`);
+    } catch (linkError: any) {
+      console.error("❌ [STRIPE-CONNECT] Account link creation failed:", linkError.message);
+      return res.status(500).json({
+        success: false,
+        error: "Failed to create onboarding link",
+        message: linkError.message || "Unable to create setup link. Please try again.",
+        details: process.env.NODE_ENV === 'development' ? linkError.message : undefined
+      });
+    }
     
-    console.log(`✅ [STRIPE-CONNECT] New account created: ${account.id}`);
+    console.log(`✅ [STRIPE-CONNECT] Setup complete, returning onboarding URL`);
     
     res.json({
       success: true,
@@ -738,11 +861,14 @@ router.post("/stripe/connect", isAuthenticated, async (req: Request, res: Respon
       isExisting: false,
       message: "Stripe Connect account created successfully. Complete setup to start receiving payments.",
     });
-  } catch (error) {
-    console.error("❌ [STRIPE-CONNECT] Error:", error);
+  } catch (error: any) {
+    console.error("❌ [STRIPE-CONNECT] Unexpected error:", error);
+    console.error("❌ [STRIPE-CONNECT] Stack trace:", error.stack);
     res.status(500).json({
-      message: "Error setting up Stripe Connect",
-      error: error instanceof Error ? error.message : "Unknown error",
+      success: false,
+      error: "Unexpected error during Stripe Connect setup",
+      message: error.message || "An unexpected error occurred. Please try again.",
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
