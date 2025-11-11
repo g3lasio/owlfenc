@@ -182,6 +182,10 @@ Características:
 
       const content = response.choices[0].message.content || '';
       console.log('💬 [CHATGPT-RESPONSE] Generated conversational response');
+      console.log('📝 [CHATGPT-CONTENT] Length:', content.length, 'chars');
+      console.log('📝 [CHATGPT-CONTENT] Full response:', content);
+      console.log('📊 [CHATGPT-USAGE] Tokens:', response.usage);
+      console.log('🔍 [CHATGPT-FINISH] Finish reason:', response.choices[0].finish_reason);
       return content;
 
     } catch (error) {

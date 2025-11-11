@@ -331,6 +331,8 @@ export class MervinOrchestratorV3 {
         );
       }
 
+      console.log('📤 [ORCHESTRATOR-RESPONSE] Sending response, length:', response.length);
+      console.log('📤 [ORCHESTRATOR-RESPONSE] Content preview:', response.substring(0, 200));
       this.progress?.sendComplete(response);
 
       // Log telemetry

@@ -82,6 +82,9 @@ export class ProgressStreamService {
    * Enviar mensaje de completado
    */
   sendComplete(message: string, data?: any): void {
+    console.log('📡 [STREAM-COMPLETE] Message length:', message.length);
+    console.log('📡 [STREAM-COMPLETE] Preview:', message.substring(0, 150));
+    
     this.sendProgress({
       type: 'complete',
       content: message,
