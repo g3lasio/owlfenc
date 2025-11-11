@@ -98,12 +98,24 @@ export class ConversationPersistenceController {
         // Si no hay conversación activa y no hay una creación en progreso, crear una nueva
         if (!this.conversationId && !this.isCreating) {
           this.isCreating = true;
-          await this.createConversation([message]);
-          this.isCreating = false;
+          try {
+            await this.createConversation([message]);
+          } finally {
+            // 🔧 Siempre resetear flag, incluso si falla
+            this.isCreating = false;
+          }
         } else {
-          // Esperar a que termine la creación si está en progreso
-          while (this.isCreating) {
+          // Esperar a que termine la creación si está en progreso (con timeout)
+          let waitCount = 0;
+          const maxWait = 50; // 5 segundos máximo (50 * 100ms)
+          while (this.isCreating && waitCount < maxWait) {
             await new Promise(resolve => setTimeout(resolve, 100));
+            waitCount++;
+          }
+          
+          // Timeout o error de creación
+          if (this.isCreating) {
+            throw new Error('Timeout waiting for conversation creation');
           }
           
           // Ahora sí agregar mensaje a conversación existente
@@ -128,7 +140,12 @@ export class ConversationPersistenceController {
       } catch (error) {
         console.error('❌ [CONVERSATION] Error saving message:', error);
         this.handleError(`Error guardando mensaje: ${(error as Error).message}`);
+        // Re-throw para detener la cadena si es crítico
+        throw error;
       }
+    }).catch((error) => {
+      // Capturar errores de la cadena para evitar unhandled rejections
+      console.error('❌ [CONVERSATION] Queue error:', error);
     });
 
     return this.saveQueue;
