@@ -7,12 +7,18 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { AgentClient, MervinMessage, MervinResponse, StreamUpdate, AuthTokenProvider } from '../lib/AgentClient';
 import { auth } from '@/lib/firebase';
+import { 
+  ConversationPersistenceController, 
+  type PersistenceState,
+  type ConversationMessage 
+} from '../services/ConversationPersistenceController';
 
 export interface UseMervinAgentOptions {
   userId: string;
   enableStreaming?: boolean;
   language?: 'es' | 'en';
   onStreamUpdate?: (update: StreamUpdate) => void;
+  onPersistenceError?: (error: string) => void;
 }
 
 export interface UseMervinAgentReturn {
@@ -21,8 +27,12 @@ export interface UseMervinAgentReturn {
   streamingUpdates: StreamUpdate[];
   sendMessage: (input: string, files?: File[]) => Promise<void>;
   clearMessages: () => void;
+  startNewConversation: () => void;
+  loadConversation: (conversationId: string) => void;
   isHealthy: boolean;
   systemStatus: any;
+  persistenceState: PersistenceState;
+  conversationId: string | null;
 }
 
 /**
@@ -47,7 +57,8 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
     userId,
     enableStreaming = true,
     language = 'es',
-    onStreamUpdate
+    onStreamUpdate,
+    onPersistenceError
   } = options;
 
   // Estado
@@ -56,10 +67,39 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
   const [streamingUpdates, setStreamingUpdates] = useState<StreamUpdate[]>([]);
   const [isHealthy, setIsHealthy] = useState(true);
   const [systemStatus, setSystemStatus] = useState<any>(null);
+  const [persistenceState, setPersistenceState] = useState<PersistenceState>({
+    status: 'idle',
+    conversationId: null,
+    error: null,
+    pendingSaves: 0,
+  });
 
   // Cliente de API con autenticación (ref para no recrearlo innecesariamente)
   const clientRef = useRef<AgentClient>(new AgentClient(userId, '', getFirebaseToken));
   const prevUserIdRef = useRef<string>(userId);
+  
+  // Persistence controller
+  const persistenceRef = useRef<ConversationPersistenceController | null>(null);
+
+  // Inicializar persistence controller
+  useEffect(() => {
+    if (!persistenceRef.current || userId !== prevUserIdRef.current) {
+      console.log(`📦 [MERVIN-AGENT] Initializing persistence for user: ${userId}`);
+      persistenceRef.current = new ConversationPersistenceController(userId);
+      
+      // Setup callbacks
+      persistenceRef.current.onStateChangeCallback((state) => {
+        setPersistenceState(state);
+      });
+      
+      persistenceRef.current.onErrorCallback((error) => {
+        console.error('❌ [PERSISTENCE] Error:', error);
+        if (onPersistenceError) {
+          onPersistenceError(error);
+        }
+      });
+    }
+  }, [userId, onPersistenceError]);
 
   // Recrear cliente si userId cambia (fix para autenticación)
   useEffect(() => {
@@ -71,6 +111,7 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
       // Limpiar mensajes al cambiar usuario
       if (userId !== 'guest') {
         setMessages([]);
+        persistenceRef.current?.reset();
       }
     }
   }, [userId]);
@@ -105,6 +146,16 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
     setIsProcessing(true);
     setStreamingUpdates([]);
 
+    // 💾 AUTO-SAVE: Guardar mensaje del usuario (asíncrono, no bloqueante)
+    const userConversationMessage: ConversationMessage = {
+      sender: 'user',
+      text: input,
+      timestamp: userMessage.timestamp!.toISOString(),
+    };
+    persistenceRef.current?.saveMessage(userConversationMessage).catch((err) => {
+      console.error('❌ [AUTO-SAVE] Failed to save user message:', err);
+    });
+
     try {
       // Si hay archivos, usar endpoint específico
       if (files && files.length > 0 && enableStreaming) {
@@ -132,6 +183,16 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
                 timestamp: new Date()
               };
               setMessages(prev => [...prev, assistantMessage]);
+
+              // 💾 AUTO-SAVE: Guardar mensaje del asistente (asíncrono)
+              const assistantConversationMessage: ConversationMessage = {
+                sender: 'assistant',
+                text: update.content,
+                timestamp: assistantMessage.timestamp!.toISOString(),
+              };
+              persistenceRef.current?.saveMessage(assistantConversationMessage).catch((err) => {
+                console.error('❌ [AUTO-SAVE] Failed to save assistant message:', err);
+              });
             }
           }
         );
@@ -158,6 +219,16 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
                 timestamp: new Date()
               };
               setMessages(prev => [...prev, assistantMessage]);
+
+              // 💾 AUTO-SAVE: Guardar mensaje del asistente (asíncrono)
+              const assistantConversationMessage: ConversationMessage = {
+                sender: 'assistant',
+                text: update.content,
+                timestamp: assistantMessage.timestamp!.toISOString(),
+              };
+              persistenceRef.current?.saveMessage(assistantConversationMessage).catch((err) => {
+                console.error('❌ [AUTO-SAVE] Failed to save assistant message:', err);
+              });
             }
           }
         );
@@ -177,6 +248,16 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
         };
 
         setMessages(prev => [...prev, assistantMessage]);
+
+        // 💾 AUTO-SAVE: Guardar mensaje del asistente (modo JSON)
+        const assistantConversationMessage: ConversationMessage = {
+          sender: 'assistant',
+          text: response.message,
+          timestamp: assistantMessage.timestamp!.toISOString(),
+        };
+        persistenceRef.current?.saveMessage(assistantConversationMessage).catch((err) => {
+          console.error('❌ [AUTO-SAVE] Failed to save assistant message:', err);
+        });
       }
 
     } catch (error: any) {
@@ -203,13 +284,35 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
     setStreamingUpdates([]);
   }, []);
 
+  /**
+   * Iniciar nueva conversación
+   */
+  const startNewConversation = useCallback(() => {
+    setMessages([]);
+    setStreamingUpdates([]);
+    persistenceRef.current?.reset();
+    console.log('🆕 [MERVIN-AGENT] New conversation started');
+  }, []);
+
+  /**
+   * Cargar conversación existente
+   */
+  const loadConversation = useCallback((conversationId: string) => {
+    persistenceRef.current?.loadConversation(conversationId);
+    console.log(`📂 [MERVIN-AGENT] Loaded conversation: ${conversationId}`);
+  }, []);
+
   return {
     messages,
     isProcessing,
     streamingUpdates,
     sendMessage,
     clearMessages,
+    startNewConversation,
+    loadConversation,
     isHealthy,
-    systemStatus
+    systemStatus,
+    persistenceState,
+    conversationId: persistenceState.conversationId,
   };
 }

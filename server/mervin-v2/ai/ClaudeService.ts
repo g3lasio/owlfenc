@@ -105,7 +105,7 @@ Include:
     try {
       const response = await this.anthropic.messages.create({
         model: DEFAULT_MODEL,
-        max_tokens: 1000,
+        max_tokens: 2048, // 🔧 Aumentado de 1000 a 2048 para evitar truncado
         messages: [
           {
             role: 'user',
@@ -210,7 +210,7 @@ Respondes de manera:
     try {
       const response = await this.anthropic.messages.create({
         model: DEFAULT_MODEL,
-        max_tokens: 2000,
+        max_tokens: 3000, // 🔧 Aumentado de 2000 a 3000 para consultas complejas
         messages: [
           {
             role: 'user',
