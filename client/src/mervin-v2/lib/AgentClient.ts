@@ -49,6 +49,42 @@ export class AgentClient {
     this.baseURL = baseURL;
     this.getAuthToken = getAuthToken;
   }
+
+  /**
+   * Parsear un evento SSE completo (maneja multi-línea data: y CRLF)
+   * @returns Objeto parseado o null si no hay data válida
+   */
+  private parseSSEEvent(eventText: string): any | null {
+    // Normalizar CRLF a LF
+    const normalized = eventText.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    const lines = normalized.split('\n');
+    
+    // Concatenar todas las líneas data: en un solo payload
+    let dataLines: string[] = [];
+    
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        dataLines.push(line.substring(6));
+      } else if (line.startsWith('data:')) {
+        dataLines.push(line.substring(5));
+      }
+    }
+    
+    if (dataLines.length === 0) {
+      return null;
+    }
+    
+    // Unir las líneas data: (multi-line data blocks se concatenan con \n)
+    const jsonStr = dataLines.join('\n');
+    
+    try {
+      return JSON.parse(jsonStr);
+    } catch (e) {
+      console.error('❌ [SSE-PARSER] Error parsing JSON:', e);
+      console.error('   JSON string:', jsonStr.substring(0, 200));
+      return null;
+    }
+  }
   
   /**
    * Obtener headers de autenticación
@@ -114,7 +150,7 @@ export class AgentClient {
   }
 
   /**
-   * Enviar mensaje con streaming SSE
+   * Enviar mensaje con streaming SSE (con buffer de chunks parciales)
    */
   async sendMessageStream(
     input: string,
@@ -122,6 +158,9 @@ export class AgentClient {
     language: 'es' | 'en' = 'es',
     onUpdate: StreamCallback
   ): Promise<void> {
+    let parseErrors = 0;
+    let eventsProcessed = 0;
+    
     try {
       console.log('📡 [AGENT-CLIENT] Iniciando streaming:', input.substring(0, 50));
       
@@ -143,42 +182,103 @@ export class AgentClient {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      // Leer stream SSE
+      // Leer stream SSE con buffer persistente para chunks parciales
       const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
+      const decoder = new TextDecoder(); // Sin stream:true para simplicidad
 
       if (!reader) {
         throw new Error('No se pudo crear reader del stream');
       }
 
+      // 🔧 BUFFER PERSISTENTE: Acumula texto parcial entre chunks
+      let buffer = '';
+
       while (true) {
         const { done, value } = await reader.read();
         
         if (done) {
-          console.log('✅ [AGENT-CLIENT] Stream completado');
+          // 🔧 FLUSH FINAL: Decodificar cualquier byte UTF-8 pendiente
+          const finalChunk = decoder.decode(); // Sin stream:true para flush final
+          if (finalChunk) {
+            buffer += finalChunk;
+          }
+          
+          // 🔧 PROCESAR BUFFER RESIDUAL: EOF termina el evento final implícitamente
+          if (buffer.trim()) {
+            console.log('📦 [AGENT-CLIENT] Procesando evento final sin delimitador (EOF)');
+            
+            // Usar la misma lógica de parsing que para eventos normales
+            const data = this.parseSSEEvent(buffer);
+            if (data) {
+              onUpdate(data as StreamUpdate);
+              eventsProcessed++;
+              console.log('✅ [AGENT-CLIENT] Evento final procesado exitosamente');
+            } else {
+              console.warn('⚠️ [AGENT-CLIENT] Buffer residual no contiene evento SSE válido:', buffer.substring(0, 100));
+            }
+          }
+          
+          console.log(`✅ [AGENT-CLIENT] Stream completado - ${eventsProcessed} eventos procesados, ${parseErrors} errores`);
           break;
         }
 
-        // Decodificar chunk
-        const chunk = decoder.decode(value);
+        // Decodificar chunk y agregarlo al buffer
+        buffer += decoder.decode(value, { stream: true });
         
-        // Parsear líneas de SSE (formato: "data: {...}\n\n")
-        const lines = chunk.split('\n');
+        // Dividir por eventos SSE completos (separados por \n\n o \r\n\r\n)
+        // Normalizar CRLF a LF para simplificar
+        const normalizedBuffer = buffer.replace(/\r\n/g, '\n');
+        let eventEnd: number;
         
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.substring(6));
+        while ((eventEnd = normalizedBuffer.indexOf('\n\n')) !== -1) {
+          // Extraer un evento completo del buffer original
+          // Calcular posición real en el buffer original
+          const realEventEnd = buffer.indexOf('\n\n');
+          if (realEventEnd === -1) {
+            // Fallback: buscar \r\n\r\n
+            const crlfEnd = buffer.indexOf('\r\n\r\n');
+            if (crlfEnd !== -1) {
+              const event = buffer.substring(0, crlfEnd);
+              buffer = buffer.substring(crlfEnd + 4);
+              
+              // Parsear evento usando helper
+              const data = this.parseSSEEvent(event);
+              if (data) {
+                onUpdate(data as StreamUpdate);
+                eventsProcessed++;
+              } else {
+                parseErrors++;
+              }
+            } else {
+              break; // No hay delimitadores completos
+            }
+          } else {
+            const event = buffer.substring(0, realEventEnd);
+            buffer = buffer.substring(realEventEnd + 2);
+            
+            // Parsear evento usando helper
+            const data = this.parseSSEEvent(event);
+            if (data) {
               onUpdate(data as StreamUpdate);
-            } catch (e) {
-              console.error('Error parsing SSE data:', e);
+              eventsProcessed++;
+            } else {
+              parseErrors++;
+              if (parseErrors === 1) {
+                console.warn('⚠️ [AGENT-CLIENT] Primer error de parsing detectado');
+              }
             }
           }
         }
       }
 
+      // 📊 Telemetría final
+      if (parseErrors > 0) {
+        console.warn(`⚠️ [AGENT-CLIENT] Streaming completado con ${parseErrors} errores de parsing de ${eventsProcessed + parseErrors} eventos totales (${((parseErrors / (eventsProcessed + parseErrors)) * 100).toFixed(1)}% fallos)`);
+      }
+
     } catch (error: any) {
       console.error('❌ [AGENT-CLIENT] Error en streaming:', error);
+      console.error(`   Eventos procesados: ${eventsProcessed}, Parse errors: ${parseErrors}`);
       onUpdate({
         type: 'error',
         content: `Error en streaming: ${error.message}`
@@ -187,7 +287,7 @@ export class AgentClient {
   }
 
   /**
-   * Enviar mensaje con archivos adjuntos (streaming SSE)
+   * Enviar mensaje con archivos adjuntos (streaming SSE con buffer de chunks parciales)
    */
   async sendMessageWithFiles(
     input: string,
@@ -196,6 +296,9 @@ export class AgentClient {
     language: 'es' | 'en' = 'es',
     onUpdate: StreamCallback
   ): Promise<void> {
+    let parseErrors = 0;
+    let eventsProcessed = 0;
+    
     try {
       console.log(`📨 [AGENT-CLIENT] Enviando mensaje con ${files.length} archivo(s)`);
 
@@ -235,7 +338,7 @@ export class AgentClient {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      // Leer stream SSE
+      // Leer stream SSE con buffer persistente para chunks parciales
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
 
@@ -243,34 +346,95 @@ export class AgentClient {
         throw new Error('No se pudo crear reader del stream');
       }
 
+      // 🔧 BUFFER PERSISTENTE: Acumula texto parcial entre chunks
+      let buffer = '';
+
       while (true) {
         const { done, value } = await reader.read();
         
         if (done) {
-          console.log('✅ [AGENT-CLIENT] Stream completado');
+          // 🔧 FLUSH FINAL: Decodificar cualquier byte UTF-8 pendiente
+          const finalChunk = decoder.decode(); // Sin stream:true para flush final
+          if (finalChunk) {
+            buffer += finalChunk;
+          }
+          
+          // 🔧 PROCESAR BUFFER RESIDUAL: EOF termina el evento final implícitamente
+          if (buffer.trim()) {
+            console.log('📦 [AGENT-CLIENT-FILES] Procesando evento final sin delimitador (EOF)');
+            
+            // Usar la misma lógica de parsing que para eventos normales
+            const data = this.parseSSEEvent(buffer);
+            if (data) {
+              onUpdate(data as StreamUpdate);
+              eventsProcessed++;
+              console.log('✅ [AGENT-CLIENT-FILES] Evento final procesado exitosamente');
+            } else {
+              console.warn('⚠️ [AGENT-CLIENT-FILES] Buffer residual no contiene evento SSE válido:', buffer.substring(0, 100));
+            }
+          }
+          
+          console.log(`✅ [AGENT-CLIENT-FILES] Stream completado - ${eventsProcessed} eventos procesados, ${parseErrors} errores`);
           break;
         }
 
-        // Decodificar chunk
-        const chunk = decoder.decode(value);
+        // Decodificar chunk y agregarlo al buffer
+        buffer += decoder.decode(value, { stream: true });
         
-        // Parsear líneas de SSE
-        const lines = chunk.split('\n');
+        // Dividir por eventos SSE completos (separados por \n\n o \r\n\r\n)
+        // Normalizar CRLF a LF para simplificar
+        const normalizedBuffer = buffer.replace(/\r\n/g, '\n');
+        let eventEnd: number;
         
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.substring(6));
+        while ((eventEnd = normalizedBuffer.indexOf('\n\n')) !== -1) {
+          // Extraer un evento completo del buffer original
+          // Calcular posición real en el buffer original
+          const realEventEnd = buffer.indexOf('\n\n');
+          if (realEventEnd === -1) {
+            // Fallback: buscar \r\n\r\n
+            const crlfEnd = buffer.indexOf('\r\n\r\n');
+            if (crlfEnd !== -1) {
+              const event = buffer.substring(0, crlfEnd);
+              buffer = buffer.substring(crlfEnd + 4);
+              
+              // Parsear evento usando helper
+              const data = this.parseSSEEvent(event);
+              if (data) {
+                onUpdate(data as StreamUpdate);
+                eventsProcessed++;
+              } else {
+                parseErrors++;
+              }
+            } else {
+              break; // No hay delimitadores completos
+            }
+          } else {
+            const event = buffer.substring(0, realEventEnd);
+            buffer = buffer.substring(realEventEnd + 2);
+            
+            // Parsear evento usando helper
+            const data = this.parseSSEEvent(event);
+            if (data) {
               onUpdate(data as StreamUpdate);
-            } catch (e) {
-              console.error('Error parsing SSE data:', e);
+              eventsProcessed++;
+            } else {
+              parseErrors++;
+              if (parseErrors === 1) {
+                console.warn('⚠️ [AGENT-CLIENT-FILES] Primer error de parsing detectado');
+              }
             }
           }
         }
       }
 
+      // 📊 Telemetría final
+      if (parseErrors > 0) {
+        console.warn(`⚠️ [AGENT-CLIENT-FILES] Streaming completado con ${parseErrors} errores de parsing de ${eventsProcessed + parseErrors} eventos totales (${((parseErrors / (eventsProcessed + parseErrors)) * 100).toFixed(1)}% fallos)`);
+      }
+
     } catch (error: any) {
-      console.error('❌ [AGENT-CLIENT] Error enviando archivos:', error);
+      console.error('❌ [AGENT-CLIENT-FILES] Error enviando archivos:', error);
+      console.error(`   Eventos procesados: ${eventsProcessed}, Parse errors: ${parseErrors}`);
       onUpdate({
         type: 'error',
         content: `Error enviando archivos: ${error.message}`
