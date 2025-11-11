@@ -178,9 +178,15 @@ export class AgentClient {
         })
       });
 
+      console.log(`📊 [AGENT-CLIENT] Response status: ${response.status} ${response.statusText}`);
+
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`❌ [AGENT-CLIENT] Server error: ${errorText}`);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
+      
+      console.log(`🔄 [AGENT-CLIENT] Starting to read stream...`);
 
       // Leer stream SSE con buffer persistente para chunks parciales
       const reader = response.body?.getReader();
