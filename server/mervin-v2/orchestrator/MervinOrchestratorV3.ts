@@ -287,10 +287,10 @@ export class MervinOrchestratorV3 {
   ): Promise<MervinResponse> {
     switch (modeDecision.action) {
       case 'CONVERSATION':
-        return await this.handleConversation(request, analysis, filesContext);
+        return await this.handleConversation(request, analysis, filesContext, startTime);
       
       case 'SUGGEST':
-        return await this.handleSuggestAction(request, analysis, filesContext);
+        return await this.handleSuggestAction(request, analysis, filesContext, startTime);
       
       case 'EXECUTE':
         return await this.handleExecuteTask(request, analysis, mode, filesContext, startTime);
@@ -308,7 +308,8 @@ export class MervinOrchestratorV3 {
   private async handleConversation(
     request: MervinRequest,
     analysis: QuickAnalysis,
-    filesContext: string
+    filesContext: string,
+    startTime: number
   ): Promise<MervinResponse> {
     try {
       this.progress?.sendMessage('💬 Thinking...');
@@ -332,10 +333,17 @@ export class MervinOrchestratorV3 {
 
       this.progress?.sendComplete(response);
 
+      // Log telemetry
+      TelemetryService.log('success', {
+        operation: 'conversation',
+        model: analysis.needsDeepThinking ? 'Claude' : 'ChatGPT',
+        duration: Date.now() - startTime
+      });
+
       return {
         type: 'CONVERSATION',
         message: response,
-        executionTime: Date.now() - Date.now()
+        executionTime: Date.now() - startTime
       };
     } catch (error: any) {
       console.error('❌ [CONVERSATION-ERROR]:', error.message);
@@ -349,7 +357,8 @@ export class MervinOrchestratorV3 {
   private async handleSuggestAction(
     request: MervinRequest,
     analysis: QuickAnalysis,
-    filesContext: string
+    filesContext: string,
+    startTime: number
   ): Promise<MervinResponse> {
     try {
       const taskType = analysis.taskType!;
@@ -369,6 +378,13 @@ export class MervinOrchestratorV3 {
       
       this.progress?.sendComplete(suggestion);
 
+      // Log telemetry
+      TelemetryService.log('success', {
+        operation: 'suggest_action',
+        tool: tool.name,
+        duration: Date.now() - startTime
+      });
+
       return {
         type: 'SUGGEST_ACTION',
         message: suggestion,
@@ -377,7 +393,8 @@ export class MervinOrchestratorV3 {
           description: tool.description,
           params
         },
-        suggestedActions: ['Yes, do it', 'No, just explain', 'Let me modify']
+        suggestedActions: ['Yes, do it', 'No, just explain', 'Let me modify'],
+        executionTime: Date.now() - startTime
       };
     } catch (error: any) {
       console.error('❌ [SUGGEST-ACTION-ERROR]:', error.message);
@@ -441,7 +458,8 @@ export class MervinOrchestratorV3 {
             params: rawParams,
             confirmationCard: confirmationRequest.confirmationCard
           },
-          suggestedActions: ['Confirm', 'Cancel', 'Modify']
+          suggestedActions: ['Confirm', 'Cancel', 'Modify'],
+          executionTime: Date.now() - startTime
         };
       }
 
@@ -471,7 +489,8 @@ export class MervinOrchestratorV3 {
           return {
             type: 'NEEDS_MORE_INFO',
             message: `I need more information: ${result.error}`,
-            suggestedActions: [result.error]
+            suggestedActions: [result.error],
+            executionTime: Date.now() - startTime
           };
         }
         throw new Error(result.error || 'Tool execution failed');
