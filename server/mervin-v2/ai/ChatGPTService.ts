@@ -89,7 +89,7 @@ Responde SOLO con JSON:
         ],
         response_format: { type: 'json_object' },
         temperature: 0.3,
-        max_tokens: 300
+        max_tokens: 500 // 🔧 Aumentado de 300 a 500 para análisis más detallados
       });
 
       const content = response.choices[0].message.content || '{}';
@@ -177,7 +177,7 @@ Características:
         model: DEFAULT_MODEL,
         messages,
         temperature: 0.7,
-        max_tokens: 500
+        max_tokens: 1500 // 🔧 Aumentado de 500 a 1500 para respuestas completas
       });
 
       const content = response.choices[0].message.content || '';
