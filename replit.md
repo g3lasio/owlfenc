@@ -27,13 +27,17 @@ This AI-powered platform automates legal document and permit management for cont
 - **Authentication**: Firebase Admin SDK with native Firebase UID, session-based authentication using HTTP-only cookies.
 - **Security Architecture**: Multi-layer authentication, triple-layer contract security, enterprise-grade security for Legal Defense features, robust 1:1 Firebase UID to PostgreSQL `user_id` mapping.
 
-### AI Architecture (Mervin AI V2 - Hybrid Intelligence)
+### AI Architecture (Mervin AI V3 - Explicit Mode System)
 - **Core Architecture**: Dual-AI system (ChatGPT-4o for fast analysis, Claude Sonnet 4 for complex tasks). Features autonomous task execution, real-time web research, intelligent AI routing, streaming progress, and full authentication forwarding.
+- **Mode System** (Nov 2025): Explicit separation between CHAT mode (conversational, suggest-only) and AGENT mode (autonomous execution). Three presets: CHAT_ONLY, AGENT_SAFE (default), AGENT_AUTONOMOUS. Eliminates implicit LLM-based mode detection with structural validation.
+    - **MervinOrchestratorV3**: Unified pipeline with 5 stages: context loading, analysis with validation, mode validation, confirmation middleware (pre-execution), and response generation.
+    - **ConfirmationMiddleware**: Validates tool execution BEFORE running, supports wildcard patterns (delete_*, send_*), blocks critical actions requiring confirmation.
+    - **Response Types**: CONVERSATION, SUGGEST_ACTION (CHAT mode), TASK_COMPLETED, NEEDS_CONFIRMATION, NEEDS_MORE_INFO.
 - **Tool-Calling Architecture**: Enables Mervin to execute real tasks with contextual understanding.
     - **SnapshotService**: Centralizes user context (history, preferences, catalog) for AI situational awareness.
     - **ToolRegistry**: Dynamic tool execution system with intelligent slot-filling, supporting confirmation flows for critical actions.
     - **CoreTools**: Registered tools like create_estimate, create_contract, verify_property, get_permit_info, find_client.
-    - **Robustness Features** (Nov 2025): Multi-layer validation system prevents "workflow not found" errors. ChatGPT receives available tools in analysis context, validates workflows before execution, and automatically falls back to tools if workflow missing. TelemetryService tracks tool executions, workflow fallbacks, and errors for proactive monitoring. Routing prioritizes tools over workflows for faster, more reliable execution.
+    - **Telemetry System**: Complete execution time tracking across all handlers (conversation, suggest_action, execute_task), consistent logging for all response paths.
 - **WorkflowEngine**: Multi-step process automation system enabling Mervin to replicate UI workflows conversationally.
     - **Architecture**: Declarative TypeScript workflow definitions, Redis-based session storage.
     - **Capabilities**: Multi-step data collection, conditional branching, automatic retries, real-time progress. Implemented workflows include `EstimateWorkflow`.
