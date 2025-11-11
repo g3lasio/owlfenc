@@ -43,7 +43,11 @@ This AI-powered platform automates legal document and permit management for cont
     - **Capabilities**: Multi-step data collection, conditional branching, automatic retries, real-time progress. Implemented workflows include `EstimateWorkflow`.
 - **File Attachment System**: Multi-format file processing (PDFs, text, JSON/CSV, images metadata). Extracts content and generates contextual summaries for AI analysis.
 - **UI/UX Enhancement**: Minimalist interface with real-time transparency (ThinkingIndicator, MessageContent with typing effect, SmartContextPanel, AgentCapabilitiesBadge, DynamicActionSuggestions, WebResearchIndicator, SystemStatusBar).
-- **Conversation History System**: Production-grade persistence and management for Mervin AI conversations using Firebase Firestore. Features authenticated CRUD API, auto-save, automatic title generation, AI model preservation, pinning, categorization, and time-grouped display.
+- **Conversation History System** (Nov 2025): Production-grade persistence and management for Mervin AI conversations using Firebase Firestore.
+    - **Auto-Save Architecture**: Serialized queue-based persistence preventing race conditions, retry/backoff mechanism (3 attempts, exponential backoff), deadlock-proof flag management with timeout guards.
+    - **Features**: Authenticated CRUD API, non-blocking async message persistence, automatic title generation after 2 exchanges (4 messages), AI model preservation, pinning, categorization, time-grouped display.
+    - **ConversationPersistenceController**: Production-ready controller with lazy conversation creation, message append queue serialization, title generation via ChatGPT, state management with event emitters.
+    - **Integration**: Fully integrated with useMervinAgent hook, automatic save on user and assistant messages, conversation resume/load support, guest mode handling.
 
 ### Core Features & Design Patterns
 - **User Authentication & Authorization**: Robust subscription-based permission system with OAuth, email/password, secure registration, and real-time usage limits. Unified Auth Ecosystem with cookie-based sessions.
