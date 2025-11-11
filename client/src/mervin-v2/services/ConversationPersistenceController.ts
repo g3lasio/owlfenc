@@ -193,7 +193,14 @@ export class ConversationPersistenceController {
         return data.conversation;
       });
 
-      this.conversationId = result.id;
+      // Extract conversation ID with fallback handling
+      this.conversationId = result.id ?? result.conversationId ?? result._id;
+      
+      // Fail-fast if no ID was returned
+      if (!this.conversationId) {
+        throw new Error('Server did not return a conversation ID');
+      }
+      
       console.log(`✅ [CONVERSATION] Created: ${this.conversationId}`);
       this.setStatus('idle');
       this.error = null;
