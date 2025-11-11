@@ -8,7 +8,7 @@
 
 import express, { Request, Response } from 'express';
 import multer from 'multer';
-import { MervinOrchestrator } from '../mervin-v2/orchestrator/MervinOrchestrator';
+import { MervinOrchestratorV3 } from '../mervin-v2/orchestrator/MervinOrchestratorV3';
 import { ProgressStreamService } from '../mervin-v2/services/ProgressStreamService';
 import { FileProcessorService } from '../mervin-v2/services/FileProcessorService';
 import type { MervinRequest, FileAttachment } from '../mervin-v2/types/mervin-types';
@@ -62,15 +62,21 @@ router.post('/process', async (req: Request, res: Response) => {
       }
     });
 
-    // Crear orquestador con auth headers
-    const orchestrator = new MervinOrchestrator(userId, authHeaders);
+    // Crear orquestador V3 con auth headers
+    const orchestrator = new MervinOrchestratorV3(userId, authHeaders);
 
-    // Procesar
+    // Procesar (V3 usa modo AGENT_SAFE por defecto)
     const response = await orchestrator.process({
       input,
       userId,
       conversationHistory: conversationHistory || [],
-      language: language || 'es'
+      language: language || 'es',
+      // Modo por defecto: AGENT_SAFE (auto-ejecuta excepto contratos y acciones críticas)
+      mode: {
+        type: 'AGENT',
+        autoExecute: true,
+        requireConfirmationFor: ['create_contract', 'delete_*', 'send_email']
+      }
     });
 
     console.log('✅ [MERVIN-V2-API] Response generado exitosamente');
@@ -125,20 +131,26 @@ router.post('/stream', async (req: Request, res: Response) => {
       }
     });
 
-    // Crear orquestador con auth headers
-    const orchestrator = new MervinOrchestrator(userId, authHeaders);
+    // Crear orquestador V3 con auth headers
+    const orchestrator = new MervinOrchestratorV3(userId, authHeaders);
 
     // Configurar streaming
     const progressService = new ProgressStreamService();
     progressService.initializeStream(res);
     orchestrator.setProgressStream(progressService);
 
-    // Procesar (streaming en progreso)
+    // Procesar con streaming (V3 usa modo AGENT_SAFE por defecto)
     const response = await orchestrator.process({
       input,
       userId,
       conversationHistory: conversationHistory || [],
-      language: language || 'es'
+      language: language || 'es',
+      // Modo por defecto: AGENT_SAFE
+      mode: {
+        type: 'AGENT',
+        autoExecute: true,
+        requireConfirmationFor: ['create_contract', 'delete_*', 'send_email']
+      }
     });
 
     // Ya no necesito enviar nada más, el stream ya se cerró
@@ -221,8 +233,8 @@ router.post('/process-with-files', upload.array('files', 5), async (req: Request
       }
     });
 
-    // Crear orquestrador
-    const orchestrator = new MervinOrchestrator(userId, authHeaders);
+    // Crear orquestrador V3
+    const orchestrator = new MervinOrchestratorV3(userId, authHeaders);
 
     // Configurar streaming
     progressService = new ProgressStreamService();
@@ -244,7 +256,7 @@ router.post('/process-with-files', upload.array('files', 5), async (req: Request
     console.log(`🚀 [MERVIN-V2-FILES] Iniciando procesamiento con ${attachments.length} archivos`);
 
     // Procesar con archivos adjuntos con timeout (con cleanup)
-    let timeoutId: NodeJS.Timeout;
+    let timeoutId: NodeJS.Timeout | undefined;
     let timedOut = false;
     
     const processPromise = orchestrator.process({
@@ -252,7 +264,13 @@ router.post('/process-with-files', upload.array('files', 5), async (req: Request
       userId,
       conversationHistory: parsedHistory,
       language: language || 'es',
-      attachments
+      attachments,
+      // Modo por defecto: AGENT_SAFE
+      mode: {
+        type: 'AGENT',
+        autoExecute: true,
+        requireConfirmationFor: ['create_contract', 'delete_*', 'send_email']
+      }
     });
 
     // Timeout wrapper con cleanup

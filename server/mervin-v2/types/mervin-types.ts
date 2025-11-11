@@ -3,6 +3,67 @@
  * Definiciones de tipos para toda la arquitectura V2
  */
 
+// ============= MODE TYPES =============
+
+/**
+ * Modo de operación de Mervin AI
+ * - CHAT: Conversación pura, responde preguntas, explica, NO ejecuta tareas
+ * - AGENT: Agente autónomo, ejecuta tareas con mínima interacción
+ */
+export type MervinModeType = 'CHAT' | 'AGENT';
+
+/**
+ * Configuración del modo de operación
+ */
+export interface MervinMode {
+  type: MervinModeType;
+  
+  /**
+   * Autonomía: ¿Ejecutar tareas automáticamente sin pedir confirmación?
+   * - true: Ejecutar todo excepto acciones en requireConfirmationFor
+   * - false: Pedir confirmación para TODO
+   */
+  autoExecute: boolean;
+  
+  /**
+   * Lista de herramientas que SIEMPRE requieren confirmación
+   * Ejemplos: ['create_contract', 'delete_*', 'send_email']
+   */
+  requireConfirmationFor: string[];
+  
+  /**
+   * ¿Sugerir ejecución de tareas cuando está en modo CHAT?
+   * Si true, en modo CHAT puede decir "¿Quieres que lo haga?"
+   */
+  suggestActionsInChatMode?: boolean;
+}
+
+/**
+ * Configuraciones predefinidas de modos
+ */
+export const MERVIN_MODE_PRESETS = {
+  CHAT_ONLY: {
+    type: 'CHAT' as MervinModeType,
+    autoExecute: false,
+    requireConfirmationFor: ['*'], // Todo requiere confirmación
+    suggestActionsInChatMode: true
+  },
+  
+  AGENT_SAFE: {
+    type: 'AGENT' as MervinModeType,
+    autoExecute: true,
+    requireConfirmationFor: ['create_contract', 'delete_*', 'send_email'],
+    suggestActionsInChatMode: false
+  },
+  
+  AGENT_AUTONOMOUS: {
+    type: 'AGENT' as MervinModeType,
+    autoExecute: true,
+    requireConfirmationFor: [], // No pedir confirmación para nada
+    suggestActionsInChatMode: false
+  }
+} as const;
+
 // ============= REQUEST/RESPONSE TYPES =============
 
 export interface FileAttachment {
@@ -20,15 +81,30 @@ export interface MervinRequest {
   conversationHistory?: Message[];
   language?: 'es' | 'en';
   attachments?: FileAttachment[];
+  
+  /**
+   * Modo de operación (CHAT vs AGENT)
+   * Si no se especifica, usa AGENT_SAFE por defecto
+   */
+  mode?: MervinMode;
 }
 
 export interface MervinResponse {
-  type: 'CONVERSATION' | 'TASK_COMPLETED' | 'TASK_ERROR' | 'NEEDS_MORE_INFO' | 'NEEDS_CONFIRMATION';
+  type: 'CONVERSATION' | 'TASK_COMPLETED' | 'TASK_ERROR' | 'NEEDS_MORE_INFO' | 'NEEDS_CONFIRMATION' | 'SUGGEST_ACTION';
   message: string;
   data?: any;
   executionTime?: number;
   taskProgress?: TaskProgress;
   suggestedActions?: string[];
+  
+  /**
+   * Si type = 'SUGGEST_ACTION', incluye la acción sugerida
+   */
+  suggestedAction?: {
+    toolName: string;
+    description: string;
+    params: any;
+  };
 }
 
 export interface Message {
