@@ -177,6 +177,12 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
 
             // Si es mensaje completo, agregarlo a los mensajes
             if (update.type === 'complete') {
+              console.log('✅ [MERVIN-AGENT-DEBUG] Complete message received:', {
+                contentLength: update.content?.length || 0,
+                contentPreview: update.content?.substring(0, 100) || 'NO CONTENT',
+                fullContent: update.content
+              });
+              
               const assistantMessage: MervinMessage = {
                 role: 'assistant',
                 content: update.content,
@@ -213,6 +219,12 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
 
             // Si es mensaje completo, agregarlo a los mensajes
             if (update.type === 'complete') {
+              console.log('✅ [MERVIN-AGENT-DEBUG] Complete message received:', {
+                contentLength: update.content?.length || 0,
+                contentPreview: update.content?.substring(0, 100) || 'NO CONTENT',
+                fullContent: update.content
+              });
+              
               const assistantMessage: MervinMessage = {
                 role: 'assistant',
                 content: update.content,

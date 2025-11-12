@@ -165,17 +165,28 @@ export class AgentClient {
       console.log('📡 [AGENT-CLIENT] Iniciando streaming:', input.substring(0, 50));
       
       const headers = await this.getAuthHeaders();
+      
+      const requestBody = {
+        input,
+        userId: this.userId,
+        conversationHistory,
+        language
+      };
+      
+      console.log('📤 [AGENT-CLIENT-DEBUG] Request details:', {
+        url: `${this.baseURL}/api/mervin-v2/stream`,
+        method: 'POST',
+        headers: Object.keys(headers),
+        bodyKeys: Object.keys(requestBody),
+        inputLength: input.length,
+        historyLength: conversationHistory.length
+      });
 
       const response = await fetch(`${this.baseURL}/api/mervin-v2/stream`, {
         method: 'POST',
         headers,
         credentials: 'include', // Include cookies for session-based auth
-        body: JSON.stringify({
-          input,
-          userId: this.userId,
-          conversationHistory,
-          language
-        })
+        body: JSON.stringify(requestBody)
       });
 
       console.log(`📊 [AGENT-CLIENT] Response status: ${response.status} ${response.statusText}`);
