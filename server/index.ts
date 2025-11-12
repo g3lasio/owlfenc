@@ -24,6 +24,7 @@ import alertingRoutes from "./routes/alerting.js";
 import phase4OptimizationRoutes from "./routes/phase4-optimization";
 import adminContractsRoutes from "./routes/admin-contracts";
 import urlShortenerRoutes from "./routes/urlShortener";
+import mervinV2Routes from "./routes/mervin-v2";
 
 // 📊 Importar servicios de optimización Fase 4 ANTES de registrar rutas
 import { observabilityService } from './services/observabilityService';
@@ -537,6 +538,10 @@ console.log('🧠 [MEMORY-SYSTEM] Sistema de memoria y aprendizaje registrado en
 // 💬 Registrar sistema de historial de conversaciones
 app.use('/api/conversations', conversationRoutes);
 console.log('💬 [CONVERSATIONS] Sistema de historial de conversaciones registrado en /api/conversations');
+
+// 🤖 Registrar sistema Mervin V2 (Hybrid Intelligence Orchestrator)
+app.use('/api/mervin-v2', mervinV2Routes);
+console.log('🤖 [MERVIN-V2] Sistema Mervin V2 registrado en /api/mervin-v2');
 
 // Add logging middleware only for API routes
 app.use('/api', (req, res, next) => {
