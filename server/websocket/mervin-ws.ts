@@ -148,6 +148,18 @@ export function setupMervinWebSocket(wss: WebSocketServer) {
             const response = await orchestrator.process(request);
             console.log(`✅ [MERVIN-WS] Procesamiento completado para ${clientId}`);
             
+            // ENVIAR RESPUESTA FINAL (FIX TRUNCATION)
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({
+                type: 'complete',
+                content: response.message,
+                data: response
+              }));
+              console.log(`📤 [MERVIN-WS] Respuesta enviada a ${clientId}`);
+            } else {
+              console.warn(`⚠️ [MERVIN-WS] WebSocket cerrado, no se pudo enviar respuesta`);
+            }
+            
           } catch (error: any) {
             console.error(`❌ [MERVIN-WS] Error procesando mensaje:`, error);
             
