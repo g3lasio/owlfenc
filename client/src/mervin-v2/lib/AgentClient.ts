@@ -180,10 +180,38 @@ export class AgentClient {
 
       console.log(`📊 [AGENT-CLIENT] Response status: ${response.status} ${response.statusText}`);
 
+      // 🛡️ DEFENSIVE ERROR HANDLING: Surface HTTP errors to UI instead of silent failures
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`❌ [AGENT-CLIENT] Server error: ${errorText}`);
-        throw new Error(`HTTP error! status: ${response.status}`);
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        
+        try {
+          const errorText = await response.text();
+          console.error(`❌ [AGENT-CLIENT] Server error response:`, errorText);
+          
+          // Try to parse JSON error
+          try {
+            const errorJson = JSON.parse(errorText);
+            if (errorJson.error) {
+              errorMessage = errorJson.error;
+            }
+          } catch {
+            // Not JSON, use raw text if meaningful
+            if (errorText && errorText.length < 200) {
+              errorMessage = errorText;
+            }
+          }
+        } catch (readError) {
+          console.error(`❌ [AGENT-CLIENT] Could not read error body:`, readError);
+        }
+        
+        // Send error to UI via callback
+        onUpdate({
+          type: 'error',
+          content: `Error del servidor: ${errorMessage}`,
+          data: { status: response.status }
+        });
+        
+        throw new Error(errorMessage);
       }
       
       console.log(`🔄 [AGENT-CLIENT] Starting to read stream...`);

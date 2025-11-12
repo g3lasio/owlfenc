@@ -15,6 +15,10 @@ import type { MervinRequest, FileAttachment } from '../mervin-v2/types/mervin-ty
 
 const router = express.Router();
 
+// 🔧 CRITICAL: Parse JSON bodies for all mervin-v2 routes
+// Without this, req.body is undefined and validation fails silently
+router.use(express.json({ limit: '10mb' }));
+
 // Configurar multer para manejar archivos en memoria
 const upload = multer({ 
   storage: multer.memoryStorage(),
@@ -98,10 +102,22 @@ router.post('/process', async (req: Request, res: Response) => {
  */
 router.post('/stream', async (req: Request, res: Response) => {
   try {
+    // 🛡️ DEFENSIVE VALIDATION: Check body BEFORE destructuring to avoid throw
+    if (!req.body || Object.keys(req.body).length === 0) {
+      console.error('❌ [MERVIN-V2-STREAM] VALIDATION FAILED: req.body is empty or undefined');
+      console.error('   Headers:', JSON.stringify(req.headers, null, 2));
+      res.status(400).json({
+        error: 'Request body is empty - ensure Content-Type is application/json'
+      });
+      return;
+    }
+
     const { input, userId, conversationHistory, language }: MervinRequest = req.body;
 
     // Validación
     if (!input || !userId) {
+      console.error('❌ [MERVIN-V2-STREAM] VALIDATION FAILED: Missing required fields');
+      console.error('   Received body:', JSON.stringify({ input: !!input, userId: !!userId, hasHistory: !!conversationHistory }));
       res.status(400).json({
         error: 'Se requiere input y userId'
       });
