@@ -173,8 +173,10 @@ export class AgentClient {
         language
       };
       
+      const fullUrl = `${this.baseURL}/api/mervin-v2/stream`;
+      
       console.log('📤 [AGENT-CLIENT-DEBUG] Request details:', {
-        url: `${this.baseURL}/api/mervin-v2/stream`,
+        url: fullUrl,
         method: 'POST',
         headers: Object.keys(headers),
         bodyKeys: Object.keys(requestBody),
@@ -182,12 +184,27 @@ export class AgentClient {
         historyLength: conversationHistory.length
       });
 
-      const response = await fetch(`${this.baseURL}/api/mervin-v2/stream`, {
-        method: 'POST',
-        headers,
-        credentials: 'include', // Include cookies for session-based auth
-        body: JSON.stringify(requestBody)
-      });
+      console.log('⏱️ [FETCH-DEBUG] Llamando fetch()...', new Date().toISOString());
+      const fetchStart = performance.now();
+      
+      let response;
+      try {
+        response = await fetch(fullUrl, {
+          method: 'POST',
+          headers,
+          credentials: 'include',
+          body: JSON.stringify(requestBody)
+        });
+        const fetchEnd = performance.now();
+        console.log(`✅ [FETCH-DEBUG] fetch() completado en ${(fetchEnd - fetchStart).toFixed(2)}ms`);
+      } catch (fetchError: any) {
+        const fetchEnd = performance.now();
+        console.error(`❌ [FETCH-DEBUG] fetch() falló en ${(fetchEnd - fetchStart).toFixed(2)}ms:`, fetchError);
+        console.error('❌ [FETCH-DEBUG] Error name:', fetchError.name);
+        console.error('❌ [FETCH-DEBUG] Error message:', fetchError.message);
+        console.error('❌ [FETCH-DEBUG] Error stack:', fetchError.stack);
+        throw fetchError;
+      }
 
       console.log(`📊 [AGENT-CLIENT] Response status: ${response.status} ${response.statusText}`);
 
