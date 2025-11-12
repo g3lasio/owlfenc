@@ -7,6 +7,7 @@
  */
 
 import express, { Request, Response } from 'express';
+import admin from 'firebase-admin';
 import multer from 'multer';
 import { MervinOrchestratorV3 } from '../mervin-v2/orchestrator/MervinOrchestratorV3';
 import { ProgressStreamService } from '../mervin-v2/services/ProgressStreamService';
@@ -18,6 +19,99 @@ const router = express.Router();
 // 🔧 CRITICAL: Parse JSON bodies for all mervin-v2 routes
 // Without this, req.body is undefined and validation fails silently
 router.use(express.json({ limit: '10mb' }));
+
+/**
+ * POST /api/mervin-v2/message - HTTP Fallback (Non-Streaming)
+ * Endpoint simple y robusto que SIEMPRE funciona
+ */
+router.post('/message', async (req: Request, res: Response) => {
+  const startTime = Date.now();
+  console.log('🔄 [MERVIN-V2-HTTP] HTTP Fallback request recibido');
+  
+  try {
+    // VALIDAR AUTENTICACIÓN (FIX SECURITY)
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const token = authHeader.substring(7); // Remove "Bearer "
+    let authenticatedUserId: string;
+    
+    try {
+      const decodedToken = await admin.auth().verifyIdToken(token);
+      authenticatedUserId = decodedToken.uid;
+      console.log(`✅ [MERVIN-V2-HTTP] Usuario autenticado: ${authenticatedUserId}`);
+    } catch (error: any) {
+      console.error('❌ [MERVIN-V2-HTTP] Token inválido:', error.message);
+      return res.status(401).json({ error: 'Invalid authentication token' });
+    }
+
+    const { input, conversationHistory = [], language = 'es' } = req.body;
+
+    if (!input) {
+      return res.status(400).json({ error: 'Missing input' });
+    }
+
+    console.log(`📝 [MERVIN-V2-HTTP] Input: "${input.substring(0, 50)}..."`);
+    console.log(`👤 [MERVIN-V2-HTTP] User: ${authenticatedUserId}`);
+
+    // Forward all auth headers to SystemAPIService (FIX 401 en servicios internos)
+    const authHeaders: Record<string, string> = {};
+    
+    // Forward Firebase token
+    if (req.headers.authorization) {
+      authHeaders['authorization'] = req.headers.authorization;
+    }
+    
+    // Forward session cookies
+    if (req.headers.cookie) {
+      authHeaders['cookie'] = req.headers.cookie;
+    }
+    
+    // Forward any other auth-related headers
+    ['x-firebase-appcheck', 'x-csrf-token'].forEach(header => {
+      const value = req.headers[header];
+      if (value) {
+        authHeaders[header] = Array.isArray(value) ? value[0] : value;
+      }
+    });
+
+    // Crear orchestrator con userId AUTENTICADO y headers de sesión
+    const orchestrator = new MervinOrchestratorV3(authenticatedUserId, authHeaders);
+
+    // Crear request con userId VERIFICADO
+    const request: MervinRequest = {
+      userId: authenticatedUserId, // USAR userId autenticado
+      input,
+      conversationHistory,
+      language
+    };
+
+    // Procesar sin streaming
+    const response = await orchestrator.process(request);
+    
+    const elapsed = Date.now() - startTime;
+    console.log(`✅ [MERVIN-V2-HTTP] Respuesta generada en ${elapsed}ms`);
+    console.log(`📦 [MERVIN-V2-HTTP] Message length: ${response.message?.length || 0}`);
+
+    // Enviar respuesta completa
+    res.json({
+      success: true,
+      message: response.message,
+      type: response.type,
+      executionTime: response.executionTime
+    });
+
+  } catch (error: any) {
+    const elapsed = Date.now() - startTime;
+    console.error(`❌ [MERVIN-V2-HTTP] Error después de ${elapsed}ms:`, error);
+    
+    res.status(500).json({
+      error: error.message || 'Error procesando mensaje'
+    });
+  }
+});
 
 // Configurar multer para manejar archivos en memoria
 const upload = multer({ 

@@ -5,6 +5,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { HybridAgentClient } from '../lib/HybridAgentClient';
 import { AgentClient, MervinMessage, MervinResponse, StreamUpdate, AuthTokenProvider } from '../lib/AgentClient';
 import { auth } from '@/lib/firebase';
 import { 
@@ -74,8 +75,12 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
     pendingSaves: 0,
   });
 
-  // Cliente de API con autenticación (ref para no recrearlo innecesariamente)
-  const clientRef = useRef<AgentClient>(new AgentClient(userId, '', getFirebaseToken));
+  // Cliente HÍBRIDO para mensajes de texto (WebSocket + HTTP Fallback) CON AUTH
+  const hybridClientRef = useRef<HybridAgentClient>(new HybridAgentClient(userId, '', getFirebaseToken));
+  
+  // Cliente ORIGINAL para mensajes con archivos adjuntos
+  const legacyClientRef = useRef<AgentClient>(new AgentClient(userId, '', getFirebaseToken));
+  
   const prevUserIdRef = useRef<string>(userId);
   
   // Persistence controller
@@ -101,11 +106,18 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
     }
   }, [userId, onPersistenceError]);
 
-  // Recrear cliente si userId cambia (fix para autenticación)
+  // Recrear clientes si userId cambia
   useEffect(() => {
     if (userId !== prevUserIdRef.current) {
       console.log(`🔄 [MERVIN-AGENT] UserId changed: ${prevUserIdRef.current} → ${userId}`);
-      clientRef.current = new AgentClient(userId, '', getFirebaseToken);
+      
+      // Recrear cliente híbrido CON AUTH
+      hybridClientRef.current.close();
+      hybridClientRef.current = new HybridAgentClient(userId, '', getFirebaseToken);
+      
+      // Recrear cliente legacy
+      legacyClientRef.current = new AgentClient(userId, '', getFirebaseToken);
+      
       prevUserIdRef.current = userId;
       
       // Limpiar mensajes al cambiar usuario
@@ -116,17 +128,18 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
     }
   }, [userId]);
 
-  // Health check al montar y cuando cambia userId
+  // Obtener estado del sistema híbrido y verificar health del legacy
   useEffect(() => {
-    const checkHealth = async () => {
-      const healthy = await clientRef.current.checkHealth();
-      setIsHealthy(healthy);
-      
-      const status = await clientRef.current.getStatus();
-      setSystemStatus(status);
-    };
-
-    checkHealth();
+    const hybridStatus = hybridClientRef.current.getStatus();
+    console.log('🔌 [HYBRID-STATUS]', hybridStatus);
+    
+    legacyClientRef.current.checkHealth().then(healthy => {
+      setIsHealthy(healthy || hybridStatus.wsAvailable || hybridStatus.preferredMethod === 'http');
+    });
+    
+    legacyClientRef.current.getStatus().then(status => {
+      setSystemStatus({ hybrid: hybridStatus, legacy: status });
+    });
   }, [userId]);
 
   /**
@@ -157,119 +170,67 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
     });
 
     try {
-      // Si hay archivos, usar endpoint específico
-      if (files && files.length > 0 && enableStreaming) {
-        console.log(`📎 [MERVIN-AGENT] Enviando con ${files.length} archivo(s)`);
+      // DECISIÓN INTELIGENTE: Usar cliente según si hay archivos
+      if (files && files.length > 0) {
+        // CON ARCHIVOS: Usar cliente legacy (AgentClient) que soporta attachments
+        console.log(`📎 [MERVIN-AGENT] Usando cliente LEGACY para ${files.length} archivo(s)`);
         
-        await clientRef.current.sendMessageWithFiles(
+        await legacyClientRef.current.sendMessageWithFiles(
           input,
           files,
           messages,
           language,
           (update: StreamUpdate) => {
-            // Agregar actualización al estado
             setStreamingUpdates(prev => [...prev, update]);
-            
-            // Callback externo si existe
-            if (onStreamUpdate) {
-              onStreamUpdate(update);
-            }
+            if (onStreamUpdate) onStreamUpdate(update);
 
-            // Si es mensaje completo, agregarlo a los mensajes
             if (update.type === 'complete') {
-              console.log('✅ [MERVIN-AGENT-DEBUG] Complete message received:', {
-                contentLength: update.content?.length || 0,
-                contentPreview: update.content?.substring(0, 100) || 'NO CONTENT',
-                fullContent: update.content
-              });
-              
               const assistantMessage: MervinMessage = {
                 role: 'assistant',
                 content: update.content,
                 timestamp: new Date()
               };
               setMessages(prev => [...prev, assistantMessage]);
-
-              // 💾 AUTO-SAVE: Guardar mensaje del asistente (asíncrono)
-              const assistantConversationMessage: ConversationMessage = {
+              persistenceRef.current?.saveMessage({
                 sender: 'assistant',
                 text: update.content,
                 timestamp: assistantMessage.timestamp!.toISOString(),
-              };
-              persistenceRef.current?.saveMessage(assistantConversationMessage).catch((err) => {
-                console.error('❌ [AUTO-SAVE] Failed to save assistant message:', err);
-              });
-            }
-          }
-        );
-      } else if (enableStreaming) {
-        // Modo streaming sin archivos
-        await clientRef.current.sendMessageStream(
-          input,
-          messages,
-          language,
-          (update: StreamUpdate) => {
-            // Agregar actualización al estado
-            setStreamingUpdates(prev => [...prev, update]);
-            
-            // Callback externo si existe
-            if (onStreamUpdate) {
-              onStreamUpdate(update);
-            }
-
-            // Si es mensaje completo, agregarlo a los mensajes
-            if (update.type === 'complete') {
-              console.log('✅ [MERVIN-AGENT-DEBUG] Complete message received:', {
-                contentLength: update.content?.length || 0,
-                contentPreview: update.content?.substring(0, 100) || 'NO CONTENT',
-                fullContent: update.content
-              });
-              
-              const assistantMessage: MervinMessage = {
-                role: 'assistant',
-                content: update.content,
-                timestamp: new Date()
-              };
-              setMessages(prev => [...prev, assistantMessage]);
-
-              // 💾 AUTO-SAVE: Guardar mensaje del asistente (asíncrono)
-              const assistantConversationMessage: ConversationMessage = {
-                sender: 'assistant',
-                text: update.content,
-                timestamp: assistantMessage.timestamp!.toISOString(),
-              };
-              persistenceRef.current?.saveMessage(assistantConversationMessage).catch((err) => {
-                console.error('❌ [AUTO-SAVE] Failed to save assistant message:', err);
-              });
+              }).catch(err => console.error('❌ [AUTO-SAVE] Failed:', err));
             }
           }
         );
       } else {
-        // Modo JSON normal
-        const response: MervinResponse = await clientRef.current.sendMessage(
+        // SIN ARCHIVOS: Usar sistema híbrido (WebSocket + HTTP Fallback)
+        console.log('🚀 [MERVIN-AGENT] Usando sistema HÍBRIDO (WS → HTTP Fallback)');
+        
+        await hybridClientRef.current.sendMessageStream(
           input,
           messages,
-          language
+          language,
+          (update: StreamUpdate) => {
+            setStreamingUpdates(prev => [...prev, update]);
+            if (onStreamUpdate) onStreamUpdate(update);
+
+            if (update.type === 'complete') {
+              console.log('✅ [HYBRID-AGENT] Complete message received:', {
+                contentLength: update.content?.length || 0,
+                fullContent: update.content
+              });
+              
+              const assistantMessage: MervinMessage = {
+                role: 'assistant',
+                content: update.content,
+                timestamp: new Date()
+              };
+              setMessages(prev => [...prev, assistantMessage]);
+              persistenceRef.current?.saveMessage({
+                sender: 'assistant',
+                text: update.content,
+                timestamp: assistantMessage.timestamp!.toISOString(),
+              }).catch(err => console.error('❌ [AUTO-SAVE] Failed:', err));
+            }
+          }
         );
-
-        // Agregar respuesta del asistente
-        const assistantMessage: MervinMessage = {
-          role: 'assistant',
-          content: response.message,
-          timestamp: new Date()
-        };
-
-        setMessages(prev => [...prev, assistantMessage]);
-
-        // 💾 AUTO-SAVE: Guardar mensaje del asistente (modo JSON)
-        const assistantConversationMessage: ConversationMessage = {
-          sender: 'assistant',
-          text: response.message,
-          timestamp: assistantMessage.timestamp!.toISOString(),
-        };
-        persistenceRef.current?.saveMessage(assistantConversationMessage).catch((err) => {
-          console.error('❌ [AUTO-SAVE] Failed to save assistant message:', err);
-        });
       }
 
     } catch (error: any) {
