@@ -320,9 +320,9 @@ export default function FileManager({ projectId, attachments = {}, onUpdate }: F
           )}
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 overflow-x-hidden">
         {/* Botón de Upload Compacto */}
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
           <input
             ref={fileInputRef}
             type="file"
@@ -334,13 +334,13 @@ export default function FileManager({ projectId, attachments = {}, onUpdate }: F
           />
           <Button 
             onClick={() => fileInputRef.current?.click()}
-            className="bg-cyan-600 hover:bg-cyan-700"
+            className="bg-cyan-600 hover:bg-cyan-700 text-xs sm:text-sm w-full sm:w-auto"
             data-testid="button-select-files"
           >
             <i className="ri-upload-2-line mr-2"></i>
             Subir Documentos
           </Button>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-[10px] sm:text-xs text-muted-foreground">
             Máx. 10MB · PDF, DOC, XLS, imágenes, ZIP
           </p>
         </div>
@@ -348,19 +348,20 @@ export default function FileManager({ projectId, attachments = {}, onUpdate }: F
         {/* Lista de uploads en progreso */}
         {uploads.length > 0 && (
           <div className="space-y-2">
-            <h4 className="font-medium">Subiendo archivos...</h4>
+            <h4 className="font-medium text-sm sm:text-base">Subiendo archivos...</h4>
             {uploads.map((upload) => (
-              <div key={upload.id} className="bg-muted/50 rounded-lg p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <span>{getFileIcon(upload.file.name)}</span>
-                    <span className="text-sm font-medium truncate">{upload.file.name}</span>
-                    <span className="text-xs text-muted-foreground">
+              <div key={upload.id} className="bg-muted/50 rounded-lg p-2 sm:p-3 overflow-hidden">
+                <div className="flex items-center justify-between mb-2 gap-2">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <span className="flex-shrink-0">{getFileIcon(upload.file.name)}</span>
+                    <span className="text-xs sm:text-sm font-medium truncate">{upload.file.name}</span>
+                    <span className="text-[10px] sm:text-xs text-muted-foreground flex-shrink-0 hidden sm:inline">
                       {formatFileSize(upload.file.size)}
                     </span>
                   </div>
                   <Badge 
                     variant={upload.status === 'completed' ? 'default' : upload.status === 'error' ? 'destructive' : 'secondary'}
+                    className="flex-shrink-0"
                   >
                     {upload.status === 'uploading' ? '⏳' : upload.status === 'completed' ? '✅' : '❌'}
                   </Badge>
@@ -376,31 +377,33 @@ export default function FileManager({ projectId, attachments = {}, onUpdate }: F
         {/* Lista de archivos existentes */}
         {Object.keys(attachments).length > 0 && (
           <div className="space-y-2">
-            <h4 className="font-medium">Archivos del proyecto</h4>
+            <h4 className="font-medium text-sm sm:text-base">Archivos del proyecto</h4>
             <div className="grid gap-2">
               {Object.entries(attachments).map(([fileName, url]: [string, any]) => (
                 <div 
                   key={fileName} 
-                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between p-2 sm:p-3 border rounded-lg hover:bg-muted/50 transition-colors gap-2 overflow-hidden"
                   data-testid={`file-item-${fileName}`}
                 >
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <span className="text-lg">{getFileIcon(fileName)}</span>
+                  <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                    <span className="text-base sm:text-lg flex-shrink-0">{getFileIcon(fileName)}</span>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{fileName}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="font-medium truncate text-xs sm:text-sm" title={fileName}>{fileName}</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">
                         Archivo del proyecto
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
                     <Button 
                       size="sm" 
                       variant="outline"
                       onClick={() => window.open(url, '_blank')}
                       data-testid={`button-view-${fileName}`}
+                      className="text-xs h-8 px-2 sm:px-3"
                     >
-                      👁️ Ver
+                      <span className="sm:hidden">👁️</span>
+                      <span className="hidden sm:inline">👁️ Ver</span>
                     </Button>
                     <Button 
                       size="sm" 
@@ -412,14 +415,17 @@ export default function FileManager({ projectId, attachments = {}, onUpdate }: F
                         link.click();
                       }}
                       data-testid={`button-download-${fileName}`}
+                      className="text-xs h-8 px-2 sm:px-3"
                     >
-                      📥 Descargar
+                      <span className="sm:hidden">📥</span>
+                      <span className="hidden sm:inline">📥 Descargar</span>
                     </Button>
                     <Button 
                       size="sm" 
                       variant="destructive"
                       onClick={() => handleDeleteFile(fileName)}
                       data-testid={`button-delete-${fileName}`}
+                      className="text-xs h-8 px-2 sm:px-3"
                     >
                       🗑️
                     </Button>
