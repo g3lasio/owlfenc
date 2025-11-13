@@ -552,19 +552,19 @@ function Projects() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 p-6 space-y-6">
-        <div className="mb-6">
-          <div className="text-4xl mb-4">🔄 CARGANDO PROYECTOS RESTAURADOS...</div>
-          <Skeleton className="h-8 w-48 mb-2" />
-          <Skeleton className="h-4 w-96" />
+      <div className="flex-1 p-4 sm:p-6 space-y-4 sm:space-y-6 overflow-x-hidden">
+        <div className="mb-4 sm:mb-6">
+          <div className="text-xl sm:text-2xl md:text-4xl mb-3 sm:mb-4 break-words">🔄 CARGANDO PROYECTOS RESTAURADOS...</div>
+          <Skeleton className="h-6 sm:h-8 w-32 sm:w-48 mb-2" />
+          <Skeleton className="h-3 sm:h-4 w-64 sm:w-96 max-w-full" />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {[...Array(6)].map((_, i) => (
             <Card key={i}>
-              <CardContent className="p-6">
-                <Skeleton className="h-6 w-32 mb-2" />
-                <Skeleton className="h-4 w-full mb-4" />
-                <Skeleton className="h-20 w-full" />
+              <CardContent className="p-4 sm:p-6">
+                <Skeleton className="h-5 sm:h-6 w-24 sm:w-32 mb-2" />
+                <Skeleton className="h-3 sm:h-4 w-full mb-3 sm:mb-4" />
+                <Skeleton className="h-16 sm:h-20 w-full" />
               </CardContent>
             </Card>
           ))}
@@ -575,16 +575,16 @@ function Projects() {
 
   if (projects.length === 0) {
     return (
-      <div className="flex-1 p-6 flex flex-col items-center justify-center text-center">
-        <div className="rounded-full bg-muted p-6 mb-4">
-          <div className="text-4xl">📋</div>
+      <div className="flex-1 p-4 sm:p-6 flex flex-col items-center justify-center text-center overflow-x-hidden">
+        <div className="rounded-full bg-muted p-4 sm:p-6 mb-3 sm:mb-4">
+          <div className="text-2xl sm:text-3xl md:text-4xl">📋</div>
         </div>
-        <h2 className="text-xl font-semibold mb-2">No hay proyectos</h2>
-        <p className="text-muted-foreground mb-6 max-w-md">
+        <h2 className="text-lg sm:text-xl font-semibold mb-2 px-4">No hay proyectos</h2>
+        <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6 max-w-md px-4">
           Aún no has creado ningún estimado o contrato.
         </p>
         <Link href="/estimates">
-          <Button className="bg-green-500 hover:bg-green-600">
+          <Button className="bg-green-500 hover:bg-green-600 text-sm sm:text-base">
             🚀 Crear Nuevo Estimado
           </Button>
         </Link>
@@ -593,16 +593,17 @@ function Projects() {
   }
 
   return (
-    <div className="flex-1 flex flex-col">
-      <div className="flex-shrink-0 p-6 pb-2">
+    <div className="flex-1 flex flex-col overflow-x-hidden">
+      <div className="flex-shrink-0 p-4 sm:p-6 pb-2">
         {/* Header con controles de vista */}
-        <div className="mb-6 flex justify-between items-center">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
+        <div className="mb-6 flex flex-wrap gap-3 justify-between items-center">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent min-w-0 break-words">
             Proyectos
           </h1>
-          <div className="flex space-x-2">
+          <div className="flex gap-2 flex-shrink-0">
             <Button 
               variant="outline" 
+              size="sm"
               onClick={() => setViewMode("grid")} 
               className={viewMode === "grid" ? "bg-muted" : ""}
               data-testid="button-view-grid"
@@ -611,6 +612,7 @@ function Projects() {
             </Button>
             <Button 
               variant="outline" 
+              size="sm"
               onClick={() => setViewMode("list")} 
               className={viewMode === "list" ? "bg-muted" : ""}
               data-testid="button-view-list"
@@ -622,20 +624,20 @@ function Projects() {
 
         {/* 🔐 BANNER DE ACCESO LIMITADO para usuarios Free/Primo Chambeador */}
         {!hasAccess('projects') && (
-          <div className="mb-4 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/50 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <div className="text-2xl">🔒</div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-amber-900 dark:text-amber-100 mb-1">
+          <div className="mb-4 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/50 rounded-lg p-3 sm:p-4">
+            <div className="flex items-start gap-2 sm:gap-3">
+              <div className="text-xl sm:text-2xl flex-shrink-0">🔒</div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-amber-900 dark:text-amber-100 mb-1 text-sm sm:text-base">
                   Acceso Limitado - Plan Gratuito
                 </h3>
-                <p className="text-sm text-amber-800 dark:text-amber-200 mb-2">
+                <p className="text-xs sm:text-sm text-amber-800 dark:text-amber-200 mb-2">
                   Puedes ver la lista de proyectos, pero necesitas un plan de paga para acceder a los detalles completos, monitoreo y gestión avanzada.
                 </p>
                 <Button
                   size="sm"
                   onClick={() => showUpgradeModal('projects', 'Actualiza a un plan de paga para acceder a todas las funcionalidades de gestión de proyectos.')}
-                  className="bg-amber-600 hover:bg-amber-700 text-white"
+                  className="bg-amber-600 hover:bg-amber-700 text-white text-xs sm:text-sm"
                   data-testid="button-upgrade-projects"
                 >
                   ⭐ Actualizar Plan
@@ -646,9 +648,9 @@ function Projects() {
         )}
 
         {/* Search and Filter Controls */}
-        <div className="mb-4 space-y-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
+        <div className="mb-4 space-y-3 sm:space-y-4">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+            <div className="flex-1 min-w-0">
               <Input
                 placeholder="🔍 Buscar por cliente, dirección o tipo..."
                 value={searchTerm}
@@ -657,7 +659,7 @@ function Projects() {
                 data-testid="input-search"
               />
             </div>
-            <div className="w-full md:w-64">
+            <div className="w-full sm:w-48 md:w-64 flex-shrink-0">
               <Select value={selectedProjectCategory} onValueChange={(value) => {
                 setSelectedProjectCategory(value);
                 setSelectedProjectType("");
@@ -679,7 +681,7 @@ function Projects() {
             </div>
             
             {selectedProjectCategory && selectedProjectCategory !== 'all' && (
-              <div className="w-full md:w-64">
+              <div className="w-full sm:w-48 md:w-64 flex-shrink-0">
                 <Select value={selectedProjectType} onValueChange={setSelectedProjectType}>
                   <SelectTrigger data-testid="select-type">
                     <SelectValue placeholder="Tipo específico" />
@@ -699,10 +701,10 @@ function Projects() {
           
           {/* Status Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="w-full md:w-auto flex flex-wrap">
-              <TabsTrigger value="all" data-testid="tab-all">Todos</TabsTrigger>
+            <TabsList className="w-full md:w-auto flex flex-wrap gap-1">
+              <TabsTrigger value="all" data-testid="tab-all" className="text-xs sm:text-sm">Todos</TabsTrigger>
               {projectStatuses.map(status => (
-                <TabsTrigger key={status} value={status} data-testid={`tab-${status}`}>
+                <TabsTrigger key={status} value={status} data-testid={`tab-${status}`} className="text-xs sm:text-sm">
                   {getStatusLabel(status)}
                 </TabsTrigger>
               ))}
@@ -710,63 +712,63 @@ function Projects() {
           </Tabs>
           
           {/* Results Count */}
-          <div className="text-sm text-muted-foreground" data-testid="text-results-count">
+          <div className="text-xs sm:text-sm text-muted-foreground" data-testid="text-results-count">
             {filteredProjects.length} {filteredProjects.length === 1 ? 'proyecto encontrado' : 'proyectos encontrados'}
           </div>
         </div>
       </div>
       
       {/* Scrollable Content Area */}
-      <div className="flex-1 px-6 pb-6">
+      <div className="flex-1 px-4 sm:px-6 pb-4 sm:pb-6 overflow-x-hidden">
         {filteredProjects.length === 0 ? (
-          <div className="text-center py-12 bg-muted/20 rounded-lg">
-            <div className="text-3xl mb-2">🔍</div>
-            <p className="text-muted-foreground">No se encontraron proyectos con los filtros actuales</p>
+          <div className="text-center py-8 sm:py-12 bg-muted/20 rounded-lg">
+            <div className="text-2xl sm:text-3xl mb-2">🔍</div>
+            <p className="text-sm sm:text-base text-muted-foreground px-4">No se encontraron proyectos con los filtros actuales</p>
           </div>
         ) : viewMode === "grid" ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {filteredProjects.map((project) => {
               const categoryInfo = getProjectCategoryInfo(project);
               return (
                 <Card 
                   key={project.id} 
-                  className="hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 border-l-cyan-400"
+                  className="hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 border-l-cyan-400 overflow-hidden"
                   onClick={() => handleViewProject(project.id)}
                   data-testid={`card-project-${project.id}`}
                 >
-                  <CardHeader className="pb-3">
-                    <div className="flex justify-between items-start">
-                      <CardTitle className="text-lg">{project.clientName}</CardTitle>
-                      <Badge className={`${getStatusBadgeColor(project.status)} text-white`}>
+                  <CardHeader className="pb-2 sm:pb-3">
+                    <div className="flex justify-between items-start gap-2">
+                      <CardTitle className="text-base sm:text-lg min-w-0 break-words flex-1">{project.clientName}</CardTitle>
+                      <Badge className={`${getStatusBadgeColor(project.status)} text-white text-xs flex-shrink-0`}>
                         {getStatusLabel(project.status)}
                       </Badge>
                     </div>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-xs sm:text-sm text-muted-foreground truncate">
                         📍 {project.address}
                       </p>
-                      <p className="text-sm">
+                      <p className="text-xs sm:text-sm truncate">
                         🔨 {categoryInfo.categoryName}
                       </p>
-                      <p className="text-xs text-cyan-600">
+                      <p className="text-[10px] sm:text-xs text-cyan-600 break-words">
                         📊 Progreso: {project.projectProgress || "estimate_created"}
                       </p>
-                      <div className="flex justify-between items-center pt-2">
-                        <span className="font-semibold text-green-600">
+                      <div className="flex justify-between items-center pt-2 gap-2">
+                        <span className="font-semibold text-green-600 text-sm sm:text-base truncate">
                           {formatPrice(project.totalPrice)}
                         </span>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-[10px] sm:text-xs text-muted-foreground flex-shrink-0">
                           {formatDate(project.createdAt)}
                         </span>
                       </div>
                     </div>
-                    <div className="mt-4 flex gap-2">
+                    <div className="mt-3 sm:mt-4 flex gap-2">
                       <Button 
                         size="sm" 
                         variant="outline" 
-                        className="flex-1"
+                        className="flex-1 text-xs sm:text-sm"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleViewProject(project.id);
@@ -776,7 +778,7 @@ function Projects() {
                         📋 Ver Detalles
                       </Button>
                       {project.attachments && Object.keys(project.attachments).length > 0 && (
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge variant="secondary" className="text-[10px] sm:text-xs flex-shrink-0">
                           📎 {Object.keys(project.attachments).length}
                         </Badge>
                       )}
@@ -787,41 +789,41 @@ function Projects() {
             })}
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {filteredProjects.map((project) => {
               const categoryInfo = getProjectCategoryInfo(project);
               return (
                 <Card 
                   key={project.id} 
-                  className="hover:shadow-md transition-shadow cursor-pointer"
+                  className="hover:shadow-md transition-shadow cursor-pointer overflow-hidden"
                   onClick={() => handleViewProject(project.id)}
                   data-testid={`row-project-${project.id}`}
                 >
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-center">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-4">
-                          <h3 className="font-semibold">{project.clientName}</h3>
-                          <Badge className={`${getStatusBadgeColor(project.status)} text-white`}>
+                  <CardContent className="p-3 sm:p-4">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+                          <h3 className="font-semibold text-sm sm:text-base break-words">{project.clientName}</h3>
+                          <Badge className={`${getStatusBadgeColor(project.status)} text-white text-xs flex-shrink-0`}>
                             {getStatusLabel(project.status)}
                           </Badge>
                         </div>
-                        <p className="text-sm text-muted-foreground mt-1">
+                        <p className="text-xs sm:text-sm text-muted-foreground mt-1 truncate">
                           📍 {project.address} • 🔨 {categoryInfo.categoryName}
                         </p>
-                        <p className="text-xs text-cyan-600 mt-1">
+                        <p className="text-[10px] sm:text-xs text-cyan-600 mt-1 break-words">
                           📊 {project.projectProgress || "estimate_created"}
                         </p>
                       </div>
-                      <div className="text-right">
-                        <div className="font-semibold text-green-600">
+                      <div className="text-left sm:text-right flex-shrink-0 w-full sm:w-auto">
+                        <div className="font-semibold text-green-600 text-sm sm:text-base">
                           {formatPrice(project.totalPrice)}
                         </div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-[10px] sm:text-xs text-muted-foreground">
                           {formatDate(project.createdAt)}
                         </div>
                         {project.attachments && Object.keys(project.attachments).length > 0 && (
-                          <Badge variant="secondary" className="text-xs mt-1">
+                          <Badge variant="secondary" className="text-[10px] sm:text-xs mt-1">
                             📎 {Object.keys(project.attachments).length}
                           </Badge>
                         )}
@@ -838,22 +840,22 @@ function Projects() {
       {/* Modal de detalles del proyecto con línea de tiempo */}
       {selectedProject && (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-w-7xl h-[90vh] sm:h-[90vh] p-0 overflow-hidden bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
-            <DialogHeader className="sticky top-0 z-10 bg-gradient-to-r from-gray-800/95 to-gray-900/95 backdrop-blur-md border-b border-cyan-400/20 p-4 sm:p-6 pr-12 sm:pr-14">
+          <DialogContent className="max-w-full sm:max-w-[95vw] lg:max-w-7xl h-[90vh] p-0 overflow-hidden bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
+            <DialogHeader className="sticky top-0 z-10 bg-gradient-to-r from-gray-800/95 to-gray-900/95 backdrop-blur-md border-b border-cyan-400/20 p-3 sm:p-4 lg:p-6 pr-10 sm:pr-12 lg:pr-14">
               <div className="flex items-center gap-2 sm:gap-3">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-cyan-400/20 flex items-center justify-center border border-cyan-400/30 flex-shrink-0">
-                  <div className="text-cyan-400 text-lg sm:text-xl">🏗️</div>
+                <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 rounded-full bg-cyan-400/20 flex items-center justify-center border border-cyan-400/30 flex-shrink-0">
+                  <div className="text-cyan-400 text-base sm:text-lg lg:text-xl">🏗️</div>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <DialogTitle className="text-lg sm:text-2xl font-bold text-white flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                <div className="min-w-0 flex-1 overflow-hidden">
+                  <DialogTitle className="text-base sm:text-lg lg:text-2xl font-bold text-white flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                     <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent truncate">
                       {selectedProject.clientName}
                     </span>
-                    <Badge className={`${getStatusBadgeColor(selectedProject.status)} text-white text-xs sm:text-sm w-fit`}>
+                    <Badge className={`${getStatusBadgeColor(selectedProject.status)} text-white text-xs sm:text-sm w-fit flex-shrink-0`}>
                       {getStatusLabel(selectedProject.status)}
                     </Badge>
                   </DialogTitle>
-                  <p className="text-cyan-300/80 text-xs sm:text-sm font-mono truncate">
+                  <p className="text-cyan-300/80 text-[10px] sm:text-xs lg:text-sm font-mono truncate">
                     ID: {selectedProject.id} • 📍 {selectedProject.address}
                   </p>
                 </div>
@@ -862,13 +864,13 @@ function Projects() {
 
             <div className="flex-1 overflow-hidden bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
               {/* Mobile Layout: Stack */}
-              <div className="lg:hidden p-4 space-y-6 overflow-y-auto h-full">
+              <div className="lg:hidden p-3 sm:p-4 space-y-4 sm:space-y-6 overflow-y-auto h-full overflow-x-hidden">
                 {/* Futuristic Timeline for Mobile */}
-                <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg p-4 relative shadow-[0_0_20px_rgba(6,182,212,0.1)]">
+                <div className="bg-gray-800/60 border border-cyan-400/30 rounded-lg p-3 sm:p-4 relative shadow-[0_0_20px_rgba(6,182,212,0.1)]">
                   <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent"></div>
-                  <h3 className="text-cyan-300 font-semibold mb-4 flex items-center font-mono">
-                    <div className="mr-2">⏱️</div>
-                    LÍNEA DE TIEMPO DEL PROYECTO
+                  <h3 className="text-cyan-300 font-semibold mb-3 sm:mb-4 flex items-center font-mono text-xs sm:text-sm break-words">
+                    <div className="mr-2 flex-shrink-0">⏱️</div>
+                    <span className="break-words">LÍNEA DE TIEMPO DEL PROYECTO</span>
                   </h3>
                   <FuturisticTimeline 
                     projectId={selectedProject.id} 
@@ -878,11 +880,11 @@ function Projects() {
                 </div>
                 
                 {/* Mobile Details Section */}
-                <div className="bg-gray-800/40 border border-cyan-400/20 rounded-lg p-4 relative">
+                <div className="bg-gray-800/40 border border-cyan-400/20 rounded-lg p-3 sm:p-4 relative overflow-hidden">
                   <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent"></div>
-                  <h3 className="text-cyan-300 font-semibold mb-4 flex items-center font-mono">
-                    <div className="mr-2">📋</div>
-                    DETALLES DEL PROYECTO
+                  <h3 className="text-cyan-300 font-semibold mb-3 sm:mb-4 flex items-center font-mono text-xs sm:text-sm break-words">
+                    <div className="mr-2 flex-shrink-0">📋</div>
+                    <span className="break-words">DETALLES DEL PROYECTO</span>
                   </h3>
                   <ProjectDetails 
                     project={selectedProject} 
