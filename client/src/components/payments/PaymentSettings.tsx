@@ -19,6 +19,7 @@ import {
   BarChart3,
   Zap,
   Link as LinkIcon,
+  RefreshCw,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -37,15 +38,50 @@ interface PaymentSettingsProps {
     } | null;
   };
   onConnectStripe: () => void;
+  onRefreshStatus?: () => void; // Optional manual refresh function
 }
 
 export default function PaymentSettings({
   stripeAccountStatus,
   onConnectStripe,
+  onRefreshStatus,
 }: PaymentSettingsProps) {
   const { toast } = useToast();
   const [isLoadingDashboard, setIsLoadingDashboard] = useState(false);
   const [isRunningDiagnostic, setIsRunningDiagnostic] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefreshStatus = async () => {
+    try {
+      setIsRefreshing(true);
+      
+      toast({
+        title: "Verificando cuenta",
+        description: "Actualizando estado de Stripe...",
+      });
+      
+      // Call the parent refresh function
+      if (onRefreshStatus) {
+        await onRefreshStatus();
+      }
+      
+      // Wait a moment for the query to complete
+      setTimeout(() => {
+        toast({
+          title: "Estado actualizado",
+          description: "Los datos de tu cuenta han sido actualizados",
+        });
+      }, 1500);
+    } catch (error: any) {
+      toast({
+        title: "Error al actualizar",
+        description: error.message || "No se pudo verificar el estado de la cuenta",
+        variant: "destructive",
+      });
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 1500);
+    }
+  };
 
   const handleRunDiagnostic = async () => {
     try {
@@ -292,6 +328,18 @@ export default function PaymentSettings({
                     Reconnect
                   </>
                 )}
+              </Button>
+
+              <Button
+                onClick={handleRefreshStatus}
+                variant="outline"
+                size="lg"
+                disabled={isRefreshing || !onRefreshStatus}
+                className="border-cyan-600 text-cyan-400 hover:bg-cyan-900/20"
+                data-testid="button-refresh-status"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                {isRefreshing ? "Verificando..." : "Verificar Conexión"}
               </Button>
 
               <Button
