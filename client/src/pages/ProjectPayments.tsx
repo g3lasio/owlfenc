@@ -869,7 +869,10 @@ const ProjectPayments: React.FC = () => {
               <PaymentSettings
                 stripeAccountStatus={stripeAccountStatus}
                 onConnectStripe={connectToStripe}
-                onRefreshStatus={() => refetchStripeStatus()}
+                onRefreshStatus={async () => {
+                  const result = await refetchStripeStatus();
+                  return result.data;
+                }}
               />
             ) : (
               <div className="flex items-center justify-center py-12">

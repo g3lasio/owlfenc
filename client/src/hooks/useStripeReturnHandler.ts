@@ -39,27 +39,37 @@ export function useStripeReturnHandler() {
       hasHandledReturn.current = true;
 
       // Show loading toast
-      toast({
+      const loadingToast = toast({
         title: "Verificando cuenta Stripe",
         description: "Actualizando estado de tu cuenta...",
+        duration: Infinity, // Keep it visible until we update it
       });
 
-      // Wait a moment for Stripe to process account updates
-      setTimeout(async () => {
-        // Invalidate Stripe status query to force refresh
-        await queryClient.invalidateQueries({
-          queryKey: ["/api/contractor-payments/stripe/account-status"],
-        });
+      // Handle the refetch asynchronously
+      (async () => {
+        try {
+          // Wait a moment for Stripe to process account updates
+          await new Promise(resolve => setTimeout(resolve, 1000));
 
-        // After refetch completes, check the status and show appropriate message
-        setTimeout(() => {
-          const stripeStatusData = queryClient.getQueryData([
-            "/api/contractor-payments/stripe/account-status",
-          ]) as any;
+          // Invalidate and refetch to get the latest status
+          await queryClient.invalidateQueries({
+            queryKey: ["/api/contractor-payments/stripe/account-status"],
+          });
 
-          if (stripeStatusData?.hasStripeAccount) {
-            const isFullyActive = stripeStatusData.accountDetails?.chargesEnabled && 
-                                 stripeStatusData.accountDetails?.payoutsEnabled;
+          // Get the fresh data directly from refetch
+          const result = await queryClient.fetchQuery({
+            queryKey: ["/api/contractor-payments/stripe/account-status"],
+          }) as any;
+
+          console.log('✅ [STRIPE-RETURN] Fresh status received:', result);
+
+          // Dismiss the loading toast
+          loadingToast.dismiss?.();
+
+          // Show appropriate message based on actual status
+          if (result?.hasStripeAccount) {
+            const isFullyActive = result.accountDetails?.chargesEnabled && 
+                                 result.accountDetails?.payoutsEnabled;
             
             toast({
               title: isFullyActive ? "✅ Cuenta Stripe Conectada" : "🔄 Configuración en Proceso",
@@ -75,15 +85,26 @@ export function useStripeReturnHandler() {
               variant: "secondary",
             });
           }
-
+        } catch (error) {
+          console.error('❌ [STRIPE-RETURN] Error fetching status:', error);
+          
+          // Dismiss the loading toast
+          loadingToast.dismiss?.();
+          
+          toast({
+            title: "Error al verificar",
+            description: "No se pudo verificar el estado de la cuenta. Intenta refrescar manualmente.",
+            variant: "destructive",
+          });
+        } finally {
           // Clean URL params
           const url = new URL(window.location.href);
           url.searchParams.delete('stripe_account');
           url.searchParams.delete('stripe_onboarding');
           url.searchParams.delete('from');
           window.history.replaceState({}, '', url.toString());
-        }, 1500); // Wait for query to complete
-      }, 1000); // Wait for Stripe to process
+        }
+      })();
     }
   }, [queryClient, toast]);
 

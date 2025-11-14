@@ -52,26 +52,42 @@ export default function PaymentSettings({
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const handleRefreshStatus = async () => {
+    if (!onRefreshStatus) return;
+    
     try {
       setIsRefreshing(true);
       
-      toast({
+      const loadingToast = toast({
         title: "Verificando cuenta",
         description: "Actualizando estado de Stripe...",
+        duration: Infinity,
       });
       
-      // Call the parent refresh function
-      if (onRefreshStatus) {
-        await onRefreshStatus();
-      }
+      // Call the parent refresh function and await the result
+      const result = await onRefreshStatus();
       
-      // Wait a moment for the query to complete
-      setTimeout(() => {
+      // Dismiss loading toast
+      loadingToast.dismiss?.();
+      
+      // Show result based on actual account state
+      if (result?.hasStripeAccount) {
+        const isFullyActive = result.accountDetails?.chargesEnabled && 
+                             result.accountDetails?.payoutsEnabled;
+        
         toast({
-          title: "Estado actualizado",
-          description: "Los datos de tu cuenta han sido actualizados",
+          title: isFullyActive ? "✅ Cuenta Activa" : "🔄 Configuración Pendiente",
+          description: isFullyActive
+            ? "Tu cuenta está lista para recibir pagos"
+            : "Completa los pasos restantes en el dashboard de Stripe",
+          variant: isFullyActive ? "default" : "secondary",
         });
-      }, 1500);
+      } else {
+        toast({
+          title: "⚠️ No Conectada",
+          description: "Aún no has conectado una cuenta de Stripe",
+          variant: "secondary",
+        });
+      }
     } catch (error: any) {
       toast({
         title: "Error al actualizar",
@@ -79,7 +95,7 @@ export default function PaymentSettings({
         variant: "destructive",
       });
     } finally {
-      setTimeout(() => setIsRefreshing(false), 1500);
+      setIsRefreshing(false);
     }
   };
 
