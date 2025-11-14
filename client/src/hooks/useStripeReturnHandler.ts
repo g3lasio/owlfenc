@@ -66,22 +66,37 @@ export function useStripeReturnHandler() {
           // Dismiss the loading toast
           loadingToast.dismiss?.();
 
-          // Show appropriate message based on actual status
+          // Show appropriate message based on standardized contract
           if (result?.hasStripeAccount) {
-            const isFullyActive = result.accountDetails?.chargesEnabled && 
-                                 result.accountDetails?.payoutsEnabled;
-            
-            toast({
-              title: isFullyActive ? "✅ Cuenta Stripe Conectada" : "🔄 Configuración en Proceso",
-              description: isFullyActive
-                ? "Tu cuenta está lista para recibir pagos"
-                : "Completa la configuración de tu cuenta para activar pagos",
-              variant: isFullyActive ? "default" : "secondary",
-            });
+            const isFullyActive = result?.isActive;
+            const needsOnboarding = result?.needsOnboarding;
+            const hasRequirements = result?.requirements?.currently_due?.length > 0 ||
+                                   result?.requirements?.past_due?.length > 0;
+
+            // Three states: Active, Incomplete, or Error
+            if (isFullyActive) {
+              toast({
+                title: "✅ Cuenta Activa",
+                description: "Tu cuenta está completamente configurada y lista para recibir pagos",
+                variant: "default",
+              });
+            } else if (needsOnboarding && hasRequirements) {
+              toast({
+                title: "🔄 Configuración Pendiente",
+                description: "Stripe requiere información adicional. Ve al dashboard para completar tu configuración.",
+                variant: "secondary",
+              });
+            } else {
+              toast({
+                title: "⏳ Procesando Cuenta",
+                description: "Tu cuenta se está configurando. Esto puede tomar unos momentos.",
+                variant: "secondary",
+              });
+            }
           } else {
             toast({
-              title: "⚠️ Verificación Pendiente",
-              description: "La cuenta aún no está activa. Intenta refrescar en unos momentos.",
+              title: "⚠️ Cuenta No Conectada",
+              description: "No detectamos una cuenta de Stripe. Intenta conectar nuevamente.",
               variant: "secondary",
             });
           }

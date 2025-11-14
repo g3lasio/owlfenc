@@ -348,22 +348,58 @@ export class ContractorPaymentService {
 
   /**
    * Get Stripe account status for user from REAL data
+   * Returns standardized contract with activation flags and requirements
    */
   async getStripeAccountStatus(userId: number) {
     try {
+      console.log(`🔍 [STRIPE-STATUS] Verificando estado de cuenta Connect`);
+      
       // Get user from database to check for Stripe Connect account ID
       const user = await storage.getUser(userId);
       
       if (!user || !user.stripeConnectAccountId) {
+        console.log(`⚠️ [STRIPE-STATUS] Usuario sin cuenta Connect`);
         return {
           hasStripeAccount: false,
           accountDetails: null,
-          needsOnboarding: true
+          isActive: false,
+          needsOnboarding: true,
+          needsDashboardLink: false,
+          requirements: {
+            currently_due: [],
+            past_due: [],
+            eventually_due: []
+          },
+          lastUpdated: new Date().toISOString()
         };
       }
 
       // Fetch real Stripe account status
       const account = await stripe.accounts.retrieve(user.stripeConnectAccountId);
+      
+      // Calculate activation status
+      const chargesEnabled = account.charges_enabled;
+      const payoutsEnabled = account.payouts_enabled;
+      const isActive = chargesEnabled && payoutsEnabled;
+      const needsOnboarding = !isActive;
+      
+      // Extract requirements from Stripe account
+      const requirements = {
+        currently_due: account.requirements?.currently_due || [],
+        past_due: account.requirements?.past_due || [],
+        eventually_due: account.requirements?.eventually_due || []
+      };
+      
+      const hasRequirements = requirements.currently_due.length > 0 || 
+                             requirements.past_due.length > 0;
+      
+      console.log(`✅ [STRIPE-STATUS] Estado: {
+  accountId: '${account.id}',
+  chargesEnabled: ${chargesEnabled},
+  payoutsEnabled: ${payoutsEnabled},
+  fullyActive: ${isActive},
+  needsMoreInfo: ${hasRequirements}
+}`);
       
       return {
         hasStripeAccount: true,
@@ -371,20 +407,50 @@ export class ContractorPaymentService {
           id: account.id,
           email: account.email || undefined,
           businessType: account.business_type || undefined,
-          chargesEnabled: account.charges_enabled,
-          payoutsEnabled: account.payouts_enabled,
+          chargesEnabled,
+          payoutsEnabled,
           defaultCurrency: account.default_currency || undefined,
           country: account.country || undefined,
         },
-        needsOnboarding: !account.charges_enabled || !account.payouts_enabled
+        isActive,
+        needsOnboarding,
+        needsDashboardLink: hasRequirements,
+        requirements,
+        lastUpdated: new Date().toISOString()
       };
     } catch (error) {
-      console.error('Error fetching Stripe account status:', error);
+      console.error('❌ [STRIPE-STATUS] Error fetching account:', error);
+      
+      // CRITICAL: Preserve hasStripeAccount status if account ID exists in DB
+      // This prevents showing "connect account" when it's just a temporary Stripe API error
+      const accountIdStored = user?.stripeConnectAccountId || null;
+      const hasAccountInDB = !!accountIdStored;
+      
+      if (accountIdStored) {
+        console.warn(`⚠️ [STRIPE-STATUS] Stripe API error for account ${accountIdStored}, but preserving hasStripeAccount=true`);
+      }
+      
       return {
-        hasStripeAccount: false,
-        accountDetails: null,
-        needsOnboarding: true,
-        error: 'Failed to check Stripe status'
+        hasStripeAccount: hasAccountInDB,
+        accountDetails: accountIdStored ? {
+          id: accountIdStored,
+          email: undefined,
+          businessType: undefined,
+          chargesEnabled: false, // Unknown due to error
+          payoutsEnabled: false,  // Unknown due to error
+          defaultCurrency: undefined,
+          country: undefined,
+        } : null,
+        isActive: false, // Conservative: treat as inactive during error
+        needsOnboarding: hasAccountInDB, // If account exists but we can't verify, assume needs attention
+        needsDashboardLink: hasAccountInDB, // Show dashboard link if account exists
+        requirements: {
+          currently_due: [],
+          past_due: [],
+          eventually_due: []
+        },
+        error: error instanceof Error ? error.message : 'Failed to check Stripe status',
+        lastUpdated: new Date().toISOString()
       };
     }
   }

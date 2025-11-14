@@ -376,34 +376,61 @@ const ProjectPayments: React.FC = () => {
         }
 
         const data = await response.json();
-        console.log('✅ [STRIPE-STATUS] Status received:', {
-          hasAccount: data.hasStripeAccount,
-          chargesEnabled: data.accountDetails?.chargesEnabled,
-          payoutsEnabled: data.accountDetails?.payoutsEnabled,
-        });
+        console.log('✅ [STRIPE-STATUS] Status received:', data);
         return data;
       } catch (error) {
         console.error("Error fetching Stripe status:", error);
-        // Devolver estado por defecto en caso de error
-        return { hasStripeAccount: false, accountDetails: null };
+        // Return minimal error state - let backend handle the contract
+        return { 
+          hasStripeAccount: false, 
+          accountDetails: null,
+          isActive: false,
+          needsOnboarding: true,
+          error: error instanceof Error ? error.message : 'Network error'
+        };
       }
     },
     retry: 2,
     retryDelay: 1000,
-    // 🔄 Enable polling if account exists but is not fully activated yet
+    // 🔄 Bounded polling: 5s intervals, max 3 minutes
     refetchInterval: (data) => {
-      // Poll every 3 seconds if account exists but charges/payouts not enabled
-      const needsPolling = data?.hasStripeAccount && 
-                          (!data?.accountDetails?.chargesEnabled || !data?.accountDetails?.payoutsEnabled);
-      return needsPolling ? 3000 : false; // Poll for 3s intervals if setup incomplete
+      // Don't poll if account is fully active or if there's no account at all
+      if (!data?.hasStripeAccount || data?.isActive) {
+        return false;
+      }
+      
+      // Only poll if account exists but needs onboarding
+      const needsPolling = data?.needsOnboarding;
+      return needsPolling ? 5000 : false; // 5s intervals per architect recommendation
     },
-    refetchIntervalInBackground: false, // Don't poll in background
+    refetchIntervalInBackground: false,
   });
   
-  // CRITICAL ACCESS CONTROL: Check if user has Stripe Connect account
+  // Track polling start time for bounded polling (max 3 minutes)
+  const [pollingStartTime, setPollingStartTime] = React.useState<number | null>(null);
+  
+  React.useEffect(() => {
+    const needsPolling = stripeAccountStatus?.hasStripeAccount && 
+                        stripeAccountStatus?.needsOnboarding;
+    
+    if (needsPolling && !pollingStartTime) {
+      setPollingStartTime(Date.now());
+    } else if (!needsPolling && pollingStartTime) {
+      setPollingStartTime(null);
+    }
+    
+    // Stop polling after 3 minutes
+    if (pollingStartTime && (Date.now() - pollingStartTime > 180000)) {
+      console.log('⏱️ [POLLING] Max duration reached, stopping auto-refresh');
+      setPollingStartTime(null);
+    }
+  }, [stripeAccountStatus, pollingStartTime]);
+  
+  // CRITICAL ACCESS CONTROL: Check Stripe account status using new contract
   const hasStripeAccount = stripeAccountStatus?.hasStripeAccount || false;
-  const isStripeAccountActive = stripeAccountStatus?.accountDetails?.fullyActive || false;
-  const canUsePaymentWorkflow = canUsePaymentTracking && hasStripeAccount;
+  const isStripeAccountActive = stripeAccountStatus?.isActive || false;
+  const needsStripeAttention = stripeAccountStatus?.needsOnboarding || false;
+  const canUsePaymentWorkflow = canUsePaymentTracking && hasStripeAccount && isStripeAccountActive;
 
   // Create payment mutation
   const createPaymentMutation = useMutation({
