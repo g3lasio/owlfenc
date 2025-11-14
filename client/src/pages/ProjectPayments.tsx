@@ -897,8 +897,11 @@ const ProjectPayments: React.FC = () => {
                 stripeAccountStatus={stripeAccountStatus}
                 onConnectStripe={connectToStripe}
                 onRefreshStatus={async () => {
-                  const result = await refetchStripeStatus();
-                  return result.data;
+                  // Trigger refetch and wait for completion
+                  await refetchStripeStatus();
+                  // Get the fresh data from cache
+                  const freshData = queryClient.getQueryData(["/api/contractor-payments/stripe/account-status"]);
+                  return freshData as any;
                 }}
               />
             ) : (

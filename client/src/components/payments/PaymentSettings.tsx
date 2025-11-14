@@ -24,21 +24,33 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
-interface PaymentSettingsProps {
-  stripeAccountStatus?: {
-    hasStripeAccount: boolean;
-    accountDetails?: {
-      id: string;
-      email?: string;
-      businessType?: string;
-      chargesEnabled: boolean;
-      payoutsEnabled: boolean;
-      defaultCurrency?: string;
-      country?: string;
-    } | null;
+type StripeAccountStatus = {
+  hasStripeAccount: boolean;
+  accountDetails?: {
+    id: string;
+    email?: string;
+    businessType?: string;
+    chargesEnabled: boolean;
+    payoutsEnabled: boolean;
+    defaultCurrency?: string;
+    country?: string;
+  } | null;
+  isActive?: boolean;
+  needsOnboarding?: boolean;
+  needsDashboardLink?: boolean;
+  requirements?: {
+    currently_due?: string[];
+    past_due?: string[];
+    eventually_due?: string[];
   };
+  error?: string;
+  lastUpdated?: string;
+};
+
+interface PaymentSettingsProps {
+  stripeAccountStatus?: StripeAccountStatus;
   onConnectStripe: () => void;
-  onRefreshStatus?: () => void; // Optional manual refresh function
+  onRefreshStatus?: () => Promise<StripeAccountStatus | undefined>;
 }
 
 export default function PaymentSettings({
@@ -69,10 +81,9 @@ export default function PaymentSettings({
       // Dismiss loading toast
       loadingToast.dismiss?.();
       
-      // Show result based on actual account state
+      // Show result based on standardized contract
       if (result?.hasStripeAccount) {
-        const isFullyActive = result.accountDetails?.chargesEnabled && 
-                             result.accountDetails?.payoutsEnabled;
+        const isFullyActive = result?.isActive;
         
         toast({
           title: isFullyActive ? "✅ Cuenta Activa" : "🔄 Configuración Pendiente",
@@ -180,28 +191,27 @@ export default function PaymentSettings({
         </Badge>
       );
     }
-    if (!stripeAccountStatus.accountDetails?.chargesEnabled) {
+    if (stripeAccountStatus?.isActive) {
       return (
-        <Badge variant="secondary" className="flex items-center gap-1">
-          <Clock className="h-3 w-3" />
-          Setup Required
+        <Badge variant="default" className="flex items-center gap-1 bg-green-600">
+          <CheckCircle className="h-3 w-3" />
+          Connected & Active
         </Badge>
       );
     }
     return (
-      <Badge variant="default" className="flex items-center gap-1 bg-green-600">
-        <CheckCircle className="h-3 w-3" />
-        Connected & Active
+      <Badge variant="secondary" className="flex items-center gap-1">
+        <Clock className="h-3 w-3" />
+        Setup Required
       </Badge>
     );
   };
 
-  const isAccountActive = stripeAccountStatus?.hasStripeAccount && 
-                          stripeAccountStatus?.accountDetails?.chargesEnabled &&
-                          stripeAccountStatus?.accountDetails?.payoutsEnabled;
-  
+  const isAccountActive = stripeAccountStatus?.isActive || false;
   const needsSetup = stripeAccountStatus?.hasStripeAccount && 
-                     !stripeAccountStatus?.accountDetails?.chargesEnabled;
+                     stripeAccountStatus?.needsOnboarding;
+  const hasRequirements = (stripeAccountStatus?.requirements?.currently_due?.length || 0) > 0 ||
+                         (stripeAccountStatus?.requirements?.past_due?.length || 0) > 0;
 
   return (
     <div className="space-y-6">
