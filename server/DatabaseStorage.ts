@@ -723,4 +723,11 @@ export class DatabaseStorage implements IStorage {
     
     return updatedPayment;
   }
+
+  async deleteProjectPayment(id: number): Promise<boolean> {
+    await db.delete(projectPayments)
+      .where(eq(projectPayments.id, id));
+    
+    return true; // Drizzle doesn't return affected rows count consistently, so we return true if no error
+  }
 }

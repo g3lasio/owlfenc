@@ -62,6 +62,7 @@ export interface IStorage {
   getProjectPaymentsByCheckoutSessionId(sessionId: string): Promise<ProjectPayment[]>;
   createProjectPayment(payment: InsertProjectPayment): Promise<ProjectPayment>;
   updateProjectPayment(id: number, payment: Partial<ProjectPayment>): Promise<ProjectPayment>;
+  deleteProjectPayment(id: number): Promise<boolean>;
 
   // Template methods
   getTemplate(id: number): Promise<Template | undefined>;
@@ -867,6 +868,17 @@ export class StorageManager implements IStorage {
       'updateProjectPayment',
       () => this.primaryStorage.updateProjectPayment(id, payment),
       () => this.backupStorage?.updateProjectPayment(id, payment),
+      undefined,
+      undefined,
+      `project_payment_${id}`
+    );
+  }
+
+  async deleteProjectPayment(id: number): Promise<boolean> {
+    return this.executeWithFailover<boolean>(
+      'deleteProjectPayment',
+      () => this.primaryStorage.deleteProjectPayment(id),
+      () => this.backupStorage?.deleteProjectPayment(id),
       undefined,
       undefined,
       `project_payment_${id}`

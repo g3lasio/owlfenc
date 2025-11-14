@@ -257,12 +257,23 @@ router.post(
 router.post(
   "/payments/quick-link",
   isAuthenticated,
+  requireSubscriptionLevel(PermissionLevel.BASIC),
   async (req: Request, res: Response) => {
     try {
+      if (!req.firebaseUser) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+      
+      // Convert Firebase UID to database user ID
+      const { userMappingService } = await import('../services/userMappingService');
+      const userId = await userMappingService.getOrCreateUserIdForFirebaseUid(req.firebaseUser.uid);
+      
       const validatedData = quickPaymentSchema.parse(req.body);
 
+      // 🔒 SECURITY: Pass userId for ownership verification
       const result = await contractorPaymentService.createQuickPaymentLink(
         validatedData.projectId,
+        userId,
         validatedData.type,
       );
 

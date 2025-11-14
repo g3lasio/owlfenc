@@ -30,6 +30,15 @@ export class ContractorPaymentService {
    * This follows the contractor workflow: 50% deposit + 50% final payment
    */
   async createProjectPaymentStructure(projectId: number, userId: number, totalAmount: number, clientInfo: { email?: string; name?: string }) {
+    // 🔒 SECURITY: Verify project ownership before creating payment structure
+    const project = await storage.getProject(projectId);
+    if (!project) {
+      throw new Error('Project not found');
+    }
+    if (project.userId !== userId) {
+      throw new Error('Unauthorized: You do not have permission to create payments for this project');
+    }
+
     const depositAmount = Math.round(totalAmount * 0.5);
     const finalAmount = totalAmount - depositAmount;
 
@@ -78,6 +87,12 @@ export class ContractorPaymentService {
       throw new Error('Project not found');
     }
 
+    // 🔒 SECURITY: Verify project ownership - CRITICAL for payment data integrity
+    if (project.userId !== request.userId) {
+      console.error(`🚨 [SECURITY-VIOLATION] User ${request.userId} attempted to create payment for project ${request.projectId} owned by user ${project.userId}`);
+      throw new Error('Unauthorized: You do not have permission to create payments for this project');
+    }
+
     // Get user to retrieve their Stripe Connect account
     const user = await storage.getUser(request.userId);
     if (!user) {
@@ -119,61 +134,79 @@ export class ContractorPaymentService {
 
     const payment = await storage.createProjectPayment(paymentData);
 
-    // Determine the base URL for redirects using centralized helper
-    const { resolveAppBaseUrl } = await import('../utils/url-helpers');
-    const isLiveMode = process.env.STRIPE_SECRET_KEY?.startsWith('sk_live_');
-    const baseUrl = resolveAppBaseUrl({ isLiveMode });
+    // 💾 ATOMIC TRANSACTION: Wrap Stripe API call with automatic rollback on failure
+    try {
+      // Determine the base URL for redirects using centralized helper
+      const { resolveAppBaseUrl } = await import('../utils/url-helpers');
+      const isLiveMode = process.env.STRIPE_SECRET_KEY?.startsWith('sk_live_');
+      const baseUrl = resolveAppBaseUrl({ isLiveMode });
 
-    // Create Stripe Checkout Session directly in the connected account
-    // For Express accounts, we create the session directly on their account
-    // All payments go directly to the contractor's bank account
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: request.description,
-              description: `Invoice #${invoiceNumber} - ${project.address}`,
+      // Create Stripe Checkout Session directly in the connected account
+      // For Express accounts, we create the session directly on their account
+      // All payments go directly to the contractor's bank account
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price_data: {
+              currency: 'usd',
+              product_data: {
+                name: request.description,
+                description: `Invoice #${invoiceNumber} - ${project.address}`,
+              },
+              unit_amount: request.amount,
             },
-            unit_amount: request.amount,
+            quantity: 1,
           },
-          quantity: 1,
+        ],
+        mode: 'payment',
+        success_url: `${baseUrl}/payment-success?payment_id=${payment.id}&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${baseUrl}/project-payments`,
+        metadata: {
+          paymentId: payment.id.toString(),
+          projectId: request.projectId.toString(),
+          userId: request.userId.toString(),
+          type: request.type,
+          invoiceNumber,
+          platformUserId: request.userId.toString(),
         },
-      ],
-      mode: 'payment',
-      success_url: `${baseUrl}/payment-success?payment_id=${payment.id}&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${baseUrl}/project-payments`,
-      metadata: {
-        paymentId: payment.id.toString(),
-        projectId: request.projectId.toString(),
-        userId: request.userId.toString(),
-        type: request.type,
+        customer_email: request.clientEmail || project.clientEmail || undefined,
+      }, {
+        // Create the session directly on the connected account
+        // This ensures all funds go directly to the contractor
+        stripeAccount: user.stripeConnectAccountId,
+      });
+
+      console.log(`✅ [PAYMENT-LINK] Created checkout session for connected account: ${user.stripeConnectAccountId}`);
+
+      // Update payment with Stripe details
+      await storage.updateProjectPayment(payment.id, {
+        stripeCheckoutSessionId: session.id,
+        checkoutUrl: session.url || '',
+        paymentLinkUrl: session.url || '',
+      });
+
+      return {
+        paymentId: payment.id,
+        paymentLinkUrl: session.url || '',
         invoiceNumber,
-        platformUserId: request.userId.toString(),
-      },
-      customer_email: request.clientEmail || project.clientEmail || undefined,
-    }, {
-      // Create the session directly on the connected account
-      // This ensures all funds go directly to the contractor
-      stripeAccount: user.stripeConnectAccountId,
-    });
+      };
+    } catch (stripeError: any) {
+      // 🔄 ROLLBACK: Delete orphaned payment record if Stripe API call fails
+      console.error(`❌ [PAYMENT-ROLLBACK] Stripe API failed for payment ${payment.id}:`, stripeError.message);
+      console.log(`🔄 [PAYMENT-ROLLBACK] Rolling back payment record ${payment.id}...`);
+      
+      try {
+        await storage.deleteProjectPayment(payment.id);
+        console.log(`✅ [PAYMENT-ROLLBACK] Successfully deleted orphaned payment ${payment.id}`);
+      } catch (deleteError: any) {
+        console.error(`⚠️ [PAYMENT-ROLLBACK] Failed to delete orphaned payment ${payment.id}:`, deleteError.message);
+        // Log critical error but still throw the original Stripe error
+      }
 
-    console.log(`✅ [PAYMENT-LINK] Created checkout session for connected account: ${user.stripeConnectAccountId}`);
-
-    // Update payment with Stripe details
-    await storage.updateProjectPayment(payment.id, {
-      stripeCheckoutSessionId: session.id,
-      checkoutUrl: session.url || '',
-      paymentLinkUrl: session.url || '',
-    });
-
-    return {
-      paymentId: payment.id,
-      paymentLinkUrl: session.url || '',
-      invoiceNumber,
-    };
+      // Re-throw the original Stripe error with context
+      throw new Error(`Failed to create payment link: ${stripeError.message}. Please try again or contact support if the issue persists.`);
+    }
   }
 
   /**
@@ -370,37 +403,57 @@ export class ContractorPaymentService {
 
   /**
    * Creates a one-click payment link for specific project phase
+   * NOTE: This method needs userId parameter for security verification
    */
-  async createQuickPaymentLink(projectId: number, type: 'deposit' | 'final'): Promise<PaymentLinkResponse> {
+  async createQuickPaymentLink(projectId: number, userId: number, type: 'deposit' | 'final'): Promise<PaymentLinkResponse> {
     const project = await storage.getProject(projectId);
     if (!project) {
       throw new Error('Project not found');
     }
 
+    // 🔒 SECURITY: Verify project ownership
+    if (project.userId !== userId) {
+      throw new Error('Unauthorized: You do not have permission to create payments for this project');
+    }
+
     const payments = await storage.getProjectPaymentsByProjectId(projectId);
     const existingPayment = payments.find(p => p.type === type);
 
-    if (existingPayment && existingPayment.status === 'succeeded') {
-      throw new Error(`${type} payment already completed`);
+    if (existingPayment) {
+      // 🔒 SECURITY: Auto-remediate legacy payments with incorrect ownership
+      if (existingPayment.userId !== userId) {
+        console.warn(`🔄 [PAYMENT-REMEDIATION] Found legacy payment ${existingPayment.id} with mismatched ownership (payment.userId: ${existingPayment.userId}, actual owner: ${userId}). Auto-remediating...`);
+        
+        // Delete orphaned payment
+        try {
+          await storage.deleteProjectPayment(existingPayment.id);
+          console.log(`✅ [PAYMENT-REMEDIATION] Deleted orphaned payment ${existingPayment.id}`);
+        } catch (error: any) {
+          console.error(`⚠️ [PAYMENT-REMEDIATION] Failed to delete orphaned payment ${existingPayment.id}:`, error.message);
+        }
+        
+        // Fall through to create new payment for correct owner below
+      } else if (existingPayment.status === 'succeeded') {
+        throw new Error(`${type} payment already completed`);
+      } else if (existingPayment.checkoutUrl) {
+        // Return existing payment link (ownership verified)
+        return {
+          paymentId: existingPayment.id,
+          paymentLinkUrl: existingPayment.checkoutUrl,
+          invoiceNumber: existingPayment.invoiceNumber || '',
+        };
+      }
     }
 
-    if (existingPayment && existingPayment.checkoutUrl) {
-      // Return existing payment link
-      return {
-        paymentId: existingPayment.id,
-        paymentLinkUrl: existingPayment.checkoutUrl,
-        invoiceNumber: existingPayment.invoiceNumber || '',
-      };
-    }
-
-    // Create new payment
+    // Create new payment using AUTHENTICATED userId (not project.userId)
     const amount = type === 'deposit' 
       ? Math.round((project.totalPrice || 0) * 0.5)
       : Math.round((project.totalPrice || 0) * 0.5);
 
+    // 🔒 SECURITY: Always use authenticated userId to prevent cross-tenant payment creation
     return this.createProjectPayment({
       projectId,
-      userId: project.userId!,
+      userId, // Use authenticated userId parameter, NOT project.userId
       amount,
       type,
       description: `${type === 'deposit' ? 'Project Deposit' : 'Final Payment'} - ${project.address}`,
