@@ -333,6 +333,10 @@ router.get(
   isAuthenticated,
   async (req: Request, res: Response) => {
     try {
+      if (!req.firebaseUser) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+      
       // Convert Firebase UID to database user ID
       const { userMappingService } = await import('../services/userMappingService');
       const userId = await userMappingService.getOrCreateUserIdForFirebaseUid(req.firebaseUser.uid);
@@ -361,6 +365,10 @@ router.get(
   isAuthenticated,
   async (req: Request, res: Response) => {
     try {
+      if (!req.firebaseUser) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+      
       const { status, type, projectId } = req.query;
 
       // Convert Firebase UID to database user ID

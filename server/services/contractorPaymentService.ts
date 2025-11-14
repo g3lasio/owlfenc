@@ -404,8 +404,8 @@ export class ContractorPaymentService {
       amount,
       type,
       description: `${type === 'deposit' ? 'Project Deposit' : 'Final Payment'} - ${project.address}`,
-      clientEmail: project.clientEmail,
-      clientName: project.clientName,
+      clientEmail: project.clientEmail || undefined,
+      clientName: project.clientName || undefined,
     });
   }
 }

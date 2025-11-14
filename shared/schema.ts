@@ -228,9 +228,13 @@ export const projectPayments = pgTable('project_payments', {
   clientName: varchar('client_name', { length: 255 }),
   invoiceNumber: varchar('invoice_number', { length: 100 }),
   stripePaymentIntentId: varchar('stripe_payment_intent_id', { length: 255 }),
+  stripeCheckoutSessionId: varchar('stripe_checkout_session_id', { length: 255 }),
   checkoutUrl: text('checkout_url'),
+  paymentLinkUrl: text('payment_link_url'),
+  notes: text('notes'),
   dueDate: timestamp('due_date'),
   paidDate: timestamp('paid_date'),
+  sentDate: timestamp('sent_date'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
