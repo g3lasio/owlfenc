@@ -37,6 +37,7 @@ import ProjectPaymentWorkflow from "@/components/payments/ProjectPaymentWorkflow
 import PaymentSettings from "@/components/payments/PaymentSettings";
 import PaymentHistory from "@/components/payments/PaymentHistory";
 import FuturisticPaymentDashboard from "@/components/payments/FuturisticPaymentDashboard";
+import { useStripeReturnHandler } from "@/hooks/useStripeReturnHandler";
 
 // Payment data types
 type ProjectPayment = {
@@ -114,6 +115,9 @@ const ProjectPayments: React.FC = () => {
   
   // CRITICAL: Payment Workflow requires BOTH paid plan AND Stripe Connect account
   const canUsePaymentTracking = hasPaymentTrackingAccess;
+  
+  // 🔄 Detect when user returns from Stripe onboarding and auto-refresh
+  useStripeReturnHandler();
   
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
   // Fetch projects data from BOTH Firebase collections (same as Estimate Wizard History)
@@ -345,11 +349,12 @@ const ProjectPayments: React.FC = () => {
     });
 
   // Fetch Stripe account status - REQUIRED for Payment Workflow access
-  const { data: stripeAccountStatus, isLoading: stripeLoading } = useQuery({
+  const { data: stripeAccountStatus, isLoading: stripeLoading, refetch: refetchStripeStatus } = useQuery({
     queryKey: ["/api/contractor-payments/stripe/account-status"],
     enabled: canUsePaymentTracking, // Only fetch if user has payment tracking access
     queryFn: async () => {
       try {
+        console.log('🔄 [STRIPE-STATUS] Fetching account status...');
         const response = await apiRequest(
           "GET",
           "/api/contractor-payments/stripe/account-status",
@@ -371,6 +376,11 @@ const ProjectPayments: React.FC = () => {
         }
 
         const data = await response.json();
+        console.log('✅ [STRIPE-STATUS] Status received:', {
+          hasAccount: data.hasStripeAccount,
+          chargesEnabled: data.accountDetails?.chargesEnabled,
+          payoutsEnabled: data.accountDetails?.payoutsEnabled,
+        });
         return data;
       } catch (error) {
         console.error("Error fetching Stripe status:", error);
@@ -380,6 +390,14 @@ const ProjectPayments: React.FC = () => {
     },
     retry: 2,
     retryDelay: 1000,
+    // 🔄 Enable polling if account exists but is not fully activated yet
+    refetchInterval: (data) => {
+      // Poll every 3 seconds if account exists but charges/payouts not enabled
+      const needsPolling = data?.hasStripeAccount && 
+                          (!data?.accountDetails?.chargesEnabled || !data?.accountDetails?.payoutsEnabled);
+      return needsPolling ? 3000 : false; // Poll for 3s intervals if setup incomplete
+    },
+    refetchIntervalInBackground: false, // Don't poll in background
   });
   
   // CRITICAL ACCESS CONTROL: Check if user has Stripe Connect account
