@@ -3,6 +3,39 @@
 ## Overview
 This AI-powered platform automates legal document and permit management for contractors. It generates estimates, creates contracts, analyzes permits, verifies properties, and coordinates over 20 API endpoints via Mervin AI. The project aims to evolve Mervin AI into a highly capable intelligent agent, streamlining operations and offering significant market potential in legal and permit management for contractors.
 
+## Recent Changes
+
+### November 14, 2025 - Stripe Connect HTTPS URL Fix
+**CRITICAL PRODUCTION BUG FIXED**: Resolved issue preventing users from connecting Stripe accounts due to HTTP redirect URLs in LIVE mode.
+
+**Problem**: 
+- Stripe was rejecting onboarding requests with error: "Livemode requests must always be redirected via HTTPS"
+- Code was using hardcoded HTTP URLs (`http://localhost:5000`) or inconsistent environment variables
+- Duplicate URL generation logic across multiple files
+
+**Solution Implemented**:
+1. **Created Centralized URL Helper** (`server/utils/url-helpers.ts`):
+   - `resolveAppBaseUrl()`: Resolves base URL with priority: APP_BASE_URL > REPLIT_DOMAINS > REPLIT_DEV_DOMAIN > localhost
+   - `generateStripeRedirectUrl()`: Generates complete redirect URLs with query parameters
+   - Enforces HTTPS in Stripe LIVE mode
+   - Throws error if HTTP attempted in production
+   - Allows HTTP only in development when not in LIVE mode
+
+2. **Refactored Stripe Connect Endpoints**:
+   - `server/index.ts`: Updated `/api/contractor-payments/stripe/connect` endpoint
+   - `server/routes/contractor-payment-routes.ts`: Removed 55 lines of duplicate URL logic
+   - `server/services/contractorPaymentService.ts`: Updated for Stripe Checkout Sessions
+   - All endpoints now use centralized helper for consistency
+
+3. **Architecture Benefits**:
+   - Single source of truth for URL generation
+   - No code duplication
+   - Automatic HTTPS enforcement in production
+   - Clear error messages for configuration issues
+   - Future-proof for additional Stripe integrations
+
+**Verification**: Confirmed via Stripe documentation that "live mode only accepts HTTPS" and "the Account Link creation process fails if you use HTTP"
+
 ## User Preferences
 - Respuestas técnicas y detalladas cuando se requiera análisis
 - Documentación clara de cambios de arquitectura

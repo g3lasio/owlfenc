@@ -119,10 +119,10 @@ export class ContractorPaymentService {
 
     const payment = await storage.createProjectPayment(paymentData);
 
-    // Determine the base URL for redirects
-    const baseUrl = process.env.REPLIT_DOMAINS 
-      ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
-      : (process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000');
+    // Determine the base URL for redirects using centralized helper
+    const { resolveAppBaseUrl } = await import('../utils/url-helpers');
+    const isLiveMode = process.env.STRIPE_SECRET_KEY?.startsWith('sk_live_');
+    const baseUrl = resolveAppBaseUrl({ isLiveMode });
 
     // Create Stripe Checkout Session directly in the connected account
     // For Express accounts, we create the session directly on their account

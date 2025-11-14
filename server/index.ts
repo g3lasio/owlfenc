@@ -178,11 +178,18 @@ app.post('/api/contractor-payments/stripe/connect', async (req, res) => {
       console.log('♻️ [STRIPE-CONNECT-EXPRESS] Cuenta existente encontrada:', accountId);
     }
     
-    const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5000';
+    // Import URL helper for secure HTTPS URL generation
+    const { generateStripeRedirectUrl } = await import('./utils/url-helpers');
+    const isLiveMode = config.apiKey.includes('_live_');
+    
+    // Generate secure HTTPS URLs for Stripe redirects
+    const refreshUrl = generateStripeRedirectUrl('/project-payments', { refresh: 'true' }, { isLiveMode });
+    const returnUrl = generateStripeRedirectUrl('/project-payments', { success: 'true' }, { isLiveMode });
+    
     const accountLink = await stripeClient.accountLinks.create({
       account: accountId,
-      refresh_url: `${baseUrl}/project-payments?refresh=true`,
-      return_url: `${baseUrl}/project-payments?success=true`,
+      refresh_url: refreshUrl,
+      return_url: returnUrl,
       type: 'account_onboarding',
     });
     
