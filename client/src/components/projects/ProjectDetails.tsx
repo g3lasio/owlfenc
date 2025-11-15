@@ -6,6 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { updateProject } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { useProfile } from "@/hooks/use-profile";
@@ -15,6 +17,9 @@ import FileManager from "./FileManager";
 import FuturisticTimeline from "./FuturisticTimeline";
 import { useAuth } from "@/hooks/use-auth";
 import axios from "axios";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import type { DateRange } from "react-day-picker";
 
 interface ProjectDetailsProps {
   project: any;
@@ -36,12 +41,28 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
   const [isSaving, setIsSaving] = useState(false);
   const [notesDialogOpen, setNotesDialogOpen] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [dateRangePickerOpen, setDateRangePickerOpen] = useState(false);
   const [paymentData, setPaymentData] = useState({
     amount: '',
     method: 'cash',
     date: new Date().toISOString().split('T')[0],
     notes: ''
   });
+  
+  // Initialize date range from project data
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
+    const start = project.scheduledDateStart;
+    const end = project.scheduledDateEnd;
+    
+    if (start || end) {
+      return {
+        from: start ? (start.toDate ? start.toDate() : new Date(start)) : undefined,
+        to: end ? (end.toDate ? end.toDate() : new Date(end)) : undefined
+      };
+    }
+    return undefined;
+  });
+  
   const { toast } = useToast();
   const { profile } = useProfile();
   const { currentUser } = useAuth();
@@ -141,6 +162,70 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
   const handleProgressUpdate = (newProgress: string) => {
     const updatedProject = { ...project, projectProgress: newProgress };
     onUpdate(updatedProject);
+  };
+
+  const handleScheduledDateUpdate = async (newRange: DateRange | undefined) => {
+    try {
+      setIsSaving(true);
+      
+      // Update local state
+      setDateRange(newRange);
+      
+      // Prepare data for Firebase
+      const updateData: any = {
+        scheduledDateStart: newRange?.from || null,
+        scheduledDateEnd: newRange?.to || newRange?.from || null, // If only one date, use it as both start and end
+        // Keep legacy field for backward compatibility
+        scheduledDate: newRange?.from || null
+      };
+      
+      const updatedProject = await updateProject(project.id, updateData);
+      onUpdate(updatedProject);
+      
+      toast({
+        title: "📅 Fechas actualizadas",
+        description: "Las fechas programadas han sido guardadas correctamente."
+      });
+      
+      setDateRangePickerOpen(false);
+    } catch (error) {
+      console.error("Error updating scheduled dates:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudieron actualizar las fechas."
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const formatDateRange = (start: any, end: any) => {
+    if (!start && !end) return 'No establecida';
+    
+    const formatSingle = (date: any) => {
+      if (!date) return null;
+      let dateObj: Date;
+      if (typeof date === 'object' && date.toDate) {
+        dateObj = date.toDate();
+      } else if (typeof date === 'string') {
+        dateObj = new Date(date);
+      } else if (date instanceof Date) {
+        dateObj = date;
+      } else {
+        return null;
+      }
+      if (isNaN(dateObj.getTime())) return null;
+      return format(dateObj, "d MMM yyyy", { locale: es });
+    };
+    
+    const startFormatted = formatSingle(start);
+    const endFormatted = formatSingle(end);
+    
+    if (!startFormatted && !endFormatted) return 'No establecida';
+    if (!endFormatted || startFormatted === endFormatted) return startFormatted || 'No establecida';
+    
+    return `${startFormatted} → ${endFormatted}`;
   };
 
   const handleRegisterPayment = async () => {
@@ -503,10 +588,61 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
                     <div className="text-xs text-muted-foreground mb-1">Tipo</div>
                     <div className="font-medium text-xs">{project.projectSubtype || project.fenceType || 'No especificado'}</div>
                   </div>
-                  <div className="p-2 bg-muted/50 rounded border">
-                    <div className="text-xs text-muted-foreground mb-1">Fecha Programada</div>
-                    <div className="font-medium text-xs">{formatDate(project.scheduledDate)}</div>
-                  </div>
+                  <Popover open={dateRangePickerOpen} onOpenChange={setDateRangePickerOpen}>
+                    <PopoverTrigger asChild>
+                      <div 
+                        className="p-2 bg-muted/50 rounded border cursor-pointer hover:bg-muted transition-colors"
+                        data-testid="button-scheduled-date"
+                      >
+                        <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                          <i className="ri-calendar-line"></i>
+                          Fecha Programada
+                        </div>
+                        <div className="font-medium text-xs">
+                          {formatDateRange(project.scheduledDateStart, project.scheduledDateEnd)}
+                        </div>
+                      </div>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <div className="p-3 space-y-3">
+                        <div className="space-y-1">
+                          <h4 className="font-medium text-sm">Programar Ejecución</h4>
+                          <p className="text-xs text-muted-foreground">
+                            Selecciona la fecha de inicio y fin del proyecto
+                          </p>
+                        </div>
+                        <Calendar
+                          mode="range"
+                          selected={dateRange}
+                          onSelect={setDateRange}
+                          numberOfMonths={1}
+                          disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                          initialFocus
+                        />
+                        <div className="flex gap-2 pt-2 border-t">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => {
+                              setDateRange(undefined);
+                              setDateRangePickerOpen(false);
+                            }}
+                          >
+                            Limpiar
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => handleScheduledDateUpdate(dateRange)}
+                            disabled={isSaving || !dateRange?.from}
+                          >
+                            {isSaving ? 'Guardando...' : 'Guardar'}
+                          </Button>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 {/* Dimensiones */}
