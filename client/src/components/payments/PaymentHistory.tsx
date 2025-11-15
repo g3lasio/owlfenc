@@ -67,8 +67,8 @@ type ProjectPayment = {
 };
 
 type Project = {
-  id: number;
-  userId: number;
+  id: string | number;
+  userId: string;
   projectId: string;
   clientName: string;
   clientEmail?: string;

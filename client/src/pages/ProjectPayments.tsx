@@ -393,7 +393,10 @@ const ProjectPayments: React.FC = () => {
     retry: 2,
     retryDelay: 1000,
     // 🔄 Bounded polling: 5s intervals, max 3 minutes
-    refetchInterval: (data) => {
+    refetchInterval: (query) => {
+      // Access data from query object
+      const data = query.state.data as any;
+      
       // Don't poll if account is fully active or if there's no account at all
       if (!data?.hasStripeAccount || data?.isActive) {
         return false;
@@ -834,7 +837,7 @@ const ProjectPayments: React.FC = () => {
                   <Lock className="w-12 h-12 text-gray-500 mx-auto mb-4" />
                   <p className="text-gray-400">Esta función requiere un plan pagado</p>
                   <Button
-                    onClick={showUpgradeModal}
+                    onClick={() => showUpgradeModal('paymentTracking', 'Para usar Payment Workflow necesitas un plan pagado')}
                     className="mt-4 bg-cyan-400 text-black hover:bg-cyan-300"
                   >
                     Upgrade Plan

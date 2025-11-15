@@ -433,18 +433,6 @@ export default function PaymentSettings({
                 {isRefreshing ? "Verificando..." : "Verificar Conexión"}
               </Button>
 
-              <Button
-                onClick={handleRunDiagnostic}
-                variant="outline"
-                size="lg"
-                disabled={isRunningDiagnostic}
-                className="border-yellow-600 text-yellow-400 hover:bg-yellow-900/20"
-                data-testid="button-stripe-diagnostic"
-              >
-                <Shield className="h-4 w-4 mr-2" />
-                {isRunningDiagnostic ? "Checking..." : "Verify Config"}
-              </Button>
-
               {isAccountActive && (
                 <Button
                   onClick={handleViewDashboard}
@@ -460,54 +448,26 @@ export default function PaymentSettings({
             </div>
           </div>
 
-          {/* Features Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-cyan-900/10 border border-cyan-800/50 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <Shield className="h-5 w-5 text-cyan-400 mt-0.5" />
-                <div>
-                  <h5 className="font-medium text-cyan-300 mb-1">Secure Payments</h5>
-                  <p className="text-sm text-gray-400">
-                    Bank-grade encryption and fraud protection for all transactions
-                  </p>
-                </div>
-              </div>
+          {/* Features Grid - Compact */}
+          <div className="flex flex-wrap gap-3">
+            <div className="flex items-center gap-2 bg-cyan-900/20 border border-cyan-800/30 rounded-lg px-4 py-2.5">
+              <Shield className="h-4 w-4 text-cyan-400" />
+              <span className="text-sm font-medium text-cyan-300">Secure Payments</span>
             </div>
 
-            <div className="bg-green-900/10 border border-green-800/50 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <CheckCircle className="h-5 w-5 text-green-400 mt-0.5" />
-                <div>
-                  <h5 className="font-medium text-green-300 mb-1">Direct Deposits</h5>
-                  <p className="text-sm text-gray-400">
-                    Receive payments directly to your bank account automatically
-                  </p>
-                </div>
-              </div>
+            <div className="flex items-center gap-2 bg-green-900/20 border border-green-800/30 rounded-lg px-4 py-2.5">
+              <CheckCircle className="h-4 w-4 text-green-400" />
+              <span className="text-sm font-medium text-green-300">Direct Deposits</span>
             </div>
 
-            <div className="bg-blue-900/10 border border-blue-800/50 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <LinkIcon className="h-5 w-5 text-blue-400 mt-0.5" />
-                <div>
-                  <h5 className="font-medium text-blue-300 mb-1">Payment Links</h5>
-                  <p className="text-sm text-gray-400">
-                    Generate secure payment links to share with clients
-                  </p>
-                </div>
-              </div>
+            <div className="flex items-center gap-2 bg-blue-900/20 border border-blue-800/30 rounded-lg px-4 py-2.5">
+              <LinkIcon className="h-4 w-4 text-blue-400" />
+              <span className="text-sm font-medium text-blue-300">Payment Links</span>
             </div>
 
-            <div className="bg-purple-900/10 border border-purple-800/50 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <CreditCard className="h-5 w-5 text-purple-400 mt-0.5" />
-                <div>
-                  <h5 className="font-medium text-purple-300 mb-1">All Payment Methods</h5>
-                  <p className="text-sm text-gray-400">
-                    Accept credit cards, debit cards, and digital wallets
-                  </p>
-                </div>
-              </div>
+            <div className="flex items-center gap-2 bg-purple-900/20 border border-purple-800/30 rounded-lg px-4 py-2.5">
+              <CreditCard className="h-4 w-4 text-purple-400" />
+              <span className="text-sm font-medium text-purple-300">All Payment Methods</span>
             </div>
           </div>
 

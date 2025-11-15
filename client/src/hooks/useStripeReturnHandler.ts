@@ -84,20 +84,20 @@ export function useStripeReturnHandler() {
               toast({
                 title: "🔄 Configuración Pendiente",
                 description: "Stripe requiere información adicional. Ve al dashboard para completar tu configuración.",
-                variant: "secondary",
+                variant: "default",
               });
             } else {
               toast({
                 title: "⏳ Procesando Cuenta",
                 description: "Tu cuenta se está configurando. Esto puede tomar unos momentos.",
-                variant: "secondary",
+                variant: "default",
               });
             }
           } else {
             toast({
               title: "⚠️ Cuenta No Conectada",
               description: "No detectamos una cuenta de Stripe. Intenta conectar nuevamente.",
-              variant: "secondary",
+              variant: "default",
             });
           }
         } catch (error) {
