@@ -208,10 +208,20 @@ export default function PaymentSettings({
         </Badge>
       );
     }
+    // Check for verification errors
+    const hasErrors = (stripeAccountStatus?.requirements?.errors?.length || 0) > 0;
+    if (hasErrors) {
+      return (
+        <Badge variant="destructive" className="flex items-center gap-1">
+          <XCircle className="h-3 w-3" />
+          Verification Failed
+        </Badge>
+      );
+    }
     return (
       <Badge variant="secondary" className="flex items-center gap-1">
         <Clock className="h-3 w-3" />
-        Setup Required
+        Setup Incomplete
       </Badge>
     );
   };
@@ -221,6 +231,8 @@ export default function PaymentSettings({
                      stripeAccountStatus?.needsOnboarding;
   const hasRequirements = (stripeAccountStatus?.requirements?.currently_due?.length || 0) > 0 ||
                          (stripeAccountStatus?.requirements?.past_due?.length || 0) > 0;
+  const hasVerificationErrors = (stripeAccountStatus?.requirements?.errors?.length || 0) > 0;
+  const isVerificationRejected = hasVerificationErrors && !isAccountActive;
 
   return (
     <div className="space-y-6">
@@ -284,6 +296,8 @@ export default function PaymentSettings({
           <CardDescription className="text-gray-400">
             {!stripeAccountStatus?.hasStripeAccount 
               ? "Create or connect your Stripe account to start accepting payments"
+              : isVerificationRejected
+              ? "Stripe rejected your verification - Fix the issues listed above to activate your account"
               : needsSetup
               ? "Complete your account setup to start receiving payments"
               : isAccountActive
@@ -300,6 +314,8 @@ export default function PaymentSettings({
                 <div className={`p-3 rounded-lg ${
                   isAccountActive 
                     ? "bg-green-600/20" 
+                    : isVerificationRejected
+                    ? "bg-red-600/20"
                     : needsSetup 
                     ? "bg-yellow-600/20" 
                     : "bg-blue-600/20"
@@ -307,6 +323,8 @@ export default function PaymentSettings({
                   <CreditCard className={`h-8 w-8 ${
                     isAccountActive 
                       ? "text-green-400" 
+                      : isVerificationRejected
+                      ? "text-red-400"
                       : needsSetup 
                       ? "text-yellow-400" 
                       : "text-blue-400"
@@ -318,8 +336,10 @@ export default function PaymentSettings({
                       ? "No Account Connected"
                       : isAccountActive
                       ? "Account Active"
+                      : isVerificationRejected
+                      ? "Verification Rejected by Stripe"
                       : needsSetup
-                      ? "Setup In Progress"
+                      ? "Setup Incomplete"
                       : "Reconnection Required"
                     }
                   </h4>
@@ -328,6 +348,8 @@ export default function PaymentSettings({
                       ? "Click below to create a new Stripe account or connect an existing one"
                       : isAccountActive
                       ? "Your Stripe account is fully configured and accepting payments"
+                      : isVerificationRejected
+                      ? "Stripe rejected your verification. Fix the issues above in your Stripe dashboard to activate payments"
                       : needsSetup
                       ? "Complete the onboarding process to activate your account"
                       : "Verify your account information to resume receiving payments"
