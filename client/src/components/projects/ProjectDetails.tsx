@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import FileManager from "./FileManager";
 import FuturisticTimeline from "./FuturisticTimeline";
 import { useAuth } from "@/hooks/use-auth";
+import axios from "axios";
 
 interface ProjectDetailsProps {
   project: any;
@@ -226,23 +227,47 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
     }
   };
 
+  // USAR EXACTAMENTE LA MISMA LÓGICA QUE INVOICES.TSX
   const handleGenerateInvoice = async () => {
+    if (!currentUser) {
+      console.warn("⚠️ [PROJECT-INVOICE] Missing currentUser");
+      return;
+    }
+
+    // Validación idéntica a Invoices.tsx
+    if (!profile?.company) {
+      console.warn("⚠️ [PROJECT-INVOICE] Profile company name missing");
+      toast({
+        title: "Perfil Incompleto",
+        description: "Completa el nombre de tu empresa en tu perfil antes de generar facturas.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Verificar que tenemos datos del estimate
+    if (!project.estimateData || !project.estimateData.items || project.estimateData.items.length === 0) {
+      console.warn("⚠️ [PROJECT-INVOICE] No estimate data found in project");
+      toast({
+        title: "Datos Incompletos",
+        description: "Este proyecto no tiene un presupuesto asociado. Crea un presupuesto primero desde Estimates.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setIsSaving(true);
+      console.log("🚀 [PROJECT-INVOICE] Starting invoice generation for:", project.clientName);
 
-      // Validar perfil completo
-      if (!profile?.company) {
-        toast({
-          variant: "destructive",
-          title: "Perfil incompleto",
-          description: "Debes completar la información de tu empresa en tu perfil antes de generar facturas."
-        });
-        setIsSaving(false);
-        return;
-      }
+      const estimateData = project.estimateData;
+      
+      // Calcular monto pagado (si existe)
+      const paidAmount = project.paidAmount || 0;
+      const totalAmount = estimateData.total || estimateData.displayTotal || 0;
 
-      // Preparar datos para la factura - MISMO FORMATO que EstimatesWizard.tsx
-      const invoiceData = {
+      // Build invoice payload EXACTLY like Invoices.tsx does
+      const invoicePayload = {
         profile: {
           company: profile.company,
           address: profile.address
@@ -256,65 +281,67 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
         estimate: {
           client: {
             name: project.clientName,
-            email: project.clientEmail || "",
-            phone: project.clientPhone || "",
-            address: project.address
+            email: project.clientEmail || estimateData.clientEmail || "",
+            phone: project.clientPhone || estimateData.clientPhone || "",
+            address: project.address || estimateData.clientAddress || "",
           },
-          items: [{
-            name: project.projectType || 'construction',
-            description: `${project.projectType || 'Proyecto'} - ${project.projectSubtype || ''}`,
-            quantity: 1,
-            unitPrice: project.totalPrice || 0,
-            totalPrice: project.totalPrice || 0
-          }],
-          subtotal: project.totalPrice || 0,
-          discountAmount: 0,
-          taxRate: 0,
-          tax: 0,
-          total: project.totalPrice || 0
+          items: estimateData.items,  // ✅ Usar items completos del estimate
+          subtotal: estimateData.subtotal || estimateData.displaySubtotal || 0,
+          discountAmount: estimateData.discount || estimateData.discountAmount || 0,
+          taxRate: estimateData.taxRate || 0,
+          tax: estimateData.tax || 0,
+          total: totalAmount,
         },
         invoiceConfig: {
-          projectCompleted: true,
-          downPaymentAmount: "",
-          totalAmountPaid: true
-        }
+          projectCompleted: project.status === 'completed' || project.status === 'finished',
+          downPaymentAmount: paidAmount > 0 ? paidAmount : 0,  // ✅ Enviar como número
+          totalAmountPaid: paidAmount >= totalAmount,
+        },
       };
 
-      // Generar y descargar PDF de factura
-      const response = await fetch('/api/invoice-pdf', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(invoiceData)
+      console.log("📤 [PROJECT-INVOICE] Sending request to /api/invoice-pdf");
+
+      // Use axios EXACTLY like Invoices.tsx does
+      const response = await axios.post("/api/invoice-pdf", invoicePayload, {
+        responseType: "blob",
+        timeout: 60000, // 60 second timeout
       });
 
-      if (!response.ok) {
-        throw new Error('Error al generar la factura');
-      }
+      console.log("✅ [PROJECT-INVOICE] PDF received, size:", response.data.size);
 
-      // Descargar el PDF
-      const blob = await response.blob();
+      const blob = new Blob([response.data], { type: "application/pdf" });
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `factura-${project.projectId}.pdf`;
-      document.body.appendChild(a);
-      a.click();
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `factura-${project.id || project.projectId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+
+      console.log("💾 [PROJECT-INVOICE] PDF downloaded successfully");
 
       toast({
-        title: "📄 Factura generada",
-        description: "La factura se ha generado y descargado exitosamente."
+        title: "✅ Factura generada exitosamente",
+        description: `Factura descargada correctamente`,
       });
 
     } catch (error) {
-      console.error("Error generando factura:", error);
+      console.error("❌ [PROJECT-INVOICE] Error generating invoice:", error);
+      
+      // Detailed error logging like Invoices.tsx
+      if (axios.isAxiosError(error)) {
+        console.error("❌ [PROJECT-INVOICE] Axios error details:", {
+          message: error.message,
+          code: error.code,
+          response: error.response?.data,
+        });
+      }
+
       toast({
+        title: "Error al Generar Factura",
+        description: error instanceof Error ? error.message : "Error desconocido",
         variant: "destructive",
-        title: "Error",
-        description: "No se pudo generar la factura."
       });
     } finally {
       setIsSaving(false);
