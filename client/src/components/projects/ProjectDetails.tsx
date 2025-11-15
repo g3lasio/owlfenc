@@ -588,8 +588,8 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
                     <div className="text-xs text-muted-foreground mb-1">Tipo</div>
                     <div className="font-medium text-xs">{project.projectSubtype || project.fenceType || 'No especificado'}</div>
                   </div>
-                  <Popover open={dateRangePickerOpen} onOpenChange={setDateRangePickerOpen}>
-                    <PopoverTrigger asChild>
+                  <Dialog open={dateRangePickerOpen} onOpenChange={setDateRangePickerOpen}>
+                    <DialogTrigger asChild>
                       <div 
                         className="p-2 bg-muted/50 rounded border cursor-pointer hover:bg-muted transition-colors"
                         data-testid="button-scheduled-date"
@@ -602,8 +602,8 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
                           {formatDateRange(project.scheduledDateStart, project.scheduledDateEnd)}
                         </div>
                       </div>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-3" align="center" side="bottom">
+                    </DialogTrigger>
+                    <DialogContent className="max-w-fit">
                       <div className="space-y-3">
                         <Calendar
                           mode="range"
@@ -634,8 +634,8 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
                           </Button>
                         </div>
                       </div>
-                    </PopoverContent>
-                  </Popover>
+                    </DialogContent>
+                  </Dialog>
                 </div>
 
                 {/* Dimensiones */}
