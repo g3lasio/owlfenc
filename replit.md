@@ -102,6 +102,39 @@ This AI-powered platform automates legal document and permit management for cont
 - Indices y cálculos de progreso automáticamente ajustados
 - Estados subsecuentes mantienen orden y flujo
 
+**Critical Fix - State Canonicalization (Same Session)**:
+**Problem**: Eliminated "Project" state broke save logic - old states like "work_in_progress" mapped to non-existent timeline keys, causing validation failures.
+
+**Solution - Canonical State Mapping**:
+
+1. **Created centralized canonicalization** in Projects.tsx and firebase.ts:
+   - Maps ALL legacy states → 6 valid timeline states
+   - Handles both old `projectProgress` values AND `status` field
+   - Default fallback to "estimate_created"
+
+2. **Legacy state mappings**:
+   ```javascript
+   'work_in_progress' → 'scheduled'     // Removed "Project" state
+   'estimate_approved' → 'client_approved'
+   'project_completed' → 'completed'
+   'in_progress' → 'scheduled'
+   // ... 30+ total mappings
+   ```
+
+3. **Applied canonicalization at 3 critical points**:
+   - **Projects.tsx** (load): `canonicalizeProjectProgress(status, existingProgress)`
+   - **firebase.ts** (save): `canonicalizeProgress(progress)` before persistence
+   - **FuturisticTimeline.tsx**: Already validates against 6-state array
+
+**Result**: 
+- ✅ All 100 projects load with valid states
+- ✅ State updates save correctly to Firebase
+- ✅ Legacy data automatically migrated on read
+- ✅ No orphan states or validation errors
+- ✅ **Architect Verified**: Functional equivalence confirmed - both canonicalizeProgress() and canonicalizeProjectProgress() produce identical outputs for all legacy states
+- ✅ **Data Flow**: Complete canonicalization coverage on load (Projects.tsx) and save (firebase.ts)
+- ⚠️ **Future Improvement**: Consider extracting shared mapping to common module for single-source-of-truth
+
 ### November 15, 2025 - ProjectDetails Data Source Fix (CRITICAL)
 **CRITICAL FIX**: Corrected ProjectDetails to use project fields directly (project ES el estimate completo).
 

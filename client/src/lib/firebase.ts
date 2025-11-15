@@ -671,10 +671,72 @@ export const updateProject = async (id: string, projectData: any) => {
   }
 };
 
+// ✅ Canonicalize project progress to ensure only valid timeline states are persisted
+// NOTE: This MUST match the logic in Projects.tsx canonicalizeProjectProgress() exactly
+const canonicalizeProgress = (progress: string): string => {
+  const normalized = progress.toLowerCase().trim();
+  
+  // Map all legacy/old states to the 6 valid timeline states
+  // CRITICAL: Keep in sync with Projects.tsx progressMap and statusMap
+  const progressMap: Record<string, string> = {
+    // Old legacy projectProgress states
+    'estimate_draft': 'estimate_created',
+    'estimate_sent': 'estimate_created',
+    'estimate_approved': 'client_approved',
+    'work_in_progress': 'scheduled',  // Key fix: removed "Project" state
+    'project_completed': 'completed',
+    
+    // Valid canonical states
+    'estimate_created': 'estimate_created',
+    'estimate_rejected': 'estimate_rejected',
+    'client_approved': 'client_approved',
+    'scheduled': 'scheduled',
+    'payment_received': 'payment_received',
+    'completed': 'completed',
+    
+    // Status-based mapping (must match Projects.tsx statusMap)
+    // Draft/Created states
+    'draft': 'estimate_created',
+    'created': 'estimate_created',
+    'sent': 'estimate_created',
+    'pending': 'estimate_created',
+    
+    // Rejected states
+    'rejected': 'estimate_rejected',
+    'declined': 'estimate_rejected',
+    'cancelled': 'estimate_rejected',
+    
+    // Approved/Contract states
+    'approved': 'client_approved',
+    'signed': 'client_approved',
+    'accepted': 'client_approved',
+    'contract': 'client_approved',
+    
+    // In Progress/Scheduled states
+    'in_progress': 'scheduled',  // Key fix: removed "Project" state maps to "Scheduled"
+    'started': 'scheduled',
+    'active': 'scheduled',
+    'working': 'scheduled',
+    
+    // Paid states
+    'paid': 'payment_received',
+    'invoiced': 'payment_received',
+    
+    // Completed states
+    'finished': 'completed',
+    'done': 'completed',
+    'closed': 'completed'
+  };
+  
+  return progressMap[normalized] || 'estimate_created';
+};
+
 // Update project progress stage
 export const updateProjectProgress = async (id: string, progress: string) => {
   try {
-    console.log("🔄 [FIREBASE REAL] Actualizando progreso del proyecto con ID:", id, progress);
+    // ✅ Canonicalize progress before saving to ensure valid timeline state
+    const canonicalProgress = canonicalizeProgress(progress);
+    console.log(`🔄 [FIREBASE REAL] Actualizando progreso: "${progress}" → "${canonicalProgress}"`);
     
     // CRITICAL SECURITY: Wait for auth to be ready and get current authenticated user
     const currentUser = await waitForAuth();
@@ -697,7 +759,7 @@ export const updateProjectProgress = async (id: string, progress: string) => {
         const projectData = projectDocSnap.data();
         
         // Verificar que el proyecto pertenece al usuario autenticado
-        if (projectData.userId === currentUser.uid) {
+        if (projectData.userId === currentUser.uid || projectData.firebaseUserId === currentUser.uid) {
           projectDoc = projectDocSnap;
           collectionName = collectionNameToCheck;
           console.log(`✅ [FIREBASE REAL] Proyecto encontrado en colección: ${collectionNameToCheck}`);
@@ -713,14 +775,14 @@ export const updateProjectProgress = async (id: string, progress: string) => {
       throw new Error(`Project with ID ${id} not found in any collection`);
     }
     
-    // Actualizar el proyecto en la colección correcta
+    // Actualizar el proyecto con el progreso canonicalizado
     const docRef = doc(db, collectionName, id);
     await updateDoc(docRef, {
-      projectProgress: progress,
+      projectProgress: canonicalProgress,  // ✅ Save canonical state
       updatedAt: Timestamp.now()
     });
     
-    console.log("✅ [FIREBASE REAL] Progreso actualizado exitosamente:", progress);
+    console.log(`✅ [FIREBASE REAL] Progreso guardado exitosamente: ${canonicalProgress}`);
     
     // Get updated project
     const updatedDocSnap = await getDoc(docRef);

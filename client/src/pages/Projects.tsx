@@ -114,25 +114,74 @@ function Projects() {
   const { currentUser } = useAuth();
   const { hasAccess, showUpgradeModal } = usePermissions();
 
-  // Helper function para mapear estados de estimados a progreso de proyecto
-  const mapStatusToProgress = (status?: string): string => {
-    switch (status) {
-      case "approved":
-      case "signed":
-        return "estimate_approved";
-      case "in_progress":
-      case "started":
-        return "work_in_progress";
-      case "completed":
-      case "finished":
-        return "project_completed";
-      case "draft":
-        return "estimate_draft";
-      case "sent":
-        return "estimate_sent";
-      default:
-        return "estimate_created";
+  // ✅ Canonical project progress mapper - maps ALL legacy statuses to valid timeline states
+  // This ensures compatibility with the 6-state timeline: estimate_created, estimate_rejected, 
+  // client_approved, scheduled, payment_received, completed
+  const canonicalizeProjectProgress = (status?: string, existingProgress?: string): string => {
+    // If there's an existing projectProgress, try to canonicalize it first
+    if (existingProgress) {
+      const normalized = existingProgress.toLowerCase().trim();
+      // Map old projectProgress keys to new canonical states
+      const progressMap: Record<string, string> = {
+        'estimate_draft': 'estimate_created',
+        'estimate_sent': 'estimate_created',
+        'estimate_approved': 'client_approved',
+        'work_in_progress': 'scheduled',  // ✅ Key fix: map removed state
+        'project_completed': 'completed',
+        'estimate_created': 'estimate_created',
+        'estimate_rejected': 'estimate_rejected',
+        'client_approved': 'client_approved',
+        'scheduled': 'scheduled',
+        'payment_received': 'payment_received',
+        'completed': 'completed'
+      };
+      if (progressMap[normalized]) {
+        return progressMap[normalized];
+      }
     }
+
+    // Fallback to status mapping
+    const normalized = (status || '').toLowerCase().trim();
+    
+    // Comprehensive mapping table: status → canonical timeline state
+    const statusMap: Record<string, string> = {
+      // Draft/Created states
+      'draft': 'estimate_created',
+      'created': 'estimate_created',
+      'pending': 'estimate_created',
+      'sent': 'estimate_created',
+      
+      // Rejected states
+      'rejected': 'estimate_rejected',
+      'declined': 'estimate_rejected',
+      'cancelled': 'estimate_rejected',
+      
+      // Approved/Contract states
+      'approved': 'client_approved',
+      'signed': 'client_approved',
+      'accepted': 'client_approved',
+      'contract': 'client_approved',
+      
+      // In Progress/Scheduled (work happening, not yet paid)
+      'in_progress': 'scheduled',  // ✅ Key fix: removed "Project" state maps to "Scheduled"
+      'started': 'scheduled',
+      'active': 'scheduled',
+      'working': 'scheduled',
+      'scheduled': 'scheduled',
+      
+      // Paid states
+      'paid': 'payment_received',
+      'payment_received': 'payment_received',
+      'invoiced': 'payment_received',
+      
+      // Completed states
+      'completed': 'completed',
+      'finished': 'completed',
+      'done': 'completed',
+      'closed': 'completed'
+    };
+    
+    return statusMap[normalized] || 'estimate_created'; // Default fallback
   };
 
   const loadProjects = useCallback(async (isBackgroundRefresh = false) => {
@@ -236,7 +285,7 @@ function Projects() {
               totalPrice: totalValue,
               createdAt: data.createdAt,
               source: "estimates",
-              projectProgress: mapStatusToProgress(data.status),
+              projectProgress: canonicalizeProjectProgress(data.status, data.projectProgress),
               estimateHtml: data.estimateHtml,
               contractHtml: data.contractHtml,
               attachments: data.attachments || {},
@@ -304,10 +353,10 @@ function Projects() {
           }
         }
 
-        // Mapear estados correctamente
+        // ✅ Canonicalize all project progress states to ensure timeline compatibility
         const projectsWithProgress = allProjects.map(project => ({
           ...project,
-          projectProgress: mapStatusToProgress(project.status) || "estimate_created"
+          projectProgress: canonicalizeProjectProgress(project.status, project.projectProgress) || "estimate_created"
         }));
         
         setProjects(projectsWithProgress);
