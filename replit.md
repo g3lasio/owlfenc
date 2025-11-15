@@ -140,3 +140,67 @@ total: `$${Number(estimate.total || 0).toFixed(2)}`,
 - Numbers over strings for monetary values ensures predictable calculations
 
 **Result**: Both flows now generate identical PDFs with complete, accurate pricing and no $0.00 artifacts.
+
+### November 15, 2025 - ProjectDetails Invoice Generation Unification (COMPLETE)
+**COMPLETE UNIFICATION**: ProjectDetails.tsx now uses EXACTLY the same invoice generation logic as Invoices.tsx.
+
+**Problem Identified**:
+- ProjectDetails was creating synthetic single-line items instead of using complete estimate data
+- Used fetch() instead of axios with blob response
+- Sent downPaymentAmount as empty string instead of numeric value
+- Missing detailed logging and error handling
+- Different payload structure than Invoices.tsx
+
+**Solution Implemented**:
+
+1. **Import axios** - same HTTP client as Invoices.tsx
+
+2. **Complete payload unification**:
+   ```javascript
+   estimate: {
+     items: estimateData.items,  // ✅ Use complete items from estimate
+     subtotal: estimateData.subtotal || 0,
+     discountAmount: estimateData.discount || 0,
+     taxRate: estimateData.taxRate || 0,
+     tax: estimateData.tax || 0,
+     total: totalAmount,
+   },
+   invoiceConfig: {
+     projectCompleted: project.status === 'completed',
+     downPaymentAmount: paidAmount > 0 ? paidAmount : 0,  // ✅ Number, not string
+     totalAmountPaid: paidAmount >= totalAmount,
+   }
+   ```
+
+3. **Axios blob response** (identical to Invoices.tsx):
+   ```javascript
+   const response = await axios.post("/api/invoice-pdf", invoicePayload, {
+     responseType: "blob",
+     timeout: 60000,
+   });
+   ```
+
+4. **Validation and error handling**:
+   - Verifies project.estimateData exists with items before proceeding
+   - Shows clear error message if estimate data is missing
+   - Identical logging patterns for debugging
+   - Same axios error handling
+
+**Validation Logic**:
+```javascript
+if (!project.estimateData || !project.estimateData.items || project.estimateData.items.length === 0) {
+  toast({
+    title: "Datos Incompletos",
+    description: "Este proyecto no tiene un presupuesto asociado. Crea un presupuesto primero desde Estimates.",
+    variant: "destructive",
+  });
+  return;
+}
+```
+
+**Three Invoice Generation Flows Now Unified**:
+1. ✅ EstimatesWizard.tsx → axios, complete items, numeric downPayment
+2. ✅ Invoices.tsx → axios, complete items, numeric downPayment  
+3. ✅ ProjectDetails.tsx → axios, complete items, numeric downPayment
+
+**Result**: All three entry points now produce identical PDF invoices with complete line items, accurate pricing, and consistent formatting. No more $0.00 artifacts or missing data across any flow.
