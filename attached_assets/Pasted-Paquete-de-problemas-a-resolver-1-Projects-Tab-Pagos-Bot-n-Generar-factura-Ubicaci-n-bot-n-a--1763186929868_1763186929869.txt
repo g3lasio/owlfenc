@@ -1,0 +1,72 @@
+Paquete de problemas a resolver
+1) Projects → Tab Pagos → Botón Generar factura
+
+Ubicación: botón a la derecha de “Registrar pago”.
+
+Comportamiento esperado: al hacer clic debe generar un PDF con el nombre:
+factura-<estimateId> (ejemplo: factura-0frvA4BqfazLDTZRFVrr).
+
+Estoy adjuntando el PDF generado con ese nombre para que revises el resultado final y evalúes con precisión contenido y formato.
+
+2) Estimate Wizard → History (Paso 4) → Botón Generate as invoice
+
+Contexto: tras crear el estimado y la lista de materiales, este botón también genera una factura.
+
+Problema: ambos botones (Projects/Pagos y Estimate Wizard/History) NO comparten la misma lógica.
+El resultado son discrepancias de datos e información entre facturas que deberían ser idénticas para el cliente.
+
+Lo que necesito (sin rodeos)
+
+Análisis minucioso y comparativo
+
+Auditar la fuente de datos (estimate, customer, items, impuestos, descuentos, totales, términos, fechas).
+
+Verificar plantillas (mismo layout/branding/condiciones).
+
+Revisar formateo monetario, impuestos, cálculo de subtotales y totales.
+
+Confirmar nombres de archivos y metadatos (ID, timestamps, author).
+
+Comprobar eventos y permisos (quién puede generar, en qué estados).
+
+Asegurar integridad: que el PDF sea fiel al registro en DB y a lo que ve el usuario.
+
+Propuesta concreta de solución (Single Source of Truth)
+
+Una sola función de generación de facturas (única librería/plantilla), reutilizada por ambos botones.
+
+DTO/Schema unificado del invoice (cliente, dirección, líneas, qty, unit, taxes, totals, notes).
+
+Plantilla PDF única (misma tipografía, logos, estilos, footer legal).
+
+Servicio central: invoiceService.generatePDF(estimateId | invoiceId, options) consumido por ambos flujos.
+
+Pruebas E2E: generar desde ambos puntos y comparar byte a byte (o checksum) los PDFs resultantes para asegurar paridad.
+
+Versionado de plantilla (p.ej., invoice_v1) y registro en DB del templateVersion.
+
+Criterios de aceptación
+
+Misma data y cálculos desde ambos botones (0 diferencias).
+
+Mismo nombre de archivo (factura-<estimateId>.pdf) y metadatos coherentes.
+
+Render idéntico (márgenes, fuentes, colores, logotipo, sección de términos).
+
+Tiempos de generación aceptables y sin errores en logs.
+
+Registro en la página Invoices sin pérdida de datos ni inconsistencias.
+
+Siguiente paso
+
+Entrega primero un informe breve con:
+
+Causa raíz de las discrepancias,
+
+Diferencias específicas encontradas (data, cálculo, template, formateo, permisos),
+
+Plan de unificación (qué función se centraliza, qué se depreca, qué se migra).
+
+Si apruebo tu propuesta, implementas la solución unificada y validamos con pruebas E2E desde ambos flujos.
+
+Recuerda: ya existe una página Invoices y no puede haber discrepancias ni pérdidas de datos venga de donde venga la generación. Quiero una solución definitiva, no parches.
