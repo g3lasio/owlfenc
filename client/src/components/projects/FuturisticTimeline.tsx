@@ -8,13 +8,12 @@ interface FuturisticTimelineProps {
   onProgressUpdate: (newProgress: string) => void;
 }
 
-// Timeline stages with new mapping
+// Timeline stages - "Project" state removed per user request
 const timelineStages = [
   { key: "estimate_created", label: "Estimate", icon: "ri-file-list-line", color: "#64748b" },
   { key: "estimate_rejected", label: "Rejected", icon: "ri-close-circle-line", color: "#ef4444" },
   { key: "client_approved", label: "In Contract", icon: "ri-file-text-line", color: "#8b5cf6" },
   { key: "scheduled", label: "Scheduled", icon: "ri-calendar-check-line", color: "#f59e0b" },
-  { key: "in_progress", label: "Project", icon: "ri-tools-line", color: "#06b6d4" },
   { key: "payment_received", label: "Paid", icon: "ri-money-dollar-circle-line", color: "#10b981" },
   { key: "completed", label: "Completed", icon: "ri-checkbox-circle-line", color: "#22c55e" },
 ];
@@ -197,7 +196,7 @@ export default function FuturisticTimeline({ projectId, currentProgress, onProgr
             const isCurrent = index === activeIndex;
             
             return (
-              <div key={stage.key} className="flex flex-col items-center flex-1 min-w-0">
+              <div key={stage.key} className="flex flex-col items-center flex-1 min-w-0 relative group">
                 {/* Stage Icon */}
                 <div 
                   className={`w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-all duration-300 relative ${
@@ -220,12 +219,27 @@ export default function FuturisticTimeline({ projectId, currentProgress, onProgr
                   )}
                 </div>
                 
-                {/* Stage Label - Better mobile readability */}
-                <span className={`text-[9px] xs:text-[10px] sm:text-xs md:text-sm font-medium mt-1.5 md:mt-2 transition-all duration-300 text-center leading-tight max-w-full break-words ${
+                {/* Stage Label - Hidden on mobile, visible on desktop OR on hover/tap */}
+                <span className={`hidden md:block text-sm font-medium mt-2 transition-all duration-300 text-center leading-tight max-w-full break-words ${
                   isActive ? 'text-cyan-100' : 'text-gray-400'
                 }`}>
                   {stage.label}
                 </span>
+                
+                {/* Mobile Tooltip - Shows on tap/hover */}
+                <div className="md:hidden absolute -bottom-10 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 group-active:opacity-100 pointer-events-none transition-opacity duration-200 z-10">
+                  <div className={`px-2 py-1 rounded-lg backdrop-blur-sm border text-xs font-medium whitespace-nowrap shadow-lg ${
+                    isActive 
+                      ? 'bg-cyan-900/90 border-cyan-400/60 text-cyan-100' 
+                      : 'bg-gray-800/90 border-gray-600/60 text-gray-300'
+                  }`}>
+                    {stage.label}
+                  </div>
+                  {/* Arrow pointer */}
+                  <div className={`absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 rotate-45 ${
+                    isActive ? 'bg-cyan-900/90 border-l border-t border-cyan-400/60' : 'bg-gray-800/90 border-l border-t border-gray-600/60'
+                  }`}></div>
+                </div>
               </div>
             );
           })}
