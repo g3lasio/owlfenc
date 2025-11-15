@@ -34,6 +34,7 @@ const companyProfileSchema = z.object({
   projectVolume: z.string().optional(),
   mainChallenge: z.string().optional(),
   logo: z.string().optional(),
+  profilePhoto: z.string().optional(),
   ownerName: z.string().optional(),
   role: z.string().optional(),
   mobilePhone: z.string().optional(),

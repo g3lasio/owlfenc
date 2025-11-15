@@ -32,6 +32,7 @@ export interface CompanyProfile {
   projectVolume?: string;
   mainChallenge?: string;
   logo?: string;
+  profilePhoto?: string;
   ownerName?: string;
   role?: string;
   mobilePhone?: string;
