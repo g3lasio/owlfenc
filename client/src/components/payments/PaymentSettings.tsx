@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   CreditCard,
   Clock,
@@ -20,6 +21,8 @@ import {
   Zap,
   Link as LinkIcon,
   RefreshCw,
+  AlertTriangle,
+  XCircle,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -42,6 +45,12 @@ type StripeAccountStatus = {
     currently_due?: string[];
     past_due?: string[];
     eventually_due?: string[];
+    errors?: Array<{
+      code: string;
+      reason: string;
+      requirement: string;
+    }>;
+    disabled_reason?: string | null;
   };
   error?: string;
   lastUpdated?: string;
@@ -230,6 +239,40 @@ export default function PaymentSettings({
           {getStripeStatusBadge()}
         </div>
       </div>
+
+      {/* Verification Errors Alert - Show if Stripe rejected verification */}
+      {stripeAccountStatus?.requirements?.errors && stripeAccountStatus.requirements.errors.length > 0 && (
+        <Alert variant="destructive" className="bg-red-950/50 border-red-900">
+          <XCircle className="h-5 w-5" />
+          <AlertTitle className="text-red-200 font-bold">Stripe Account Verification Failed</AlertTitle>
+          <AlertDescription className="text-red-300 space-y-3 mt-2">
+            <p className="font-medium">
+              Your Stripe account needs attention. The following issues must be resolved:
+            </p>
+            <ul className="list-disc list-inside space-y-2">
+              {stripeAccountStatus.requirements.errors.map((error, index) => (
+                <li key={index} className="text-sm">
+                  <span className="font-semibold">{error.code.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</span>
+                  <p className="ml-6 mt-1 text-red-200">{error.reason}</p>
+                  <p className="ml-6 mt-1 text-xs text-red-400">Required field: {error.requirement}</p>
+                </li>
+              ))}
+            </ul>
+            {stripeAccountStatus.requirements.disabled_reason && (
+              <div className="mt-4 p-3 bg-red-900/30 rounded border border-red-800">
+                <p className="text-sm text-red-200">
+                  <strong>Account Status:</strong> {stripeAccountStatus.requirements.disabled_reason.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                </p>
+              </div>
+            )}
+            <div className="mt-4 p-3 bg-red-900/30 rounded border border-red-800">
+              <p className="text-sm text-red-200">
+                <strong>Action Required:</strong> Please click "Complete Setup in Stripe Dashboard" below to fix these issues and activate your account.
+              </p>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Stripe Connect Account Setup */}
       <Card className="bg-gray-900 border-gray-700">

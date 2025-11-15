@@ -387,19 +387,32 @@ export class ContractorPaymentService {
       const requirements = {
         currently_due: account.requirements?.currently_due || [],
         past_due: account.requirements?.past_due || [],
-        eventually_due: account.requirements?.eventually_due || []
+        eventually_due: account.requirements?.eventually_due || [],
+        errors: account.requirements?.errors || [],
+        disabled_reason: account.requirements?.disabled_reason || null
       };
       
       const hasRequirements = requirements.currently_due.length > 0 || 
                              requirements.past_due.length > 0;
+      const hasErrors = requirements.errors.length > 0;
       
       console.log(`✅ [STRIPE-STATUS] Estado: {
   accountId: '${account.id}',
   chargesEnabled: ${chargesEnabled},
   payoutsEnabled: ${payoutsEnabled},
   fullyActive: ${isActive},
-  needsMoreInfo: ${hasRequirements}
+  needsMoreInfo: ${hasRequirements},
+  verificationErrors: ${hasErrors}
 }`);
+      
+      // Log verification errors if present
+      if (hasErrors) {
+        console.warn(`⚠️ [STRIPE-VERIFICATION] Account ${account.id} has verification errors:`);
+        requirements.errors.forEach((error: any, index: number) => {
+          console.warn(`  ${index + 1}. [${error.code}] ${error.reason}`);
+          console.warn(`     Requirement: ${error.requirement}`);
+        });
+      }
       
       return {
         hasStripeAccount: true,
