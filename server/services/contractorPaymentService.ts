@@ -436,7 +436,15 @@ export class ContractorPaymentService {
       
       // CRITICAL: Preserve hasStripeAccount status if account ID exists in DB
       // This prevents showing "connect account" when it's just a temporary Stripe API error
-      const accountIdStored = user?.stripeConnectAccountId || null;
+      // Re-fetch user to get account ID in error handler
+      let accountIdStored: string | null = null;
+      try {
+        const userInError = await storage.getUser(userId);
+        accountIdStored = userInError?.stripeConnectAccountId || null;
+      } catch (userError) {
+        console.error('❌ [STRIPE-STATUS] Failed to fetch user in error handler:', userError);
+      }
+      
       const hasAccountInDB = !!accountIdStored;
       
       if (accountIdStored) {

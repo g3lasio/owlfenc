@@ -99,13 +99,13 @@ export default function PaymentSettings({
           description: isFullyActive
             ? "Tu cuenta está lista para recibir pagos"
             : "Completa los pasos restantes en el dashboard de Stripe",
-          variant: isFullyActive ? "default" : "secondary",
+          variant: "default",
         });
       } else {
         toast({
           title: "⚠️ No Conectada",
           description: "Aún no has conectado una cuenta de Stripe",
-          variant: "secondary",
+          variant: "default",
         });
       }
     } catch (error: any) {
