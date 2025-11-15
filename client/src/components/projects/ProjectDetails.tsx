@@ -228,6 +228,7 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
   };
 
   // USAR EXACTAMENTE LA MISMA LÓGICA QUE INVOICES.TSX
+  // El proyecto ES el estimate completo (cargado desde Firebase collection "estimates")
   const handleGenerateInvoice = async () => {
     if (!currentUser) {
       console.warn("⚠️ [PROJECT-INVOICE] Missing currentUser");
@@ -245,26 +246,19 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
       return;
     }
 
-    // Verificar que tenemos datos del estimate
-    if (!project.estimateData || !project.estimateData.items || project.estimateData.items.length === 0) {
-      console.warn("⚠️ [PROJECT-INVOICE] No estimate data found in project");
-      toast({
-        title: "Datos Incompletos",
-        description: "Este proyecto no tiene un presupuesto asociado. Crea un presupuesto primero desde Estimates.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     try {
       setIsSaving(true);
       console.log("🚀 [PROJECT-INVOICE] Starting invoice generation for:", project.clientName);
+      console.log("📊 [PROJECT-INVOICE] Project data:", {
+        hasItems: !!project.items,
+        itemsCount: project.items?.length || 0,
+        total: project.total || project.totalPrice,
+        subtotal: project.subtotal
+      });
 
-      const estimateData = project.estimateData;
-      
-      // Calcular monto pagado (si existe)
+      // El proyecto ES el estimate - usar campos directamente como Invoices.tsx
       const paidAmount = project.paidAmount || 0;
-      const totalAmount = estimateData.total || estimateData.displayTotal || 0;
+      const totalAmount = project.total || project.totalPrice || project.displayTotal || 0;
 
       // Build invoice payload EXACTLY like Invoices.tsx does
       const invoicePayload = {
@@ -281,15 +275,15 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
         estimate: {
           client: {
             name: project.clientName,
-            email: project.clientEmail || estimateData.clientEmail || "",
-            phone: project.clientPhone || estimateData.clientPhone || "",
-            address: project.address || estimateData.clientAddress || "",
+            email: project.clientEmail || "",
+            phone: project.clientPhone || "",
+            address: project.clientAddress || project.address || "",
           },
-          items: estimateData.items,  // ✅ Usar items completos del estimate
-          subtotal: estimateData.subtotal || estimateData.displaySubtotal || 0,
-          discountAmount: estimateData.discount || estimateData.discountAmount || 0,
-          taxRate: estimateData.taxRate || 0,
-          tax: estimateData.tax || 0,
+          items: project.items || [],  // ✅ El proyecto ES el estimate, tiene items directamente
+          subtotal: project.subtotal || project.displaySubtotal || 0,
+          discountAmount: project.discount || project.discountAmount || 0,
+          taxRate: project.taxRate || 0,
+          tax: project.tax || 0,
           total: totalAmount,
         },
         invoiceConfig: {
