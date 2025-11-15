@@ -6536,6 +6536,7 @@ Output must be between 200-900 characters in English.`;
       if (req.body.specialties !== undefined) updateData.specialties = req.body.specialties;
       if (req.body.socialMedia !== undefined) updateData.socialMedia = req.body.socialMedia;
       if (req.body.logo !== undefined) updateData.logo = req.body.logo;
+      if (req.body.profilePhoto !== undefined) updateData.profilePhoto = req.body.profilePhoto;
 
       // Update in database using storage service
       await storage.updateUser(userId, updateData);
@@ -6571,6 +6572,7 @@ Output must be between 200-900 characters in English.`;
         specialties: updatedUser?.specialties || [],
         socialMedia: updatedUser?.socialMedia || {},
         logo: updatedUser?.logo || "",
+        profilePhoto: updatedUser?.profilePhoto || "",
       };
 
       res.json({

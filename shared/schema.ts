@@ -78,6 +78,7 @@ export const users = pgTable('users', {
   socialMedia: jsonb('social_media'),
   documents: jsonb('documents'),
   logo: text('logo'),
+  profilePhoto: text('profile_photo'),
   hasUsedTrial: boolean('has_used_trial').default(false).notNull(), // PERMANENT FLAG - never reset after trial created
   trialStartDate: timestamp('trial_start_date'), // Fecha cuando empezó el trial (null si nunca lo usó)
   createdAt: timestamp('created_at').defaultNow().notNull(),

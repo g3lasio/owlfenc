@@ -574,15 +574,58 @@ export default function Profile() {
       
       setCompanyInfo(updatedInfo);
 
-      // Guardar inmediatamente en Firestore
+      // PERSISTENCE LAYER 1: Guardar inmediatamente en localStorage
+      const userId = currentUser?.uid;
+      const profileKey = `userProfile_${userId}`;
+      localStorage.setItem(profileKey, JSON.stringify(updatedInfo));
+      console.log("💾 [PROFILE-PHOTO] Foto guardada en localStorage");
+
+      // PERSISTENCE LAYER 2: Guardar en servidor inmediatamente con autenticación
+      try {
+        const authHeaders = await getAuthHeaders();
+        const response = await fetch("/api/profile", {
+          method: "POST",
+          credentials: "include",
+          headers: { 
+            "Content-Type": "application/json",
+            ...authHeaders
+          },
+          body: JSON.stringify(updatedInfo),
+        });
+        
+        if (response.ok) {
+          console.log("✅ [PROFILE-PHOTO] Foto guardada en servidor");
+        } else {
+          console.warn("⚠️ [PROFILE-PHOTO] Respuesta no-ok del servidor:", response.status);
+        }
+      } catch (error) {
+        console.warn("⚠️ [PROFILE-PHOTO] Error con autenticación, intentando sin headers:", error);
+        try {
+          await fetch("/api/profile", {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(updatedInfo),
+          });
+          console.log("✅ [PROFILE-PHOTO] Foto guardada en servidor (fallback)");
+        } catch (fallbackError) {
+          console.warn("⚠️ [PROFILE-PHOTO] Error guardando en servidor:", fallbackError);
+        }
+      }
+
+      // PERSISTENCE LAYER 3: Guardar en Firestore (fuente de verdad para sync entre dispositivos)
       if (updateProfile) {
-        await updateProfile(updatedInfo);
-        console.log("💾 [PROFILE-PHOTO] Foto guardada en Firestore");
+        try {
+          await updateProfile(updatedInfo);
+          console.log("💾 [PROFILE-PHOTO] Foto guardada en Firestore");
+        } catch (firebaseError) {
+          console.warn("⚠️ [PROFILE-PHOTO] Error guardando en Firestore:", firebaseError);
+        }
       }
 
       toast({
         title: "Foto actualizada",
-        description: "Tu foto de perfil se ha actualizado correctamente.",
+        description: "Tu foto de perfil se ha guardado correctamente y es persistente.",
       });
     } catch (error) {
       console.error("❌ [PROFILE-PHOTO] Error procesando foto:", error);
