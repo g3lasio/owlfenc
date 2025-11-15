@@ -51,6 +51,7 @@ import {
   shareOrDownloadPdf,
   getSharingCapabilities,
 } from "@/utils/mobileSharing";
+import { buildInvoicePayload } from "@/lib/invoicePayloadBuilder";
 import {
   Search,
   Plus,
@@ -4032,48 +4033,32 @@ This link provides a professional view of your estimate that you can access anyt
   };
 
   console.log(estimate);
-  // Direct Invoice Generation without popup
-  const handleDirectInvoiceGeneration = async () => {
+
+  // 📦 Helper: Prepara payload de factura usando función compartida
+  const prepareInvoicePayload = (configOverride?: any) => {
+    // Validar perfil
     if (!profile?.company) {
-      toast({
-        title: "Profile Incomplete",
-        description:
-          "Complete your company name in your profile before generating invoices.",
-        variant: "destructive",
-      });
-      return;
+      throw new Error("Company profile is incomplete");
     }
 
-    try {
-      // Use default values for direct generation
-      const defaultInvoiceConfig = {
-        projectCompleted: true,
-        downPaymentAmount: "",
-        totalAmountPaid: true,
-      };
+    // Usar configuración personalizada o valores por defecto
+    const invoiceConfig = configOverride || {
+      projectCompleted: true,
+      downPaymentAmount: "",
+      totalAmountPaid: true,
+    };
 
-      const invoicePayload = {
-        profile: {
-          company: profile.company,
-          address: profile.address
-            ? `${profile.address}${profile.city ? ", " + profile.city : ""}${profile.state ? ", " + profile.state : ""}${profile.zipCode ? " " + profile.zipCode : ""}`
-            : "",
-          phone: profile.phone || "",
-          email: profile.email || currentUser?.email || "",
-          website: profile.website || "",
-          logo: profile.logo || "",
-        },
-        estimate: {
-          client: estimate.client,
-          items: estimate.items,
-          subtotal: estimate.subtotal,
-          discountAmount: estimate.discountAmount,
-          taxRate: estimate.taxRate,
-          tax: estimate.tax,
-          total: estimate.total,
-        },
-        invoiceConfig: defaultInvoiceConfig,
-      };
+    // Construir payload usando la función compartida
+    return buildInvoicePayload(estimate, profile, 'estimate', invoiceConfig);
+  };
+
+  // Direct Invoice Generation without popup
+  const handleDirectInvoiceGeneration = async () => {
+    try {
+      // Usar función helper para preparar payload canónico
+      const invoicePayload = prepareInvoicePayload();
+
+      console.log('📤 [EstimatesWizard-Direct] Sending unified invoice payload:', invoicePayload);
 
       const response = await axios.post("/api/invoice-pdf", invoicePayload, {
         responseType: "blob",
@@ -4096,11 +4081,21 @@ This link provides a professional view of your estimate that you can access anyt
       });
     } catch (error) {
       console.error("Error generating invoice:", error);
-      toast({
-        title: "Generation Failed",
-        description: "Could not generate invoice. Please try again.",
-        variant: "destructive",
-      });
+      
+      // Mostrar mensaje específico para perfil incompleto
+      if (error instanceof Error && error.message.includes("incomplete")) {
+        toast({
+          title: "Profile Incomplete",
+          description: "Complete your company name in your profile before generating invoices.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Generation Failed",
+          description: "Could not generate invoice. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -7534,46 +7529,11 @@ This link provides a professional view of your estimate that you can access anyt
                   return;
                 }
 
-                // Validate contractor profile
-                if (!profile?.company) {
-                  toast({
-                    title: "Profile Incomplete",
-                    description:
-                      "Complete your company name in your profile before generating invoices.",
-                    variant: "destructive",
-                  });
-                  return;
-                }
-
                 try {
-                  // Prepare invoice data payload
-                  const invoicePayload = {
-                    profile: {
-                      company: profile.company,
-                      address: profile.address
-                        ? `${profile.address}${profile.city ? ", " + profile.city : ""}${profile.state ? ", " + profile.state : ""}${profile.zipCode ? " " + profile.zipCode : ""}`
-                        : "",
-                      phone: profile.phone || "",
-                      email: profile.email || currentUser?.email || "",
-                      website: profile.website || "",
-                      logo: profile.logo || "",
-                    },
-                    estimate: {
-                      client: estimate.client,
-                      items: estimate.items,
-                      subtotal: estimate.subtotal,
-                      discountAmount: estimate.discountAmount,
-                      taxRate: estimate.taxRate,
-                      tax: estimate.tax,
-                      total: estimate.total,
-                    },
-                    invoiceConfig,
-                  };
+                  // Usar función helper para preparar payload canónico
+                  const invoicePayload = prepareInvoicePayload(invoiceConfig);
 
-                  console.log(
-                    "Generating invoice PDF with payload:",
-                    invoicePayload,
-                  );
+                  console.log('📤 [EstimatesWizard-Dialog] Sending unified invoice payload:', invoicePayload);
 
                   // Call invoice PDF service
                   const response = await axios.post(
@@ -7612,12 +7572,21 @@ This link provides a professional view of your estimate that you can access anyt
                   });
                 } catch (error) {
                   console.error("Error generating invoice:", error);
-                  toast({
-                    title: "Generation Failed",
-                    description:
-                      "Could not generate invoice. Please try again.",
-                    variant: "destructive",
-                  });
+                  
+                  // Mostrar mensaje específico para perfil incompleto
+                  if (error instanceof Error && error.message.includes("incomplete")) {
+                    toast({
+                      title: "Profile Incomplete",
+                      description: "Complete your company name in your profile before generating invoices.",
+                      variant: "destructive",
+                    });
+                  } else {
+                    toast({
+                      title: "Generation Failed",
+                      description: "Could not generate invoice. Please try again.",
+                      variant: "destructive",
+                    });
+                  }
                 }
               }}
               className="bg-orange-600 hover:bg-orange-700"

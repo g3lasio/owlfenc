@@ -520,6 +520,74 @@ export const contractAuditLog = pgTable('contract_audit_log', {
   timestampIdx: index('audit_timestamp_idx').on(table.timestamp),
 }));
 
+// ====================================================================
+// INVOICES - Unified invoice generation system
+// ====================================================================
+export const invoices = pgTable('invoices', {
+  id: text('id').primaryKey(),
+  invoiceNumber: varchar('invoice_number', { length: 50 }).notNull().unique(),
+  userId: text('user_id').notNull(),
+  
+  // Company information (contractor/service provider)
+  companyName: varchar('company_name', { length: 255 }).notNull(),
+  companyAddress: text('company_address'),
+  companyPhone: varchar('company_phone', { length: 50 }),
+  companyEmail: varchar('company_email', { length: 255 }).notNull(),
+  companyWebsite: varchar('company_website', { length: 255 }),
+  companyLogo: text('company_logo'),
+  companyLicense: varchar('company_license', { length: 100 }),
+  
+  // Client information
+  clientName: varchar('client_name', { length: 255 }).notNull(),
+  clientEmail: varchar('client_email', { length: 255 }),
+  clientPhone: varchar('client_phone', { length: 50 }),
+  clientAddress: text('client_address'),
+  
+  // Invoice metadata
+  issueDate: timestamp('issue_date').notNull(),
+  dueDate: timestamp('due_date').notNull(),
+  status: varchar('status', { length: 50 }).notNull().default('pending'), // pending, sent, paid, overdue, cancelled
+  
+  // Line items (stored as JSON array)
+  items: jsonb('items').notNull(),
+  
+  // Financial summary
+  subtotal: decimal('subtotal', { precision: 10, scale: 2 }).notNull(),
+  discountAmount: decimal('discount_amount', { precision: 10, scale: 2 }).default('0'),
+  discountName: varchar('discount_name', { length: 255 }),
+  taxRate: decimal('tax_rate', { precision: 5, scale: 2 }).notNull(),
+  taxAmount: decimal('tax_amount', { precision: 10, scale: 2 }).notNull(),
+  totalAmount: decimal('total_amount', { precision: 10, scale: 2 }).notNull(),
+  
+  // Payment tracking
+  amountPaid: decimal('amount_paid', { precision: 10, scale: 2 }).default('0'),
+  balanceDue: decimal('balance_due', { precision: 10, scale: 2 }).notNull(),
+  
+  // Invoice configuration
+  projectCompleted: boolean('project_completed').default(false),
+  downPaymentAmount: decimal('down_payment_amount', { precision: 10, scale: 2 }),
+  
+  // Reference to source
+  sourceType: varchar('source_type', { length: 50 }), // 'project', 'estimate', 'manual'
+  sourceId: text('source_id'), // ID of the source project or estimate
+  
+  // Notes and terms
+  notes: text('notes'),
+  paymentTerms: text('payment_terms'),
+  
+  // PDF storage
+  pdfPath: text('pdf_path'),
+  pdfUrl: text('pdf_url'),
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  invoiceNumberIdx: index('invoice_number_idx').on(table.invoiceNumber),
+  userIdIdx: index('invoices_user_id_idx').on(table.userId),
+  statusIdx: index('invoices_status_idx').on(table.status),
+  dueDateIdx: index('invoices_due_date_idx').on(table.dueDate),
+}));
+
 // Insert schemas for all tables
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -636,6 +704,12 @@ export const insertNotificationSchema = createInsertSchema(notifications).omit({
   sentAt: true,
 });
 
+export const insertInvoiceSchema = createInsertSchema(invoices).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types for all tables
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -684,6 +758,9 @@ export type InsertCompanyInformation = z.infer<typeof insertCompanyInformationSc
 
 export type DigitalContract = typeof digitalContracts.$inferSelect;
 export type InsertDigitalContract = z.infer<typeof insertDigitalContractSchema>;
+
+export type Invoice = typeof invoices.$inferSelect;
+export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
 
 // OTP Code schemas and types
 export const insertOtpCodeSchema = createInsertSchema(otpCodes).omit({

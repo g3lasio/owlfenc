@@ -8,10 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { updateProject } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
+import { useProfile } from "@/hooks/use-profile";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import FileManager from "./FileManager";
 import FuturisticTimeline from "./FuturisticTimeline";
+import { buildInvoicePayload } from "@/lib/invoicePayloadBuilder";
 
 interface ProjectDetailsProps {
   project: any;
@@ -40,6 +42,7 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
     notes: ''
   });
   const { toast } = useToast();
+  const { profile, isLoading: isProfileLoading } = useProfile();
 
   const handleProjectNotesUpdate = async () => {
     try {
@@ -226,38 +229,30 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
     try {
       setIsSaving(true);
 
-      // Preparar datos para la factura
-      const invoiceData = {
-        profile: {
-          company: "Owl Fenc AI",
-          email: project.clientEmail || "",
-          phone: project.clientPhone || "",
-          address: ""
-        },
-        estimate: {
-          client: {
-            name: project.clientName,
-            email: project.clientEmail || "",
-            phone: project.clientPhone || "",
-            address: project.address
-          },
-          items: [{
-            description: `${project.projectType || 'Proyecto'} - ${project.projectSubtype || ''}`,
-            quantity: 1,
-            unitPrice: project.totalPrice || 0,
-            totalPrice: project.totalPrice || 0
-          }],
-          subtotal: project.totalPrice || 0,
-          tax: 0,
-          total: project.totalPrice || 0
-        },
-        invoiceConfig: {
-          downPaymentAmount: project.paymentDetails?.totalPaid || 0
-        },
-        emailConfig: {
-          ccContractor: false
-        }
-      };
+      // Validar que el perfil esté cargado y completo
+      if (isProfileLoading) {
+        toast({
+          title: "Cargando perfil",
+          description: "Por favor espera mientras se carga tu perfil de empresa."
+        });
+        setIsSaving(false);
+        return;
+      }
+
+      if (!profile || !profile.company) {
+        toast({
+          variant: "destructive",
+          title: "Perfil incompleto",
+          description: "Debes completar la información de tu empresa en tu perfil antes de generar facturas."
+        });
+        setIsSaving(false);
+        return;
+      }
+
+      // Construir payload usando la función compartida
+      const invoicePayload = buildInvoicePayload(project, profile, 'project');
+
+      console.log('📤 [ProjectDetails] Sending unified invoice payload:', invoicePayload);
 
       // Generar y descargar PDF de factura
       const response = await fetch('/api/invoice-pdf', {
@@ -265,7 +260,7 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(invoiceData)
+        body: JSON.stringify(invoicePayload)
       });
 
       if (!response.ok) {
@@ -277,7 +272,7 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `factura-${project.projectId}.pdf`;
+      a.download = `factura-${project.projectId}_${Date.now()}.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);

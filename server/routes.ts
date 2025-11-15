@@ -1874,33 +1874,26 @@ Output must be between 200-900 characters in English.`;
     throw new Error("Timed out waiting for PDF to be ready.");
   };
 
-  // 🧾 NEW: Professional Invoice PDF Generation
-  app.post("/api/invoice-pdf", async (req: Request, res: Response) => {
-    console.log("🎯 Professional Invoice PDF generation started");
+  /**
+   * Normaliza datos de factura desde diferentes fuentes (project, estimate)
+   * a la estructura canónica requerida por invoicePdfService
+   */
+  function normalizeInvoicePayload(requestData: any): any {
+    console.log("🔄 Normalizing invoice payload from source:", 
+      requestData.profile ? 'estimate-wizard' : 'project-details');
 
-    try {
-      // Initialize Invoice PDF service
-      await invoicePdfService.initialize();
-
-      // Extract and validate data from request
-      const requestData = req.body;
-      console.log(
-        "🔍 Invoice request data:",
-        JSON.stringify(requestData, null, 2),
-      );
-
-      // Handle contractor profile data
-      const profile = requestData.profile || {};
-      const estimate = requestData.estimate || {};
+    // CASO 1: Datos desde EstimatesWizard (formato completo)
+    if (requestData.profile && requestData.estimate) {
+      const profile = requestData.profile;
+      const estimate = requestData.estimate;
       const invoiceConfig = requestData.invoiceConfig || {};
 
       // Calculate due date based on payment status
       const dueDate = invoiceConfig.totalAmountPaid
-        ? new Date().toLocaleDateString() // Already paid
-        : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(); // 30 days from now
+        ? new Date().toLocaleDateString()
+        : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString();
 
-      // Prepare invoice data structure
-      const invoiceData = {
+      return {
         company: {
           name: profile.company || "Your Company",
           address: profile.address || "Company Address",
@@ -1911,32 +1904,29 @@ Output must be between 200-900 characters in English.`;
         },
         invoice: {
           number: `INV-${Date.now()}`,
-          date: new Date().toLocaleDateString(),
+          date: new Date().toLocaleDateString('en-US'),
           due_date: dueDate,
-          items:
-            estimate.items?.map((item) => {
-              // FIXED: Handle string prices with $ symbols
-              const unitPrice = typeof item.unitPrice === 'string' 
-                ? parseFloat(item.unitPrice.replace(/[$,]/g, '')) 
-                : Number(item.unitPrice || 0);
-              
-              const totalPrice = typeof item.totalPrice === 'string' 
-                ? parseFloat(item.totalPrice.replace(/[$,]/g, '')) 
-                : Number(item.totalPrice || 0);
+          items: (estimate.items || []).map((item: any) => {
+            const unitPrice = typeof item.unitPrice === 'string' 
+              ? parseFloat(item.unitPrice.replace(/[$,]/g, '')) 
+              : Number(item.unitPrice || 0);
+            
+            const totalPrice = typeof item.totalPrice === 'string' 
+              ? parseFloat(item.totalPrice.replace(/[$,]/g, '')) 
+              : Number(item.totalPrice || 0);
 
-              return {
-                code: item.name || "Item",
-                description: item.description || "",
-                qty: item.quantity || 1,
-                unit_price: `$${unitPrice.toFixed(2)}`,
-                total: `$${totalPrice.toFixed(2)}`,
-              };
-            }) || [],
+            return {
+              code: item.name || "Item",
+              description: item.description || "",
+              qty: item.quantity || 1,
+              unit_price: `$${unitPrice.toFixed(2)}`,
+              total: `$${totalPrice.toFixed(2)}`,
+            };
+          }),
           subtotal: `$${Number(estimate.subtotal || 0).toFixed(2)}`,
-          discounts:
-            Number(estimate.discountAmount || 0) > 0
-              ? `-$${Number(estimate.discountAmount || 0).toFixed(2)}`
-              : "$0.00",
+          discounts: Number(estimate.discountAmount || 0) > 0
+            ? `-$${Number(estimate.discountAmount || 0).toFixed(2)}`
+            : "$0.00",
           tax_rate: estimate.taxRate || 0,
           tax_amount: `$${Number(estimate.tax || 0).toFixed(2)}`,
           total: `$${Number(estimate.total || 0).toFixed(2)}`,
@@ -1946,46 +1936,98 @@ Output must be between 200-900 characters in English.`;
           name: estimate.client?.name || "Client Name",
           email: estimate.client?.email || "No email provided",
           phone: estimate.client?.phone || "No phone provided",
-          address: (() => {
-            // Build complete address from available fields
-            const addressParts = [];
-            if (
-              estimate.client?.address &&
-              estimate.client.address.trim() !== ""
-            ) {
-              addressParts.push(estimate.client.address.trim());
-            }
-            if (estimate.client?.city && estimate.client.city.trim() !== "") {
-              addressParts.push(estimate.client.city.trim());
-            }
-            if (estimate.client?.state && estimate.client.state.trim() !== "") {
-              addressParts.push(estimate.client.state.trim());
-            }
-            if (
-              estimate.client?.zipCode &&
-              estimate.client.zipCode.trim() !== ""
-            ) {
-              addressParts.push(estimate.client.zipCode.trim());
-            } else if (
-              estimate.client?.zipcode &&
-              estimate.client.zipcode.trim() !== ""
-            ) {
-              addressParts.push(estimate.client.zipcode.trim());
-            }
-
-            return addressParts.length > 0
-              ? addressParts.join(", ")
-              : "No address provided";
-          })(),
+          address: [
+            estimate.client?.address,
+            estimate.client?.city,
+            estimate.client?.state,
+            estimate.client?.zipCode || estimate.client?.zipcode
+          ].filter(Boolean).join(", ") || "No address provided",
           contact: `${estimate.client?.phone || "No phone provided"}\n${estimate.client?.email || "No email provided"}`,
         },
         invoiceConfig,
       };
+    }
 
-      console.log(
-        "📊 Processed invoice data:",
-        JSON.stringify(invoiceData, null, 2),
-      );
+    // CASO 2: Datos desde ProjectDetails (formato simple - legacy)
+    // Detectamos este formato porque NO tiene profile/estimate, sino datos directos
+    const isProjectFormat = !requestData.profile && !requestData.estimate;
+    
+    if (isProjectFormat) {
+      // Extraer datos del formato de proyecto
+      const projectTotalPrice = requestData.estimate?.totalPrice || 0;
+      const clientData = requestData.estimate?.client || {};
+      const companyData = requestData.profile || {};
+      
+      // Calcular valores financieros (asumiendo que el total ya incluye tax)
+      const taxRate = 0; // Projects simples no tienen tax separado
+      const subtotal = projectTotalPrice;
+      const taxAmount = 0;
+      
+      // Obtener información de pagos si existe
+      const paymentTotalPaid = requestData.invoiceConfig?.downPaymentAmount 
+        ? parseFloat(String(requestData.invoiceConfig.downPaymentAmount).replace(/[$,]/g, ''))
+        : 0;
+
+      return {
+        company: {
+          name: companyData.company || "Your Company",
+          address: companyData.address || "Company Address",
+          phone: companyData.phone || "Phone Number",
+          email: companyData.email || "Email Address",
+          website: companyData.website || "Website",
+          logo: companyData.logo || "",
+        },
+        invoice: {
+          number: `INV-${Date.now()}`,
+          date: new Date().toLocaleDateString('en-US'),
+          due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US'),
+          items: [{
+            code: "Item",
+            description: requestData.estimate?.items?.[0]?.description || "construction",
+            qty: 1,
+            unit_price: `$${subtotal.toFixed(2)}`,
+            total: `$${projectTotalPrice.toFixed(2)}`,
+          }],
+          subtotal: `$${subtotal.toFixed(2)}`,
+          tax_rate: taxRate,
+          tax_amount: `$${taxAmount.toFixed(2)}`,
+          total: `$${projectTotalPrice.toFixed(2)}`,
+          discountAmount: 0,
+        },
+        client: {
+          name: clientData.name || "Client Name",
+          email: clientData.email || "No email provided",
+          phone: clientData.phone || "No phone provided",
+          address: clientData.address || "Dirección no especificada",
+          contact: `${clientData.phone || "No phone provided"}\n${clientData.email || "No email provided"}`,
+        },
+        invoiceConfig: {
+          projectCompleted: requestData.invoiceConfig?.projectCompleted || false,
+          downPaymentAmount: paymentTotalPaid > 0 ? `$${paymentTotalPaid.toFixed(2)}` : undefined,
+          totalAmountPaid: paymentTotalPaid >= projectTotalPrice,
+        },
+      };
+    }
+
+    // FALLBACK: Si no coincide con ningún formato conocido, lanzar error
+    throw new Error('Invalid invoice payload format. Must be from project or estimate source.');
+  }
+
+  // 🧾 UNIFIED: Professional Invoice PDF Generation
+  app.post("/api/invoice-pdf", async (req: Request, res: Response) => {
+    console.log("🎯 Unified Invoice PDF generation started");
+
+    try {
+      // Initialize Invoice PDF service
+      await invoicePdfService.initialize();
+
+      // Log raw request for debugging
+      console.log("🔍 Raw invoice request:", JSON.stringify(req.body, null, 2));
+
+      // Normalize payload to canonical format
+      const invoiceData = normalizeInvoicePayload(req.body);
+
+      console.log("📊 Normalized invoice data:", JSON.stringify(invoiceData, null, 2));
 
       // Generate PDF using Invoice service
       const pdfBuffer = await invoicePdfService.generatePdf(invoiceData);
@@ -2002,7 +2044,7 @@ Output must be between 200-900 characters in English.`;
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader(
         "Content-Disposition",
-        `attachment; filename="invoice-${invoiceData.invoice.number}.pdf"`,
+        `attachment; filename="factura-${invoiceData.invoice.number}.pdf"`,
       );
       res.setHeader("Content-Length", pdfBuffer.length);
       res.setHeader("Cache-Control", "no-cache");
@@ -2010,9 +2052,7 @@ Output must be between 200-900 characters in English.`;
       // Send PDF buffer as binary data
       res.end(pdfBuffer, "binary");
 
-      console.log(
-        "✅ Professional Invoice PDF generated and sent successfully",
-      );
+      console.log("✅ Unified Invoice PDF generated and sent successfully");
     } catch (error) {
       console.error("❌ Error generating Invoice PDF:", error);
       res.status(500).json({
