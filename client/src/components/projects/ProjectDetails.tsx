@@ -603,40 +603,46 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
                         </div>
                       </div>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <div className="p-3 space-y-3">
+                    <PopoverContent className="w-auto p-0 max-h-[90vh] overflow-y-auto" align="start">
+                      <div className="p-4 space-y-4">
                         <div className="space-y-1">
-                          <h4 className="font-medium text-sm">Programar Ejecución</h4>
-                          <p className="text-xs text-muted-foreground">
+                          <h4 className="font-medium text-base">Programar Ejecución</h4>
+                          <p className="text-sm text-muted-foreground">
                             Selecciona la fecha de inicio y fin del proyecto
                           </p>
                         </div>
-                        <Calendar
-                          mode="range"
-                          selected={dateRange}
-                          onSelect={setDateRange}
-                          numberOfMonths={1}
-                          disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                          initialFocus
-                        />
-                        <div className="flex gap-2 pt-2 border-t">
+                        <div className="border rounded-lg p-2 bg-muted/20">
+                          <Calendar
+                            mode="range"
+                            selected={dateRange}
+                            onSelect={setDateRange}
+                            numberOfMonths={1}
+                            disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                            initialFocus
+                          />
+                        </div>
+                        <div className="flex gap-3 pt-3 border-t sticky bottom-0 bg-popover">
                           <Button
                             variant="outline"
-                            size="sm"
+                            size="default"
                             className="flex-1"
                             onClick={() => {
                               setDateRange(undefined);
                               setDateRangePickerOpen(false);
                             }}
+                            data-testid="button-clear-dates"
                           >
+                            <i className="ri-close-line mr-2"></i>
                             Limpiar
                           </Button>
                           <Button
-                            size="sm"
+                            size="default"
                             className="flex-1"
                             onClick={() => handleScheduledDateUpdate(dateRange)}
                             disabled={isSaving || !dateRange?.from}
+                            data-testid="button-save-dates"
                           >
+                            <i className="ri-save-line mr-2"></i>
                             {isSaving ? 'Guardando...' : 'Guardar'}
                           </Button>
                         </div>
