@@ -101,6 +101,35 @@ app.use(express.json({ limit: '10mb' })); // Enable JSON parsing for these endpo
 app.post('/api/contractor-payments/stripe/connect', async (req, res) => {
   try {
     console.log('🔐 [STRIPE-CONNECT-EXPRESS] Iniciando configuración de pagos');
+    
+    // 🔐 AUTENTICACIÓN MANUAL - Verificar Firebase token
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.error('❌ [STRIPE-CONNECT-EXPRESS] No authorization header');
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required',
+        message: 'Por favor inicia sesión para conectar tu cuenta de Stripe',
+      });
+    }
+
+    const token = authHeader.split('Bearer ')[1];
+    const { adminAuth } = await import('./firebase-admin');
+    
+    let firebaseUid: string;
+    try {
+      const decodedToken = await adminAuth.verifyIdToken(token);
+      firebaseUid = decodedToken.uid;
+      console.log('✅ [STRIPE-CONNECT-EXPRESS] Usuario autenticado:', firebaseUid);
+    } catch (authError) {
+      console.error('❌ [STRIPE-CONNECT-EXPRESS] Token inválido:', authError);
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid authentication token',
+        message: 'Sesión expirada. Por favor inicia sesión de nuevo.',
+      });
+    }
+    
     const { getStripeConfig } = await import('./config/stripe');
     const config = getStripeConfig();
     
@@ -122,12 +151,13 @@ app.post('/api/contractor-payments/stripe/connect', async (req, res) => {
         payoutsEnabled: account.payouts_enabled,
       });
       
-      // Guardar el account ID en el usuario (para compatibilidad con el resto del código)
-      const firebaseUid = "qztot1YEy3UWz605gIH2iwwWhW53"; // TEMPORARY for testing
+      // Guardar el account ID usando el Firebase UID AUTENTICADO
       const { userMappingService } = await import('./services/userMappingService');
       const dbUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(firebaseUid);
       const { storage } = await import('./storage');
       await storage.updateUser(dbUserId, { stripeConnectAccountId: config.stripeAccount });
+      
+      console.log(`✅ [STRIPE-CONNECT-EXPRESS] Account ID guardado para usuario ${firebaseUid} (DB ID: ${dbUserId})`);
       
       return res.json({
         success: true,
@@ -139,8 +169,7 @@ app.post('/api/contractor-payments/stripe/connect', async (req, res) => {
       });
     }
     
-    // STANDARD MODE: Flujo normal de creación de cuenta Connect
-    const firebaseUid = "qztot1YEy3UWz605gIH2iwwWhW53"; // TEMPORARY for testing
+    // STANDARD MODE: Flujo normal de creación de cuenta Connect usando usuario AUTENTICADO
     const { userMappingService } = await import('./services/userMappingService');
     const dbUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(firebaseUid);
     
@@ -220,6 +249,35 @@ app.post('/api/contractor-payments/stripe/connect', async (req, res) => {
 app.get('/api/contractor-payments/stripe/account-status', async (req, res) => {
   try {
     console.log('🔍 [STRIPE-STATUS] Verificando estado de cuenta Connect');
+    
+    // 🔐 AUTENTICACIÓN MANUAL - Verificar Firebase token
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.error('❌ [STRIPE-STATUS] No authorization header');
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required',
+        message: 'Por favor inicia sesión para verificar el estado de tu cuenta',
+      });
+    }
+
+    const token = authHeader.split('Bearer ')[1];
+    const { adminAuth } = await import('./firebase-admin');
+    
+    let firebaseUid: string;
+    try {
+      const decodedToken = await adminAuth.verifyIdToken(token);
+      firebaseUid = decodedToken.uid;
+      console.log('✅ [STRIPE-STATUS] Usuario autenticado:', firebaseUid);
+    } catch (authError) {
+      console.error('❌ [STRIPE-STATUS] Token inválido:', authError);
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid authentication token',
+        message: 'Sesión expirada. Por favor inicia sesión de nuevo.',
+      });
+    }
+    
     const { getStripeConfig } = await import('./config/stripe');
     const config = getStripeConfig();
     
@@ -258,15 +316,17 @@ app.get('/api/contractor-payments/stripe/account-status', async (req, res) => {
       });
     }
     
-    // STANDARD MODE: Verificar cuenta del usuario
-    const firebaseUid = "qztot1YEy3UWz605gIH2iwwWhW53"; // TEMPORARY for testing
+    // STANDARD MODE: Verificar cuenta del usuario AUTENTICADO
     const { userMappingService } = await import('./services/userMappingService');
     const dbUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(firebaseUid);
     
     const { storage } = await import('./storage');
     const user = await storage.getUser(dbUserId);
     
+    console.log(`📊 [STRIPE-STATUS] Usuario ${firebaseUid} (DB ID: ${dbUserId}) - Account ID en DB: ${user?.stripeConnectAccountId || 'NULL'}`);
+    
     if (!user?.stripeConnectAccountId) {
+      console.warn(`⚠️ [STRIPE-STATUS] Usuario ${firebaseUid} no tiene stripeConnectAccountId en la base de datos`);
       return res.json({
         success: true,
         connected: false,
