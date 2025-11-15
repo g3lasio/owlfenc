@@ -374,7 +374,7 @@ export default function EstimatesWizardFixed() {
   const [showInvoiceDialog, setShowInvoiceDialog] = useState(false);
   const [invoiceConfig, setInvoiceConfig] = useState({
     projectCompleted: null as boolean | null,
-    downPaymentAmount: "",
+    downPaymentAmount: 0,  // Numeric, not string
     totalAmountPaid: null as boolean | null,
   });
 
@@ -4048,25 +4048,18 @@ This link provides a professional view of your estimate that you can access anyt
       // Use default values for direct generation
       const defaultInvoiceConfig = {
         projectCompleted: true,
-        downPaymentAmount: "",
+        downPaymentAmount: 0,  // Always numeric
         totalAmountPaid: true,
       };
 
-      // Helper function for currency formatting
-      const formatCurrency = (amount: number): string => {
-        return new Intl.NumberFormat('en-US', {
-          style: 'currency',
-          currency: 'USD',
-        }).format(amount);
-      };
-
-      // Transform items to match InvoicePdfService expectations
+      // Transform items to match normalizeInvoicePayload expectations
+      // Backend expects: unitPrice, totalPrice, quantity, name, description
       const transformedItems = estimate.items.map(item => ({
-        code: item.materialId || item.id || item.name,
-        description: `${item.name} – ${item.description}`,
-        qty: item.quantity,
-        unit_price: formatCurrency(item.price),
-        total: formatCurrency(item.total)
+        name: item.name || "Item",
+        description: item.description || "",
+        quantity: item.quantity || 1,
+        unitPrice: item.price || 0,      // Rename price → unitPrice (as number)
+        totalPrice: item.total || 0      // Rename total → totalPrice (as number)
       }));
 
       const invoicePayload = {
@@ -4083,11 +4076,11 @@ This link provides a professional view of your estimate that you can access anyt
         estimate: {
           client: estimate.client,
           items: transformedItems,
-          subtotal: estimate.subtotal,
-          discountAmount: estimate.discountAmount,
-          taxRate: estimate.taxRate,
-          tax: estimate.tax,
-          total: estimate.total,
+          subtotal: estimate.subtotal || 0,
+          discountAmount: estimate.discountAmount || 0,
+          taxRate: estimate.taxRate || 0,
+          tax: estimate.tax || 0,
+          total: estimate.total || 0,
         },
         invoiceConfig: defaultInvoiceConfig,
       };
@@ -7453,13 +7446,14 @@ This link provides a professional view of your estimate that you can access anyt
                   id="downPayment"
                   type="number"
                   placeholder="Enter amount (e.g., 500.00)"
-                  value={invoiceConfig.downPaymentAmount}
-                  onChange={(e) =>
+                  value={invoiceConfig.downPaymentAmount || ""}
+                  onChange={(e) => {
+                    const parsed = Number(e.target.value);
                     setInvoiceConfig((prev) => ({
                       ...prev,
-                      downPaymentAmount: e.target.value,
-                    }))
-                  }
+                      downPaymentAmount: Number.isFinite(parsed) ? parsed : 0,
+                    }));
+                  }}
                   className="w-full"
                 />
               </div>
@@ -7516,7 +7510,7 @@ This link provides a professional view of your estimate that you can access anyt
                 setShowInvoiceDialog(false);
                 setInvoiceConfig({
                   projectCompleted: null,
-                  downPaymentAmount: "",
+                  downPaymentAmount: 0,
                   totalAmountPaid: null,
                 });
               }}
@@ -7563,24 +7557,17 @@ This link provides a professional view of your estimate that you can access anyt
                 }
 
                 try {
-                  // Helper function for currency formatting
-                  const formatCurrency = (amount: number): string => {
-                    return new Intl.NumberFormat('en-US', {
-                      style: 'currency',
-                      currency: 'USD',
-                    }).format(amount);
-                  };
-
-                  // Transform items to match InvoicePdfService expectations
+                  // Transform items to match normalizeInvoicePayload expectations
+                  // Backend expects: unitPrice, totalPrice, quantity, name, description
                   const transformedItems = estimate.items.map(item => ({
-                    code: item.materialId || item.id || item.name,
-                    description: `${item.name} – ${item.description}`,
-                    qty: item.quantity,
-                    unit_price: formatCurrency(item.price),
-                    total: formatCurrency(item.total)
+                    name: item.name || "Item",
+                    description: item.description || "",
+                    quantity: item.quantity || 1,
+                    unitPrice: item.price || 0,      // Rename price → unitPrice (as number)
+                    totalPrice: item.total || 0      // Rename total → totalPrice (as number)
                   }));
 
-                  // Prepare invoice data payload
+                  // Prepare invoice data payload with numeric downPaymentAmount
                   const invoicePayload = {
                     profile: {
                       company: profile.company,
@@ -7595,13 +7582,13 @@ This link provides a professional view of your estimate that you can access anyt
                     estimate: {
                       client: estimate.client,
                       items: transformedItems,
-                      subtotal: estimate.subtotal,
-                      discountAmount: estimate.discountAmount,
-                      taxRate: estimate.taxRate,
-                      tax: estimate.tax,
-                      total: estimate.total,
+                      subtotal: estimate.subtotal || 0,
+                      discountAmount: estimate.discountAmount || 0,
+                      taxRate: estimate.taxRate || 0,
+                      tax: estimate.tax || 0,
+                      total: estimate.total || 0,
                     },
-                    invoiceConfig,
+                    invoiceConfig,  // Already numeric, no conversion needed
                   };
 
                   console.log(
@@ -7635,7 +7622,7 @@ This link provides a professional view of your estimate that you can access anyt
                   setShowInvoiceDialog(false);
                   setInvoiceConfig({
                     projectCompleted: null,
-                    downPaymentAmount: "",
+                    downPaymentAmount: 0,
                     totalAmountPaid: null,
                   });
 
