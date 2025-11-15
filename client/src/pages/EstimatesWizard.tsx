@@ -4052,6 +4052,23 @@ This link provides a professional view of your estimate that you can access anyt
         totalAmountPaid: true,
       };
 
+      // Helper function for currency formatting
+      const formatCurrency = (amount: number): string => {
+        return new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+        }).format(amount);
+      };
+
+      // Transform items to match InvoicePdfService expectations
+      const transformedItems = estimate.items.map(item => ({
+        code: item.materialId || item.id || item.name,
+        description: `${item.name} – ${item.description}`,
+        qty: item.quantity,
+        unit_price: formatCurrency(item.price),
+        total: formatCurrency(item.total)
+      }));
+
       const invoicePayload = {
         profile: {
           company: profile.company,
@@ -4065,7 +4082,7 @@ This link provides a professional view of your estimate that you can access anyt
         },
         estimate: {
           client: estimate.client,
-          items: estimate.items,
+          items: transformedItems,
           subtotal: estimate.subtotal,
           discountAmount: estimate.discountAmount,
           taxRate: estimate.taxRate,
@@ -7546,6 +7563,23 @@ This link provides a professional view of your estimate that you can access anyt
                 }
 
                 try {
+                  // Helper function for currency formatting
+                  const formatCurrency = (amount: number): string => {
+                    return new Intl.NumberFormat('en-US', {
+                      style: 'currency',
+                      currency: 'USD',
+                    }).format(amount);
+                  };
+
+                  // Transform items to match InvoicePdfService expectations
+                  const transformedItems = estimate.items.map(item => ({
+                    code: item.materialId || item.id || item.name,
+                    description: `${item.name} – ${item.description}`,
+                    qty: item.quantity,
+                    unit_price: formatCurrency(item.price),
+                    total: formatCurrency(item.total)
+                  }));
+
                   // Prepare invoice data payload
                   const invoicePayload = {
                     profile: {
@@ -7560,7 +7594,7 @@ This link provides a professional view of your estimate that you can access anyt
                     },
                     estimate: {
                       client: estimate.client,
-                      items: estimate.items,
+                      items: transformedItems,
                       subtotal: estimate.subtotal,
                       discountAmount: estimate.discountAmount,
                       taxRate: estimate.taxRate,
