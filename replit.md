@@ -65,3 +65,78 @@ This AI-powered platform automates legal document and permit management for cont
 - Mapbox
 - PDFMonkey
 - Upstash Redis
+
+## Recent Changes
+
+### November 15, 2025 - Invoice Generation Unification (COMPLETE)
+**CRITICAL BUG FIXED**: Unified invoice generation between Invoices.tsx and EstimatesWizard.tsx to eliminate $0.00 in line items and produce identical PDF formats.
+
+**Root Cause Identified**:
+- Backend `normalizeInvoicePayload()` (server/routes.ts:1881) expects specific field names:
+  - `item.unitPrice` but EstimatesWizard sent `item.price`
+  - `item.totalPrice` but EstimatesWizard sent `item.total`
+- Result: Backend couldn't find price fields → defaulted to 0 → PDFs showed $0.00
+- Invoices.tsx worked because saved estimates already had `unitPrice` and `totalPrice` from Firestore
+
+**Solution Implemented**:
+
+1. **Field renaming in EstimatesWizard.tsx** (2 locations: direct generation + dialog handler):
+   ```javascript
+   // Transform items to match backend expectations
+   const transformedItems = estimate.items.map(item => ({
+     name: item.name || "Item",
+     description: item.description || "",
+     quantity: item.quantity || 1,
+     unitPrice: item.price || 0,      // ✅ Renamed: price → unitPrice
+     totalPrice: item.total || 0      // ✅ Renamed: total → totalPrice
+   }));
+   ```
+
+2. **All monetary values as pure numbers** (backend handles formatting):
+   ```javascript
+   estimate: {
+     items: transformedItems,
+     subtotal: estimate.subtotal || 0,
+     discountAmount: estimate.discountAmount || 0,
+     taxRate: estimate.taxRate || 0,
+     tax: estimate.tax || 0,
+     total: estimate.total || 0,
+   }
+   ```
+
+3. **Type consistency for invoiceConfig.downPaymentAmount**:
+   - Changed state from string ("") to number (0)
+   - Input onChange validates with `Number.isFinite()` to prevent NaN
+   - All resets use numeric 0
+   - Prevents backend from receiving NaN and defaulting to $0.00
+
+**Backend Flow** (normalizeInvoicePayload):
+```javascript
+// Accepts numbers or strings, converts to formatted currency
+items: (estimate.items || []).map((item: any) => {
+  const unitPrice = Number(item.unitPrice || 0);  // ✅ Now finds unitPrice
+  const totalPrice = Number(item.totalPrice || 0); // ✅ Now finds totalPrice
+  return {
+    unit_price: `$${unitPrice.toFixed(2)}`,  // Backend formats
+    total: `$${totalPrice.toFixed(2)}`,
+  };
+}),
+subtotal: `$${Number(estimate.subtotal || 0).toFixed(2)}`,
+tax_amount: `$${Number(estimate.tax || 0).toFixed(2)}`,
+total: `$${Number(estimate.total || 0).toFixed(2)}`,
+```
+
+**Edge Cases Handled**:
+- Items without price/total: default to 0
+- Invalid downPaymentAmount (NaN): coerced to 0
+- Missing totals: default to 0
+- Transitional input values (".", "-"): validated before state update
+
+**Architecture Lessons**:
+- Always verify backend expectations before transforming data
+- Field naming matters - subtle mismatches cause silent failures
+- Let backend handle formatting when a normalization layer exists
+- Maintain type consistency across state lifecycle
+- Numbers over strings for monetary values ensures predictable calculations
+
+**Result**: Both flows now generate identical PDFs with complete, accurate pricing and no $0.00 artifacts.
