@@ -209,6 +209,6 @@ export function useProfile() {
     profile,
     isLoading,
     error,
-    updateProfile: updateProfile.mutate
+    updateProfile: updateProfile.mutateAsync
   };
 }
