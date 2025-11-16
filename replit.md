@@ -27,12 +27,14 @@ This AI-powered platform automates legal document and permit management for cont
 - **Authentication**: Firebase Admin SDK with native Firebase UID, session-based authentication using HTTP-only cookies.
 - **Security Architecture**: Multi-layer authentication, triple-layer contract security, enterprise-grade security for Legal Defense features, robust 1:1 Firebase UID to PostgreSQL `user_id` mapping.
 
-### AI Architecture (Mervin AI V3 - Explicit Mode System)
-- **Core Architecture**: Dual-AI system (ChatGPT-4o for fast analysis, Claude Sonnet 4 for complex tasks) with autonomous task execution, real-time web research, intelligent AI routing, streaming progress, and full authentication forwarding.
+### AI Architecture (Mervin AI V3 - Simplified Streaming)
+- **Core Architecture**: Dual-AI system (ChatGPT-4o for fast analysis, Claude Sonnet 4 for complex tasks) with autonomous task execution, real-time web research, intelligent AI routing, **100% JSON-based responses**, and full authentication forwarding.
+- **Streaming Architecture**: **Simplified single-layer design** - WebSocket handler owns all streaming with "progress" and "complete" messages. HTTP endpoints (`/process`, `/stream`, `/process-with-files`) return JSON directly for reliability. **Eliminated double-layer SSE pattern** that caused message truncation (Nov 2025).
 - **Mode System**: Explicit separation between CHAT mode (conversational, suggest-only) and AGENT mode (autonomous execution) with three presets: CHAT_ONLY, AGENT_SAFE (default), AGENT_AUTONOMOUS. Uses MervinOrchestratorV3 with 5 stages, including ConfirmationMiddleware.
 - **Tool-Calling Architecture**: Dynamic tool execution system with intelligent slot-filling and confirmation flows. Utilizes SnapshotService for user context and ToolRegistry for core tools like `create_estimate`, `create_contract`, `verify_property`, `get_permit_info`, `find_client`. Includes a Telemetry System.
+- **Transport Layer**: HybridAgentClient with WebSocket primary + HTTP fallback. Flexible authentication supporting both Bearer tokens and cookie-based sessions. All responses use consistent JSON format.
 - **WorkflowEngine**: Multi-step process automation system enabling Mervin to replicate UI workflows conversationally via declarative TypeScript definitions and Redis-based session storage.
-- **File Attachment System**: Multi-format file processing for content extraction and contextual summaries.
+- **File Attachment System**: Multi-format file processing for content extraction and contextual summaries via `/process-with-files` endpoint.
 - **UI/UX Enhancement**: Minimalist interface with real-time transparency (ThinkingIndicator, MessageContent, SmartContextPanel, AgentCapabilitiesBadge, DynamicActionSuggestions, WebResearchIndicator, SystemStatusBar).
 - **Conversation History System**: Production-grade persistence and management for Mervin AI conversations using Firebase Firestore, featuring auto-save, authenticated CRUD API, and automatic title generation.
 
