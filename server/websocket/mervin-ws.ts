@@ -2,8 +2,6 @@ import { WebSocket, WebSocketServer } from 'ws';
 import { IncomingMessage } from 'http';
 import { MervinOrchestratorV3 } from '../mervin-v2/orchestrator/MervinOrchestratorV3';
 import type { MervinRequest } from '../mervin-v2/types/mervin-types';
-import type { ProgressUpdate, ProgressStreamService as IProgressStreamService } from '../mervin-v2/services/ProgressStreamService';
-import type { TaskProgress } from '../mervin-v2/types/mervin-types';
 import admin from 'firebase-admin';
 
 interface WSMessage {
@@ -18,45 +16,6 @@ interface WSResponse {
   type: 'message' | 'complete' | 'error' | 'pong';
   content?: string;
   data?: any;
-}
-
-// Adaptador para enviar progress updates via WebSocket
-class WebSocketProgressAdapter {
-  constructor(private ws: WebSocket) {}
-
-  sendProgress(update: ProgressUpdate): void {
-    if (this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({
-        type: update.type,
-        content: update.content,
-        data: update.data
-      }));
-    }
-  }
-
-  sendMessage(message: string): void {
-    this.sendProgress({ type: 'message', content: message });
-  }
-
-  sendComplete(message: string, data?: any): void {
-    this.sendProgress({ type: 'complete', content: message, data });
-  }
-
-  sendError(error: string): void {
-    this.sendProgress({ type: 'error', content: error });
-  }
-
-  sendTaskProgress(progress: TaskProgress, message: string): void {
-    this.sendProgress({ type: 'progress', content: message, progress });
-  }
-
-  closeStream(): void {
-    // No-op para WebSocket, manejado por el propio WS
-  }
-
-  isActive(): boolean {
-    return this.ws.readyState === WebSocket.OPEN;
-  }
 }
 
 export function setupMervinWebSocket(wss: WebSocketServer) {
@@ -129,35 +88,54 @@ export function setupMervinWebSocket(wss: WebSocketServer) {
           console.log(`🤖 [MERVIN-WS] Procesando: "${message.input.substring(0, 50)}..." (user: ${verifiedUserId})`);
           
           try {
-            // Crear orchestrator con userId VERIFICADO
+            // Helper para enviar mensajes de progreso
+            const sendProgress = (content: string) => {
+              if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                  type: 'message',
+                  content
+                }));
+              }
+            };
+
+            // ETAPA 1: Mensajes de progreso iniciales
+            sendProgress('📸 Loading your context...');
+            sendProgress('🔍 Analyzing your message...');
+            
+            // ETAPA 2: Crear orchestrator SIN ProgressStream (modo WebSocket directo)
             const orchestrator = new MervinOrchestratorV3(verifiedUserId);
+            // NO llamar setProgressStream() - WebSocket maneja el streaming directamente
             
-            // Usar adaptador WebSocket para progress streaming
-            const progressAdapter = new WebSocketProgressAdapter(ws);
-            orchestrator.setProgressStream(progressAdapter as any);
-            
-            // Crear request con userId VERIFICADO (no confiar en el cliente)
+            // ETAPA 3: Crear request con userId VERIFICADO
             const request: MervinRequest = {
-              userId: verifiedUserId, // USAR userId autenticado
+              userId: verifiedUserId,
               input: message.input,
               conversationHistory: message.conversationHistory || [],
               language: message.language || 'es'
             };
             
-            // Procesar mensaje
+            // ETAPA 4: Mensaje de progreso antes de procesar
+            sendProgress('💬 Thinking...');
+            
+            // ETAPA 5: Procesar mensaje (orchestrator trabaja silenciosamente)
             const response = await orchestrator.process(request);
             console.log(`✅ [MERVIN-WS] Procesamiento completado para ${clientId}`);
+            console.log(`📤 [MERVIN-WS] Respuesta final length: ${response.message?.length || 0}`);
+            console.log(`📤 [MERVIN-WS] Respuesta preview: ${response.message?.substring(0, 100) || 'N/A'}`);
             
-            // ENVIAR RESPUESTA FINAL (FIX TRUNCATION)
+            // ETAPA 6: ENVIAR RESPUESTA FINAL COMPLETA
             if (ws.readyState === WebSocket.OPEN) {
-              ws.send(JSON.stringify({
+              const completeMessage = {
                 type: 'complete',
                 content: response.message,
                 data: response
-              }));
-              console.log(`📤 [MERVIN-WS] Respuesta enviada a ${clientId}`);
+              };
+              
+              ws.send(JSON.stringify(completeMessage));
+              console.log(`✅ [MERVIN-WS] ✨ Mensaje "complete" enviado exitosamente a ${clientId}`);
+              console.log(`✅ [MERVIN-WS] ✨ Content length: ${response.message?.length || 0} caracteres`);
             } else {
-              console.warn(`⚠️ [MERVIN-WS] WebSocket cerrado, no se pudo enviar respuesta`);
+              console.error(`❌ [MERVIN-WS] WebSocket cerrado ANTES de enviar respuesta final`);
             }
             
           } catch (error: any) {

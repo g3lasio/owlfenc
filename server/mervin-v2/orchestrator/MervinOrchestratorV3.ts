@@ -109,10 +109,16 @@ export class MervinOrchestratorV3 {
   }
 
   /**
-   * Configurar streaming de progreso
+   * Configurar streaming de progreso (OPCIONAL - solo para HTTP/SSE)
+   * WebSocket NO necesita esto - maneja el streaming directamente
    */
-  setProgressStream(progress: ProgressStreamService): void {
+  setProgressStream(progress: ProgressStreamService | null): void {
     this.progress = progress;
+    if (progress) {
+      console.log('📡 [MERVIN-V3] ProgressStream configurado (modo HTTP/SSE)');
+    } else {
+      console.log('📡 [MERVIN-V3] Sin ProgressStream (modo WebSocket directo)');
+    }
   }
 
   /**
@@ -138,7 +144,7 @@ export class MervinOrchestratorV3 {
       };
 
       // ETAPA 1: Cargar contexto del usuario
-      this.progress?.sendMessage('📸 Loading your context...');
+      console.log('📸 [SNAPSHOT] Loading context...');
       this.snapshot = await snapshotService.getSnapshot(request.userId);
       console.log('📸 [SNAPSHOT] Context loaded');
 
@@ -146,7 +152,7 @@ export class MervinOrchestratorV3 {
       const filesContext = await this.processAttachments(request.attachments || []);
 
       // ETAPA 3: Análisis con ChatGPT + Validaciones
-      this.progress?.sendMessage('🔍 Analyzing your message...');
+      console.log('🔍 [ANALYSIS] Analyzing message...');
       const analysis = await this.analyzeWithValidation(request.input + filesContext, mode);
       console.log('📊 [ANALYSIS]', analysis);
 
@@ -163,7 +169,6 @@ export class MervinOrchestratorV3 {
 
     } catch (error: any) {
       console.error('❌ [MERVIN-V3] Error:', error);
-      this.progress?.sendError(error.message);
       
       TelemetryService.log('error', {
         operation: 'process',
@@ -186,10 +191,10 @@ export class MervinOrchestratorV3 {
   private async processAttachments(attachments: any[]): Promise<string> {
     if (attachments.length === 0) return '';
 
-    this.progress?.sendMessage(`📎 Processing ${attachments.length} file(s)...`);
+    console.log(`📎 [FILES] Processing ${attachments.length} file(s)...`);
     const fileProcessor = new FileProcessorService();
     const filesContext = fileProcessor.generateFilesSummary(attachments);
-    this.progress?.sendMessage('✅ Files processed');
+    console.log('✅ [FILES] Files processed');
     
     return filesContext;
   }
@@ -312,28 +317,28 @@ export class MervinOrchestratorV3 {
     startTime: number
   ): Promise<MervinResponse> {
     try {
-      this.progress?.sendMessage('💬 Thinking...');
+      console.log('💬 [CONVERSATION] Processing...');
       
       const inputWithFiles = request.input + filesContext;
       
       // Usar Claude si requiere razonamiento profundo
       let response: string;
       if (analysis.needsDeepThinking) {
-        this.progress?.sendMessage('🧠 Deep analysis...');
+        console.log('🧠 [CONVERSATION] Using Claude for deep thinking...');
         response = await this.claude.processComplexQuery(inputWithFiles, {
           conversationHistory: request.conversationHistory
         });
       } else {
         // Usar ChatGPT para conversaciones simples
+        console.log('💬 [CONVERSATION] Using ChatGPT for simple conversation...');
         response = await this.chatgpt.generateResponse(
           inputWithFiles,
           request.conversationHistory
         );
       }
 
-      console.log('📤 [ORCHESTRATOR-RESPONSE] Sending response, length:', response.length);
-      console.log('📤 [ORCHESTRATOR-RESPONSE] Content preview:', response.substring(0, 200));
-      this.progress?.sendComplete(response);
+      console.log('✅ [CONVERSATION] Response generated, length:', response.length);
+      console.log('📤 [CONVERSATION] Preview:', response.substring(0, 200));
 
       // Log telemetry
       TelemetryService.log('success', {
@@ -378,7 +383,7 @@ export class MervinOrchestratorV3 {
       // Generar sugerencia conversacional
       const suggestion = `I can help you ${tool.description.toLowerCase()}. Would you like me to do that?`;
       
-      this.progress?.sendComplete(suggestion);
+      console.log('✅ [SUGGEST-ACTION] Suggestion generated:', suggestion);
 
       // Log telemetry
       TelemetryService.log('success', {
@@ -428,7 +433,7 @@ export class MervinOrchestratorV3 {
       console.log(`🔧 [TOOL-EXECUTION] Using tool: ${toolName}`);
 
       // PASO 2: Extraer parámetros
-      this.progress?.sendMessage('📋 Extracting parameters...');
+      console.log('📋 [PARAMS] Extracting parameters...');
       const inputWithFiles = request.input + filesContext;
       const rawParams = await this.chatgpt.extractParameters(inputWithFiles, taskType);
       console.log('📋 [PARAMS]', rawParams);
@@ -449,8 +454,7 @@ export class MervinOrchestratorV3 {
           confirmationCheck
         );
         
-        this.progress?.sendMessage('⚠️ Confirmation required');
-        this.progress?.sendComplete(confirmationRequest.message);
+        console.log('⚠️ [CONFIRMATION] Confirmation required for:', toolName);
 
         return {
           type: 'NEEDS_CONFIRMATION',
@@ -466,7 +470,7 @@ export class MervinOrchestratorV3 {
       }
 
       // PASO 4: Ejecutar herramienta (solo si NO requiere confirmación)
-      this.progress?.sendMessage('⚡ Executing...');
+      console.log('⚡ [EXECUTION] Executing tool...');
       
       const toolStartTime = Date.now();
       const result = await toolRegistry.executeToolWithSnapshot(
@@ -487,7 +491,7 @@ export class MervinOrchestratorV3 {
       // PASO 5: Validar resultado
       if (!result.success) {
         if (result.error?.includes('Missing required parameter')) {
-          this.progress?.sendComplete(result.error);
+          console.log('⚠️ [VALIDATION] Missing parameters:', result.error);
           return {
             type: 'NEEDS_MORE_INFO',
             message: `I need more information: ${result.error}`,
@@ -499,7 +503,7 @@ export class MervinOrchestratorV3 {
       }
 
       // PASO 6: Generar respuesta final con Claude (razonamiento complejo)
-      this.progress?.sendMessage('✨ Generating response...');
+      console.log('✨ [RESPONSE] Generating completion message...');
       
       const finalMessage = await this.claude.generateCompletionMessage(
         {
@@ -512,7 +516,7 @@ export class MervinOrchestratorV3 {
         analysis.language
       );
 
-      this.progress?.sendComplete(finalMessage, result.data);
+      console.log('✅ [RESPONSE] Completion message generated, length:', finalMessage.length);
       
       TelemetryService.log('success', {
         operation: 'execute_task',
@@ -529,7 +533,6 @@ export class MervinOrchestratorV3 {
 
     } catch (error: any) {
       console.error(`❌ [EXECUTE-TASK-ERROR] ${taskType}:`, error.message);
-      this.progress?.sendError(`Error executing ${taskType}: ${error.message}`);
       throw error;
     }
   }
