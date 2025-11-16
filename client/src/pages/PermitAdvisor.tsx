@@ -1997,12 +1997,12 @@ You can also drag & drop documents here (permits, plans, estimates)"
                                     <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg flex items-center justify-center shadow-lg">
                                       <span className="text-xl">📋</span>
                                     </div>
-                                    <div className="flex-1 space-y-3">
+                                    <div className="flex-1 min-w-0 space-y-3">
                                       <div>
-                                        <h3 className="text-xl font-semibold text-cyan-300 mb-2">
+                                        <h3 className="text-xl font-semibold text-cyan-300 mb-2 break-words">
                                           {permit.type || `Permit ${idx + 1}`}
                                         </h3>
-                                        <p className="text-gray-300 leading-relaxed">
+                                        <p className="text-gray-300 leading-relaxed break-words">
                                           {permit.description || permit.requirements || "Permit details"}
                                         </p>
                                       </div>
@@ -2078,12 +2078,12 @@ You can also drag & drop documents here (permits, plans, estimates)"
                                       <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-r from-emerald-500 to-green-500 rounded-lg flex items-center justify-center shadow-lg">
                                         <span className="text-xl">📏</span>
                                       </div>
-                                      <div className="flex-1 space-y-3">
+                                      <div className="flex-1 min-w-0 space-y-3">
                                         <div>
-                                          <h3 className="text-xl font-semibold text-emerald-300 mb-2">
+                                          <h3 className="text-xl font-semibold text-emerald-300 mb-2 break-words">
                                             {codeSection.section || codeSection.title || `Building Code Section ${idx + 1}`}
                                           </h3>
-                                          <p className="text-gray-300 leading-relaxed">
+                                          <p className="text-gray-300 leading-relaxed break-words">
                                             {codeSection.description || codeSection.summary || "Code section details"}
                                           </p>
                                         </div>
@@ -2095,15 +2095,15 @@ You can also drag & drop documents here (permits, plans, estimates)"
                                               📋 Detailed Requirements
                                             </h4>
                                             {typeof codeSection.details === 'string' ? (
-                                              <p className="text-emerald-200 text-sm leading-relaxed whitespace-pre-line">
+                                              <p className="text-emerald-200 text-sm leading-relaxed whitespace-pre-line break-words">
                                                 {codeSection.details}
                                               </p>
                                             ) : Array.isArray(codeSection.details) ? (
                                               <ul className="text-emerald-200 text-sm space-y-2">
                                                 {codeSection.details.map((detail: any, detailIdx: number) => (
                                                   <li key={detailIdx} className="flex items-start gap-2">
-                                                    <span className="text-emerald-400">•</span>
-                                                    <span>{typeof detail === 'string' ? detail : detail.description || detail.requirement || JSON.stringify(detail)}</span>
+                                                    <span className="text-emerald-400 flex-shrink-0">•</span>
+                                                    <span className="break-words">{typeof detail === 'string' ? detail : detail.description || detail.requirement || JSON.stringify(detail)}</span>
                                                   </li>
                                                 ))}
                                               </ul>
@@ -2124,13 +2124,13 @@ You can also drag & drop documents here (permits, plans, estimates)"
                                             <ul className="text-green-200 text-sm space-y-2">
                                               {codeSection.requirements.map((req: any, reqIdx: number) => (
                                                 <li key={reqIdx} className="flex items-start gap-2">
-                                                  <span className="text-green-400">•</span>
-                                                  <span>
+                                                  <span className="text-green-400 flex-shrink-0">•</span>
+                                                  <span className="break-words">
                                                     {typeof req === 'string' ? req : req.description || req.requirement || JSON.stringify(req)}
                                                   </span>
                                                   {/* Show additional details if available */}
                                                   {typeof req === 'object' && req.details && (
-                                                    <div className="ml-4 mt-1 text-xs text-green-300 italic">
+                                                    <div className="ml-4 mt-1 text-xs text-green-300 italic break-words">
                                                       {req.details}
                                                     </div>
                                                   )}
@@ -2410,9 +2410,9 @@ You can also drag & drop documents here (permits, plans, estimates)"
                                     {(permitData?.contactInfo?.address || permitData?.contactInformation?.[0]?.physicalAddress) && (
                                       <div className="flex items-start gap-3">
                                         <span className="text-blue-400">📍</span>
-                                        <div>
+                                        <div className="flex-1 min-w-0">
                                           <p className="text-blue-300 font-medium">Address</p>
-                                          <p className="text-gray-300 text-sm">
+                                          <p className="text-gray-300 text-sm break-words">
                                             {permitData.contactInfo?.address || permitData.contactInformation?.[0]?.physicalAddress}
                                           </p>
                                         </div>
@@ -2483,12 +2483,12 @@ You can also drag & drop documents here (permits, plans, estimates)"
                                         {permitData.contactInfo?.inspector || permitData.contactInformation?.[0]?.inspectorName}
                                       </p>
                                       {permitData?.contactInformation?.[0]?.inspectorPhone && (
-                                        <a href={`tel:${permitData.contactInformation[0].inspectorPhone}`} className="text-purple-300 text-xs hover:text-cyan-400 transition-colors block mt-1">
+                                        <a href={`tel:${permitData.contactInformation[0].inspectorPhone}`} className="text-purple-300 text-xs hover:text-cyan-400 transition-colors block mt-1 break-all">
                                           📞 {permitData.contactInformation[0].inspectorPhone}
                                         </a>
                                       )}
                                       {permitData?.contactInformation?.[0]?.inspectorEmail && (
-                                        <a href={`mailto:${permitData.contactInformation[0].inspectorEmail}`} className="text-purple-300 text-xs hover:text-cyan-400 transition-colors block mt-1">
+                                        <a href={`mailto:${permitData.contactInformation[0].inspectorEmail}`} className="text-purple-300 text-xs hover:text-cyan-400 transition-colors block mt-1 break-all">
                                           📧 {permitData.contactInformation[0].inspectorEmail}
                                         </a>
                                       )}
@@ -2505,7 +2505,7 @@ You can also drag & drop documents here (permits, plans, estimates)"
                                         href={permitData.contactInformation[0].onlinePortal} 
                                         target="_blank" 
                                         rel="noopener noreferrer"
-                                        className="text-cyan-200 text-sm hover:text-cyan-300 transition-colors underline"
+                                        className="text-cyan-200 text-sm hover:text-cyan-300 transition-colors underline break-all"
                                       >
                                         {permitData.contactInformation[0].onlinePortal}
                                       </a>
