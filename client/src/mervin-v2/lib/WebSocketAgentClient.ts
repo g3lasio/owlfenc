@@ -245,57 +245,57 @@ export class WebSocketAgentClient {
         throw new Error('WebSocket no disponible');
       }
 
-      // Guardar callback
-      this.pendingCallbacks.set('current', onUpdate);
-
-      // Enviar mensaje
-      const message = {
-        type: 'message',
-        input,
-        userId: this.userId,
-        conversationHistory,
-        language
-      };
-
-      console.log('📤 [WS-CLIENT] Enviando mensaje...');
-      this.ws.send(JSON.stringify(message));
-
-      // Timeout estricto de 30 segundos
-      const timeoutId = setTimeout(() => {
-        const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
-        console.error(`⏰ [WS-CLIENT] TIMEOUT después de ${elapsed}s`);
-        
-        this.pendingCallbacks.delete('current');
-        onUpdate({
-          type: 'error',
-          content: 'Timeout: La respuesta tardó más de 30 segundos'
-        });
-        
-        // Cerrar conexión
-        this.ws?.close();
-        
-      }, this.messageTimeout);
-
       // Esperar a que se complete o falle
       return new Promise((resolve, reject) => {
-        const originalCallback = onUpdate;
+        // Timeout estricto de 30 segundos
+        const timeoutId = setTimeout(() => {
+          const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
+          console.error(`⏰ [WS-CLIENT] TIMEOUT después de ${elapsed}s`);
+          
+          this.pendingCallbacks.delete('current');
+          onUpdate({
+            type: 'error',
+            content: 'Timeout: La respuesta tardó más de 30 segundos'
+          });
+          
+          // Cerrar conexión
+          this.ws?.close();
+          reject(new Error('Timeout'));
+        }, this.messageTimeout);
+
+        // Crear wrapped callback ANTES de enviarlo
         const wrappedCallback: StreamCallback = (update) => {
-          originalCallback(update);
+          onUpdate(update);
           
           if (update.type === 'complete') {
             clearTimeout(timeoutId);
             const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
             console.log(`✅ [WS-CLIENT] Completado en ${elapsed}s`);
+            this.pendingCallbacks.delete('current');
             resolve();
           } else if (update.type === 'error') {
             clearTimeout(timeoutId);
             const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
             console.error(`❌ [WS-CLIENT] Error en ${elapsed}s:`, update.content);
+            this.pendingCallbacks.delete('current');
             reject(new Error(update.content || 'Error desconocido'));
           }
         };
 
+        // Guardar callback ANTES de enviar mensaje
         this.pendingCallbacks.set('current', wrappedCallback);
+
+        // Enviar mensaje
+        const message = {
+          type: 'message',
+          input,
+          userId: this.userId,
+          conversationHistory,
+          language
+        };
+
+        console.log('📤 [WS-CLIENT] Enviando mensaje...');
+        this.ws!.send(JSON.stringify(message));
       });
 
     } catch (error: any) {
