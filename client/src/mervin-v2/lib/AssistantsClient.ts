@@ -207,6 +207,9 @@ export class AssistantsClient {
     }
 
     try {
+      // CRÍTICO: Asegurar autenticación antes de obtener mensajes
+      await this.ensureAuthenticated();
+      
       // apiRequest.get() automáticamente incluye auth headers desde Firebase
       const response = await apiRequest.get(`/api/assistant/messages/${this.threadId}`) as {
         success: boolean;
