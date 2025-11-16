@@ -183,13 +183,21 @@ export class WebSocketAgentClient {
    */
   private handleMessage(data: string): void {
     try {
+      console.log(`\n📩 [WS-CLIENT] ═══ RAW MESSAGE RECEIVED ═══`);
+      console.log(`   Length: ${data.length} bytes`);
+      console.log(`   Preview: ${data.substring(0, 200)}...`);
+      
       const message: WSMessage = JSON.parse(data);
-      console.log(`📨 [WS-CLIENT] Mensaje recibido: ${message.type}`);
+      console.log(`✅ [WS-CLIENT] Mensaje parseado exitosamente`);
+      console.log(`   Type: "${message.type}"`);
+      console.log(`   Content length: ${message.content?.length || 0}`);
+      console.log(`   Has data: ${!!message.data}`);
 
       // Obtener callback activo
       const callback = this.pendingCallbacks.get('current');
       if (!callback) {
-        console.warn('⚠️ [WS-CLIENT] No hay callback activo');
+        console.warn('⚠️ [WS-CLIENT] No hay callback activo para procesar mensaje');
+        console.warn(`   Message type: ${message.type}`);
         return;
       }
 
@@ -200,15 +208,19 @@ export class WebSocketAgentClient {
         data: message.data
       };
 
+      console.log(`📡 [WS-CLIENT] Llamando callback con update tipo: "${update.type}"`);
       callback(update);
+      console.log(`✅ [WS-CLIENT] Callback ejecutado exitosamente`);
 
       // Si es complete o error, limpiar callback
       if (message.type === 'complete' || message.type === 'error') {
+        console.log(`🏁 [WS-CLIENT] Mensaje final detectado (${message.type}), limpiando callback`);
         this.pendingCallbacks.delete('current');
       }
 
     } catch (error) {
-      console.error('❌ [WS-CLIENT] Error parseando mensaje:', error);
+      console.error('❌ [WS-CLIENT] Error procesando mensaje:', error);
+      console.error('   Raw data:', data.substring(0, 500));
     }
   }
 
