@@ -10,7 +10,6 @@ import express, { Request, Response } from 'express';
 import admin from 'firebase-admin';
 import multer from 'multer';
 import { MervinOrchestratorV3 } from '../mervin-v2/orchestrator/MervinOrchestratorV3';
-import { ProgressStreamService } from '../mervin-v2/services/ProgressStreamService';
 import { FileProcessorService } from '../mervin-v2/services/FileProcessorService';
 import type { MervinRequest, FileAttachment } from '../mervin-v2/types/mervin-types';
 
@@ -192,7 +191,8 @@ router.post('/process', async (req: Request, res: Response) => {
 
 /**
  * POST /api/mervin-v2/stream
- * Procesar mensaje con streaming SSE (Server-Sent Events)
+ * Procesar mensaje (ahora retorna JSON directo, sin SSE)
+ * NOTA: WebSocket es el método recomendado para streaming real
  */
 router.post('/stream', async (req: Request, res: Response) => {
   try {
@@ -241,15 +241,11 @@ router.post('/stream', async (req: Request, res: Response) => {
       }
     });
 
-    // Crear orquestador V3 con auth headers
+    // Crear orquestador V3 con auth headers SIN ProgressStream
     const orchestrator = new MervinOrchestratorV3(userId, authHeaders);
+    // NO configurar ProgressStream - retornar JSON directo
 
-    // Configurar streaming
-    const progressService = new ProgressStreamService();
-    progressService.initializeStream(res);
-    orchestrator.setProgressStream(progressService);
-
-    // Procesar con streaming (V3 usa modo AGENT_SAFE por defecto)
+    // Procesar (V3 usa modo AGENT_SAFE por defecto)
     const response = await orchestrator.process({
       input,
       userId,
@@ -263,19 +259,18 @@ router.post('/stream', async (req: Request, res: Response) => {
       }
     });
 
-    // Ya no necesito enviar nada más, el stream ya se cerró
-    console.log('✅ [MERVIN-V2-STREAM] Streaming completado');
+    // Retornar respuesta JSON directa
+    res.json(response);
+    console.log('✅ [MERVIN-V2-STREAM] Procesamiento completado');
 
   } catch (error: any) {
     console.error('❌ [MERVIN-V2-STREAM] Error:', error);
     
-    // Si el stream no se inició, enviar error JSON
-    if (!res.headersSent) {
-      res.status(500).json({
-        error: 'Error procesando mensaje',
-        details: error.message
-      });
-    }
+    // Enviar error JSON
+    res.status(500).json({
+      error: 'Error procesando mensaje',
+      details: error.message
+    });
   }
 });
 
@@ -286,8 +281,6 @@ router.post('/stream', async (req: Request, res: Response) => {
 router.post('/process-with-files', upload.array('files', 5), async (req: Request, res: Response) => {
   // Configurar timeout de 120 segundos
   req.setTimeout(120000);
-  
-  let progressService: ProgressStreamService | null = null;
   
   try {
     const files = req.files as Express.Multer.File[];
@@ -343,13 +336,9 @@ router.post('/process-with-files', upload.array('files', 5), async (req: Request
       }
     });
 
-    // Crear orquestrador V3
+    // Crear orquestrador V3 SIN ProgressStream (modo JSON directo)
     const orchestrator = new MervinOrchestratorV3(userId, authHeaders);
-
-    // Configurar streaming
-    progressService = new ProgressStreamService();
-    progressService.initializeStream(res);
-    orchestrator.setProgressStream(progressService);
+    // NO configurar ProgressStream - retornar JSON directo
 
     // Parsear conversationHistory si viene como string
     let parsedHistory = [];
@@ -391,8 +380,9 @@ router.post('/process-with-files', upload.array('files', 5), async (req: Request
       }, 120000);
     });
 
+    let result;
     try {
-      await Promise.race([processPromise, timeoutPromise]);
+      result = await Promise.race([processPromise, timeoutPromise]);
       
       // Limpiar timeout si se completó exitosamente
       if (!timedOut && timeoutId) {
@@ -400,6 +390,8 @@ router.post('/process-with-files', upload.array('files', 5), async (req: Request
       }
       
       console.log('✅ [MERVIN-V2-FILES] Procesamiento completado exitosamente');
+      console.log('📤 [MERVIN-V2-FILES] Response length:', result.message?.length || 0);
+      
     } catch (error) {
       // Limpiar timeout si hubo error
       if (timeoutId) {
@@ -408,26 +400,18 @@ router.post('/process-with-files', upload.array('files', 5), async (req: Request
       throw error;
     }
 
+    // Retornar respuesta JSON directa (sin streaming)
+    res.json(result);
+
   } catch (error: any) {
     console.error('❌ [MERVIN-V2-FILES] Error:', error.message);
     console.error('❌ [MERVIN-V2-FILES] Stack:', error.stack);
     
-    // Intentar enviar error al stream si está disponible
-    if (progressService) {
-      try {
-        progressService.sendError(error.message);
-      } catch (streamError) {
-        console.error('❌ [MERVIN-V2-FILES] Error enviando al stream:', streamError);
-      }
-    }
-    
-    // Si los headers no se enviaron, enviar respuesta JSON
-    if (!res.headersSent) {
-      res.status(500).json({
-        error: 'Error procesando mensaje con archivos',
-        details: error.message
-      });
-    }
+    // Enviar respuesta JSON de error
+    res.status(500).json({
+      error: 'Error procesando mensaje con archivos',
+      details: error.message
+    });
   }
 });
 
