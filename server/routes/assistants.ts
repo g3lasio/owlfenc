@@ -9,7 +9,7 @@ import express, { type Request, type Response } from 'express';
 import { openai, getMervinAssistant } from '../assistants/config';
 import { createThread, sendMessage, getThreadMessages, cancelRun } from '../assistants/service';
 import { getToolExecutor, requiresConfirmation } from '../assistants/tools-registry';
-import { verifyFirebaseToken } from '../middleware/authMiddleware';
+import { adminAuth } from '../firebase-admin';
 import type { UserContext } from '../assistants/types';
 
 const router = express.Router();
@@ -24,7 +24,7 @@ async function extractUserContext(req: Request): Promise<UserContext> {
   }
 
   const token = authHeader.substring(7);
-  const decodedToken = await verifyFirebaseToken(token);
+  const decodedToken = await adminAuth.verifyIdToken(token);
   
   return {
     userId: decodedToken.uid,
