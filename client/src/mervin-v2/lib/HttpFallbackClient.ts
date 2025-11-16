@@ -61,7 +61,7 @@ export class HttpFallbackClient {
       const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
       console.log(`✅ [HTTP-FALLBACK] Response recibido en ${elapsed}s`);
 
-      // apiRequest() ya valida el status y parse JSON
+      // apiRequest() retorna Response, debemos parsear JSON
       const data = await response.json();
       console.log(`📦 [HTTP-FALLBACK] Data recibido, message length: ${data.message?.length || 0}`);
 
