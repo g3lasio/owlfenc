@@ -9,6 +9,7 @@
  */
 
 import { apiRequest } from '@/lib/queryClient';
+import { auth } from '@/lib/firebase';
 import type { AuthTokenProvider } from './AgentClient';
 
 export interface AssistantsMessage {
@@ -46,12 +47,33 @@ export class AssistantsClient {
   }
 
   /**
+   * Asegurar que hay usuario autenticado antes de hacer requests
+   */
+  private async ensureAuthenticated(): Promise<void> {
+    // Verificar que existe auth.currentUser
+    if (!auth.currentUser) {
+      throw new Error('Usuario no autenticado. Por favor inicia sesión para usar Mervin AI.');
+    }
+
+    // Verificar que podemos obtener un token válido
+    if (this.getAuthToken) {
+      const token = await this.getAuthToken();
+      if (!token) {
+        throw new Error('No se pudo obtener token de autenticación. Por favor recarga la página e intenta de nuevo.');
+      }
+    }
+  }
+
+  /**
    * Crear thread (solo si no existe)
    */
   private async ensureThread(): Promise<void> {
     if (this.threadId) {
       return;
     }
+
+    // CRÍTICO: Asegurar autenticación antes de crear thread
+    await this.ensureAuthenticated();
 
     console.log('🔧 [ASSISTANTS-CLIENT] Creando thread...');
     
@@ -84,6 +106,9 @@ export class AssistantsClient {
     const startTime = performance.now();
 
     try {
+      // CRÍTICO: Verificar autenticación primero
+      await this.ensureAuthenticated();
+      
       // Asegurar que existe thread
       await this.ensureThread();
 
@@ -140,9 +165,15 @@ export class AssistantsClient {
       const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
       console.error(`❌ [ASSISTANTS-CLIENT] Error después de ${elapsed}s:`, error);
       
+      // Mensaje de error amigable para problemas de autenticación
+      let errorMessage = error.message || 'Error processing message';
+      if (errorMessage.includes('autenticación') || errorMessage.includes('autenticado') || errorMessage.includes('token')) {
+        errorMessage = 'Por favor inicia sesión de nuevo para continuar usando Mervin AI.';
+      }
+      
       onUpdate({
         type: 'error',
-        content: error.message || 'Error processing message'
+        content: errorMessage
       });
 
       throw error;
