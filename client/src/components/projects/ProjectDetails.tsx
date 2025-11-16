@@ -576,17 +576,13 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
               {/* Detalles del Proyecto */}
               <div className="space-y-2">
                 <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Detalles</div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                   <div className="p-2 bg-muted/50 rounded border">
                     <div className="flex items-center gap-1.5 mb-1">
                       <i className={`${category.icon} text-primary`}></i>
                       <div className="text-xs text-muted-foreground">Categoría</div>
                     </div>
                     <div className="font-medium text-xs">{category.name}</div>
-                  </div>
-                  <div className="p-2 bg-muted/50 rounded border">
-                    <div className="text-xs text-muted-foreground mb-1">Tipo</div>
-                    <div className="font-medium text-xs">{project.projectSubtype || project.fenceType || 'No especificado'}</div>
                   </div>
                   <Dialog open={dateRangePickerOpen} onOpenChange={setDateRangePickerOpen}>
                     <DialogTrigger asChild>
