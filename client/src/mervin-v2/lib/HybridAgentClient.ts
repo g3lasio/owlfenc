@@ -22,7 +22,7 @@ export class HybridAgentClient {
   private httpClient: HttpFallbackClient;
   private userId: string;
   private getAuthToken: AuthTokenProvider | null;
-  private preferWebSocket = true;
+  private preferWebSocket = false; // CAMBIO: HTTP como primario (más confiable)
   private wsFailureCount = 0;
   private maxWsFailures = 2;
 
@@ -35,8 +35,8 @@ export class HybridAgentClient {
     this.httpClient = new HttpFallbackClient(userId, baseURL); // Usa apiRequest() con todos los headers
     
     console.log('🚀 [HYBRID-CLIENT] Sistema híbrido inicializado');
-    console.log('   ✅ WebSocket: Activado (principal) + Auth:', getAuthToken ? 'SI' : 'NO');
-    console.log('   ✅ HTTP Fallback: Activado (backup)');
+    console.log('   ✅ HTTP: Activado (PRIMARIO - confiable)');
+    console.log('   ⚠️ WebSocket: Desactivado temporalmente (debugging)');
   }
 
   /**
@@ -51,7 +51,7 @@ export class HybridAgentClient {
     console.log('\n='.repeat(50));
     console.log('🤖 [HYBRID-CLIENT] Nueva solicitud');
     console.log(`📝 Input: "${input.substring(0, 50)}..."`);
-    console.log(`🔀 Estrategia: ${this.preferWebSocket ? 'WebSocket → HTTP Fallback' : 'HTTP Fallback (WebSocket deshabilitado)'}`);
+    console.log(`🔀 Estrategia: ${this.preferWebSocket ? 'WebSocket → HTTP Fallback' : 'HTTP PRIMARIO (confiable)'}`);
     console.log('='.repeat(50) + '\n');
 
     const startTime = performance.now();
