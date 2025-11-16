@@ -124,19 +124,42 @@ const upload = multer({
 /**
  * POST /api/mervin-v2/process
  * Procesar mensaje del usuario (respuesta JSON normal)
+ * 🔐 SECURITY: Requiere autenticación Firebase obligatoria
  */
 router.post('/process', async (req: Request, res: Response) => {
   try {
-    const { input, userId, conversationHistory, language }: MervinRequest = req.body;
-
-    // Validación
-    if (!input || !userId) {
-      return res.status(400).json({
-        error: 'Se requiere input y userId'
+    // 🔐 SECURITY: Validar autenticación Firebase OBLIGATORIA
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ 
+        error: 'Authentication required: Missing or invalid Authorization header' 
       });
     }
 
-    console.log('📨 [MERVIN-V2-API] Request recibido:', { userId, input: input.substring(0, 50) });
+    const token = authHeader.substring(7); // Remove "Bearer "
+    let authenticatedUserId: string;
+    
+    try {
+      const decodedToken = await admin.auth().verifyIdToken(token);
+      authenticatedUserId = decodedToken.uid;
+      console.log(`✅ [MERVIN-V2-PROCESS] Usuario autenticado: ${authenticatedUserId}`);
+    } catch (error: any) {
+      console.error('❌ [MERVIN-V2-PROCESS] Token inválido:', error.message);
+      return res.status(401).json({ 
+        error: 'Invalid authentication token' 
+      });
+    }
+
+    const { input, conversationHistory, language } = req.body;
+
+    // Validación de input
+    if (!input) {
+      return res.status(400).json({
+        error: 'Se requiere input'
+      });
+    }
+
+    console.log('📨 [MERVIN-V2-PROCESS] Request recibido:', { userId: authenticatedUserId, input: input.substring(0, 50) });
 
     // Forward all auth headers to SystemAPIService
     const authHeaders: Record<string, string> = {};
@@ -159,13 +182,13 @@ router.post('/process', async (req: Request, res: Response) => {
       }
     });
 
-    // Crear orquestador V3 con auth headers
-    const orchestrator = new MervinOrchestratorV3(userId, authHeaders);
+    // Crear orquestador V3 con userId VERIFICADO
+    const orchestrator = new MervinOrchestratorV3(authenticatedUserId, authHeaders);
 
     // Procesar (V3 usa modo AGENT_SAFE por defecto)
     const response = await orchestrator.process({
       input,
-      userId,
+      userId: authenticatedUserId, // USAR userId autenticado
       conversationHistory: conversationHistory || [],
       language: language || 'es',
       // Modo por defecto: AGENT_SAFE (auto-ejecuta excepto contratos y acciones críticas)
@@ -193,9 +216,32 @@ router.post('/process', async (req: Request, res: Response) => {
  * POST /api/mervin-v2/stream
  * Procesar mensaje (ahora retorna JSON directo, sin SSE)
  * NOTA: WebSocket es el método recomendado para streaming real
+ * 🔐 SECURITY: Requiere autenticación Firebase obligatoria
  */
 router.post('/stream', async (req: Request, res: Response) => {
   try {
+    // 🔐 SECURITY: Validar autenticación Firebase OBLIGATORIA
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ 
+        error: 'Authentication required: Missing or invalid Authorization header' 
+      });
+    }
+
+    const token = authHeader.substring(7); // Remove "Bearer "
+    let authenticatedUserId: string;
+    
+    try {
+      const decodedToken = await admin.auth().verifyIdToken(token);
+      authenticatedUserId = decodedToken.uid;
+      console.log(`✅ [MERVIN-V2-STREAM] Usuario autenticado: ${authenticatedUserId}`);
+    } catch (error: any) {
+      console.error('❌ [MERVIN-V2-STREAM] Token inválido:', error.message);
+      return res.status(401).json({ 
+        error: 'Invalid authentication token' 
+      });
+    }
+
     // 🛡️ DEFENSIVE VALIDATION: Check body BEFORE destructuring to avoid throw
     if (!req.body || Object.keys(req.body).length === 0) {
       console.error('❌ [MERVIN-V2-STREAM] VALIDATION FAILED: req.body is empty or undefined');
@@ -206,19 +252,18 @@ router.post('/stream', async (req: Request, res: Response) => {
       return;
     }
 
-    const { input, userId, conversationHistory, language }: MervinRequest = req.body;
+    const { input, conversationHistory, language } = req.body;
 
-    // Validación
-    if (!input || !userId) {
-      console.error('❌ [MERVIN-V2-STREAM] VALIDATION FAILED: Missing required fields');
-      console.error('   Received body:', JSON.stringify({ input: !!input, userId: !!userId, hasHistory: !!conversationHistory }));
+    // Validación de input
+    if (!input) {
+      console.error('❌ [MERVIN-V2-STREAM] VALIDATION FAILED: Missing required field: input');
       res.status(400).json({
-        error: 'Se requiere input y userId'
+        error: 'Se requiere input'
       });
       return;
     }
 
-    console.log('📡 [MERVIN-V2-STREAM] Request recibido:', { userId, input: input.substring(0, 50) });
+    console.log('📡 [MERVIN-V2-STREAM] Request recibido:', { userId: authenticatedUserId, input: input.substring(0, 50) });
 
     // Forward all auth headers to SystemAPIService
     const authHeaders: Record<string, string> = {};
@@ -241,14 +286,14 @@ router.post('/stream', async (req: Request, res: Response) => {
       }
     });
 
-    // Crear orquestador V3 con auth headers SIN ProgressStream
-    const orchestrator = new MervinOrchestratorV3(userId, authHeaders);
+    // Crear orquestador V3 con userId VERIFICADO
+    const orchestrator = new MervinOrchestratorV3(authenticatedUserId, authHeaders);
     // NO configurar ProgressStream - retornar JSON directo
 
     // Procesar (V3 usa modo AGENT_SAFE por defecto)
     const response = await orchestrator.process({
       input,
-      userId,
+      userId: authenticatedUserId, // USAR userId autenticado
       conversationHistory: conversationHistory || [],
       language: language || 'es',
       // Modo por defecto: AGENT_SAFE
@@ -277,23 +322,46 @@ router.post('/stream', async (req: Request, res: Response) => {
 /**
  * POST /api/mervin-v2/process-with-files
  * Procesar mensaje con archivos adjuntos
+ * 🔐 SECURITY: Requiere autenticación Firebase obligatoria
  */
 router.post('/process-with-files', upload.array('files', 5), async (req: Request, res: Response) => {
   // Configurar timeout de 120 segundos
   req.setTimeout(120000);
   
   try {
-    const files = req.files as Express.Multer.File[];
-    const { input, userId, conversationHistory, language } = req.body;
-
-    // Validación
-    if (!input || !userId) {
-      return res.status(400).json({
-        error: 'Se requiere input y userId'
+    // 🔐 SECURITY: Validar autenticación Firebase OBLIGATORIA
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ 
+        error: 'Authentication required: Missing or invalid Authorization header' 
       });
     }
 
-    console.log(`📨 [MERVIN-V2-FILES] Request con ${files?.length || 0} archivos`);
+    const token = authHeader.substring(7); // Remove "Bearer "
+    let authenticatedUserId: string;
+    
+    try {
+      const decodedToken = await admin.auth().verifyIdToken(token);
+      authenticatedUserId = decodedToken.uid;
+      console.log(`✅ [MERVIN-V2-FILES] Usuario autenticado: ${authenticatedUserId}`);
+    } catch (error: any) {
+      console.error('❌ [MERVIN-V2-FILES] Token inválido:', error.message);
+      return res.status(401).json({ 
+        error: 'Invalid authentication token' 
+      });
+    }
+
+    const files = req.files as Express.Multer.File[];
+    const { input, conversationHistory, language } = req.body;
+
+    // Validación de input
+    if (!input) {
+      return res.status(400).json({
+        error: 'Se requiere input'
+      });
+    }
+
+    console.log(`📨 [MERVIN-V2-FILES] Request con ${files?.length || 0} archivos de usuario: ${authenticatedUserId}`);
     console.log(`📝 [MERVIN-V2-FILES] Input: ${input.substring(0, 100)}...`);
 
     // Procesar archivos adjuntos
@@ -336,8 +404,8 @@ router.post('/process-with-files', upload.array('files', 5), async (req: Request
       }
     });
 
-    // Crear orquestrador V3 SIN ProgressStream (modo JSON directo)
-    const orchestrator = new MervinOrchestratorV3(userId, authHeaders);
+    // Crear orquestrador V3 con userId VERIFICADO
+    const orchestrator = new MervinOrchestratorV3(authenticatedUserId, authHeaders);
     // NO configurar ProgressStream - retornar JSON directo
 
     // Parsear conversationHistory si viene como string
@@ -360,7 +428,7 @@ router.post('/process-with-files', upload.array('files', 5), async (req: Request
     
     const processPromise = orchestrator.process({
       input,
-      userId,
+      userId: authenticatedUserId, // USAR userId autenticado
       conversationHistory: parsedHistory,
       language: language || 'es',
       attachments,
