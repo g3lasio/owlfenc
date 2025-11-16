@@ -124,7 +124,7 @@ export function setupMervinWebSocket(wss: WebSocketServer) {
               conversationHistory: message.conversationHistory || [],
               language: message.language || 'es'
             };
-            console.log(`✅ [MERVIN-WS] Request preparado: ${JSON.stringify({ inputLength: message.input.length, historyLength: request.conversationHistory.length })}`);
+            console.log(`✅ [MERVIN-WS] Request preparado: ${JSON.stringify({ inputLength: message.input.length, historyLength: request.conversationHistory?.length || 0 })}`);
             
             // ETAPA 4: Mensaje de progreso antes de procesar
             console.log(`🔄 [MERVIN-WS] Etapa 4: Enviando mensaje "Thinking..."...`);
