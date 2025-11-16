@@ -55,13 +55,10 @@ export class AssistantsClient {
 
     console.log('🔧 [ASSISTANTS-CLIENT] Creando thread...');
     
-    const response = await apiRequest<{ threadId: string; assistantId: string }>({
-      method: 'POST',
-      url: '/api/assistant/thread',
-      data: {
-        language: 'es'
-      }
-    });
+    // apiRequest.post() automáticamente incluye auth headers desde Firebase
+    const response = await apiRequest.post('/api/assistant/thread', {
+      language: 'es'
+    }) as { threadId: string; assistantId: string };
 
     this.threadId = response.threadId;
     this.assistantId = response.assistantId;
@@ -103,19 +100,16 @@ export class AssistantsClient {
         content: '🤔 '
       });
 
-      const response = await apiRequest<{
+      // apiRequest.post() automáticamente incluye auth headers desde Firebase
+      const response = await apiRequest.post('/api/assistant/message', {
+        threadId: this.threadId,
+        message: input,
+        language
+      }) as {
         success: boolean;
         response: any;
         runStatus: string;
-      }>({
-        method: 'POST',
-        url: '/api/assistant/message',
-        data: {
-          threadId: this.threadId,
-          message: input,
-          language
-        }
-      });
+      };
 
       if (!response.success) {
         throw new Error('Failed to send message');
@@ -164,13 +158,11 @@ export class AssistantsClient {
     }
 
     try {
-      const response = await apiRequest<{
+      // apiRequest.get() automáticamente incluye auth headers desde Firebase
+      const response = await apiRequest.get(`/api/assistant/messages/${this.threadId}`) as {
         success: boolean;
         messages: any[];
-      }>({
-        method: 'GET',
-        url: `/api/assistant/messages/${this.threadId}`
-      });
+      };
 
       if (!response.success) {
         return [];
