@@ -1,0 +1,212 @@
+/**
+ * ASSISTANTS CLIENT - NUEVO CLIENTE BASADO EN OPENAI ASSISTANTS API
+ * 
+ * Reemplaza HybridAgentClient con arquitectura más confiable:
+ * - Frontend comunica directamente con OpenAI vía backend proxy
+ * - Sin WebSocket custom
+ * - Streaming confiable usando SDK de OpenAI
+ * - Backend ejecuta tools cuando necesario
+ */
+
+import { apiRequest } from '@/lib/queryClient';
+import type { AuthTokenProvider } from './AgentClient';
+
+export interface AssistantsMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export interface StreamUpdate {
+  type: 'text_delta' | 'tool_call_start' | 'tool_call_end' | 'complete' | 'error';
+  content?: string;
+  toolName?: string;
+  data?: any;
+  error?: string;
+}
+
+export type StreamCallback = (update: StreamUpdate) => void;
+
+/**
+ * Cliente para Assistants API
+ */
+export class AssistantsClient {
+  private threadId: string | null = null;
+  private assistantId: string | null = null;
+  private userId: string;
+  private getAuthToken: AuthTokenProvider | null;
+  
+  constructor(userId: string, getAuthToken: AuthTokenProvider | null = null) {
+    this.userId = userId;
+    this.getAuthToken = getAuthToken;
+    
+    console.log('🤖 [ASSISTANTS-CLIENT] Inicializado para usuario:', userId);
+    console.log('   ✅ Usando OpenAI Assistants API');
+    console.log('   ✅ Streaming confiable');
+    console.log('   ✅ Sin WebSocket custom');
+  }
+
+  /**
+   * Crear thread (solo si no existe)
+   */
+  private async ensureThread(): Promise<void> {
+    if (this.threadId) {
+      return;
+    }
+
+    console.log('🔧 [ASSISTANTS-CLIENT] Creando thread...');
+    
+    const response = await apiRequest<{ threadId: string; assistantId: string }>({
+      method: 'POST',
+      url: '/api/assistant/thread',
+      data: {
+        language: 'es'
+      }
+    });
+
+    this.threadId = response.threadId;
+    this.assistantId = response.assistantId;
+    
+    console.log('✅ [ASSISTANTS-CLIENT] Thread creado:', this.threadId);
+  }
+
+  /**
+   * Enviar mensaje con streaming
+   * NOTA: Por ahora usa polling, después migraremos a SSE real
+   */
+  async sendMessageStream(
+    input: string,
+    conversationHistory: AssistantsMessage[] = [],
+    language: 'es' | 'en' = 'es',
+    onUpdate: StreamCallback
+  ): Promise<void> {
+    console.log('\n' + '='.repeat(50));
+    console.log('🤖 [ASSISTANTS-CLIENT] Nueva solicitud');
+    console.log(`📝 Input: "${input.substring(0, 50)}..."`);
+    console.log('='.repeat(50) + '\n');
+
+    const startTime = performance.now();
+
+    try {
+      // Asegurar que existe thread
+      await this.ensureThread();
+
+      if (!this.threadId) {
+        throw new Error('Failed to create thread');
+      }
+
+      // Enviar mensaje a través del backend
+      console.log('📤 [ASSISTANTS-CLIENT] Enviando mensaje...');
+      
+      // Mostrar feedback inicial
+      onUpdate({
+        type: 'text_delta',
+        content: '🤔 '
+      });
+
+      const response = await apiRequest<{
+        success: boolean;
+        response: any;
+        runStatus: string;
+      }>({
+        method: 'POST',
+        url: '/api/assistant/message',
+        data: {
+          threadId: this.threadId,
+          message: input,
+          language
+        }
+      });
+
+      if (!response.success) {
+        throw new Error('Failed to send message');
+      }
+
+      // Extraer respuesta del assistant
+      const assistantMessage = response.response;
+      if (assistantMessage?.content) {
+        const textContent = assistantMessage.content.find((c: any) => c.type === 'text');
+        if (textContent) {
+          // Enviar respuesta completa
+          onUpdate({
+            type: 'text_delta',
+            content: textContent.text
+          });
+        }
+      }
+
+      // Marcar como completo
+      const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
+      console.log(`✅ [ASSISTANTS-CLIENT] Completado en ${elapsed}s`);
+      
+      onUpdate({
+        type: 'complete'
+      });
+
+    } catch (error: any) {
+      const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
+      console.error(`❌ [ASSISTANTS-CLIENT] Error después de ${elapsed}s:`, error);
+      
+      onUpdate({
+        type: 'error',
+        content: error.message || 'Error processing message'
+      });
+
+      throw error;
+    }
+  }
+
+  /**
+   * Obtener mensajes del thread
+   */
+  async getMessages(): Promise<AssistantsMessage[]> {
+    if (!this.threadId) {
+      return [];
+    }
+
+    try {
+      const response = await apiRequest<{
+        success: boolean;
+        messages: any[];
+      }>({
+        method: 'GET',
+        url: `/api/assistant/messages/${this.threadId}`
+      });
+
+      if (!response.success) {
+        return [];
+      }
+
+      return response.messages.map(msg => ({
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content.map((c: any) => c.type === 'text' ? c.text : '').join('')
+      }));
+    } catch (error) {
+      console.error('❌ [ASSISTANTS-CLIENT] Error getting messages:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Reset thread (crear nuevo)
+   */
+  resetThread(): void {
+    console.log('🔄 [ASSISTANTS-CLIENT] Reseteando thread');
+    this.threadId = null;
+    this.assistantId = null;
+  }
+
+  /**
+   * Obtener estado
+   */
+  getStatus(): {
+    threadId: string | null;
+    assistantId: string | null;
+    isReady: boolean;
+  } {
+    return {
+      threadId: this.threadId,
+      assistantId: this.assistantId,
+      isReady: !!this.threadId
+    };
+  }
+}

@@ -5,7 +5,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { HybridAgentClient } from '../lib/HybridAgentClient';
+import { AssistantsClient } from '../lib/AssistantsClient';
 import { AgentClient, MervinMessage, MervinResponse, StreamUpdate, AuthTokenProvider } from '../lib/AgentClient';
 import { auth } from '@/lib/firebase';
 import { 
@@ -75,8 +75,8 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
     pendingSaves: 0,
   });
 
-  // Cliente HÍBRIDO para mensajes de texto (WebSocket + HTTP Fallback) CON AUTH
-  const hybridClientRef = useRef<HybridAgentClient>(new HybridAgentClient(userId, '', getFirebaseToken));
+  // Cliente ASSISTANTS API para mensajes de texto (OpenAI powered) CON AUTH
+  const assistantsClientRef = useRef<AssistantsClient>(new AssistantsClient(userId, getFirebaseToken));
   
   // Cliente ORIGINAL para mensajes con archivos adjuntos
   const legacyClientRef = useRef<AgentClient>(new AgentClient(userId, '', getFirebaseToken));
@@ -111,9 +111,9 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
     if (userId !== prevUserIdRef.current) {
       console.log(`🔄 [MERVIN-AGENT] UserId changed: ${prevUserIdRef.current} → ${userId}`);
       
-      // Recrear cliente híbrido CON AUTH
-      hybridClientRef.current.close();
-      hybridClientRef.current = new HybridAgentClient(userId, '', getFirebaseToken);
+      // Recrear cliente Assistants CON AUTH
+      assistantsClientRef.current.resetThread();
+      assistantsClientRef.current = new AssistantsClient(userId, getFirebaseToken);
       
       // Recrear cliente legacy
       legacyClientRef.current = new AgentClient(userId, '', getFirebaseToken);
@@ -200,32 +200,39 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
           }
         );
       } else {
-        // SIN ARCHIVOS: Usar sistema híbrido (WebSocket + HTTP Fallback)
-        console.log('🚀 [MERVIN-AGENT] Usando sistema HÍBRIDO (WS → HTTP Fallback)');
+        // SIN ARCHIVOS: Usar Assistants API (OpenAI powered, confiable)
+        console.log('🤖 [MERVIN-AGENT] Usando ASSISTANTS API (OpenAI powered)');
         
-        await hybridClientRef.current.sendMessageStream(
+        let fullContent = '';
+        
+        await assistantsClientRef.current.sendMessageStream(
           input,
-          messages,
+          [], // No necesitamos history completo, OpenAI lo maneja
           language,
           (update: StreamUpdate) => {
             setStreamingUpdates(prev => [...prev, update]);
             if (onStreamUpdate) onStreamUpdate(update);
 
+            // Acumular contenido
+            if (update.type === 'text_delta' && update.content) {
+              fullContent += update.content;
+            }
+
             if (update.type === 'complete') {
-              console.log('✅ [HYBRID-AGENT] Complete message received:', {
-                contentLength: update.content?.length || 0,
-                fullContent: update.content
+              console.log('✅ [ASSISTANTS] Complete message received:', {
+                contentLength: fullContent.length,
+                fullContent: fullContent.substring(0, 200) + '...'
               });
               
               const assistantMessage: MervinMessage = {
                 role: 'assistant',
-                content: update.content,
+                content: fullContent,
                 timestamp: new Date()
               };
               setMessages(prev => [...prev, assistantMessage]);
               persistenceRef.current?.saveMessage({
                 sender: 'assistant',
-                text: update.content,
+                text: fullContent,
                 timestamp: assistantMessage.timestamp!.toISOString(),
               }).catch(err => console.error('❌ [AUTO-SAVE] Failed:', err));
             }
