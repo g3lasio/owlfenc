@@ -2591,9 +2591,48 @@ You can also drag & drop documents here (permits, plans, estimates)"
                                         Critical Alert #{idx + 1}
                                       </h4>
                                       <div className="bg-amber-500/10 border border-amber-400/30 rounded-lg p-3">
-                                        <p className="text-amber-200 text-sm leading-relaxed">
-                                          {typeof consideration === "string" ? consideration : JSON.stringify(consideration)}
-                                        </p>
+                                        {typeof consideration === "string" ? (
+                                          <p className="text-amber-200 text-sm leading-relaxed break-words">
+                                            {consideration}
+                                          </p>
+                                        ) : consideration && typeof consideration === "object" && !Array.isArray(consideration) ? (
+                                          <ul className="space-y-2">
+                                            {Object.entries(consideration).map(([key, value]: [string, any]) => {
+                                              const labelMap: Record<string, string> = {
+                                                zoning: "Zoning Compliance",
+                                                penalties: "Penalties & Fines",
+                                                environmental: "Environmental Standards",
+                                                specificLocalRegulations: "Local Regulations",
+                                                deadlines: "Permit Deadlines",
+                                                safety: "Safety Requirements",
+                                                inspections: "Inspection Requirements",
+                                                fees: "Permit Fees",
+                                                restrictions: "Project Restrictions"
+                                              };
+                                              const label = labelMap[key] || key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
+                                              
+                                              return (
+                                                <li key={key} className="flex items-start gap-2">
+                                                  <span className="text-red-400 flex-shrink-0 text-base">🚩</span>
+                                                  <div className="flex-1 min-w-0">
+                                                    <span className="font-semibold text-amber-300 text-sm">{label}:</span>{" "}
+                                                    <span className="text-amber-200 text-sm break-words">
+                                                      {value !== null && value !== undefined 
+                                                        ? (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
+                                                            ? String(value)
+                                                            : JSON.stringify(value))
+                                                        : 'N/A'}
+                                                    </span>
+                                                  </div>
+                                                </li>
+                                              );
+                                            })}
+                                          </ul>
+                                        ) : (
+                                          <p className="text-amber-200 text-sm leading-relaxed break-words">
+                                            {consideration !== null && consideration !== undefined ? String(consideration) : 'No additional details available'}
+                                          </p>
+                                        )}
                                       </div>
                                     </div>
                                   </div>
