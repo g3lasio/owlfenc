@@ -47,21 +47,39 @@ export class AssistantsClient {
   }
 
   /**
-   * Asegurar que hay usuario autenticado antes de hacer requests
+   * Asegurar que hay usuario autenticado Y token válido antes de hacer requests
+   * Incluye retry logic para esperar a que Firebase auth esté completamente listo
    */
   private async ensureAuthenticated(): Promise<void> {
-    // Verificar que existe auth.currentUser
-    if (!auth.currentUser) {
-      throw new Error('Usuario no autenticado. Por favor inicia sesión para usar Mervin AI.');
-    }
+    const maxRetries = 10; // 10 intentos
+    const retryDelay = 300; // 300ms entre intentos = 3 segundos total
 
-    // Verificar que podemos obtener un token válido
-    if (this.getAuthToken) {
-      const token = await this.getAuthToken();
-      if (!token) {
-        throw new Error('No se pudo obtener token de autenticación. Por favor recarga la página e intenta de nuevo.');
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      // Verificar que existe auth.currentUser
+      if (auth.currentUser) {
+        try {
+          // CRÍTICO: Obtener token directamente de Firebase para garantizar que está disponible
+          const token = await auth.currentUser.getIdToken(false); // false = usar cached si está fresco
+          
+          if (token) {
+            console.log(`✅ [ASSISTANTS-AUTH] Usuario autenticado con token válido: ${this.userId}`);
+            return; // Success! Tenemos usuario Y token
+          }
+        } catch (tokenError: any) {
+          // Error obteniendo token, seguir intentando
+          console.log(`⚠️ [ASSISTANTS-AUTH] Error obteniendo token (${attempt}/${maxRetries}):`, tokenError.message);
+        }
+      }
+
+      // Si no está listo o falló obtener token, esperar y reintentar
+      if (attempt < maxRetries) {
+        console.log(`⏳ [ASSISTANTS-AUTH] Esperando auth completo (${attempt}/${maxRetries})...`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
       }
     }
+
+    // Si llegamos aquí, auth no está disponible después de todos los intentos
+    throw new Error('No se pudo autenticar. Por favor recarga la página e inicia sesión de nuevo.');
   }
 
   /**
