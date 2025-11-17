@@ -163,10 +163,16 @@ export class AssistantsClient {
       if (assistantMessage?.content) {
         const textContent = assistantMessage.content.find((c: any) => c.type === 'text');
         if (textContent) {
+          // CRÍTICO: textContent.text es un objeto con estructura {value: string, annotations: []}
+          // NO es un string directo - debemos acceder a .value
+          const messageText = textContent.text?.value || textContent.text;
+          
+          console.log(`📨 [ASSISTANTS-CLIENT] Respuesta recibida (${messageText.length} caracteres)`);
+          
           // Enviar respuesta completa
           onUpdate({
             type: 'text_delta',
-            content: textContent.text
+            content: messageText
           });
         }
       }
@@ -222,7 +228,8 @@ export class AssistantsClient {
 
       return response.messages.map(msg => ({
         role: msg.role as 'user' | 'assistant',
-        content: msg.content.map((c: any) => c.type === 'text' ? c.text : '').join('')
+        // CRÍTICO: c.text es un objeto {value: string, annotations: []}
+        content: msg.content.map((c: any) => c.type === 'text' ? (c.text?.value || c.text) : '').join('')
       }));
     } catch (error) {
       console.error('❌ [ASSISTANTS-CLIENT] Error getting messages:', error);
