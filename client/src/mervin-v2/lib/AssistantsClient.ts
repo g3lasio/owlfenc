@@ -160,21 +160,31 @@ export class AssistantsClient {
 
       // Extraer respuesta del assistant
       const assistantMessage = response.response;
+      console.log(`🔍 [DEBUG] assistantMessage:`, JSON.stringify(assistantMessage, null, 2).substring(0, 300));
+      
       if (assistantMessage?.content) {
         const textContent = assistantMessage.content.find((c: any) => c.type === 'text');
+        console.log(`🔍 [DEBUG] textContent:`, JSON.stringify(textContent, null, 2).substring(0, 300));
+        
         if (textContent) {
-          // CRÍTICO: textContent.text es un objeto con estructura {value: string, annotations: []}
-          // NO es un string directo - debemos acceder a .value
+          // NOTA: El backend ya transforma la respuesta y devuelve textContent.text como STRING directo
+          // Estructura: { type: 'text', text: "mensaje completo..." }
           const messageText = textContent.text?.value || textContent.text;
           
+          console.log(`🔍 [DEBUG] messageText type:`, typeof messageText);
           console.log(`📨 [ASSISTANTS-CLIENT] Respuesta recibida (${messageText.length} caracteres)`);
+          console.log(`📨 [ASSISTANTS-CLIENT] Preview: "${messageText.substring(0, 100)}..."`);
           
           // Enviar respuesta completa
           onUpdate({
             type: 'text_delta',
             content: messageText
           });
+        } else {
+          console.error(`❌ [ASSISTANTS-CLIENT] No se encontró textContent en la respuesta`);
         }
+      } else {
+        console.error(`❌ [ASSISTANTS-CLIENT] assistantMessage.content está vacío`);
       }
 
       // Marcar como completo
