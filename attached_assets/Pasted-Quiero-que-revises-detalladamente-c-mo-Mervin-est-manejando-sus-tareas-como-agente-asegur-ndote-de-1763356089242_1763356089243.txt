@@ -1,0 +1,71 @@
+Quiero que revises detalladamente cómo Mervin está manejando sus tareas como agente, asegurándote de que tenga un entendimiento profundo y preciso de cada workflow del ecosistema y que pueda interactuar de forma robusta, confiable y experta con cada página de nuestra aplicación.
+
+Mervin debe dominar por completo todos los procesos que hoy funcionan manualmente, incluyendo:
+
+⸻
+
+🔹 1. Estimate Workflow (Estimados)
+
+Mervin debe ser capaz de:
+	•	Crear estimados nuevos
+	•	Modificar estimados existentes
+	•	Enviarlos al cliente
+	•	Alterar cualquier campo según instrucciones del usuario
+	•	Navegar el flujo completo del Estimate Wizard como si fuera un contratista experto
+
+⸻
+
+🔹 2. Contract Generator (Contratos)
+
+Debe manejar:
+	•	Selección del proyecto adecuado
+	•	Generación del contrato usando los datos del estimate
+	•	Crear URLs de firma para contratista y cliente
+	•	Exportar contratos en PDF con firmas integradas
+	•	Revisar la lógica legal para evitar errores
+
+⸻
+
+🔹 3. Invoices (Facturas)
+
+Mervin debe ejecutar:
+	•	Generación de invoices basados en el estimate o proyecto
+	•	Enviar facturas por email desde la app
+	•	Descargar el PDF correctamente formateado
+	•	Asegurar consistencia entre Invoices, Projects y Estimate Wizard
+
+⸻
+
+🔹 4. Property Ownership Checker
+
+Debe poder:
+	•	Verificar el ownership real de la propiedad
+	•	Investigar datos asociados al parcel, dirección o dueño
+	•	Reportar resultados con claridad y precisión
+	•	Validar información para evitar fraudes o proyectos inexistentes
+
+⸻
+
+🔹 5. Permit Advisor
+
+Mervin debe entender y ejecutar:
+	•	Búsqueda de permisos necesarios basado en el tipo de proyecto
+	•	Verificación de leyes, reglas o regulaciones aplicables
+	•	Análisis de riesgos o requerimientos adicionales
+	•	Interpretación de datos obtenidos por “permit advisor” con exactitud
+
+⸻
+
+✔️ En Resumen
+
+Estos workflows ya funcionan manualmente dentro de cada página, pero ahora necesito que:
+
+Mervin actúe como un agente experto
+	•	que entiende cada herramienta,
+	•	sabe qué endpoint llamar,
+	•	sabe qué datos usar,
+	•	y ejecuta cada proceso con precisión profesional,
+	•	sin romper la lógica existente del sistema.
+
+Mervin no debe comportarse como un chatbot normal;
+debe operar como un contratista digital altamente capacitado, capaz de manejar y automatizar todos estos flujos con confianza, dominio y exactitud.
