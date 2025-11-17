@@ -136,12 +136,6 @@ export class AssistantsClient {
 
       // Enviar mensaje a través del backend
       console.log('📤 [ASSISTANTS-CLIENT] Enviando mensaje...');
-      
-      // Mostrar feedback inicial
-      onUpdate({
-        type: 'text_delta',
-        content: '🤔 '
-      });
 
       // apiRequest.post() automáticamente incluye auth headers desde Firebase
       const response = await apiRequest.post('/api/assistant/message', {
@@ -175,25 +169,23 @@ export class AssistantsClient {
           console.log(`📨 [ASSISTANTS-CLIENT] Respuesta recibida (${messageText.length} caracteres)`);
           console.log(`📨 [ASSISTANTS-CLIENT] Preview: "${messageText.substring(0, 100)}..."`);
           
-          // Enviar respuesta completa
+          // FIX CRÍTICO: Enviar mensaje completo directamente con type 'complete'
+          // Esto evita la acumulación problemática en useMervinAgent
+          const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
+          console.log(`✅ [ASSISTANTS-CLIENT] Completado en ${elapsed}s`);
+          
           onUpdate({
-            type: 'text_delta',
+            type: 'complete',
             content: messageText
           });
         } else {
           console.error(`❌ [ASSISTANTS-CLIENT] No se encontró textContent en la respuesta`);
+          throw new Error('No text content in response');
         }
       } else {
         console.error(`❌ [ASSISTANTS-CLIENT] assistantMessage.content está vacío`);
+        throw new Error('Empty response content');
       }
-
-      // Marcar como completo
-      const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
-      console.log(`✅ [ASSISTANTS-CLIENT] Completado en ${elapsed}s`);
-      
-      onUpdate({
-        type: 'complete'
-      });
 
     } catch (error: any) {
       const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);

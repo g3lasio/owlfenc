@@ -207,8 +207,6 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
         // SIN ARCHIVOS: Usar Assistants API (OpenAI powered, confiable)
         console.log('🤖 [MERVIN-AGENT] Usando ASSISTANTS API (OpenAI powered)');
         
-        let fullContent = '';
-        
         await assistantsClientRef.current.sendMessageStream(
           input,
           [], // No necesitamos history completo, OpenAI lo maneja
@@ -230,26 +228,22 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
             setStreamingUpdates(prev => [...prev, adaptedUpdate]);
             if (onStreamUpdate) onStreamUpdate(adaptedUpdate);
 
-            // Acumular contenido
-            if (assistantUpdate.type === 'text_delta' && assistantUpdate.content) {
-              fullContent += assistantUpdate.content;
-            }
-
-            if (assistantUpdate.type === 'complete') {
+            // FIX CRÍTICO: El mensaje completo ahora llega directamente en type='complete'
+            if (assistantUpdate.type === 'complete' && assistantUpdate.content) {
               console.log('✅ [ASSISTANTS] Complete message received:', {
-                contentLength: fullContent.length,
-                fullContent: fullContent.substring(0, 200) + '...'
+                contentLength: assistantUpdate.content.length,
+                preview: assistantUpdate.content.substring(0, 200) + '...'
               });
               
               const assistantMessage: MervinMessage = {
                 role: 'assistant',
-                content: fullContent,
+                content: assistantUpdate.content,
                 timestamp: new Date()
               };
               setMessages(prev => [...prev, assistantMessage]);
               persistenceRef.current?.saveMessage({
                 sender: 'assistant',
-                text: fullContent,
+                text: assistantUpdate.content,
                 timestamp: assistantMessage.timestamp!.toISOString(),
               }).catch(err => console.error('❌ [AUTO-SAVE] Failed:', err));
             }
