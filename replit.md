@@ -39,6 +39,8 @@ This AI-powered platform automates legal document and permit management for cont
 - **Benefits Over Custom Stack**: Reliable streaming (no truncation), access to GPT-4.1/GPT-5, less maintenance burden, proven at scale, matches Replit Agent architecture, future-proof as OpenAI improves.
 - **Conversation History System**: Production-grade persistence and management for Mervin AI conversations using Firebase Firestore, featuring auto-save, authenticated CRUD API, and automatic title generation.
 - **Legacy V3 Components (Deprecated)**: MervinOrchestratorV3, HybridAgentClient, WebSocketAgentClient, HttpFallbackClient deprecated Nov 16 2025. Retained in codebase for reference but not actively used.
+- **Mervin Personality (Nov 17, 2025)**: Authentic Mexican personality with contractor-focused humor and professionalism. Uses natural modismos ("primo", "órale", "ándale", "no manches"). Balances informal warmth with technical competence. Instructions configured in `server/assistants/config.ts` with comprehensive examples and "Reglas de Oro" for authenticity.
+- **Chat Flow Optimization (Nov 17, 2025)**: Resolved critical bugs in `useMervinAgent.tsx` - removed obsolete `hybridClientRef` references, implemented StreamUpdate type adapter for AssistantsClient/AgentClient compatibility (text_delta→message, tool_call_*→progress). Chat flow verified as: UI → useMervinAgent → AssistantsClient → /api/assistant/message → OpenAI with streaming → UI display.
 
 ### Core Features & Design Patterns
 - **User Authentication & Authorization**: Robust subscription-based permission system with OAuth, email/password, and usage limits.
