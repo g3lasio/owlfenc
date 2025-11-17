@@ -128,17 +128,21 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
     }
   }, [userId]);
 
-  // Obtener estado del sistema híbrido y verificar health del legacy
+  // Obtener estado del sistema y verificar health
   useEffect(() => {
-    const hybridStatus = hybridClientRef.current.getStatus();
-    console.log('🔌 [HYBRID-STATUS]', hybridStatus);
-    
+    // Verificar health del cliente legacy (para file uploads)
     legacyClientRef.current.checkHealth().then(healthy => {
-      setIsHealthy(healthy || hybridStatus.wsAvailable || hybridStatus.preferredMethod === 'http');
+      setIsHealthy(healthy);
     });
     
-    legacyClientRef.current.getStatus().then(status => {
-      setSystemStatus({ hybrid: hybridStatus, legacy: status });
+    // Obtener estado del cliente Assistants
+    const assistantsStatus = assistantsClientRef.current.getStatus();
+    
+    legacyClientRef.current.getStatus().then(legacyStatus => {
+      setSystemStatus({ 
+        assistants: assistantsStatus, 
+        legacy: legacyStatus 
+      });
     });
   }, [userId]);
 
@@ -209,16 +213,23 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
           input,
           [], // No necesitamos history completo, OpenAI lo maneja
           language,
-          (update: StreamUpdate) => {
-            setStreamingUpdates(prev => [...prev, update]);
-            if (onStreamUpdate) onStreamUpdate(update);
+          (assistantUpdate) => {
+            // Adaptar updates de AssistantsClient al formato StreamUpdate estándar
+            const adaptedUpdate: StreamUpdate = {
+              type: assistantUpdate.type === 'text_delta' ? 'message' : assistantUpdate.type,
+              content: assistantUpdate.content || '',
+              data: assistantUpdate.data,
+            };
+            
+            setStreamingUpdates(prev => [...prev, adaptedUpdate]);
+            if (onStreamUpdate) onStreamUpdate(adaptedUpdate);
 
             // Acumular contenido
-            if (update.type === 'text_delta' && update.content) {
-              fullContent += update.content;
+            if (assistantUpdate.type === 'text_delta' && assistantUpdate.content) {
+              fullContent += assistantUpdate.content;
             }
 
-            if (update.type === 'complete') {
+            if (assistantUpdate.type === 'complete') {
               console.log('✅ [ASSISTANTS] Complete message received:', {
                 contentLength: fullContent.length,
                 fullContent: fullContent.substring(0, 200) + '...'
