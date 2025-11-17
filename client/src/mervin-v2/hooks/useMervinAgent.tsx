@@ -215,8 +215,14 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
           language,
           (assistantUpdate) => {
             // Adaptar updates de AssistantsClient al formato StreamUpdate estándar
+            let adaptedType: 'progress' | 'message' | 'complete' | 'error' = 'message';
+            if (assistantUpdate.type === 'text_delta') adaptedType = 'message';
+            else if (assistantUpdate.type === 'tool_call_start' || assistantUpdate.type === 'tool_call_end') adaptedType = 'progress';
+            else if (assistantUpdate.type === 'complete') adaptedType = 'complete';
+            else if (assistantUpdate.type === 'error') adaptedType = 'error';
+            
             const adaptedUpdate: StreamUpdate = {
-              type: assistantUpdate.type === 'text_delta' ? 'message' : assistantUpdate.type,
+              type: adaptedType,
               content: assistantUpdate.content || '',
               data: assistantUpdate.data,
             };
