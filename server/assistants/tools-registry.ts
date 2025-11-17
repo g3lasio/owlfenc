@@ -165,6 +165,205 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         required: ['clientName']
       }
     }
+  },
+
+  // 6. GET ESTIMATES
+  {
+    type: 'function',
+    function: {
+      name: 'get_estimates',
+      description: 'List all estimates for the current user. Can filter by status (draft, sent, viewed, approved, rejected, expired).',
+      parameters: {
+        type: 'object',
+        properties: {
+          status: {
+            type: 'string',
+            description: 'Filter by estimate status: draft, sent, viewed, approved, rejected, expired',
+            enum: ['draft', 'sent', 'viewed', 'approved', 'rejected', 'expired']
+          },
+          limit: {
+            type: 'number',
+            description: 'Maximum number of estimates to return'
+          }
+        },
+        required: []
+      }
+    }
+  },
+
+  // 7. GET ESTIMATE BY ID
+  {
+    type: 'function',
+    function: {
+      name: 'get_estimate_by_id',
+      description: 'Get detailed information about a specific estimate including all items, pricing, client info.',
+      parameters: {
+        type: 'object',
+        properties: {
+          estimateId: {
+            type: 'string',
+            description: 'The ID of the estimate to retrieve'
+          }
+        },
+        required: ['estimateId']
+      }
+    }
+  },
+
+  // 8. UPDATE ESTIMATE
+  {
+    type: 'function',
+    function: {
+      name: 'update_estimate',
+      description: 'Modify an existing estimate. Can update client info, items, pricing, status, or any field.',
+      parameters: {
+        type: 'object',
+        properties: {
+          estimateId: {
+            type: 'string',
+            description: 'The ID of the estimate to update'
+          },
+          updates: {
+            type: 'object',
+            description: 'Object containing the fields to update (clientName, items, total, status, etc.)',
+            additionalProperties: true
+          }
+        },
+        required: ['estimateId', 'updates']
+      }
+    }
+  },
+
+  // 9. DELETE ESTIMATE
+  {
+    type: 'function',
+    function: {
+      name: 'delete_estimate',
+      description: 'Permanently delete an estimate. This action cannot be undone.',
+      parameters: {
+        type: 'object',
+        properties: {
+          estimateId: {
+            type: 'string',
+            description: 'The ID of the estimate to delete'
+          }
+        },
+        required: ['estimateId']
+      }
+    }
+  },
+
+  // 10. SEND ESTIMATE EMAIL
+  {
+    type: 'function',
+    function: {
+      name: 'send_estimate_email',
+      description: 'Send an estimate to the client via email and mark it as sent.',
+      parameters: {
+        type: 'object',
+        properties: {
+          estimateId: {
+            type: 'string',
+            description: 'The ID of the estimate to send'
+          },
+          recipientEmail: {
+            type: 'string',
+            description: 'Email address to send the estimate to (optional, defaults to client email)'
+          }
+        },
+        required: ['estimateId']
+      }
+    }
+  },
+
+  // 11. GET CONTRACTS
+  {
+    type: 'function',
+    function: {
+      name: 'get_contracts',
+      description: 'List all contracts for the current user. Can filter by status or client.',
+      parameters: {
+        type: 'object',
+        properties: {
+          status: {
+            type: 'string',
+            description: 'Filter by contract status: draft, sent, signed, in_progress, completed, cancelled',
+            enum: ['draft', 'sent', 'signed', 'in_progress', 'completed', 'cancelled']
+          },
+          clientId: {
+            type: 'string',
+            description: 'Filter by client ID'
+          },
+          limit: {
+            type: 'number',
+            description: 'Maximum number of contracts to return'
+          }
+        },
+        required: []
+      }
+    }
+  },
+
+  // 12. GET CONTRACT BY ID
+  {
+    type: 'function',
+    function: {
+      name: 'get_contract_by_id',
+      description: 'Get detailed information about a specific contract including terms, signatures, payment schedule.',
+      parameters: {
+        type: 'object',
+        properties: {
+          contractId: {
+            type: 'string',
+            description: 'The ID of the contract to retrieve'
+          }
+        },
+        required: ['contractId']
+      }
+    }
+  },
+
+  // 13. UPDATE CONTRACT
+  {
+    type: 'function',
+    function: {
+      name: 'update_contract',
+      description: 'Modify an existing contract. Can update terms, dates, amounts, or status.',
+      parameters: {
+        type: 'object',
+        properties: {
+          contractId: {
+            type: 'string',
+            description: 'The ID of the contract to update'
+          },
+          updates: {
+            type: 'object',
+            description: 'Object containing the fields to update',
+            additionalProperties: true
+          }
+        },
+        required: ['contractId', 'updates']
+      }
+    }
+  },
+
+  // 14. DELETE CONTRACT
+  {
+    type: 'function',
+    function: {
+      name: 'delete_contract',
+      description: 'Permanently delete a contract. This action cannot be undone.',
+      parameters: {
+        type: 'object',
+        properties: {
+          contractId: {
+            type: 'string',
+            description: 'The ID of the contract to delete'
+          }
+        },
+        required: ['contractId']
+      }
+    }
   }
 ];
 
@@ -239,7 +438,16 @@ const executeCreateContract: ToolExecutor = async (args, userContext) => {
     });
 
     // Crear contrato con dual signature
-    const contract = await systemAPI.createContract(args, contractContent);
+    const contract = await systemAPI.createContract({
+      clientName: args.clientName,
+      clientEmail: args.clientEmail,
+      projectType: args.projectType,
+      projectAddress: args.projectAddress,
+      amount: args.amount,
+      startDate: args.startDate,
+      endDate: args.endDate,
+      specialTerms: args.specialTerms
+    }, contractContent);
 
     return {
       contractId: contract.id,
@@ -344,6 +552,152 @@ const executeGetClientHistory: ToolExecutor = async (args, userContext) => {
 };
 
 /**
+ * Executor para get_estimates
+ */
+const executeGetEstimates: ToolExecutor = async (args, userContext) => {
+  try {
+    const systemAPI = new SystemAPIService(userContext.userId, {}, process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : '');
+    const estimates = await systemAPI.getEstimates(args.status, args.limit);
+    return {
+      estimates,
+      total: estimates.length,
+      message: `✅ Found ${estimates.length} estimates${args.status ? ` with status '${args.status}'` : ''}`
+    };
+  } catch (error: any) {
+    throw new Error(`Failed to get estimates: ${error.message}`);
+  }
+};
+
+/**
+ * Executor para get_estimate_by_id
+ */
+const executeGetEstimateById: ToolExecutor = async (args, userContext) => {
+  try {
+    const systemAPI = new SystemAPIService(userContext.userId, {}, process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : '');
+    const estimate = await systemAPI.getEstimateById(args.estimateId);
+    return {
+      estimate,
+      message: `✅ Retrieved estimate #${estimate.estimateNumber || args.estimateId}`
+    };
+  } catch (error: any) {
+    throw new Error(`Failed to get estimate: ${error.message}`);
+  }
+};
+
+/**
+ * Executor para update_estimate
+ */
+const executeUpdateEstimate: ToolExecutor = async (args, userContext) => {
+  try {
+    const systemAPI = new SystemAPIService(userContext.userId, {}, process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : '');
+    const updated = await systemAPI.updateEstimate(args.estimateId, args.updates);
+    return {
+      estimate: updated,
+      message: `✅ Estimate #${args.estimateId} updated successfully`
+    };
+  } catch (error: any) {
+    throw new Error(`Failed to update estimate: ${error.message}`);
+  }
+};
+
+/**
+ * Executor para delete_estimate
+ */
+const executeDeleteEstimate: ToolExecutor = async (args, userContext) => {
+  try {
+    const systemAPI = new SystemAPIService(userContext.userId, {}, process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : '');
+    await systemAPI.deleteEstimate(args.estimateId);
+    return {
+      success: true,
+      message: `✅ Estimate #${args.estimateId} deleted successfully`
+    };
+  } catch (error: any) {
+    throw new Error(`Failed to delete estimate: ${error.message}`);
+  }
+};
+
+/**
+ * Executor para send_estimate_email
+ */
+const executeSendEstimateEmail: ToolExecutor = async (args, userContext) => {
+  try {
+    const systemAPI = new SystemAPIService(userContext.userId, {}, process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : '');
+    await systemAPI.sendEstimateEmail(args.estimateId, args.recipientEmail);
+    return {
+      success: true,
+      message: `✅ Estimate #${args.estimateId} sent via email successfully`
+    };
+  } catch (error: any) {
+    throw new Error(`Failed to send estimate email: ${error.message}`);
+  }
+};
+
+/**
+ * Executor para get_contracts
+ */
+const executeGetContracts: ToolExecutor = async (args, userContext) => {
+  try {
+    const systemAPI = new SystemAPIService(userContext.userId, {}, process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : '');
+    const contracts = await systemAPI.getContracts(args.status, args.clientId, args.limit);
+    return {
+      contracts,
+      total: contracts.length,
+      message: `✅ Found ${contracts.length} contracts${args.status ? ` with status '${args.status}'` : ''}`
+    };
+  } catch (error: any) {
+    throw new Error(`Failed to get contracts: ${error.message}`);
+  }
+};
+
+/**
+ * Executor para get_contract_by_id
+ */
+const executeGetContractById: ToolExecutor = async (args, userContext) => {
+  try {
+    const systemAPI = new SystemAPIService(userContext.userId, {}, process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : '');
+    const contract = await systemAPI.getContractById(args.contractId);
+    return {
+      contract,
+      message: `✅ Retrieved contract #${contract.contractNumber || args.contractId}`
+    };
+  } catch (error: any) {
+    throw new Error(`Failed to get contract: ${error.message}`);
+  }
+};
+
+/**
+ * Executor para update_contract
+ */
+const executeUpdateContract: ToolExecutor = async (args, userContext) => {
+  try {
+    const systemAPI = new SystemAPIService(userContext.userId, {}, process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : '');
+    const updated = await systemAPI.updateContract(args.contractId, args.updates);
+    return {
+      contract: updated,
+      message: `✅ Contract #${args.contractId} updated successfully`
+    };
+  } catch (error: any) {
+    throw new Error(`Failed to update contract: ${error.message}`);
+  }
+};
+
+/**
+ * Executor para delete_contract
+ */
+const executeDeleteContract: ToolExecutor = async (args, userContext) => {
+  try {
+    const systemAPI = new SystemAPIService(userContext.userId, {}, process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : '');
+    await systemAPI.deleteContract(args.contractId);
+    return {
+      success: true,
+      message: `✅ Contract #${args.contractId} deleted successfully`
+    };
+  } catch (error: any) {
+    throw new Error(`Failed to delete contract: ${error.message}`);
+  }
+};
+
+/**
  * Registry completo de herramientas con executors
  */
 export const TOOL_REGISTRY: ToolRegistry = {
@@ -355,7 +709,7 @@ export const TOOL_REGISTRY: ToolRegistry = {
   create_contract: {
     definition: TOOL_DEFINITIONS[1],
     executor: executeCreateContract,
-    requiresConfirmation: true // Acción crítica
+    requiresConfirmation: true
   },
   verify_property: {
     definition: TOOL_DEFINITIONS[2],
@@ -371,6 +725,51 @@ export const TOOL_REGISTRY: ToolRegistry = {
     definition: TOOL_DEFINITIONS[4],
     executor: executeGetClientHistory,
     requiresConfirmation: false
+  },
+  get_estimates: {
+    definition: TOOL_DEFINITIONS[5],
+    executor: executeGetEstimates,
+    requiresConfirmation: false
+  },
+  get_estimate_by_id: {
+    definition: TOOL_DEFINITIONS[6],
+    executor: executeGetEstimateById,
+    requiresConfirmation: false
+  },
+  update_estimate: {
+    definition: TOOL_DEFINITIONS[7],
+    executor: executeUpdateEstimate,
+    requiresConfirmation: false
+  },
+  delete_estimate: {
+    definition: TOOL_DEFINITIONS[8],
+    executor: executeDeleteEstimate,
+    requiresConfirmation: true
+  },
+  send_estimate_email: {
+    definition: TOOL_DEFINITIONS[9],
+    executor: executeSendEstimateEmail,
+    requiresConfirmation: false
+  },
+  get_contracts: {
+    definition: TOOL_DEFINITIONS[10],
+    executor: executeGetContracts,
+    requiresConfirmation: false
+  },
+  get_contract_by_id: {
+    definition: TOOL_DEFINITIONS[11],
+    executor: executeGetContractById,
+    requiresConfirmation: false
+  },
+  update_contract: {
+    definition: TOOL_DEFINITIONS[12],
+    executor: executeUpdateContract,
+    requiresConfirmation: false
+  },
+  delete_contract: {
+    definition: TOOL_DEFINITIONS[13],
+    executor: executeDeleteContract,
+    requiresConfirmation: true
   }
 };
 

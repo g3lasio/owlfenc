@@ -133,17 +133,16 @@ export class SystemAPIService {
   /**
    * Enviar estimado por email
    */
-  async sendEstimateEmail(estimateId: string, email: string): Promise<EmailResult> {
-    console.log('📧 [SYSTEM-API] Enviando estimado por email:', email);
+  async sendEstimateEmail(estimateId: string, recipientEmail?: string): Promise<EmailResult> {
+    console.log('📧 [SYSTEM-API] Enviando estimado por email');
     
     try {
-      const response = await this.client.post('/api/estimates/send', {
-        estimateId,
-        email
+      await this.client.post(`/api/estimates/${estimateId}/send`, {
+        recipientEmail
       });
 
       console.log('✅ [SYSTEM-API] Email enviado exitosamente');
-      return { success: true, messageId: response.data.messageId };
+      return { success: true };
 
     } catch (error: any) {
       console.error('❌ [SYSTEM-API] Error enviando email:', error.message);
@@ -151,6 +150,60 @@ export class SystemAPIService {
         success: false, 
         error: error.response?.data?.error || error.message 
       };
+    }
+  }
+
+  /**
+   * Listar estimados
+   */
+  async getEstimates(status?: string, limit?: number): Promise<any[]> {
+    try {
+      const response = await this.client.get('/api/estimates', {
+        params: { status, limit }
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ [SYSTEM-API] Error obteniendo estimados:', error.message);
+      throw new Error(`Error obteniendo estimados: ${error.response?.data?.error || error.message}`);
+    }
+  }
+
+  /**
+   * Obtener estimado por ID
+   */
+  async getEstimateById(estimateId: string): Promise<any> {
+    try {
+      const response = await this.client.get(`/api/estimates/${estimateId}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ [SYSTEM-API] Error obteniendo estimado:', error.message);
+      throw new Error(`Error obteniendo estimado: ${error.response?.data?.error || error.message}`);
+    }
+  }
+
+  /**
+   * Actualizar estimado
+   */
+  async updateEstimate(estimateId: string, updates: any): Promise<any> {
+    try {
+      const response = await this.client.put(`/api/estimates/${estimateId}`, updates);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ [SYSTEM-API] Error actualizando estimado:', error.message);
+      throw new Error(`Error actualizando estimado: ${error.response?.data?.error || error.message}`);
+    }
+  }
+
+  /**
+   * Eliminar estimado
+   */
+  async deleteEstimate(estimateId: string): Promise<void> {
+    try {
+      await this.client.delete(`/api/estimates/${estimateId}`);
+      console.log('✅ [SYSTEM-API] Estimado eliminado');
+    } catch (error: any) {
+      console.error('❌ [SYSTEM-API] Error eliminando estimado:', error.message);
+      throw new Error(`Error eliminando estimado: ${error.response?.data?.error || error.message}`);
     }
   }
 
@@ -216,6 +269,60 @@ export class SystemAPIService {
       url: `/api/dual-signature/download/${contractId}`,
       id: contractId
     } as PDF;
+  }
+
+  /**
+   * Listar contratos
+   */
+  async getContracts(status?: string, clientId?: string, limit?: number): Promise<any[]> {
+    try {
+      const response = await this.client.get('/api/contracts', {
+        params: { status, clientId, limit }
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ [SYSTEM-API] Error obteniendo contratos:', error.message);
+      throw new Error(`Error obteniendo contratos: ${error.response?.data?.error || error.message}`);
+    }
+  }
+
+  /**
+   * Obtener contrato por ID
+   */
+  async getContractById(contractId: string): Promise<any> {
+    try {
+      const response = await this.client.get(`/api/contracts/${contractId}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ [SYSTEM-API] Error obteniendo contrato:', error.message);
+      throw new Error(`Error obteniendo contrato: ${error.response?.data?.error || error.message}`);
+    }
+  }
+
+  /**
+   * Actualizar contrato
+   */
+  async updateContract(contractId: string, updates: any): Promise<any> {
+    try {
+      const response = await this.client.put(`/api/contracts/${contractId}`, updates);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ [SYSTEM-API] Error actualizando contrato:', error.message);
+      throw new Error(`Error actualizando contrato: ${error.response?.data?.error || error.message}`);
+    }
+  }
+
+  /**
+   * Eliminar contrato
+   */
+  async deleteContract(contractId: string): Promise<void> {
+    try {
+      await this.client.delete(`/api/contracts/${contractId}`);
+      console.log('✅ [SYSTEM-API] Contrato eliminado');
+    } catch (error: any) {
+      console.error('❌ [SYSTEM-API] Error eliminando contrato:', error.message);
+      throw new Error(`Error eliminando contrato: ${error.response?.data?.error || error.message}`);
+    }
   }
 
   // ============= PERMITS =============
@@ -314,6 +421,33 @@ export class SystemAPIService {
 
     // Si no existe, crear
     return await this.createClient(data);
+  }
+
+  /**
+   * Obtener historial de cliente
+   */
+  async getClientHistory(params: { userId: string; clientName: string }): Promise<{ estimates: any[]; contracts: any[] }> {
+    try {
+      // Obtener estimados del cliente
+      const estimates = await this.getEstimates();
+      const clientEstimates = estimates.filter(e => 
+        e.clientName?.toLowerCase().includes(params.clientName.toLowerCase())
+      );
+
+      // Obtener contratos del cliente
+      const contracts = await this.getContracts();
+      const clientContracts = contracts.filter(c => 
+        c.clientName?.toLowerCase().includes(params.clientName.toLowerCase())
+      );
+
+      return {
+        estimates: clientEstimates,
+        contracts: clientContracts
+      };
+    } catch (error: any) {
+      console.error('❌ [SYSTEM-API] Error obteniendo historial de cliente:', error.message);
+      throw new Error(`Error obteniendo historial: ${error.message}`);
+    }
   }
 
   // ============= UTILITIES =============
