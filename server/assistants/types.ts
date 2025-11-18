@@ -13,6 +13,7 @@ export interface UserContext {
   subscriptionPlan: 'free' | 'premium' | 'enterprise';
   permissions: string[];
   language: 'es' | 'en';
+  firebaseToken?: string; // 🔥 Token para autenticación en requests internos
 }
 
 /**

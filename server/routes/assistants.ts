@@ -31,7 +31,8 @@ async function extractUserContext(req: Request): Promise<UserContext> {
     email: decodedToken.email,
     subscriptionPlan: 'premium', // TODO: Get from database
     permissions: [], // TODO: Get from database
-    language: (req.body.language || 'es') as 'es' | 'en'
+    language: (req.body.language || 'es') as 'es' | 'en',
+    firebaseToken: token // 🔥 Incluir token para autenticación en requests internos
   };
 }
 
