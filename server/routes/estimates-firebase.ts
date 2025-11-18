@@ -7,6 +7,8 @@ import express from 'express';
 import { z } from 'zod';
 import { verifyFirebaseAuth as requireAuth } from '../middleware/firebase-auth';
 import { firebaseEstimatesService } from '../services/firebaseEstimatesService';
+import { deepSearchService } from '../services/deepSearchService';
+import { redisUsageService } from '../services/redisUsageService';
 
 const router = express.Router();
 
@@ -21,6 +23,12 @@ const createEstimateSchema = z.object({
   projectZip: z.string().optional().nullable(),
   projectType: z.string().min(1, "Tipo de proyecto requerido"),
   projectSubtype: z.string().optional().nullable(),
+  
+  // 🔥 NUEVO: Soporte para generación automática con DeepSearch
+  projectDescription: z.string().optional().nullable(),
+  useDeepSearch: z.boolean().default(false),
+  
+  // Items pueden ser opcionales si se usa DeepSearch
   items: z.array(z.object({
     description: z.string(),
     quantity: z.number(),
@@ -29,11 +37,12 @@ const createEstimateSchema = z.object({
     totalPrice: z.number(),
     category: z.string().optional(),
     notes: z.string().optional()
-  })),
-  subtotal: z.number(),
+  })).default([]),
+  
+  subtotal: z.number().optional(),
   tax: z.number().default(0),
   discount: z.number().default(0),
-  total: z.number(),
+  total: z.number().optional(),
   notes: z.string().optional().nullable(),
   terms: z.string().optional().nullable(),
   contractorName: z.string().optional().nullable(),
@@ -94,15 +103,87 @@ router.post('/', requireAuth, async (req, res) => {
       });
     }
     
+    let estimateData = validationResult.data;
+    let usedDeepSearch = false;
+    
+    // 🔥 INTEGRACIÓN COMPLETA: DeepSearch automático si se proporciona descripción
+    if (estimateData.useDeepSearch && estimateData.projectDescription) {
+      console.log('🤖 [DEEPSEARCH-AUTO] Ejecutando DeepSearch automáticamente...');
+      
+      try {
+        const location = [
+          estimateData.projectAddress,
+          estimateData.projectCity,
+          estimateData.projectState,
+          estimateData.projectZip
+        ].filter(Boolean).join(', ');
+        
+        const deepSearchResult = await deepSearchService.analyzeProject(
+          estimateData.projectDescription,
+          location || undefined
+        );
+        
+        console.log(`✅ [DEEPSEARCH-AUTO] DeepSearch completado: ${deepSearchResult.materials.length} materiales generados`);
+        
+        // Convertir materiales de DeepSearch al formato de items del estimate
+        estimateData.items = deepSearchResult.materials.map(material => ({
+          description: `${material.name} - ${material.description}`,
+          quantity: material.quantity,
+          unit: material.unit,
+          unitPrice: material.unitPrice,
+          totalPrice: material.totalPrice,
+          category: material.category,
+          notes: material.specifications
+        }));
+        
+        // Calcular totales
+        estimateData.subtotal = deepSearchResult.totalMaterialsCost;
+        estimateData.total = deepSearchResult.grandTotal;
+        
+        usedDeepSearch = true;
+        
+      } catch (deepSearchError) {
+        console.error('❌ [DEEPSEARCH-AUTO] Error en DeepSearch:', deepSearchError);
+        // No fallar la creación del estimate, solo registrar el error
+        console.warn('⚠️ [DEEPSEARCH-AUTO] Continuando sin DeepSearch');
+      }
+    }
+    
+    // Validar que tengamos items (manuales o de DeepSearch)
+    if (!estimateData.items || estimateData.items.length === 0) {
+      return res.status(400).json({
+        error: 'El estimado debe tener al menos un item o usar DeepSearch con projectDescription'
+      });
+    }
+    
+    // Asegurar que subtotal y total existan
+    if (!estimateData.subtotal) {
+      estimateData.subtotal = estimateData.items.reduce((sum, item) => sum + item.totalPrice, 0);
+    }
+    if (!estimateData.total) {
+      estimateData.total = estimateData.subtotal + estimateData.tax - estimateData.discount;
+    }
+    
     // Crear estimado en Firebase
     const newEstimate = await firebaseEstimatesService.createEstimate({
-      ...validationResult.data,
+      ...estimateData,
       userId, // Firebase UID obligatorio
       estimateNumber: '', // Se generará automáticamente
       clientId: req.body.clientId
     });
     
     console.log('✅ [ESTIMATES-API] Estimado creado exitosamente, ID:', newEstimate.id);
+    
+    // 🔥 INTEGRACIÓN COMPLETA: Incrementar contador automáticamente
+    // Esto asegura que tanto estimados manuales como de Mervin se cuenten igual
+    try {
+      const feature = usedDeepSearch ? 'aiEstimates' : 'basicEstimates';
+      await redisUsageService.incrementUsage(userId, feature, 1);
+      console.log(`✅ [ESTIMATES-USAGE] Contador incrementado: ${feature} +1`);
+    } catch (usageError) {
+      // No fallar la creación del estimate si falla el contador
+      console.error('⚠️ [ESTIMATES-USAGE] Error incrementando contador:', usageError);
+    }
     
     res.status(201).json(newEstimate);
   } catch (error) {
