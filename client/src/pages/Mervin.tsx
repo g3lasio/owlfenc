@@ -22,9 +22,8 @@ import {
   FileText,
   Image as ImageIcon,
 } from "lucide-react";
-import { ConversationEngine } from "../mervin-ai/core/ConversationEngine";
-import { SmartActionSystem } from "../components/mervin/SmartActionSystem";
 import { useMervinAgent } from "../mervin-v2/hooks/useMervinAgent";
+import { SmartActionSystem } from "../components/mervin/SmartActionSystem";
 import { ThinkingIndicator } from "../components/mervin/ThinkingIndicator";
 import { MessageContent } from "../components/mervin/MessageContent";
 import { SmartContextPanel } from "../components/mervin/SmartContextPanel";
@@ -110,7 +109,6 @@ export default function Mervin() {
   // File attachment states
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const conversationEngineRef = useRef<ConversationEngine | null>(null);
   const { toast } = useToast();
   const { currentUser } = useAuth();
   const { userPlan } = usePermissions();
@@ -282,32 +280,11 @@ export default function Mervin() {
     return hasTaskKeywords || hasActionPattern;
   };
 
-  // Initialize systems and onboarding detection
-  useEffect(() => {
-    if (!conversationEngineRef.current && currentUser?.uid) {
-      conversationEngineRef.current = new ConversationEngine(currentUser.uid);
-      console.log('🤖 [MERVIN-V2] Ready for V2 integration');
-    }
-  }, [currentUser, userPlan]);
+  // LEGACY CODE REMOVED - Now using mervinAgent exclusively
+  // All conversation management handled by useMervinAgent hook
 
-  // Handle onboarding mode activation - DISABLED
-  useEffect(() => {
-    // ONBOARDING REMOVED: Usuarios van directo al dashboard
-    // Regular initialization for existing users
-    if (currentUser?.uid) {
-      const engine = conversationEngineRef.current;
-      if (engine && messages.length === 0) {
-        const welcomeContent = engine.generateWelcomeMessage(selectedModel === "agent");
-        const welcomeMessage: Message = {
-          id: "welcome",
-          content: welcomeContent,
-          sender: "assistant",
-          timestamp: new Date()
-        };
-        setMessages([welcomeMessage]);
-      }
-    }
-  }, [currentUser, selectedModel, messages.length]);
+  // WELCOME MESSAGE REMOVED - Let user take the initiative
+  // Chat stays clean until user sends first message
 
   // Handle slash commands
   const handleSendMessage = async () => {
