@@ -203,44 +203,9 @@ export default function Mervin() {
     }
   });
 
-  // React to mervinAgent messages updates (fix asynchronous state issue)
-  useEffect(() => {
-    if (mervinAgent.messages.length > 0) {
-      const lastMervinMessage = mervinAgent.messages[mervinAgent.messages.length - 1];
-      
-      // Only add assistant messages that are new (not already in our messages state)
-      if (lastMervinMessage.role === 'assistant') {
-        const alreadyExists = messages.some(msg => 
-          msg.sender === 'assistant' && 
-          msg.content === lastMervinMessage.content &&
-          Math.abs(new Date().getTime() - (lastMervinMessage.timestamp?.getTime() || 0)) < 1000
-        );
-        
-        if (!alreadyExists) {
-          console.log('📨 [MERVIN-UI] Adding assistant message from hook:', lastMervinMessage.content.substring(0, 50));
-          
-          // Remove any processing/thinking messages
-          setMessages(prev => {
-            const filtered = prev.filter(msg => msg.state !== 'analyzing' && msg.state !== 'thinking');
-            return [...filtered, {
-              id: "assistant-" + Date.now(),
-              content: lastMervinMessage.content,
-              sender: "assistant" as MessageSender,
-              timestamp: lastMervinMessage.timestamp || new Date()
-            }];
-          });
-          
-          // Limpiar estados al completar
-          setIsLoading(false);
-          
-          // Reset web search indicators después de 3 segundos
-          setTimeout(() => {
-            setIsWebSearching(false);
-          }, 3000);
-        }
-      }
-    }
-  }, [mervinAgent.messages]);
+  // ✅ LOOP INFINITO ELIMINADO
+  // Ya no necesitamos sincronizar estados - usamos mervinAgent.messages directamente
+  // Este useEffect causaba re-renders infinitos y logs de autenticación sin fin
 
   // Función para determinar si el input requiere capacidades de agente autónomo
   const isTaskRequiringAgent = (input: string): boolean => {
@@ -309,18 +274,22 @@ export default function Mervin() {
       }
     }
 
-    const userMessage: Message = {
-      id: "user-" + Date.now(),
-      content: inputValue,
-      sender: "user",
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, userMessage]);
     const currentInput = inputValue;
     const currentFiles = [...attachedFiles]; // Capturar archivos actuales
     setInputValue("");
     setAttachedFiles([]); // Limpiar archivos adjuntos
+    
+    // Solo agregar mensaje del usuario al estado local si estamos en Legacy Mode
+    // En Agent Mode, mervinAgent.sendMessage() ya lo hace automáticamente
+    if (selectedModel === "legacy" || !canUseAgentMode) {
+      const userMessage: Message = {
+        id: "user-" + Date.now(),
+        content: currentInput,
+        sender: "user",
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, userMessage]);
+    }
     
     // Reset all context states for fresh task
     setActiveEndpoints([]);
@@ -861,57 +830,114 @@ export default function Mervin() {
           />
         )}
 
-        {mervinAgent.messages.map((message, index) => (
-          <div
-            key={`msg-${index}-${message.timestamp?.getTime() || Date.now()}`}
-            className={`flex ${
-              message.role === "user" ? "justify-end" : "justify-start"
-            }`}
-          >
-            <div className="relative group">
-              <div
-                className={`max-w-[280px] sm:max-w-sm md:max-w-md lg:max-w-lg px-4 py-3 rounded-2xl md:rounded-lg text-base md:text-sm leading-relaxed ${
-                  message.role === "user"
-                    ? "bg-cyan-600 text-white shadow-lg"
-                    : "bg-gray-800 text-gray-200 shadow-lg"
-                }`}
-              >
-                <MessageContent 
-                  content={message.content}
-                  sender={message.role === "user" ? "user" : "assistant"}
-                  enableTyping={false}
-                />
+        {/* Renderizar mensajes según modo activo */}
+        {selectedModel === "agent" && canUseAgentMode ? (
+          // AGENT MODE: Usar mervinAgent.messages
+          mervinAgent.messages.map((message, index) => (
+            <div
+              key={`msg-${index}-${message.timestamp?.getTime() || Date.now()}`}
+              className={`flex ${
+                message.role === "user" ? "justify-end" : "justify-start"
+              }`}
+            >
+              <div className="relative group">
+                <div
+                  className={`max-w-[280px] sm:max-w-sm md:max-w-md lg:max-w-lg px-4 py-3 rounded-2xl md:rounded-lg text-base md:text-sm leading-relaxed ${
+                    message.role === "user"
+                      ? "bg-cyan-600 text-white shadow-lg"
+                      : "bg-gray-800 text-gray-200 shadow-lg"
+                  }`}
+                >
+                  <MessageContent 
+                    content={message.content}
+                    sender={message.role === "user" ? "user" : "assistant"}
+                    enableTyping={false}
+                  />
+                  
+                  {/* Timestamp */}
+                  {message.timestamp && (
+                    <div className={`mt-2 text-xs ${
+                      message.role === "user" 
+                        ? "text-cyan-200/70" 
+                        : "text-gray-400"
+                    }`}>
+                      {formatMessageTime(message.timestamp)}
+                    </div>
+                  )}
+                </div>
                 
-                {/* Timestamp */}
-                {message.timestamp && (
-                  <div className={`mt-2 text-xs ${
-                    message.role === "user" 
-                      ? "text-cyan-200/70" 
-                      : "text-gray-400"
-                  }`}>
-                    {formatMessageTime(message.timestamp)}
-                  </div>
+                {/* Copy Button - Only for assistant messages */}
+                {message.role === "assistant" && (
+                  <button
+                    onClick={() => handleCopyMessage(`msg-${index}`, message.content)}
+                    className="absolute -top-2 -right-2 md:opacity-0 md:group-hover:opacity-100 opacity-80 transition-opacity bg-gray-700 hover:bg-gray-600 text-gray-300 p-2 md:p-1.5 rounded-lg shadow-lg touch-manipulation"
+                    title="Copiar mensaje"
+                    data-testid={`button-copy-msg-${index}`}
+                  >
+                    {copiedMessageId === `msg-${index}` ? (
+                      <Check className="w-4 h-4 md:w-3.5 md:h-3.5 text-green-400" />
+                    ) : (
+                      <Copy className="w-4 h-4 md:w-3.5 md:h-3.5" />
+                    )}
+                  </button>
                 )}
               </div>
-              
-              {/* Copy Button - Only for assistant messages */}
-              {message.role === "assistant" && (
-                <button
-                  onClick={() => handleCopyMessage(`msg-${index}`, message.content)}
-                  className="absolute -top-2 -right-2 md:opacity-0 md:group-hover:opacity-100 opacity-80 transition-opacity bg-gray-700 hover:bg-gray-600 text-gray-300 p-2 md:p-1.5 rounded-lg shadow-lg touch-manipulation"
-                  title="Copiar mensaje"
-                  data-testid={`button-copy-msg-${index}`}
-                >
-                  {copiedMessageId === `msg-${index}` ? (
-                    <Check className="w-4 h-4 md:w-3.5 md:h-3.5 text-green-400" />
-                  ) : (
-                    <Copy className="w-4 h-4 md:w-3.5 md:h-3.5" />
-                  )}
-                </button>
-              )}
             </div>
-          </div>
-        ))}
+          ))
+        ) : (
+          // LEGACY MODE: Usar messages local
+          messages.map((message, index) => (
+            <div
+              key={message.id || `msg-${index}`}
+              className={`flex ${
+                message.sender === "user" ? "justify-end" : "justify-start"
+              }`}
+            >
+              <div className="relative group">
+                <div
+                  className={`max-w-[280px] sm:max-w-sm md:max-w-md lg:max-w-lg px-4 py-3 rounded-2xl md:rounded-lg text-base md:text-sm leading-relaxed ${
+                    message.sender === "user"
+                      ? "bg-cyan-600 text-white shadow-lg"
+                      : "bg-gray-800 text-gray-200 shadow-lg"
+                  }`}
+                >
+                  <MessageContent 
+                    content={message.content}
+                    sender={message.sender}
+                    enableTyping={false}
+                  />
+                  
+                  {/* Timestamp */}
+                  {message.timestamp && (
+                    <div className={`mt-2 text-xs ${
+                      message.sender === "user" 
+                        ? "text-cyan-200/70" 
+                        : "text-gray-400"
+                    }`}>
+                      {formatMessageTime(message.timestamp)}
+                    </div>
+                  )}
+                </div>
+                
+                {/* Copy Button - Only for assistant messages */}
+                {message.sender === "assistant" && (
+                  <button
+                    onClick={() => handleCopyMessage(message.id, message.content)}
+                    className="absolute -top-2 -right-2 md:opacity-0 md:group-hover:opacity-100 opacity-80 transition-opacity bg-gray-700 hover:bg-gray-600 text-gray-300 p-2 md:p-1.5 rounded-lg shadow-lg touch-manipulation"
+                    title="Copiar mensaje"
+                    data-testid={`button-copy-msg-${index}`}
+                  >
+                    {copiedMessageId === message.id ? (
+                      <Check className="w-4 h-4 md:w-3.5 md:h-3.5 text-green-400" />
+                    ) : (
+                      <Copy className="w-4 h-4 md:w-3.5 md:h-3.5" />
+                    )}
+                  </button>
+                )}
+              </div>
+            </div>
+          ))
+        )}
         
         {isLoading && (
           <div className="flex justify-start px-2">
