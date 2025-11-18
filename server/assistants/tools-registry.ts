@@ -389,7 +389,7 @@ const executeCreateEstimate: ToolExecutor = async (args, userContext) => {
     const systemAPI = new SystemAPIService(
       userContext.userId,
       {}, // authHeaders se pasarán desde el request
-      process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : ''
+      process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : 'http://localhost:5000'
     );
 
     const estimate = await systemAPI.createEstimate({
@@ -423,7 +423,7 @@ const executeCreateContract: ToolExecutor = async (args, userContext) => {
     const systemAPI = new SystemAPIService(
       userContext.userId,
       {},
-      process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : ''
+      process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : 'http://localhost:5000'
     );
 
     // Generar contenido del contrato usando Claude
@@ -470,7 +470,7 @@ const executeVerifyProperty: ToolExecutor = async (args, userContext) => {
     const systemAPI = new SystemAPIService(
       userContext.userId,
       {},
-      process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : ''
+      process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : 'http://localhost:5000'
     );
 
     const propertyData = await systemAPI.verifyProperty({
@@ -499,7 +499,7 @@ const executeGetPermitInfo: ToolExecutor = async (args, userContext) => {
     const systemAPI = new SystemAPIService(
       userContext.userId,
       {},
-      process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : ''
+      process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : 'http://localhost:5000'
     );
 
     const permitInfo = await systemAPI.getPermitInfo({
@@ -528,7 +528,7 @@ const executeGetClientHistory: ToolExecutor = async (args, userContext) => {
     const systemAPI = new SystemAPIService(
       userContext.userId,
       {},
-      process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : ''
+      process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : 'http://localhost:5000'
     );
 
     // Aquí normalmente buscaríamos en Firebase/PostgreSQL
@@ -556,7 +556,7 @@ const executeGetClientHistory: ToolExecutor = async (args, userContext) => {
  */
 const executeGetEstimates: ToolExecutor = async (args, userContext) => {
   try {
-    const systemAPI = new SystemAPIService(userContext.userId, {}, process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : '');
+    const systemAPI = new SystemAPIService(userContext.userId, {}, process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : 'http://localhost:5000');
     const estimates = await systemAPI.getEstimates(args.status, args.limit);
     return {
       estimates,
@@ -573,7 +573,7 @@ const executeGetEstimates: ToolExecutor = async (args, userContext) => {
  */
 const executeGetEstimateById: ToolExecutor = async (args, userContext) => {
   try {
-    const systemAPI = new SystemAPIService(userContext.userId, {}, process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : '');
+    const systemAPI = new SystemAPIService(userContext.userId, {}, process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : 'http://localhost:5000');
     const estimate = await systemAPI.getEstimateById(args.estimateId);
     return {
       estimate,
@@ -589,7 +589,7 @@ const executeGetEstimateById: ToolExecutor = async (args, userContext) => {
  */
 const executeUpdateEstimate: ToolExecutor = async (args, userContext) => {
   try {
-    const systemAPI = new SystemAPIService(userContext.userId, {}, process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : '');
+    const systemAPI = new SystemAPIService(userContext.userId, {}, process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : 'http://localhost:5000');
     const updated = await systemAPI.updateEstimate(args.estimateId, args.updates);
     return {
       estimate: updated,
@@ -605,7 +605,7 @@ const executeUpdateEstimate: ToolExecutor = async (args, userContext) => {
  */
 const executeDeleteEstimate: ToolExecutor = async (args, userContext) => {
   try {
-    const systemAPI = new SystemAPIService(userContext.userId, {}, process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : '');
+    const systemAPI = new SystemAPIService(userContext.userId, {}, process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : 'http://localhost:5000');
     await systemAPI.deleteEstimate(args.estimateId);
     return {
       success: true,
@@ -621,7 +621,7 @@ const executeDeleteEstimate: ToolExecutor = async (args, userContext) => {
  */
 const executeSendEstimateEmail: ToolExecutor = async (args, userContext) => {
   try {
-    const systemAPI = new SystemAPIService(userContext.userId, {}, process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : '');
+    const systemAPI = new SystemAPIService(userContext.userId, {}, process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : 'http://localhost:5000');
     await systemAPI.sendEstimateEmail(args.estimateId, args.recipientEmail);
     return {
       success: true,
@@ -637,7 +637,7 @@ const executeSendEstimateEmail: ToolExecutor = async (args, userContext) => {
  */
 const executeGetContracts: ToolExecutor = async (args, userContext) => {
   try {
-    const systemAPI = new SystemAPIService(userContext.userId, {}, process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : '');
+    const systemAPI = new SystemAPIService(userContext.userId, {}, process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : 'http://localhost:5000');
     const contracts = await systemAPI.getContracts(args.status, args.clientId, args.limit);
     return {
       contracts,
@@ -654,7 +654,7 @@ const executeGetContracts: ToolExecutor = async (args, userContext) => {
  */
 const executeGetContractById: ToolExecutor = async (args, userContext) => {
   try {
-    const systemAPI = new SystemAPIService(userContext.userId, {}, process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : '');
+    const systemAPI = new SystemAPIService(userContext.userId, {}, process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : 'http://localhost:5000');
     const contract = await systemAPI.getContractById(args.contractId);
     return {
       contract,
@@ -670,7 +670,7 @@ const executeGetContractById: ToolExecutor = async (args, userContext) => {
  */
 const executeUpdateContract: ToolExecutor = async (args, userContext) => {
   try {
-    const systemAPI = new SystemAPIService(userContext.userId, {}, process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : '');
+    const systemAPI = new SystemAPIService(userContext.userId, {}, process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : 'http://localhost:5000');
     const updated = await systemAPI.updateContract(args.contractId, args.updates);
     return {
       contract: updated,
@@ -686,7 +686,7 @@ const executeUpdateContract: ToolExecutor = async (args, userContext) => {
  */
 const executeDeleteContract: ToolExecutor = async (args, userContext) => {
   try {
-    const systemAPI = new SystemAPIService(userContext.userId, {}, process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : '');
+    const systemAPI = new SystemAPIService(userContext.userId, {}, process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : 'http://localhost:5000');
     await systemAPI.deleteContract(args.contractId);
     return {
       success: true,
