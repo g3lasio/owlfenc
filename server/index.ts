@@ -1203,12 +1203,14 @@ console.log('🔧 [UNIFIED-ANALYSIS] Sistema híbrido registrado en /api/analysi
       });
     });
     
-    // 🔌 Setup WebSocket for Mervin V2
-    const { WebSocketServer } = await import('ws');
-    const { setupMervinWebSocket } = await import('./websocket/mervin-ws');
-    const wss = new WebSocketServer({ server, path: '/ws/mervin-v2' });
-    setupMervinWebSocket(wss);
-    console.log('🔌 [WEBSOCKET] Mervin V2 WebSocket disponible en ws://localhost:${port}/ws/mervin-v2');
+    // 🔌 WebSocket for Mervin V2 - DEPRECATED (Nov 18, 2025)
+    // Sistema migrado completamente a OpenAI Assistants API
+    // WebSocket custom removido por problemas de truncación de mensajes
+    // const { WebSocketServer } = await import('ws');
+    // const { setupMervinWebSocket } = await import('./websocket/mervin-ws');
+    // const wss = new WebSocketServer({ server, path: '/ws/mervin-v2' });
+    // setupMervinWebSocket(wss);
+    console.log('🤖 [MERVIN] Sistema OpenAI Assistants API activo en /api/assistant');
     
     // 🔗 URL SHORTENER REDIRECT - Handle /s/:shortCode redirects
     app.get('/s/:shortCode', async (req, res) => {

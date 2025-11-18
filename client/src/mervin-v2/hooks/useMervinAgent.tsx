@@ -1,7 +1,27 @@
 /**
  * USE MERVIN AGENT HOOK - REACT HOOK PARA MERVIN V2
  * 
- * Este hook maneja toda la interacción con Mervin AI V2
+ * ARQUITECTURA DUAL (Nov 18, 2025):
+ * ================================
+ * 
+ * 🎯 SISTEMA PRINCIPAL - OpenAI Assistants API:
+ * - Cliente: AssistantsClient
+ * - Backend: /api/assistant/* (server/routes/assistants.ts)
+ * - Uso: TODOS los mensajes de texto sin archivos
+ * - Beneficios: Streaming confiable, context retention, tool calling nativo
+ * 
+ * 🗂️ SISTEMA LEGACY - Custom Orchestrator (temporal):
+ * - Cliente: AgentClient
+ * - Backend: /api/mervin-v2/* (server/routes/mervin-v2.ts)
+ * - Uso: SOLO mensajes con archivos adjuntos
+ * - Razón: OpenAI Assistants aún no soporta file attachments
+ * - Plan: Eliminar cuando OpenAI agregue soporte de archivos
+ * 
+ * 🛠️ CAPACIDADES DE MERVIN (preservadas en ambos sistemas):
+ * - Chat conversacional (responde preguntas, guía usuarios)
+ * - Tool execution (crear estimates, contracts, verify properties)
+ * - 14 tools activos en server/assistants/tools-registry.ts
+ * - SystemAPIService como proxy a Firebase/API endpoints
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
@@ -75,10 +95,15 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
     pendingSaves: 0,
   });
 
-  // Cliente ASSISTANTS API para mensajes de texto (OpenAI powered) CON AUTH
+  // ✅ SISTEMA PRINCIPAL: AssistantsClient para mensajes de texto (OpenAI Assistants API)
+  // - Usa /api/assistant/* endpoints
+  // - Streaming confiable sin truncación
+  // - Tool calling nativo de OpenAI
   const assistantsClientRef = useRef<AssistantsClient>(new AssistantsClient(userId, getFirebaseToken));
   
-  // Cliente ORIGINAL para mensajes con archivos adjuntos
+  // 🗂️ SISTEMA LEGACY: AgentClient SOLO para archivos adjuntos (temporal)
+  // - Usa /api/mervin-v2/* endpoints
+  // - Se eliminará cuando OpenAI Assistants soporte file attachments
   const legacyClientRef = useRef<AgentClient>(new AgentClient(userId, '', getFirebaseToken));
   
   const prevUserIdRef = useRef<string>(userId);
