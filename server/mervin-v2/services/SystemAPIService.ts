@@ -106,16 +106,32 @@ export class SystemAPIService {
         phone: params.clientPhone
       });
 
-      // 2. Crear el estimado (se guarda automáticamente en historial Firebase)
+      // 2. Construir descripción del proyecto para DeepSearch
+      const projectDescription = `${params.projectType} project with dimensions: ${params.dimensions}`;
+      
+      // 🔥 NUEVO: Usar DeepSearch automático del endpoint mejorado
+      // El endpoint ahora maneja:
+      // - Ejecución de DeepSearch con IA
+      // - Generación de materiales y costos
+      // - Incremento de contador (aiEstimates)
+      // - Guardado en historial (Firebase collection 'estimates')
       const response = await this.client.post('/api/estimates', {
         userId: this.userId,
         clientId: client.id,
+        clientName: params.clientName,
+        clientEmail: params.clientEmail || '',
+        clientPhone: params.clientPhone || '',
+        projectAddress: '', // Mervin puede mejorar esto en el futuro
         projectType: params.projectType,
-        dimensions: params.dimensions
+        projectSubtype: params.projectType, // Default to same as type
+        projectDescription: projectDescription,
+        useDeepSearch: true, // ✅ Activar DeepSearch automático
+        items: [], // Se generarán automáticamente con DeepSearch
+        status: 'draft'
       });
 
       const estimate = response.data as EstimateCalculation;
-      console.log('✅ [SYSTEM-API] Estimado creado y guardado en historial:', estimate.id);
+      console.log('✅ [SYSTEM-API] Estimado creado con DeepSearch y guardado en historial:', estimate.id);
 
       // 3. Enviar email si se requiere
       if (params.sendEmail && params.clientEmail) {
