@@ -121,9 +121,11 @@ export async function apiRequest(
         console.debug(`🔧 [API-DEBUG] ${method} ${url.substring(0, 30)} - Attempt ${attempt}/${maxRetries} - Auth: ${!!authHeaders.Authorization}`);
       }
 
-      // Fetch con timeout de 15 segundos
+      // Fetch con timeout dinámico según el endpoint
+      // Assistant API necesita más tiempo para polling de OpenAI
+      const fetchTimeout = url.includes('/api/assistant/') ? 90000 : 15000;
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      const timeoutId = setTimeout(() => controller.abort(), fetchTimeout);
       
       const fetchPromise = fetch(url, {
         method,
@@ -133,8 +135,14 @@ export async function apiRequest(
         signal: controller.signal,
       });
 
-      // Timeout EXTENDIDO para operaciones DeepSearch intensivas (Reality Validation puede tomar hasta 2 minutos)
-      const timeoutMs = url.includes('deepsearch') || url.includes('labor-deepsearch') || url.includes('/permit/') ? 120000 : 10000;
+      // Timeout EXTENDIDO para operaciones intensivas:
+      // - DeepSearch: hasta 2 minutos (Reality Validation)
+      // - Assistant API: hasta 90 segundos (OpenAI polling puede tomar 60s)
+      const timeoutMs = url.includes('deepsearch') || url.includes('labor-deepsearch') || url.includes('/permit/') 
+        ? 120000 
+        : url.includes('/api/assistant/')
+        ? 90000
+        : 10000;
       const res = await safeTimeout(fetchPromise, timeoutMs);
       
       clearTimeout(timeoutId); // Limpiar timeout
