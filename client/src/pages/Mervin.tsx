@@ -851,7 +851,7 @@ export default function Mervin() {
                   <MessageContent 
                     content={message.content}
                     sender={message.role === "user" ? "user" : "assistant"}
-                    enableTyping={false}
+                    enableTyping={true}
                   />
                   
                   {/* Timestamp */}
@@ -904,7 +904,7 @@ export default function Mervin() {
                   <MessageContent 
                     content={message.content}
                     sender={message.sender}
-                    enableTyping={false}
+                    enableTyping={true}
                   />
                   
                   {/* Timestamp */}
