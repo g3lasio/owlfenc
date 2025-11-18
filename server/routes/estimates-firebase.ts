@@ -17,7 +17,7 @@ const createEstimateSchema = z.object({
   clientName: z.string().min(1, "Nombre del cliente requerido"),
   clientEmail: z.string().email().optional().nullable(),
   clientPhone: z.string().optional().nullable(),
-  projectAddress: z.string().min(1, "Dirección del proyecto requerida"),
+  projectAddress: z.string().optional().nullable(), // Opcional - puede no conocerse al inicio
   projectCity: z.string().optional().nullable(),
   projectState: z.string().optional().nullable(),
   projectZip: z.string().optional().nullable(),

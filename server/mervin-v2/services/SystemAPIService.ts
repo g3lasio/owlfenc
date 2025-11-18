@@ -119,9 +119,9 @@ export class SystemAPIService {
         userId: this.userId,
         clientId: client.id,
         clientName: params.clientName,
-        clientEmail: params.clientEmail || '',
-        clientPhone: params.clientPhone || '',
-        projectAddress: '', // Mervin puede mejorar esto en el futuro
+        clientEmail: params.clientEmail || null,
+        clientPhone: params.clientPhone || null,
+        projectAddress: null, // Opcional - Mervin puede mejorar esto en el futuro con verificación de propiedad
         projectType: params.projectType,
         projectSubtype: params.projectType, // Default to same as type
         projectDescription: projectDescription,
