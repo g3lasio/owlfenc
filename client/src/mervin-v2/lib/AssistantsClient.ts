@@ -136,8 +136,14 @@ export class AssistantsClient {
 
       // Enviar mensaje a través del backend
       console.log('📤 [ASSISTANTS-CLIENT] Enviando mensaje...');
+      console.log('🔍 [REQUEST-DEBUG] Request payload:', {
+        threadId: this.threadId,
+        messageLength: input.length,
+        language
+      });
 
       // apiRequest.post() automáticamente incluye auth headers desde Firebase
+      console.log('⏳ [REQUEST-DEBUG] Waiting for backend response...');
       const response = await apiRequest.post('/api/assistant/message', {
         threadId: this.threadId,
         message: input,
@@ -148,42 +154,80 @@ export class AssistantsClient {
         runStatus: string;
       };
 
+      console.log('✅ [RESPONSE-DEBUG] Got response from backend:', {
+        success: response.success,
+        runStatus: response.runStatus,
+        hasResponse: !!response.response
+      });
+
       if (!response.success) {
+        console.error('❌ [RESPONSE-DEBUG] Response indicates failure');
         throw new Error('Failed to send message');
       }
 
       // Extraer respuesta del assistant
       const assistantMessage = response.response;
-      console.log(`🔍 [DEBUG] assistantMessage:`, JSON.stringify(assistantMessage, null, 2).substring(0, 300));
+      console.log('🔍 [RAW-RESPONSE]', JSON.stringify(response, null, 2));
+      console.log(`🔍 [DEBUG] assistantMessage structure:`, {
+        hasContent: !!assistantMessage?.content,
+        contentLength: assistantMessage?.content?.length || 0,
+        contentTypes: assistantMessage?.content?.map((c: any) => c.type) || []
+      });
       
       if (assistantMessage?.content) {
         const textContent = assistantMessage.content.find((c: any) => c.type === 'text');
-        console.log(`🔍 [DEBUG] textContent:`, JSON.stringify(textContent, null, 2).substring(0, 300));
+        console.log(`🔍 [TEXT-CONTENT]`, JSON.stringify(textContent, null, 2));
         
         if (textContent) {
           // NOTA: El backend ya transforma la respuesta y devuelve textContent.text como STRING directo
-          // Estructura: { type: 'text', text: "mensaje completo..." }
+          // Estructura: { type: 'text', text: "mensaje completo..." } o { type: 'text', text: { value: "mensaje..." } }
           const messageText = textContent.text?.value || textContent.text;
           
-          console.log(`🔍 [DEBUG] messageText type:`, typeof messageText);
+          console.log('🔍 [MESSAGE-EXTRACTION]', {
+            textContentType: typeof textContent.text,
+            hasValue: !!textContent.text?.value,
+            messageTextType: typeof messageText,
+            messageTextLength: typeof messageText === 'string' ? messageText.length : 0,
+            messageTextPreview: typeof messageText === 'string' ? messageText.substring(0, 100) : JSON.stringify(messageText).substring(0, 100)
+          });
+
+          if (typeof messageText !== 'string') {
+            console.error('❌ [TYPE-ERROR] messageText is not a string:', typeof messageText, messageText);
+            throw new Error(`Expected string but got ${typeof messageText}`);
+          }
+
+          if (!messageText || messageText.length === 0) {
+            console.error('❌ [EMPTY-ERROR] messageText is empty');
+            throw new Error('Message text is empty');
+          }
+          
           console.log(`📨 [ASSISTANTS-CLIENT] Respuesta recibida (${messageText.length} caracteres)`);
-          console.log(`📨 [ASSISTANTS-CLIENT] Preview: "${messageText.substring(0, 100)}..."`);
+          console.log(`📨 [ASSISTANTS-CLIENT] Full message: "${messageText}"`);
           
           // FIX CRÍTICO: Enviar mensaje completo directamente con type 'complete'
           // Esto evita la acumulación problemática en useMervinAgent
           const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
           console.log(`✅ [ASSISTANTS-CLIENT] Completado en ${elapsed}s`);
+          console.log(`📤 [SENDING-UPDATE] Calling onUpdate with:`, {
+            type: 'complete',
+            contentLength: messageText.length,
+            contentPreview: messageText.substring(0, 50)
+          });
           
           onUpdate({
             type: 'complete',
             content: messageText
           });
+
+          console.log(`✅ [UPDATE-SENT] onUpdate called successfully`);
         } else {
           console.error(`❌ [ASSISTANTS-CLIENT] No se encontró textContent en la respuesta`);
+          console.error('Available content items:', assistantMessage.content);
           throw new Error('No text content in response');
         }
       } else {
         console.error(`❌ [ASSISTANTS-CLIENT] assistantMessage.content está vacío`);
+        console.error('Full assistantMessage:', assistantMessage);
         throw new Error('Empty response content');
       }
 

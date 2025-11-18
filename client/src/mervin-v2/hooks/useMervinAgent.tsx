@@ -212,6 +212,13 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
           [], // No necesitamos history completo, OpenAI lo maneja
           language,
           (assistantUpdate) => {
+            console.log('📨 [UPDATE-RECEIVED] Got update from AssistantsClient:', {
+              type: assistantUpdate.type,
+              hasContent: !!assistantUpdate.content,
+              contentLength: assistantUpdate.content?.length || 0,
+              contentPreview: assistantUpdate.content?.substring(0, 100) || '(no content)'
+            });
+
             // Adaptar updates de AssistantsClient al formato StreamUpdate estándar
             let adaptedType: 'progress' | 'message' | 'complete' | 'error' = 'message';
             if (assistantUpdate.type === 'text_delta') adaptedType = 'message';
@@ -225,14 +232,24 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
               data: assistantUpdate.data,
             };
             
-            setStreamingUpdates(prev => [...prev, adaptedUpdate]);
+            console.log('🔄 [ADAPTATION] Adapted update:', {
+              originalType: assistantUpdate.type,
+              adaptedType: adaptedType,
+              contentPreserved: adaptedUpdate.content === assistantUpdate.content
+            });
+            
+            setStreamingUpdates(prev => {
+              console.log('📊 [STATE-UPDATE] Adding to streamingUpdates, current count:', prev.length);
+              return [...prev, adaptedUpdate];
+            });
+            
             if (onStreamUpdate) onStreamUpdate(adaptedUpdate);
 
             // FIX CRÍTICO: El mensaje completo ahora llega directamente en type='complete'
             if (assistantUpdate.type === 'complete' && assistantUpdate.content) {
               console.log('✅ [ASSISTANTS] Complete message received:', {
                 contentLength: assistantUpdate.content.length,
-                preview: assistantUpdate.content.substring(0, 200) + '...'
+                fullContent: assistantUpdate.content
               });
               
               const assistantMessage: MervinMessage = {
@@ -240,12 +257,29 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
                 content: assistantUpdate.content,
                 timestamp: new Date()
               };
-              setMessages(prev => [...prev, assistantMessage]);
+
+              console.log('💾 [SAVING-MESSAGE] About to save message:', {
+                role: assistantMessage.role,
+                contentLength: assistantMessage.content.length,
+                timestamp: assistantMessage.timestamp
+              });
+              
+              setMessages(prev => {
+                console.log('📝 [MESSAGES-UPDATE] Current messages:', prev.length);
+                console.log('📝 [MESSAGES-UPDATE] Adding new message with', assistantMessage.content.length, 'characters');
+                const newMessages = [...prev, assistantMessage];
+                console.log('📝 [MESSAGES-UPDATE] New total:', newMessages.length);
+                console.log('📝 [MESSAGES-UPDATE] Last message content:', newMessages[newMessages.length - 1].content);
+                return newMessages;
+              });
+
               persistenceRef.current?.saveMessage({
                 sender: 'assistant',
                 text: assistantUpdate.content,
                 timestamp: assistantMessage.timestamp!.toISOString(),
               }).catch(err => console.error('❌ [AUTO-SAVE] Failed:', err));
+
+              console.log('✅ [MESSAGE-SAVED] Message successfully added to state');
             }
           }
         );
