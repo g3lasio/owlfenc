@@ -884,40 +884,31 @@ export default function Mervin() {
           />
         )}
 
-        {messages.map((message) => (
+        {mervinAgent.messages.map((message, index) => (
           <div
-            key={message.id}
+            key={`msg-${index}-${message.timestamp?.getTime() || Date.now()}`}
             className={`flex ${
-              message.sender === "user" ? "justify-end" : "justify-start"
+              message.role === "user" ? "justify-end" : "justify-start"
             }`}
           >
             <div className="relative group">
               <div
                 className={`max-w-[280px] sm:max-w-sm md:max-w-md lg:max-w-lg px-4 py-3 rounded-2xl md:rounded-lg text-base md:text-sm leading-relaxed ${
-                  message.sender === "user"
+                  message.role === "user"
                     ? "bg-cyan-600 text-white shadow-lg"
                     : "bg-gray-800 text-gray-200 shadow-lg"
                 }`}
               >
                 <MessageContent 
                   content={message.content}
-                  sender={message.sender}
-                  enableTyping={!message.state}
+                  sender={message.role === "user" ? "user" : "assistant"}
+                  enableTyping={false}
                 />
-                
-                {message.taskResult && (
-                  <div className="mt-3 p-2 bg-green-900/30 border border-green-700/50 rounded text-green-200 text-sm">
-                    <strong>✅ Tarea Completada</strong>
-                    <div className="mt-1 text-xs text-green-300">
-                      Resultado procesado por el agente autónomo
-                    </div>
-                  </div>
-                )}
                 
                 {/* Timestamp */}
                 {message.timestamp && (
                   <div className={`mt-2 text-xs ${
-                    message.sender === "user" 
+                    message.role === "user" 
                       ? "text-cyan-200/70" 
                       : "text-gray-400"
                   }`}>
@@ -927,14 +918,14 @@ export default function Mervin() {
               </div>
               
               {/* Copy Button - Only for assistant messages */}
-              {message.sender === "assistant" && (
+              {message.role === "assistant" && (
                 <button
-                  onClick={() => handleCopyMessage(message.id, message.content)}
+                  onClick={() => handleCopyMessage(`msg-${index}`, message.content)}
                   className="absolute -top-2 -right-2 md:opacity-0 md:group-hover:opacity-100 opacity-80 transition-opacity bg-gray-700 hover:bg-gray-600 text-gray-300 p-2 md:p-1.5 rounded-lg shadow-lg touch-manipulation"
                   title="Copiar mensaje"
-                  data-testid={`button-copy-${message.id}`}
+                  data-testid={`button-copy-msg-${index}`}
                 >
-                  {copiedMessageId === message.id ? (
+                  {copiedMessageId === `msg-${index}` ? (
                     <Check className="w-4 h-4 md:w-3.5 md:h-3.5 text-green-400" />
                   ) : (
                     <Copy className="w-4 h-4 md:w-3.5 md:h-3.5" />
