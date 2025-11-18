@@ -2,6 +2,8 @@ import { Express, Request, Response } from "express";
 import { propertyService } from "../services/propertyService";
 import { verifyFirebaseAuth as requireAuth } from "../middleware/firebase-auth";
 import { getSecureUserId } from "../utils/secureUserHelper";
+import { firebaseSearchService } from "../services/firebaseSearchService";
+import { redisUsageService } from "../services/redisUsageService";
 
 /**
  * Esta función registra las rutas relacionadas con la obtención
@@ -69,6 +71,42 @@ export function registerPropertyRoutes(app: Express): void {
         property: result.data || result.property, // Compatibilidad con ambos formatos de respuesta
         source: result.diagnostics?.source === 'mock_data' ? 'SIMULADO' : 'ATTOM'
       };
+      
+      // 🔥 INTEGRACIÓN COMPLETA: Guardar en historial E incrementar contador
+      // Esto asegura que tanto búsquedas manuales como de Mervin se registren igual
+      try {
+        const userId = req.firebaseUser?.uid;
+        if (userId && response.property) {
+          console.log('💾 [PROPERTY-HISTORY] Guardando búsqueda en historial para usuario:', userId);
+          
+          // 1️⃣ GUARDAR EN HISTORIAL DE FIREBASE
+          await firebaseSearchService.createPropertySearch({
+            userId,
+            searchType: 'property',
+            address: address,
+            ownerName: response.property.owner,
+            parcelNumber: response.property.parcelNumber,
+            assessedValue: response.property.assessedValue,
+            yearBuilt: response.property.yearBuilt,
+            squareFeet: response.property.sqft,
+            lotSize: response.property.lotSize,
+            propertyType: response.property.propertyType,
+            searchResults: response.property,
+            searchProvider: result.diagnostics?.source === 'mock_data' ? 'MOCK' : 'ATTOM',
+            status: 'completed'
+          });
+          
+          console.log('✅ [PROPERTY-HISTORY] Búsqueda guardada exitosamente en historial');
+          
+          // 2️⃣ INCREMENTAR CONTADOR DE USO
+          await redisUsageService.incrementUsage(userId, 'propertyVerifications', 1);
+          
+          console.log('✅ [PROPERTY-USAGE] Contador incrementado: propertyVerifications +1');
+        }
+      } catch (historyError) {
+        // No fallar la petición si falla el historial/contador
+        console.error('⚠️ [PROPERTY-HISTORY] Error guardando historial o incrementando contador:', historyError);
+      }
       
       console.log('===== FIN DE SOLICITUD DE DETALLES DE PROPIEDAD =====');
       return res.json(response);

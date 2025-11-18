@@ -181,8 +181,8 @@ export default function PropertyOwnershipVerifier() {
       setPropertyDetails(response);
       setCurrentStep(3);
       
-      // 📊 INCREMENTAR USO DESPUÉS DE BÚSQUEDA EXITOSA
-      await incrementUsage('propertyVerifications', 1);
+      // 📊 NOTA: El contador se incrementa automáticamente en el backend (/api/property/details)
+      // para asegurar que tanto búsquedas manuales como de Mervin cuenten igual
       
       queryClient.invalidateQueries({ queryKey: ["/api/property/history"] });
 
@@ -201,7 +201,7 @@ export default function PropertyOwnershipVerifier() {
     } finally {
       setLoading(false);
     }
-  }, [selectedPlace, queryClient, toast, canSearch, showUpgradeModal, userPlan, remaining, incrementUsage]);
+  }, [selectedPlace, queryClient, toast, canSearch, showUpgradeModal, userPlan, remaining]);
 
   // Manejar la selección de lugar desde el autocompletado
   const handlePlaceSelect = useCallback((placeData: any) => {
