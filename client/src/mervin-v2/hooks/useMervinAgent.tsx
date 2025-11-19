@@ -54,6 +54,7 @@ export interface UseMervinAgentReturn {
   systemStatus: any;
   persistenceState: PersistenceState;
   conversationId: string | null;
+  persistenceController: ConversationPersistenceController | null;
 }
 
 /**
@@ -364,5 +365,7 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
     systemStatus,
     persistenceState,
     conversationId: persistenceState.conversationId,
+    // 🔥 Exponer referencia al persistence controller para sincronización
+    persistenceController: persistenceRef.current,
   };
 }
