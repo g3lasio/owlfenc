@@ -517,13 +517,14 @@ export default function Mervin() {
   const handleSelectConversation = async (conversationId: string) => {
     console.log('📂 [LOAD-CONVERSATION] Loading conversation:', conversationId);
     
-    // 🔥 SINCRONIZACIÓN: Cargar conversación en AMBOS sistemas
-    conversationManager.loadConversation(conversationId); // Para UI/display
-    agent.loadConversation(conversationId); // Para persistencia de nuevos mensajes
+    // 🔥 SINCRONIZACIÓN CRÍTICA: Cargar conversación en AMBOS sistemas ANTES de UI
+    // Esto asegura que nuevos mensajes se guarden en la conversación correcta
+    agent.loadConversation(conversationId); // PRIMERO: configurar persistencia
+    conversationManager.loadConversation(conversationId); // SEGUNDO: cargar para display
     
     setIsHistorySidebarOpen(false);
     
-    // Wait for conversation to load
+    // Wait for conversation to load from Firebase
     setTimeout(() => {
       if (conversationManager.activeConversation) {
         const conv = conversationManager.activeConversation;
@@ -531,8 +532,17 @@ export default function Mervin() {
         console.log('✅ [LOAD-CONVERSATION] Conversation loaded successfully', {
           conversationId: conv.conversationId,
           messageCount: conv.messages.length,
-          aiModel: conv.aiModel
+          aiModel: conv.aiModel,
+          persistenceControllerSynced: agent.conversationId === conv.conversationId
         });
+        
+        // Verificar sincronización
+        if (agent.conversationId !== conv.conversationId) {
+          console.error('🚨 [SYNC-ERROR] ConversationId mismatch!', {
+            persistenceController: agent.conversationId,
+            conversationManager: conv.conversationId
+          });
+        }
         
         // Convert conversation messages to Mervin message format
         const mervinMessages: Message[] = conv.messages.map(msg => ({

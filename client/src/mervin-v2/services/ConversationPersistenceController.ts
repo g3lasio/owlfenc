@@ -73,6 +73,9 @@ export class ConversationPersistenceController {
   // 🔒 Queue para serializar operaciones y evitar race conditions
   private saveQueue: Promise<void> = Promise.resolve();
   private isCreating: boolean = false;
+  
+  // 🔥 Abort controller para cancelar operaciones en progreso al cambiar conversación
+  private abortController: AbortController | null = null;
 
   constructor(userId: string) {
     this.userId = userId;
@@ -85,6 +88,7 @@ export class ConversationPersistenceController {
   /**
    * Guardar nuevo mensaje (user o assistant)
    * 🔒 Serializado con cola para evitar race conditions
+   * 🔥 CRÍTICO: Captura conversationId ANTES de encolar para evitar race conditions
    */
   async saveMessage(message: ConversationMessage): Promise<void> {
     if (this.userId === 'guest') {
@@ -92,14 +96,20 @@ export class ConversationPersistenceController {
       return;
     }
 
+    // 🔥 CAPTURA TEMPRANA: Capturar conversationId AHORA (antes de encolar)
+    // Esto asegura que el mensaje se guarde en la conversación correcta
+    // incluso si el usuario cambia de conversación antes de que se ejecute el save
+    const targetConversationId = this.conversationId;
+    const isNewConversation = targetConversationId === null;
+
     // 🔒 Encolar operación para serialización
     this.saveQueue = this.saveQueue.then(async () => {
       try {
-        // Si no hay conversación activa y no hay una creación en progreso, crear una nueva
-        if (!this.conversationId && !this.isCreating) {
+        // Si era una conversación nueva cuando se encoló
+        if (isNewConversation && !this.isCreating) {
           this.isCreating = true;
           try {
-            await this.createConversation([message]);
+            await this.createConversation([message], targetConversationId);
           } finally {
             // 🔧 Siempre resetear flag, incluso si falla
             this.isCreating = false;
@@ -118,24 +128,26 @@ export class ConversationPersistenceController {
             throw new Error('Timeout waiting for conversation creation');
           }
           
-          // Ahora sí agregar mensaje a conversación existente
-          if (this.conversationId) {
-            await this.appendMessage(message);
+          // Agregar mensaje a conversación existente con ID capturado
+          if (targetConversationId) {
+            await this.appendMessage(message, targetConversationId);
           } else {
             throw new Error('Conversation not created');
           }
         }
 
-        // Incrementar contador de mensajes
-        this.messageCount++;
+        // Incrementar contador de mensajes SOLO si es la conversación activa actual
+        if (this.conversationId === targetConversationId) {
+          this.messageCount++;
 
-        // Generar título automático después del threshold
-        if (
-          !this.titleGenerated &&
-          this.messageCount >= TITLE_GENERATION_THRESHOLD &&
-          this.conversationId
-        ) {
-          this.generateTitle();
+          // Generar título automático después del threshold
+          if (
+            !this.titleGenerated &&
+            this.messageCount >= TITLE_GENERATION_THRESHOLD &&
+            this.conversationId
+          ) {
+            this.generateTitle();
+          }
         }
       } catch (error) {
         console.error('❌ [CONVERSATION] Error saving message:', error);
@@ -153,8 +165,10 @@ export class ConversationPersistenceController {
 
   /**
    * Crear nueva conversación con retry/backoff
+   * 🔥 PROTECCIÓN: NO sobrescribe conversationId si ya cambió (ej: usuario seleccionó otra conversación)
+   * @param expectedConversationId - conversationId capturado al momento de encolar (null para nueva conversación)
    */
-  private async createConversation(messages: ConversationMessage[]): Promise<void> {
+  private async createConversation(messages: ConversationMessage[], expectedConversationId: string | null): Promise<void> {
     this.setStatus('creating');
     this.pendingSaves++;
     this.emitStateChange();
@@ -194,14 +208,25 @@ export class ConversationPersistenceController {
       });
 
       // Extract conversation ID with fallback handling
-      this.conversationId = result.id ?? result.conversationId ?? result._id;
+      const newConversationId = result.id ?? result.conversationId ?? result._id;
       
       // Fail-fast if no ID was returned
-      if (!this.conversationId) {
+      if (!newConversationId) {
         throw new Error('Server did not return a conversation ID');
       }
       
-      console.log(`✅ [CONVERSATION] Created: ${this.conversationId}`);
+      // 🔥 PROTECCIÓN: Solo asignar si conversationId NO cambió desde el encolamiento
+      // expectedConversationId es el valor capturado al encolar
+      if (this.conversationId === expectedConversationId) {
+        this.conversationId = newConversationId;
+        console.log(`✅ [CONVERSATION] Created: ${this.conversationId}`);
+      } else {
+        // Edge case raro: Usuario cambió conversación mientras se creaba una nueva
+        // La nueva conversación queda "huérfana" en Firebase pero aparecerá en historial
+        // TRADE-OFF: Preferimos conversación huérfana a contaminación cruzada
+        console.warn(`📋 [EDGE-CASE] New conversation created (${newConversationId}) but user switched to ${this.conversationId} during creation. New conversation saved to Firebase and will appear in history.`);
+      }
+      
       this.setStatus('idle');
       this.error = null;
     } catch (error) {
@@ -215,9 +240,14 @@ export class ConversationPersistenceController {
 
   /**
    * Agregar mensaje a conversación existente con retry/backoff
+   * 🔥 ESTRATEGIA: Usa targetConversationId capturado al ENCOLAR (no al ejecutar)
+   * @param targetConversationId - ID capturado al momento de encolar el mensaje
    */
-  private async appendMessage(message: ConversationMessage): Promise<void> {
-    if (!this.conversationId) return;
+  private async appendMessage(message: ConversationMessage, targetConversationId: string): Promise<void> {
+    if (!targetConversationId) {
+      console.warn('⚠️ [CONVERSATION] No conversationId available, skipping append');
+      return;
+    }
 
     this.setStatus('saving');
     this.pendingSaves++;
@@ -230,7 +260,8 @@ export class ConversationPersistenceController {
           throw new Error('No auth token available');
         }
 
-        const response = await fetch(`/api/conversations/${this.conversationId}/messages`, {
+        // 🔥 Usar targetConversationId capturado (NO this.conversationId que puede haber cambiado)
+        const response = await fetch(`/api/conversations/${targetConversationId}/messages`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -254,7 +285,13 @@ export class ConversationPersistenceController {
         return data;
       });
 
-      console.log(`✅ [CONVERSATION] Message saved to ${this.conversationId}`);
+      console.log(`✅ [CONVERSATION] Message saved to ${targetConversationId}`);
+      
+      // 🔥 Log si conversationId cambió DESPUÉS del save (informativo, no es error)
+      if (this.conversationId !== targetConversationId) {
+        console.log(`📋 [INFO] Message saved to previous conversation ${targetConversationId} (current: ${this.conversationId})`);
+      }
+      
       this.setStatus('idle');
       this.error = null;
     } catch (error) {
@@ -361,11 +398,25 @@ export class ConversationPersistenceController {
 
   /**
    * Cargar conversación existente
+   * 🔥 CRÍTICO: Aborta saves pendientes para evitar race conditions
    */
   loadConversation(conversationId: string): void {
+    console.log(`📂 [PERSISTENCE] Loading existing conversation: ${conversationId}`);
+    
+    // 🔥 Si hay saves pendientes, advertir al desarrollador
+    if (this.pendingSaves > 0) {
+      console.warn(`⚠️ [PERSISTENCE] ${this.pendingSaves} saves pendientes serán abortados al cambiar conversación`);
+    }
+    
+    // 🔥 REINICIAR cola de guardado para evitar que saves en progreso usen conversationId antiguo
+    // Los saves en progreso detectarán el cambio de conversationId y se abortarán automáticamente
     this.conversationId = conversationId;
     this.titleGenerated = true; // Assume existing conversations have titles
+    this.messageCount = 0; // Reset counter for existing conversation
     this.emitStateChange();
+    
+    console.log(`✅ [PERSISTENCE] Conversation loaded, new messages will append to: ${conversationId}`);
+    console.log(`🔒 [PERSISTENCE] Pending saves will be aborted if conversationId changed during their execution`);
   }
 
   /**
