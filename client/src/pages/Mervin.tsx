@@ -497,10 +497,8 @@ export default function Mervin() {
   
   // Conversation History Handlers
   const handleNewConversation = () => {
-    if (messages.length > 0) {
-      // Auto-save current conversation before starting new one
-      handleSaveCurrentConversation();
-    }
+    // 🔥 ConversationPersistenceController ya guardó automáticamente todos los mensajes
+    // No necesitamos guardar manualmente (sistema duplicado eliminado)
     
     // Clear messages and states
     setMessages([]);
@@ -511,6 +509,9 @@ export default function Mervin() {
     setSuggestionContext('initial');
     conversationManager.clearActiveConversation();
     setIsHistorySidebarOpen(false);
+    
+    // Reset persistence controller para nueva conversación
+    agent.startNewConversation();
   };
   
   const handleSelectConversation = async (conversationId: string) => {
@@ -540,53 +541,10 @@ export default function Mervin() {
     }, 300);
   };
   
-  const handleSaveCurrentConversation = useCallback(async () => {
-    if (!currentUser?.uid || messages.length < 2) return;
-    
-    try {
-      console.log('💾 [CONVERSATION-SAVE] Attempting to save conversation...', {
-        messageCount: messages.length,
-        activeConversationId: conversationManager.activeConversationId,
-        aiModel: currentAIModel,
-        category: suggestionContext,
-      });
-      
-      // Convert Mervin messages to conversation format
-      const conversationMessages = messages.map(msg => ({
-        id: msg.id,
-        sender: msg.sender === 'user' ? ('user' as const) : ('agent' as const),
-        text: msg.content,
-        timestamp: msg.timestamp || new Date(),
-        state: msg.state as 'normal' | 'thinking' | 'analyzing' | 'processing' | 'error' | undefined,
-      }));
-      
-      // Detect AI model based on currentAIModel state (ChatGPT-4o vs Claude Sonnet 4)
-      const aiModel: 'chatgpt' | 'claude' = currentAIModel === 'Claude Sonnet 4' ? 'claude' : 'chatgpt';
-      const category = suggestionContext !== 'initial' ? suggestionContext : 'general';
-      
-      // Save or update conversation
-      if (conversationManager.activeConversationId) {
-        // Update existing conversation
-        console.log('💾 [CONVERSATION-SAVE] Updating existing conversation:', conversationManager.activeConversationId);
-        await conversationManager.addMessages(
-          conversationManager.activeConversationId,
-          conversationMessages
-        );
-        console.log('✅ [CONVERSATION-SAVE] Conversation updated successfully');
-      } else {
-        // Create new conversation
-        console.log('💾 [CONVERSATION-SAVE] Creating new conversation...');
-        const result = await conversationManager.createConversation(
-          conversationMessages,
-          aiModel,
-          category as any
-        );
-        console.log('✅ [CONVERSATION-SAVE] New conversation created:', result?.conversationId);
-      }
-    } catch (error) {
-      console.error('❌ [CONVERSATION-SAVE] Error saving conversation:', error);
-    }
-  }, [currentUser?.uid, messages, conversationManager, currentAIModel, suggestionContext]);
+  // 🔥 FUNCIÓN ELIMINADA: handleSaveCurrentConversation
+  // Razón: ConversationPersistenceController en useMervinAgent.tsx maneja el guardado automático
+  // de TODOS los mensajes en tiempo real sin duplicación.
+  // conversationManager ahora solo se usa para LEER/LISTAR conversaciones existentes.
   
   const handleDeleteConversation = async (conversationId: string) => {
     try {
@@ -687,21 +645,9 @@ export default function Mervin() {
     setAttachedFiles(prev => prev.filter((_, i) => i !== index));
   };
   
-  // Auto-save conversation every 3 messages (more frequent)
-  useEffect(() => {
-    if (messages.length > 0 && messages.length % 3 === 0) {
-      console.log('💾 [AUTO-SAVE] Saving conversation (every 3 messages)');
-      handleSaveCurrentConversation();
-    }
-  }, [messages.length, handleSaveCurrentConversation]);
-  
-  // Save conversation when loading stops (after receiving Mervin's response)
-  useEffect(() => {
-    if (!isLoading && messages.length >= 2) {
-      console.log('💾 [AUTO-SAVE] Saving conversation (after response completed)');
-      handleSaveCurrentConversation();
-    }
-  }, [isLoading, messages.length, handleSaveCurrentConversation]);
+  // 🔥 useEffect ELIMINADOS: Auto-save manual de conversaciones
+  // Razón: ConversationPersistenceController en useMervinAgent.tsx guarda CADA mensaje
+  // automáticamente en tiempo real con retry/backoff. No necesitamos guardado manual aquí.
 
   return (
     <div className="flex flex-col h-full bg-black text-white">
