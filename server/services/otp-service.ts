@@ -498,7 +498,7 @@ export class OTPService {
     <div class="container">
         <div class="header">
             <div class="logo">
-                <img src="YOUR_HOSTED_LOGO_URL_HERE" alt="Owl Fenc" style="max-width: 300px; height: auto;">
+                <img src="https://i.postimg.cc/8zcM3ZC9/White-logo-no-background.png" alt="Owl Fenc" style="max-width: 300px; height: auto;">
             </div>
             <p class="subtitle">Plataforma de Contratistas</p>
         </div>
@@ -665,7 +665,7 @@ Si no solicitaste este acceso, ignora este correo.
     <div class="container">
         <div class="header">
             <div class="logo">
-                <img src="YOUR_HOSTED_LOGO_URL_HERE" alt="Owl Fenc" style="max-width: 300px; height: auto;">
+                <img src="https://i.postimg.cc/8zcM3ZC9/White-logo-no-background.png" alt="Owl Fenc" style="max-width: 300px; height: auto;">
             </div>
             <p class="subtitle">Plataforma de Contratistas</p>
         </div>
