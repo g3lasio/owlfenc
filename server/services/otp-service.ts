@@ -423,15 +423,8 @@ export class OTPService {
             margin-bottom: 8px;
         }
         .logo img {
-            width: 48px;
-            height: 48px;
-            margin-right: 12px;
-        }
-        .logo-text {
-            font-family: 'Quantico', monospace;
-            font-size: 28px;
-            font-weight: 700;
-            color: white;
+            max-width: 300px;
+            height: auto;
         }
         .subtitle {
             color: rgba(255, 255, 255, 0.9);
@@ -505,8 +498,7 @@ export class OTPService {
     <div class="container">
         <div class="header">
             <div class="logo">
-                <img src="https://i.postimg.cc/ZK16qb4Z/owl-pentgrama.png" alt="Owl Fenc Logo">
-                <span class="logo-text">Owl Fenc</span>
+                <img src="YOUR_HOSTED_LOGO_URL_HERE" alt="Owl Fenc" style="max-width: 300px; height: auto;">
             </div>
             <p class="subtitle">Plataforma de Contratistas</p>
         </div>
@@ -598,15 +590,8 @@ Si no solicitaste este acceso, ignora este correo.
             margin-bottom: 8px;
         }
         .logo img {
-            width: 48px;
-            height: 48px;
-            margin-right: 12px;
-        }
-        .logo-text {
-            font-family: 'Quantico', monospace;
-            font-size: 28px;
-            font-weight: 700;
-            color: white;
+            max-width: 300px;
+            height: auto;
         }
         .subtitle {
             color: rgba(255, 255, 255, 0.9);
@@ -680,8 +665,7 @@ Si no solicitaste este acceso, ignora este correo.
     <div class="container">
         <div class="header">
             <div class="logo">
-                <img src="https://i.postimg.cc/ZK16qb4Z/owl-pentgrama.png" alt="Owl Fenc Logo">
-                <span class="logo-text">Owl Fenc</span>
+                <img src="YOUR_HOSTED_LOGO_URL_HERE" alt="Owl Fenc" style="max-width: 300px; height: auto;">
             </div>
             <p class="subtitle">Plataforma de Contratistas</p>
         </div>

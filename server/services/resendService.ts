@@ -336,7 +336,7 @@ export class ResendEmailService {
       </head>
       <body>
         <div class="header">
-          <img src="https://i.postimg.cc/ZK16qb4Z/owl-pentgrama.png" alt="Owl Fenc" class="logo">
+          <img src="YOUR_HOSTED_LOGO_URL_HERE" alt="Owl Fenc" class="logo" style="max-width: 300px; height: auto;">
           <h1>Estimado Profesional</h1>
         </div>
         
@@ -425,7 +425,7 @@ export class ResendEmailService {
       </head>
       <body>
         <div class="header">
-          <img src="https://i.postimg.cc/ZK16qb4Z/owl-pentgrama.png" alt="Owl Fenc" class="logo">
+          <img src="YOUR_HOSTED_LOGO_URL_HERE" alt="Owl Fenc" class="logo" style="max-width: 300px; height: auto;">
           <h1>Contrato Profesional Generado</h1>
         </div>
         
@@ -529,7 +529,7 @@ export class ResendEmailService {
       </head>
       <body>
         <div class="header">
-          <img src="https://i.postimg.cc/ZK16qb4Z/owl-pentgrama.png" alt="Owl Fenc" class="logo">
+          <img src="YOUR_HOSTED_LOGO_URL_HERE" alt="Owl Fenc" class="logo" style="max-width: 300px; height: auto;">
           <h1>💳 Enlace de Pago Seguro</h1>
         </div>
         
