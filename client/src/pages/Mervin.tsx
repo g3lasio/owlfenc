@@ -515,13 +515,24 @@ export default function Mervin() {
   };
   
   const handleSelectConversation = async (conversationId: string) => {
-    conversationManager.loadConversation(conversationId);
+    console.log('📂 [LOAD-CONVERSATION] Loading conversation:', conversationId);
+    
+    // 🔥 SINCRONIZACIÓN: Cargar conversación en AMBOS sistemas
+    conversationManager.loadConversation(conversationId); // Para UI/display
+    agent.loadConversation(conversationId); // Para persistencia de nuevos mensajes
+    
     setIsHistorySidebarOpen(false);
     
     // Wait for conversation to load
     setTimeout(() => {
       if (conversationManager.activeConversation) {
         const conv = conversationManager.activeConversation;
+        
+        console.log('✅ [LOAD-CONVERSATION] Conversation loaded successfully', {
+          conversationId: conv.conversationId,
+          messageCount: conv.messages.length,
+          aiModel: conv.aiModel
+        });
         
         // Convert conversation messages to Mervin message format
         const mervinMessages: Message[] = conv.messages.map(msg => ({
@@ -537,6 +548,8 @@ export default function Mervin() {
         setSelectedModel('agent');
         // Set AI model state based on saved conversation
         setCurrentAIModel(conv.aiModel === 'claude' ? 'Claude Sonnet 4' : 'ChatGPT-4o');
+      } else {
+        console.error('❌ [LOAD-CONVERSATION] Failed to load conversation from manager');
       }
     }, 300);
   };
