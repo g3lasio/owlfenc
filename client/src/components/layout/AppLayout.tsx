@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import Header from "./Header";
-
 import Sidebar from "./Sidebar";
 import { Route, Switch, useLocation, Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
+import { useChat } from "@/contexts/ChatContext";
+import { MervinExperience } from "@/components/mervin/MervinExperience";
+import { ChatLayoutController } from "./ChatLayoutController";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -23,6 +25,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const { user } = useAuth();
   const [location] = useLocation();
   const [sidebarWidth, setSidebarWidth] = useState(64);
+  const { layoutMode, chatWidth, isMinimized, toggleMinimize } = useChat();
 
   // Verificar si la ruta actual es una página de autenticación
   const isAuthPage =
@@ -83,64 +86,96 @@ export default function AppLayout({ children }: AppLayoutProps) {
     );
   }
 
+  // Calculate chat dock width based on layout mode
+  const getChatDockWidth = () => {
+    if (layoutMode === 'closed') return 0;
+    if (layoutMode === 'full') return undefined; // flex-1 will handle this
+    // sidebar mode
+    return isMinimized ? 48 : chatWidth;
+  };
+
+  const chatDockWidth = getChatDockWidth();
+
   // Para el resto de las páginas (protegidas), mostrar el layout completo
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
-      {/* Sidebar fijo a la izquierda */}
-      <Sidebar onWidthChange={setSidebarWidth} />
+    <>
+      {/* Route-based layout mode controller */}
+      <ChatLayoutController />
+      
+      <div className="flex h-screen bg-background overflow-hidden">
+        {/* Sidebar fijo a la izquierda */}
+        <Sidebar onWidthChange={setSidebarWidth} />
 
-      {/* Contenido principal - flex layout puro sin marginLeft para evitar líneas negras */}
-      <div className="flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300">
-        {/* Header fijo */}
-        <Header />
+        {/* Contenido principal - flex layout puro sin marginLeft para evitar líneas negras */}
+        <div className="flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300">
+          {/* Header fijo */}
+          <Header />
 
-        {/* Área de contenido principal - sin márgenes adicionales */}
-        <main
-          className="flex-1 overflow-y-auto"
-          style={{
-            // marginLeft: `${sidebarWidth}px`,
-            // height: "calc(100vh - var(--header-height) - var(--footer-height))",
-            paddingTop: 0,
-            marginTop: 0,
-          }}
-        >
-          <div className="h-full">
-            <Switch>
-              <Route path="/settings/profile" component={Profile} />
-              <Route path="*">{children}</Route>
-            </Switch>
-          </div>
-        </main>
-
-        {/* Footer fijo */}
-        <footer
-          className="flex-shrink-0 py-2 px-4 bg-gray-900 border-t border-cyan-900/30 text-xs text-center text-cyan-500/50"
-          style={{
-            height: "var(--footer-height)",
-            minHeight: "var(--footer-height)",
-          }}
-        >
-          <div className="flex justify-center items-center space-x-4 h-full">
-            <Link
-              to="/privacy-policy"
-              className="hover:text-cyan-400 cursor-pointer transition-colors"
+          {/* Content area: Main content + Chat dock in flex row */}
+          <div className="flex-1 flex flex-row overflow-hidden">
+            {/* Main content area */}
+            <main
+              className={`${layoutMode === 'full' ? 'hidden' : 'flex-1'} overflow-y-auto`}
+              style={{
+                paddingTop: 0,
+                marginTop: 0,
+              }}
             >
-              Privacy Policy
-            </Link>
-            <span>|</span>
-            <Link
-              to="/legal-policy"
-              className="hover:text-cyan-400 cursor-pointer transition-colors"
+              <div className="h-full">
+                <Switch>
+                  <Route path="/settings/profile" component={Profile} />
+                  <Route path="*">{children}</Route>
+                </Switch>
+              </div>
+            </main>
+
+            {/* Chat dock - persistent MervinExperience */}
+            <div
+              className="flex-shrink-0 transition-all duration-300 overflow-hidden"
+              style={{
+                width: layoutMode === 'full' ? '100%' : `${chatDockWidth}px`,
+                display: layoutMode === 'closed' ? 'none' : 'flex',
+              }}
+              data-testid={`chat-dock-${layoutMode}`}
             >
-              Terms of Service
-            </Link>
-            <span>|</span>
-            <span className="font-medium">
-              © {new Date().getFullYear()} Owl Fenc
-            </span>
+              <MervinExperience
+                mode={layoutMode === 'full' ? 'full' : 'sidebar'}
+                onMinimize={layoutMode === 'sidebar' ? toggleMinimize : undefined}
+                isMinimized={layoutMode === 'sidebar' ? isMinimized : false}
+              />
+            </div>
           </div>
-        </footer>
+
+          {/* Footer fijo */}
+          <footer
+            className="flex-shrink-0 py-2 px-4 bg-gray-900 border-t border-cyan-900/30 text-xs text-center text-cyan-500/50"
+            style={{
+              height: "var(--footer-height)",
+              minHeight: "var(--footer-height)",
+            }}
+          >
+            <div className="flex justify-center items-center space-x-4 h-full">
+              <Link
+                to="/privacy-policy"
+                className="hover:text-cyan-400 cursor-pointer transition-colors"
+              >
+                Privacy Policy
+              </Link>
+              <span>|</span>
+              <Link
+                to="/legal-policy"
+                className="hover:text-cyan-400 cursor-pointer transition-colors"
+              >
+                Terms of Service
+              </Link>
+              <span>|</span>
+              <span className="font-medium">
+                © {new Date().getFullYear()} Owl Fenc
+              </span>
+            </div>
+          </footer>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
