@@ -54,7 +54,10 @@ import { useAuth } from "@/hooks/use-auth";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { SidebarProvider } from "@/contexts/SidebarContext";
 import { PermissionProvider } from "@/contexts/PermissionContext";
-import { ChatProvider } from "@/contexts/ChatContext";
+import { ChatProvider, useChat } from "@/contexts/ChatContext";
+import { MervinExperience } from "@/components/mervin/MervinExperience";
+import { Button } from "@/components/ui/button";
+import { Sparkles } from "lucide-react";
 import AuthDiagnostic from './pages/AuthDiagnostic';
 import { lazy } from 'react';
 import CyberpunkLegalDefense from './pages/CyberpunkLegalDefense';
@@ -189,6 +192,81 @@ function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
 }
 
 
+// 🤖 PERSISTENT MERVIN OVERLAY - Renders outside AppLayout
+function PersistentMervinOverlay() {
+  const [location] = useLocation();
+  const { user } = useAuth();
+  const { chatWidth, isChatOpen, isMinimized, toggleMinimize, openChat } = useChat();
+
+  // Determine if we're on an auth or home page
+  const isAuthPage =
+    location === "/login" ||
+    location === "/signup" ||
+    location === "/recuperar-password" ||
+    location === "/reset-password" ||
+    location === "/login/email-link-callback";
+
+  const isHomeRoute = location === "/" || location.startsWith("/home");
+  const isMervinRoute = location.startsWith("/mervin");
+
+  // Mervin mode logic:
+  // - Full mode: when on /mervin route (occupies entire screen)
+  // - Sidebar mode: when on protected pages (not home, not auth)
+  // - Hidden: when on home or auth pages
+  const mervinMode: 'full' | 'sidebar' | 'hidden' = 
+    isMervinRoute ? 'full' :
+    (user && !isAuthPage && !isHomeRoute) ? 'sidebar' :
+    'hidden';
+
+  // Don't render anything if hidden
+  if (mervinMode === 'hidden') {
+    return null;
+  }
+
+  return (
+    <>
+      {/* Single persistent Mervin instance - changes style based on mode */}
+      <div
+        className="transition-all duration-300"
+        style={{
+          position: 'fixed',
+          // Full mode: cover entire viewport
+          // Sidebar mode: fixed on the right
+          left: mervinMode === 'full' ? 0 : 'auto',
+          right: 0,
+          top: 0,
+          bottom: 0,
+          width: mervinMode === 'full' ? '100%' : (mervinMode === 'sidebar' && isChatOpen ? (isMinimized ? '48px' : `${chatWidth}px`) : '0px'),
+          zIndex: mervinMode === 'full' ? 9999 : 40,
+          backgroundColor: 'var(--background)',
+          borderLeft: mervinMode === 'sidebar' && isChatOpen ? '1px solid hsl(var(--border))' : 'none',
+          boxShadow: mervinMode === 'sidebar' && isChatOpen ? '0 0 50px rgba(0,0,0,0.5)' : 'none',
+          opacity: mervinMode === 'sidebar' && !isChatOpen ? 0 : 1,
+          pointerEvents: mervinMode === 'sidebar' && !isChatOpen ? 'none' : 'auto',
+        }}
+        data-testid={`mervin-experience-${mervinMode}`}
+      >
+        <MervinExperience 
+          mode={mervinMode === 'full' ? 'full' : 'sidebar'} 
+          onMinimize={mervinMode === 'sidebar' ? toggleMinimize : undefined}
+          isMinimized={mervinMode === 'sidebar' ? isMinimized : false}
+        />
+      </div>
+      
+      {/* Chat Toggle Button - Only in sidebar mode when chat is closed */}
+      {mervinMode === 'sidebar' && !isChatOpen && (
+        <Button
+          onClick={openChat}
+          className="fixed bottom-6 right-6 rounded-full h-14 w-14 shadow-lg z-50 bg-cyan-600 hover:bg-cyan-700"
+          data-testid="button-toggle-chat"
+        >
+          <Sparkles className="h-6 w-6" />
+        </Button>
+      )}
+    </>
+  );
+}
+
 // 🔒 ISOLATED PUBLIC ROUTES - No authentication or layout needed
 function PublicOnlyRouter() {
   return (
@@ -213,6 +291,7 @@ function MainAppRouter() {
       <PermissionProvider>
         <SidebarProvider>
           <ChatProvider>
+            <PersistentMervinOverlay />
             <AppLayout>
             <Switch>
               {/* Root redirects to login - main app requires authentication */}

@@ -1,9 +1,9 @@
-// Mervin page is now handled by AppLayout
+// Mervin page renders via PersistentMervinOverlay in App.tsx
 // This component is kept as placeholder for the route
-// The actual Mervin experience renders in AppLayout as a persistent component
+// The persistent overlay detects /mervin route and switches to full mode
 
 export default function Mervin() {
-  // AppLayout handles rendering MervinExperience in full mode for this route
-  // Return null since the component is rendered elsewhere
+  // PersistentMervinOverlay in App.tsx handles rendering MervinExperience
+  // in full mode when route is /mervin
   return null;
 }
