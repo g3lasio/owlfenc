@@ -384,7 +384,7 @@ const claude = new ClaudeService();
  * 🔥 Helper function para crear SystemAPIService autenticado
  */
 function createAuthenticatedSystemAPI(userContext: UserContext): SystemAPIService {
-  const authHeaders = userContext.firebaseToken ? {
+  const authHeaders: Record<string, string> = userContext.firebaseToken ? {
     'Authorization': `Bearer ${userContext.firebaseToken}`
   } : {};
   
@@ -497,11 +497,7 @@ const executeVerifyProperty: ToolExecutor = async (args, userContext) => {
  */
 const executeGetPermitInfo: ToolExecutor = async (args, userContext) => {
   try {
-    const systemAPI = new SystemAPIService(
-      userContext.userId,
-      {},
-      process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : 'http://localhost:5000'
-    );
+    const systemAPI = createAuthenticatedSystemAPI(userContext);
 
     const permitInfo = await systemAPI.getPermitInfo({
       projectType: args.projectType,
@@ -526,11 +522,7 @@ const executeGetPermitInfo: ToolExecutor = async (args, userContext) => {
  */
 const executeGetClientHistory: ToolExecutor = async (args, userContext) => {
   try {
-    const systemAPI = new SystemAPIService(
-      userContext.userId,
-      {},
-      process.env.NODE_ENV === 'production' ? 'https://app.owlfenc.com' : 'http://localhost:5000'
-    );
+    const systemAPI = createAuthenticatedSystemAPI(userContext);
 
     // Aquí normalmente buscaríamos en Firebase/PostgreSQL
     // Por ahora retornamos estructura básica
