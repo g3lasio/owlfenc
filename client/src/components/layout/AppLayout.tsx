@@ -136,7 +136,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
             {/* Chat dock - persistent MervinExperience */}
             <div
-              className="flex-shrink-0 transition-all duration-300 overflow-hidden"
+              className="flex-shrink-0 transition-all duration-300 overflow-hidden bg-black"
               style={{
                 width: layoutMode === 'full' ? '100%' : `${chatDockWidth}px`,
                 // Full mode: always show | Sidebar: show only if open | Closed: never show
