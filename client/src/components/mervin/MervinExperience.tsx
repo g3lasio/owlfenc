@@ -491,6 +491,10 @@ export function MervinExperience({ mode, onMinimize, isMinimized = false, onClos
               src="https://i.postimg.cc/FK6hvMbf/logo-mervin.png"
               alt="Mervin AI"
               className="w-6 h-6 flex-shrink-0"
+              onError={(e) => {
+                // Fallback: ocultar imagen si falla la carga
+                e.currentTarget.style.display = 'none';
+              }}
             />
             <h1 className="text-sm font-semibold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent truncate">
               Mervin AI
