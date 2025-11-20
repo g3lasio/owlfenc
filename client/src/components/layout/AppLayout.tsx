@@ -36,11 +36,18 @@ export default function AppLayout({ children }: AppLayoutProps) {
     location === "/reset-password" ||
     location === "/login/email-link-callback";
 
-  // Check if we should show the persistent chat (not in Home or Mervin page)
-  // Use startsWith to handle routes like /home/overview, /mervin?tab=ai, etc.
+  // Determine Mervin mode based on route
   const isHomeRoute = location === "/" || location.startsWith("/home");
   const isMervinRoute = location.startsWith("/mervin");
-  const shouldShowChat = user && !isAuthPage && !isHomeRoute && !isMervinRoute;
+  
+  // Mervin Experience mode logic:
+  // - Full mode: when on /mervin route (occupies entire screen)
+  // - Sidebar mode: when on protected pages (not home, not auth)
+  // - Hidden: when on home or auth pages
+  const mervinMode: 'full' | 'sidebar' | 'hidden' = 
+    isMervinRoute ? 'full' :
+    (user && !isAuthPage && !isHomeRoute) ? 'sidebar' :
+    'hidden';
 
   // Si es una página de autenticación, mostrar solo el contenido sin sidebar ni header
   if (isAuthPage) {
@@ -103,9 +110,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
       <div 
         className="flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300"
         style={{
-          // Compress content when chat is open (not overlapping)
-          // Use actual rendered width: 48px when minimized, chatWidth when expanded
-          marginRight: shouldShowChat && isChatOpen 
+          // Compress content when chat is in sidebar mode and open
+          marginRight: mervinMode === 'sidebar' && isChatOpen 
             ? `${isMinimized ? 48 : chatWidth}px` 
             : '0px'
         }}
@@ -159,23 +165,40 @@ export default function AppLayout({ children }: AppLayoutProps) {
         </footer>
       </div>
 
-      {/* Mervin Experience Sidebar - Only shown when not in Home or Mervin page */}
-      {shouldShowChat && isChatOpen && (
-        <div
-          className="fixed top-0 right-0 h-full bg-background border-l shadow-2xl z-40 flex flex-col transition-all duration-300"
-          style={{ width: isMinimized ? '48px' : `${chatWidth}px` }}
-          data-testid="mervin-experience-sidebar"
-        >
-          <MervinExperience 
-            mode="sidebar" 
-            onMinimize={toggleMinimize}
-            isMinimized={isMinimized}
-          />
-        </div>
-      )}
+      {/* 
+        SINGLE MERVIN EXPERIENCE INSTANCE - Always mounted, changes style based on mode
+        Uses display:none instead of conditional rendering to preserve state
+      */}
+      <div
+        className="transition-all duration-300"
+        style={{
+          display: mervinMode === 'hidden' ? 'none' : 'block',
+          position: 'fixed',
+          // Full mode: cover entire viewport
+          // Sidebar mode: fixed on the right
+          left: mervinMode === 'full' ? 0 : 'auto',
+          right: 0,
+          top: 0,
+          bottom: 0,
+          width: mervinMode === 'full' ? '100%' : (mervinMode === 'sidebar' && isChatOpen ? (isMinimized ? '48px' : `${chatWidth}px`) : '0px'),
+          zIndex: mervinMode === 'full' ? 50 : 40,
+          backgroundColor: 'var(--background)',
+          borderLeft: mervinMode === 'sidebar' && isChatOpen ? '1px solid hsl(var(--border))' : 'none',
+          boxShadow: mervinMode === 'sidebar' && isChatOpen ? '0 0 50px rgba(0,0,0,0.5)' : 'none',
+          opacity: mervinMode === 'sidebar' && !isChatOpen ? 0 : 1,
+          pointerEvents: mervinMode === 'sidebar' && !isChatOpen ? 'none' : 'auto',
+        }}
+        data-testid={`mervin-experience-${mervinMode}`}
+      >
+        <MervinExperience 
+          mode={mervinMode === 'full' ? 'full' : 'sidebar'} 
+          onMinimize={mervinMode === 'sidebar' ? toggleMinimize : undefined}
+          isMinimized={mervinMode === 'sidebar' ? isMinimized : false}
+        />
+      </div>
       
-      {/* Chat Toggle Button - Floating button to open/close chat */}
-      {shouldShowChat && !isChatOpen && (
+      {/* Chat Toggle Button - Only in sidebar mode when chat is closed */}
+      {mervinMode === 'sidebar' && !isChatOpen && (
         <Button
           onClick={openChat}
           className="fixed bottom-6 right-6 rounded-full h-14 w-14 shadow-lg z-50 bg-cyan-600 hover:bg-cyan-700"
