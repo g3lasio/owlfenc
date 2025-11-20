@@ -482,118 +482,115 @@ export function MervinExperience({ mode, onMinimize, isMinimized = false, onClos
 
   return (
     <div className={containerClass}>
-      {/* Header */}
-      <div className="px-4 py-3 md:p-4 border-b border-cyan-900/30 bg-black/80 backdrop-blur-sm sticky top-0 z-40 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="w-[88px] sm:w-[100px] md:w-[150px]"></div>
-          
-          <div className="flex items-center gap-2 sm:gap-3 justify-center flex-1">
+      {/* Header - Simplified and Compact */}
+      <div className="px-3 py-2 border-b border-cyan-900/30 bg-black/90 sticky top-0 z-40 flex-shrink-0">
+        <div className="flex items-center justify-between gap-2">
+          {/* Logo and Title */}
+          <div className="flex items-center gap-2 flex-1 min-w-0">
             <img
               src="https://i.postimg.cc/W4nKDvTL/logo-mervin.png"
               alt="Mervin AI"
-              className="w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10"
+              className="w-6 h-6 flex-shrink-0"
             />
-            <h1 className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
+            <h1 className="text-sm font-semibold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent truncate">
               Mervin AI
             </h1>
           </div>
           
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            {mode === 'sidebar' && onMinimize && (
-              <Button
-                variant="outline"
-                size="icon"
-                className="bg-gray-800 text-cyan-500 border-cyan-900/50 hover:bg-gray-700"
-                onClick={onMinimize}
-                data-testid="button-minimize-chat"
-              >
-                {isMinimized ? <Maximize2 className="w-5 h-5" /> : <Minimize2 className="w-5 h-5" />}
-              </Button>
-            )}
-            
-            {mode === 'sidebar' && onClose && (
-              <Button
-                variant="outline"
-                size="icon"
-                className="bg-gray-800 text-cyan-500 border-cyan-900/50 hover:bg-gray-700 hover:text-red-400"
-                onClick={onClose}
-                data-testid="button-close-chat"
-              >
-                <X className="w-5 h-5" />
-              </Button>
-            )}
-            
+          {/* Action Buttons - Compact */}
+          <div className="flex items-center gap-1 flex-shrink-0">
             <Button
-              variant="outline"
-              size="icon"
-              className="bg-gray-800 text-cyan-500 border-cyan-900/50 hover:bg-gray-700"
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0 text-cyan-500 hover:text-cyan-400 hover:bg-gray-800/50"
               onClick={() => setIsHistorySidebarOpen(true)}
               data-testid="button-open-history"
+              title="Historial"
             >
-              <History className="w-5 h-5" />
+              <History className="w-4 h-4" />
             </Button>
             
             <div className="relative">
               <Button
-                variant="outline"
-                size="icon"
-                className="bg-gray-800 text-cyan-500 border-cyan-900/50 hover:bg-gray-700"
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 text-cyan-500 hover:text-cyan-400 hover:bg-gray-800/50"
                 onClick={() => canUseAgentMode && setShowModelSelector(!showModelSelector)}
-                title={isFreeUser ? "Legacy Mode (Free Plan)" : selectedModel === "agent" ? "Agent Mode" : "Legacy Mode"}
+                title={isFreeUser ? "Chat Mode" : selectedModel === "agent" ? "Agent Mode" : "Chat Mode"}
               >
                 {selectedModel === "agent" ? (
-                  <Brain className="w-5 h-5" />
+                  <Brain className="w-4 h-4" />
                 ) : (
-                  <Zap className="w-5 h-5" />
+                  <Zap className="w-4 h-4" />
                 )}
               </Button>
               
               {showModelSelector && canUseAgentMode && (
-                <div className="absolute top-full right-0 mt-2 bg-gray-800 border border-cyan-900/50 rounded-lg shadow-xl z-50 w-[280px] sm:w-[240px] md:min-w-[200px]">
+                <div className="absolute top-full right-0 mt-1 bg-gray-800 border border-cyan-900/50 rounded-md shadow-xl z-50 min-w-[160px]">
                   <button
-                    className={`w-full text-left px-4 py-3 md:px-3 md:py-2 rounded-t-lg flex items-center justify-between touch-manipulation ${
+                    className={`w-full text-left px-3 py-2 rounded-t-md flex items-center justify-between text-xs ${
                       selectedModel === "agent"
-                        ? 'text-cyan-400 bg-cyan-900/20 active:bg-cyan-900/30'
-                        : 'text-cyan-400 active:bg-gray-700'
+                        ? 'text-cyan-400 bg-cyan-900/20'
+                        : 'text-cyan-400 hover:bg-gray-700'
                     }`}
                     onClick={() => {
                       setSelectedModel("agent");
                       setShowModelSelector(false);
                     }}
                   >
-                    <div className="flex items-center">
-                      <Brain className="w-5 h-5 md:w-4 md:h-4 mr-3 md:mr-2 flex-shrink-0" />
-                      <div>
-                        <div className="text-sm font-medium">Agent Mode</div>
-                        <div className="text-xs text-gray-400">Full AI capabilities</div>
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <Brain className="w-3.5 h-3.5" />
+                      <span className="font-medium">Agent Mode</span>
                     </div>
-                    {selectedModel === "agent" && <Check className="w-4 h-4 text-cyan-400 flex-shrink-0 ml-2" />}
+                    {selectedModel === "agent" && <Check className="w-3.5 h-3.5" />}
                   </button>
                   
                   <button
-                    className={`w-full text-left px-4 py-3 md:px-3 md:py-2 rounded-b-lg flex items-center justify-between touch-manipulation ${
+                    className={`w-full text-left px-3 py-2 rounded-b-md flex items-center justify-between text-xs ${
                       selectedModel === "legacy"
-                        ? 'text-cyan-400 bg-cyan-900/20 active:bg-cyan-900/30'
-                        : 'text-gray-400 active:bg-gray-700'
+                        ? 'text-cyan-400 bg-cyan-900/20'
+                        : 'text-gray-400 hover:bg-gray-700'
                     }`}
                     onClick={() => {
                       setSelectedModel("legacy");
                       setShowModelSelector(false);
                     }}
                   >
-                    <div className="flex items-center">
-                      <Zap className="w-5 h-5 md:w-4 md:h-4 mr-3 md:mr-2 flex-shrink-0" />
-                      <div>
-                        <div className="text-sm font-medium">Chat Mode</div>
-                        <div className="text-xs text-gray-400">Simple conversation</div>
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <Zap className="w-3.5 h-3.5" />
+                      <span className="font-medium">Chat Mode</span>
                     </div>
-                    {selectedModel === "legacy" && <Check className="w-4 h-4 text-cyan-400 flex-shrink-0 ml-2" />}
+                    {selectedModel === "legacy" && <Check className="w-3.5 h-3.5" />}
                   </button>
                 </div>
               )}
             </div>
+            
+            {mode === 'sidebar' && onMinimize && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 text-cyan-500 hover:text-cyan-400 hover:bg-gray-800/50"
+                onClick={onMinimize}
+                data-testid="button-minimize-chat"
+                title={isMinimized ? "Expandir" : "Minimizar"}
+              >
+                {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
+              </Button>
+            )}
+            
+            {mode === 'sidebar' && onClose && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 text-gray-400 hover:text-red-400 hover:bg-gray-800/50"
+                onClick={onClose}
+                data-testid="button-close-chat"
+                title="Cerrar"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            )}
           </div>
         </div>
       </div>

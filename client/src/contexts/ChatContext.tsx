@@ -18,9 +18,9 @@ interface ChatContextType {
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 const STORAGE_KEY = 'mervin-chat-state';
-const DEFAULT_CHAT_WIDTH = 400;
-const MIN_CHAT_WIDTH = 300;
-const MAX_CHAT_WIDTH = 600;
+const DEFAULT_CHAT_WIDTH = 380;
+const MIN_CHAT_WIDTH = 320;
+const MAX_CHAT_WIDTH = 480;
 
 interface ChatProviderProps {
   children: ReactNode;
@@ -45,7 +45,11 @@ export function ChatProvider({ children }: ChatProviderProps) {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const { width } = JSON.parse(stored);
-        return width ?? DEFAULT_CHAT_WIDTH;
+        if (width) {
+          // Clamp stored width to new bounds (handles legacy widths)
+          const clampedWidth = Math.max(MIN_CHAT_WIDTH, Math.min(MAX_CHAT_WIDTH, width));
+          return clampedWidth;
+        }
       }
     } catch (error) {
       console.warn('Failed to load chat width from localStorage:', error);
