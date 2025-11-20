@@ -26,7 +26,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const { user } = useAuth();
   const [location] = useLocation();
   const [sidebarWidth, setSidebarWidth] = useState(64);
-  const { chatWidth, isChatOpen } = useChat();
+  const { chatWidth, isChatOpen, isMinimized } = useChat();
 
   // Verificar si la ruta actual es una página de autenticación
   const isAuthPage =
@@ -104,7 +104,10 @@ export default function AppLayout({ children }: AppLayoutProps) {
         className="flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300"
         style={{
           // Compress content when chat is open (not overlapping)
-          marginRight: shouldShowChat && isChatOpen && chatWidth > 48 ? `${chatWidth}px` : '0px'
+          // Use actual rendered width: 48px when minimized, chatWidth when expanded
+          marginRight: shouldShowChat && isChatOpen 
+            ? `${isMinimized ? 48 : chatWidth}px` 
+            : '0px'
         }}
       >
         {/* Header fijo */}

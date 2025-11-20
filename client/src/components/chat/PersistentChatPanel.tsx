@@ -273,21 +273,23 @@ export function PersistentChatPanel() {
 
   return (
     <>
-      {/* Resize Handle */}
-      <div
-        ref={resizeRef}
-        onMouseDown={handleMouseDown}
-        className={cn(
-          "fixed top-0 bottom-0 w-1 cursor-col-resize z-50 hover:bg-primary/50 transition-colors",
-          isResizing && "bg-primary"
-        )}
-        style={{ right: `${chatWidth}px` }}
-        data-testid="chat-resize-handle"
-      >
-        <div className="absolute top-1/2 -translate-y-1/2 -left-2 bg-background border rounded p-1">
-          <GripVertical className="h-4 w-4 text-muted-foreground" />
+      {/* Resize Handle - Only show when expanded, not when minimized */}
+      {!isMinimized && (
+        <div
+          ref={resizeRef}
+          onMouseDown={handleMouseDown}
+          className={cn(
+            "fixed top-0 bottom-0 w-1 cursor-col-resize z-50 hover:bg-primary/50 transition-colors",
+            isResizing && "bg-primary"
+          )}
+          style={{ right: `${chatWidth}px` }}
+          data-testid="chat-resize-handle"
+        >
+          <div className="absolute top-1/2 -translate-y-1/2 -left-2 bg-background border rounded p-1">
+            <GripVertical className="h-4 w-4 text-muted-foreground" />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Chat Panel - Responsive */}
       <div

@@ -26,19 +26,27 @@ export function useConversationManager({ userId }: UseConversationManagerProps) 
     queryFn: async () => {
       if (!userId) return [];
       
-      // Use apiRequest to include Firebase auth token
-      const response = await apiRequest('GET', '/api/conversations');
-      const data = await response.json();
-      
-      if (!data.success) throw new Error(data.error);
-      
-      // Parse dates from ISO strings
-      return data.conversations.map((conv: any) => ({
-        ...conv,
-        lastActivityAt: new Date(conv.lastActivityAt),
-      }));
+      try {
+        // Use apiRequest to include Firebase auth token
+        const response = await apiRequest('GET', '/api/conversations');
+        const data = await response.json();
+        
+        if (!data.success) throw new Error(data.error);
+        
+        // Parse dates from ISO strings
+        return data.conversations.map((conv: any) => ({
+          ...conv,
+          lastActivityAt: new Date(conv.lastActivityAt),
+        }));
+      } catch (error) {
+        // Gracefully handle Firestore index errors and other failures
+        // Allow chat to work without conversation history
+        console.warn('Failed to load conversation history:', error);
+        return [];
+      }
     },
     enabled: !!userId,
+    retry: false, // Don't retry on failure
   });
 
   // Get single conversation
