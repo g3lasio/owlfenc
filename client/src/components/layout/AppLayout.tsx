@@ -6,7 +6,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { useChat } from "@/contexts/ChatContext";
 import { MervinExperience } from "@/components/mervin/MervinExperience";
 import { ChatLayoutController } from "./ChatLayoutController";
-import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface AppLayoutProps {
@@ -159,10 +158,20 @@ export default function AppLayout({ children }: AppLayoutProps) {
             <Button
               onClick={openChat}
               size="lg"
-              className="fixed bottom-6 right-6 rounded-full w-14 h-14 shadow-lg hover:scale-110 transition-transform z-50"
+              className="fixed bottom-6 right-6 rounded-full w-14 h-14 shadow-lg hover:scale-110 transition-transform z-50 bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 border-none"
               data-testid="floating-chat-button"
+              style={{
+                animation: 'borderGlow 3s ease-in-out infinite'
+              }}
             >
-              <MessageSquare className="h-6 w-6" />
+              <img 
+                src="https://i.postimg.cc/FK6hvMbf/logo-mervin.png" 
+                alt="Mervin AI" 
+                className="w-8 h-8"
+                style={{
+                  animation: 'logoGlow 2.5s ease-in-out infinite'
+                }}
+              />
             </Button>
           )}
 

@@ -486,9 +486,9 @@ export function MervinExperience({ mode, onMinimize, isMinimized = false, onClos
       <div className="px-3 py-2 border-b border-cyan-900/30 bg-black/90 sticky top-0 z-40 flex-shrink-0">
         <div className="flex items-center justify-between gap-2">
           {/* Logo and Title */}
-          <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
             <img
-              src="https://i.postimg.cc/W4nKDvTL/logo-mervin.png"
+              src="https://i.postimg.cc/FK6hvMbf/logo-mervin.png"
               alt="Mervin AI"
               className="w-6 h-6 flex-shrink-0"
             />
