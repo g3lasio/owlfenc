@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import Header from "./Header";
-
 import Sidebar from "./Sidebar";
 import { Route, Switch, useLocation, Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useChat } from "@/contexts/ChatContext";
-import { PersistentChatPanel } from "@/components/chat/PersistentChatPanel";
-import { ChatToggleButton } from "@/components/chat/ChatToggleButton";
+import { MervinExperience } from "@/components/mervin/MervinExperience";
+import { Button } from "@/components/ui/button";
+import { Sparkles } from "lucide-react";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -26,7 +26,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const { user } = useAuth();
   const [location] = useLocation();
   const [sidebarWidth, setSidebarWidth] = useState(64);
-  const { chatWidth, isChatOpen, isMinimized } = useChat();
+  const { chatWidth, isChatOpen, isMinimized, toggleMinimize, openChat } = useChat();
 
   // Verificar si la ruta actual es una página de autenticación
   const isAuthPage =
@@ -159,12 +159,30 @@ export default function AppLayout({ children }: AppLayoutProps) {
         </footer>
       </div>
 
-      {/* Persistent Chat Panel - Only shown when not in Home or Mervin page */}
-      {shouldShowChat && (
-        <>
-          <PersistentChatPanel />
-          <ChatToggleButton />
-        </>
+      {/* Mervin Experience Sidebar - Only shown when not in Home or Mervin page */}
+      {shouldShowChat && isChatOpen && (
+        <div
+          className="fixed top-0 right-0 h-full bg-background border-l shadow-2xl z-40 flex flex-col transition-all duration-300"
+          style={{ width: isMinimized ? '48px' : `${chatWidth}px` }}
+          data-testid="mervin-experience-sidebar"
+        >
+          <MervinExperience 
+            mode="sidebar" 
+            onMinimize={toggleMinimize}
+            isMinimized={isMinimized}
+          />
+        </div>
+      )}
+      
+      {/* Chat Toggle Button - Floating button to open/close chat */}
+      {shouldShowChat && !isChatOpen && (
+        <Button
+          onClick={openChat}
+          className="fixed bottom-6 right-6 rounded-full h-14 w-14 shadow-lg z-50 bg-cyan-600 hover:bg-cyan-700"
+          data-testid="button-toggle-chat"
+        >
+          <Sparkles className="h-6 w-6" />
+        </Button>
       )}
     </div>
   );
