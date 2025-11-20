@@ -511,7 +511,7 @@ export default function Mervin() {
     setIsHistorySidebarOpen(false);
     
     // Reset persistence controller para nueva conversación
-    agent.startNewConversation();
+    mervinAgent.startNewConversation();
   };
   
   const handleSelectConversation = async (conversationId: string) => {
@@ -519,7 +519,7 @@ export default function Mervin() {
     
     // 🔥 SINCRONIZACIÓN CRÍTICA: Cargar conversación en AMBOS sistemas ANTES de UI
     // Esto asegura que nuevos mensajes se guarden en la conversación correcta
-    agent.loadConversation(conversationId); // PRIMERO: configurar persistencia
+    mervinAgent.loadConversation(conversationId); // PRIMERO: configurar persistencia
     conversationManager.loadConversation(conversationId); // SEGUNDO: cargar para display
     
     setIsHistorySidebarOpen(false);
@@ -533,13 +533,13 @@ export default function Mervin() {
           conversationId: conv.conversationId,
           messageCount: conv.messages.length,
           aiModel: conv.aiModel,
-          persistenceControllerSynced: agent.conversationId === conv.conversationId
+          persistenceControllerSynced: mervinAgent.conversationId === conv.conversationId
         });
         
         // Verificar sincronización
-        if (agent.conversationId !== conv.conversationId) {
+        if (mervinAgent.conversationId !== conv.conversationId) {
           console.error('🚨 [SYNC-ERROR] ConversationId mismatch!', {
-            persistenceController: agent.conversationId,
+            persistenceController: mervinAgent.conversationId,
             conversationManager: conv.conversationId
           });
         }

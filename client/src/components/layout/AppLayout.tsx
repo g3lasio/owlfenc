@@ -4,6 +4,9 @@ import Header from "./Header";
 import Sidebar from "./Sidebar";
 import { Route, Switch, useLocation, Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
+import { useChat } from "@/contexts/ChatContext";
+import { PersistentChatPanel } from "@/components/chat/PersistentChatPanel";
+import { ChatToggleButton } from "@/components/chat/ChatToggleButton";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -23,6 +26,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const { user } = useAuth();
   const [location] = useLocation();
   const [sidebarWidth, setSidebarWidth] = useState(64);
+  const { chatWidth, isChatOpen } = useChat();
 
   // Verificar si la ruta actual es una página de autenticación
   const isAuthPage =
@@ -31,6 +35,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
     location === "/recuperar-password" ||
     location === "/reset-password" ||
     location === "/login/email-link-callback";
+
+  // Check if we should show the persistent chat (not in Home or Mervin page)
+  // Use startsWith to handle routes like /home/overview, /mervin?tab=ai, etc.
+  const isHomeRoute = location === "/" || location.startsWith("/home");
+  const isMervinRoute = location.startsWith("/mervin");
+  const shouldShowChat = user && !isAuthPage && !isHomeRoute && !isMervinRoute;
 
   // Si es una página de autenticación, mostrar solo el contenido sin sidebar ni header
   if (isAuthPage) {
@@ -90,7 +100,13 @@ export default function AppLayout({ children }: AppLayoutProps) {
       <Sidebar onWidthChange={setSidebarWidth} />
 
       {/* Contenido principal - flex layout puro sin marginLeft para evitar líneas negras */}
-      <div className="flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300">
+      <div 
+        className="flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300"
+        style={{
+          // Compress content when chat is open (not overlapping)
+          marginRight: shouldShowChat && isChatOpen && chatWidth > 48 ? `${chatWidth}px` : '0px'
+        }}
+      >
         {/* Header fijo */}
         <Header />
 
@@ -98,8 +114,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
         <main
           className="flex-1 overflow-y-auto"
           style={{
-            // marginLeft: `${sidebarWidth}px`,
-            // height: "calc(100vh - var(--header-height) - var(--footer-height))",
             paddingTop: 0,
             marginTop: 0,
           }}
@@ -141,6 +155,14 @@ export default function AppLayout({ children }: AppLayoutProps) {
           </div>
         </footer>
       </div>
+
+      {/* Persistent Chat Panel - Only shown when not in Home or Mervin page */}
+      {shouldShowChat && (
+        <>
+          <PersistentChatPanel />
+          <ChatToggleButton />
+        </>
+      )}
     </div>
   );
 }

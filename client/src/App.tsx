@@ -54,6 +54,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { SidebarProvider } from "@/contexts/SidebarContext";
 import { PermissionProvider } from "@/contexts/PermissionContext";
+import { ChatProvider } from "@/contexts/ChatContext";
 import AuthDiagnostic from './pages/AuthDiagnostic';
 import { lazy } from 'react';
 import CyberpunkLegalDefense from './pages/CyberpunkLegalDefense';
@@ -211,7 +212,8 @@ function MainAppRouter() {
     <AuthSessionProvider>
       <PermissionProvider>
         <SidebarProvider>
-          <AppLayout>
+          <ChatProvider>
+            <AppLayout>
             <Switch>
               {/* Root redirects to login - main app requires authentication */}
               <Route path="/">
@@ -381,6 +383,7 @@ function MainAppRouter() {
             </Switch>
           </AppLayout>
           <Toaster />
+          </ChatProvider>
         </SidebarProvider>
       </PermissionProvider>
     </AuthSessionProvider>
