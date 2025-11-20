@@ -73,9 +73,10 @@ interface MervinExperienceProps {
   mode: 'full' | 'sidebar';
   onMinimize?: () => void;
   isMinimized?: boolean;
+  onClose?: () => void;
 }
 
-export function MervinExperience({ mode, onMinimize, isMinimized = false }: MervinExperienceProps) {
+export function MervinExperience({ mode, onMinimize, isMinimized = false, onClose }: MervinExperienceProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -507,6 +508,18 @@ export function MervinExperience({ mode, onMinimize, isMinimized = false }: Merv
                 data-testid="button-minimize-chat"
               >
                 {isMinimized ? <Maximize2 className="w-5 h-5" /> : <Minimize2 className="w-5 h-5" />}
+              </Button>
+            )}
+            
+            {mode === 'sidebar' && onClose && (
+              <Button
+                variant="outline"
+                size="icon"
+                className="bg-gray-800 text-cyan-500 border-cyan-900/50 hover:bg-gray-700 hover:text-red-400"
+                onClick={onClose}
+                data-testid="button-close-chat"
+              >
+                <X className="w-5 h-5" />
               </Button>
             )}
             

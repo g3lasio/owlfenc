@@ -6,6 +6,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { useChat } from "@/contexts/ChatContext";
 import { MervinExperience } from "@/components/mervin/MervinExperience";
 import { ChatLayoutController } from "./ChatLayoutController";
+import { MessageSquare } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -25,7 +27,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const { user } = useAuth();
   const [location] = useLocation();
   const [sidebarWidth, setSidebarWidth] = useState(64);
-  const { layoutMode, chatWidth, isMinimized, toggleMinimize } = useChat();
+  const { layoutMode, chatWidth, isMinimized, toggleMinimize, isChatOpen, openChat, closeChat } = useChat();
 
   // Verificar si la ruta actual es una página de autenticación
   const isAuthPage =
@@ -86,15 +88,19 @@ export default function AppLayout({ children }: AppLayoutProps) {
     );
   }
 
-  // Calculate chat dock width based on layout mode
+  // Calculate chat dock width based on layout mode and open state
   const getChatDockWidth = () => {
     if (layoutMode === 'closed') return 0;
     if (layoutMode === 'full') return undefined; // flex-1 will handle this
-    // sidebar mode
+    // sidebar mode - only show if open
+    if (!isChatOpen) return 0;
     return isMinimized ? 48 : chatWidth;
   };
 
   const chatDockWidth = getChatDockWidth();
+  
+  // Show floating chat button when in sidebar mode and chat is closed
+  const showFloatingChatButton = layoutMode === 'sidebar' && !isChatOpen;
 
   // Para el resto de las páginas (protegidas), mostrar el layout completo
   return (
@@ -134,7 +140,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
               className="flex-shrink-0 transition-all duration-300 overflow-hidden"
               style={{
                 width: layoutMode === 'full' ? '100%' : `${chatDockWidth}px`,
-                display: layoutMode === 'closed' ? 'none' : 'flex',
+                // Full mode: always show | Sidebar: show only if open | Closed: never show
+                display: layoutMode === 'closed' ? 'none' : (layoutMode === 'sidebar' && !isChatOpen ? 'none' : 'flex'),
               }}
               data-testid={`chat-dock-${layoutMode}`}
             >
@@ -142,9 +149,22 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 mode={layoutMode === 'full' ? 'full' : 'sidebar'}
                 onMinimize={layoutMode === 'sidebar' ? toggleMinimize : undefined}
                 isMinimized={layoutMode === 'sidebar' ? isMinimized : false}
+                onClose={layoutMode === 'sidebar' ? closeChat : undefined}
               />
             </div>
           </div>
+          
+          {/* Floating chat button - shows when sidebar mode and chat is closed */}
+          {showFloatingChatButton && (
+            <Button
+              onClick={openChat}
+              size="lg"
+              className="fixed bottom-6 right-6 rounded-full w-14 h-14 shadow-lg hover:scale-110 transition-transform z-50"
+              data-testid="floating-chat-button"
+            >
+              <MessageSquare className="h-6 w-6" />
+            </Button>
+          )}
 
           {/* Footer fijo */}
           <footer

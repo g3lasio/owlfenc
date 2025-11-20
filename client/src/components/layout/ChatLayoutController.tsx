@@ -12,7 +12,7 @@ import { useAuth } from '@/hooks/use-auth';
 export function ChatLayoutController() {
   const [location] = useLocation();
   const { user, loading } = useAuth();
-  const { setLayoutMode } = useChat();
+  const { setLayoutMode, openChat } = useChat();
 
   useEffect(() => {
     // Wait for auth to stabilize
@@ -40,6 +40,8 @@ export function ChatLayoutController() {
     } else if (location === '/mervin') {
       // On /mervin route → full screen mode
       setLayoutMode('full');
+      // Force chat open in full mode (overrides any closed state from sidebar)
+      openChat();
     } else if (location === '/' || location === '/home' || location === '/dashboard') {
       // On home/dashboard → close chat (show home content)
       setLayoutMode('closed');
@@ -47,7 +49,7 @@ export function ChatLayoutController() {
       // All other protected pages → sidebar mode
       setLayoutMode('sidebar');
     }
-  }, [location, user, loading, setLayoutMode]);
+  }, [location, user, loading, setLayoutMode, openChat]);
 
   // This is a controller component - renders nothing
   return null;
