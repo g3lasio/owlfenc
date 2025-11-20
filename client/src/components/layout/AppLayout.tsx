@@ -155,24 +155,51 @@ export default function AppLayout({ children }: AppLayoutProps) {
           
           {/* Floating chat button - shows when sidebar mode and chat is closed */}
           {showFloatingChatButton && (
-            <Button
+            <button
               onClick={openChat}
-              size="lg"
-              className="fixed bottom-6 right-6 rounded-full w-14 h-14 shadow-lg hover:scale-110 transition-transform z-50 bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 border-none"
               data-testid="floating-chat-button"
+              className="fixed bottom-6 right-6 shadow-xl hover:scale-110 transition-transform z-50"
               style={{
-                animation: 'borderGlow 3s ease-in-out infinite'
+                position: 'fixed',
+                bottom: '24px',
+                right: '24px',
+                borderRadius: '50%',
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                padding: 0,
+                width: '56px',
+                height: '56px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 50
               }}
             >
+              {/* Resplandor circular futurista */}
+              <div style={{
+                position: 'absolute',
+                width: '100%',
+                height: '100%',
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, transparent 40%, rgba(34,211,238,0.2) 60%, rgba(168,85,247,0.3) 80%, rgba(34,211,238,0.1) 100%)',
+                animation: 'borderGlow 3s ease-in-out infinite'
+              }}></div>
+              
+              {/* Imagen del logo con pulsaciones */}
               <img 
                 src="https://i.postimg.cc/FK6hvMbf/logo-mervin.png" 
                 alt="Mervin AI" 
-                className="w-8 h-8"
                 style={{
+                  position: 'relative',
+                  width: '36px',
+                  height: '36px',
+                  objectFit: 'contain',
+                  zIndex: 10,
                   animation: 'logoGlow 2.5s ease-in-out infinite'
                 }}
               />
-            </Button>
+            </button>
           )}
 
           {/* Footer fijo */}
