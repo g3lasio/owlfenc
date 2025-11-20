@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
+export type ChatLayoutMode = 'full' | 'sidebar' | 'closed';
+
 interface ChatContextType {
   isChatOpen: boolean;
   toggleChat: () => void;
@@ -9,6 +11,8 @@ interface ChatContextType {
   setChatWidth: (width: number) => void;
   isMinimized: boolean;
   toggleMinimize: () => void;
+  layoutMode: ChatLayoutMode;
+  setLayoutMode: (mode: ChatLayoutMode) => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -50,6 +54,8 @@ export function ChatProvider({ children }: ChatProviderProps) {
   });
 
   const [isMinimized, setIsMinimized] = useState<boolean>(false);
+  
+  const [layoutMode, setLayoutMode] = useState<ChatLayoutMode>('closed');
 
   useEffect(() => {
     try {
@@ -86,7 +92,9 @@ export function ChatProvider({ children }: ChatProviderProps) {
         chatWidth,
         setChatWidth: handleSetChatWidth,
         isMinimized,
-        toggleMinimize
+        toggleMinimize,
+        layoutMode,
+        setLayoutMode
       }}
     >
       {children}

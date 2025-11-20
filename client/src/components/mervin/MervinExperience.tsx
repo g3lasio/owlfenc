@@ -26,7 +26,6 @@ import { ThinkingIndicator } from "./ThinkingIndicator";
 import { MessageContent } from "./MessageContent";
 import { SmartContextPanel } from "./SmartContextPanel";
 import { WebResearchIndicator } from "./WebResearchIndicator";
-import { SystemStatusBar } from "./SystemStatusBar";
 import { ConversationHistory } from "./ConversationHistory";
 import { useConversationManager } from "@/hooks/useConversationManager";
 
@@ -827,11 +826,6 @@ export function MervinExperience({ mode, onMinimize, isMinimized = false }: Merv
           </div>
         </div>
       </div>
-
-      <SystemStatusBar 
-        isHealthy={mervinAgent.isHealthy}
-        version={mervinAgent.systemStatus?.version}
-      />
       
       <ConversationHistory
         isOpen={isHistorySidebarOpen}
