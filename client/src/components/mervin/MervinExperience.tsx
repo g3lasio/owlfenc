@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { usePermissions } from "@/contexts/PermissionContext";
 import { useSidebar } from "@/contexts/SidebarContext";
+import { usePageContext } from "@/contexts/PageContext";
 import {
   Send,
   Paperclip,
@@ -102,6 +103,7 @@ export function MervinExperience({ mode, onMinimize, isMinimized = false, onClos
   const { currentUser } = useAuth();
   const { userPlan } = usePermissions();
   const { isSidebarExpanded } = useSidebar();
+  const { pageContext } = usePageContext();
   
   // Conversation History Manager
   const conversationManager = useConversationManager({
@@ -137,6 +139,7 @@ export function MervinExperience({ mode, onMinimize, isMinimized = false, onClos
     userId: currentUser?.uid || 'guest',
     enableStreaming: true,
     language: 'es',
+    pageContext, // 👁️ Pasar contexto de página actual
     onStreamUpdate: (update) => {
       const content = update.content.toLowerCase();
       if (content.includes('estimate') || content.includes('estimado')) {

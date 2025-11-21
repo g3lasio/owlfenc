@@ -55,6 +55,7 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { SidebarProvider } from "@/contexts/SidebarContext";
 import { PermissionProvider } from "@/contexts/PermissionContext";
 import { ChatProvider } from "@/contexts/ChatContext";
+import { PageContextProvider } from "@/contexts/PageContext";
 import AuthDiagnostic from './pages/AuthDiagnostic';
 import { lazy } from 'react';
 import CyberpunkLegalDefense from './pages/CyberpunkLegalDefense';
@@ -211,7 +212,8 @@ function MainAppRouter() {
     <AuthSessionProvider>
       <PermissionProvider>
         <SidebarProvider>
-          <ChatProvider>
+          <PageContextProvider>
+            <ChatProvider>
             <AppLayout>
             <Switch>
               {/* Root redirects to login - main app requires authentication */}
@@ -389,6 +391,7 @@ function MainAppRouter() {
           </AppLayout>
           <Toaster />
           </ChatProvider>
+          </PageContextProvider>
         </SidebarProvider>
       </PermissionProvider>
     </AuthSessionProvider>

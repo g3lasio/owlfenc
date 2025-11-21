@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { usePageContext } from "@/contexts/PageContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -124,6 +125,8 @@ interface WizardStep {
 }
 
 export default function PermitAdvisor() {
+  const { setPageContext, clearPageContext } = usePageContext();
+  
   // Wizard state management
   const [currentStep, setCurrentStep] = useState(1);
   
@@ -169,6 +172,21 @@ export default function PermitAdvisor() {
     });
     return () => unsubscribe();
   }, []);
+
+  // 👁️ Registrar contexto de página
+  useEffect(() => {
+    const step = !selectedAddress ? 'address' : 
+                 !projectType ? 'type' : 
+                 permitData ? 'results' : 'description';
+    
+    setPageContext({
+      type: 'permit-advisor',
+      projectId: selectedProject?.id,
+      step
+    });
+
+    return () => clearPageContext();
+  }, [selectedAddress, projectType, permitData, selectedProject]);
 
   // Load existing projects when user changes to existing mode
   useEffect(() => {

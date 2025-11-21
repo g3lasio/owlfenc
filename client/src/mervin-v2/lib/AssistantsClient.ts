@@ -114,7 +114,8 @@ export class AssistantsClient {
     input: string,
     conversationHistory: AssistantsMessage[] = [],
     language: 'es' | 'en' = 'es',
-    onUpdate: StreamCallback
+    onUpdate: StreamCallback,
+    pageContext?: any
   ): Promise<void> {
     console.log('\n' + '='.repeat(50));
     console.log('🤖 [ASSISTANTS-CLIENT] Nueva solicitud');
@@ -144,10 +145,17 @@ export class AssistantsClient {
 
       // apiRequest.post() automáticamente incluye auth headers desde Firebase
       console.log('⏳ [REQUEST-DEBUG] Waiting for backend response...');
+      
+      // 👁️ Log pageContext si está disponible
+      if (pageContext) {
+        console.log('👁️ [PAGE-CONTEXT] Enviando contexto:', pageContext);
+      }
+      
       const response = await apiRequest.post('/api/assistant/message', {
         threadId: this.threadId,
         message: input,
-        language
+        language,
+        pageContext
       }) as {
         success: boolean;
         response: any;

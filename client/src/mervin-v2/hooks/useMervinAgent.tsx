@@ -33,11 +33,13 @@ import {
   type PersistenceState,
   type ConversationMessage 
 } from '../services/ConversationPersistenceController';
+import type { PageContextType } from '@/contexts/PageContext';
 
 export interface UseMervinAgentOptions {
   userId: string;
   enableStreaming?: boolean;
   language?: 'es' | 'en';
+  pageContext?: PageContextType;
   onStreamUpdate?: (update: StreamUpdate) => void;
   onPersistenceError?: (error: string) => void;
 }
@@ -79,6 +81,7 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
     userId,
     enableStreaming = true,
     language = 'es',
+    pageContext,
     onStreamUpdate,
     onPersistenceError
   } = options;
@@ -233,6 +236,11 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
         // SIN ARCHIVOS: Usar Assistants API (OpenAI powered, confiable)
         console.log('🤖 [MERVIN-AGENT] Usando ASSISTANTS API (OpenAI powered)');
         
+        // 👁️ Log pageContext antes de enviar
+        if (pageContext && pageContext.type !== 'none') {
+          console.log('👁️ [MERVIN-AGENT] Enviando con contexto de página:', pageContext);
+        }
+        
         await assistantsClientRef.current.sendMessageStream(
           input,
           [], // No necesitamos history completo, OpenAI lo maneja
@@ -307,7 +315,8 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
 
               console.log('✅ [MESSAGE-SAVED] Message successfully added to state');
             }
-          }
+          },
+          pageContext // 👁️ Pasar pageContext al backend
         );
       }
 

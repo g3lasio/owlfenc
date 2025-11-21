@@ -7,6 +7,7 @@
 
 import { openai, getMervinAssistant, createMervinAssistant } from './config';
 import { TOOL_DEFINITIONS } from './tools-registry';
+import { buildContextualInstructions } from './context-builder';
 import type { 
   UserContext,
   CreateThreadParams,
@@ -66,20 +67,35 @@ export async function sendMessage(params: SendMessageParams) {
       throw new Error('Assistant not initialized');
     }
 
-    // Agregar mensaje del usuario
+    // 👁️ Construir instrucciones contextuales si hay pageContext
+    let contextualInstructions = '';
+    if (params.pageContext && params.pageContext.type !== 'none') {
+      contextualInstructions = buildContextualInstructions(params.pageContext);
+      console.log('👁️ [ASSISTANTS] Agregando contexto de página:', params.pageContext.type);
+    }
+
+    // Agregar mensaje del usuario (con contexto si aplica)
+    const messageContent = contextualInstructions 
+      ? `${params.message}${contextualInstructions}`
+      : params.message;
+
     await openai.beta.threads.messages.create(params.threadId, {
       role: 'user',
-      content: params.message
+      content: messageContent
     });
 
     console.log('📤 [ASSISTANTS] Message sent to thread:', params.threadId);
+    if (contextualInstructions) {
+      console.log('👁️ [ASSISTANTS] Con instrucciones contextuales incluidas');
+    }
 
     // Crear run (iniciar procesamiento)
     const run = await openai.beta.threads.runs.create(params.threadId, {
       assistant_id: assistantId,
       metadata: {
         userId: params.userContext.userId,
-        language: params.userContext.language
+        language: params.userContext.language,
+        pageContext: params.pageContext ? JSON.stringify(params.pageContext) : undefined
       }
     });
 

@@ -71,7 +71,7 @@ router.post('/thread', async (req: Request, res: Response) => {
 router.post('/message', async (req: Request, res: Response) => {
   try {
     const userContext = await extractUserContext(req);
-    const { threadId, message } = req.body;
+    const { threadId, message, pageContext } = req.body;
 
     if (!threadId || !message) {
       return res.status(400).json({
@@ -80,10 +80,16 @@ router.post('/message', async (req: Request, res: Response) => {
       });
     }
 
+    // 👁️ Log pageContext if available
+    if (pageContext && pageContext.type !== 'none') {
+      console.log('👁️ [ASSISTANTS-API] Page context recibido:', pageContext);
+    }
+
     const result = await sendMessage({
       threadId,
       message,
-      userContext
+      userContext,
+      pageContext
     });
 
     console.log(`\n${'='.repeat(70)}`);

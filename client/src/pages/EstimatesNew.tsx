@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
+import { usePageContext } from '@/contexts/PageContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,6 +56,7 @@ interface EstimateData {
 export default function EstimatesNew() {
   const { currentUser } = useAuth();
   const { toast } = useToast();
+  const { setPageContext, clearPageContext } = usePageContext();
 
   // Core state
   const [estimate, setEstimate] = useState<EstimateData>({
@@ -96,6 +98,16 @@ export default function EstimatesNew() {
   const [previewHtml, setPreviewHtml] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isSending, setIsSending] = useState(false);
+
+  // 👁️ Registrar contexto de página al montar
+  useEffect(() => {
+    setPageContext({
+      type: 'estimate-editor',
+      step: !estimate.client ? 'client' : estimate.items.length === 0 ? 'materials' : 'preview'
+    });
+
+    return () => clearPageContext();
+  }, [estimate.client, estimate.items.length]);
 
   // Load clients on mount
   useEffect(() => {

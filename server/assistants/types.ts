@@ -39,6 +39,7 @@ export interface SendMessageParams {
   threadId: string;
   message: string;
   userContext: UserContext;
+  pageContext?: any; // 👁️ Contexto de página actual
 }
 
 /**

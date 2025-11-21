@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import { usePageContext } from "@/contexts/PageContext";
 import { auth } from "@/lib/firebase";
 import { User as FirebaseUser, onAuthStateChanged } from "firebase/auth";
 import { 
@@ -44,6 +45,7 @@ const Contracts = () => {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { setPageContext, clearPageContext } = usePageContext();
   const [activeTab, setActiveTab] = useState("mis-contratos");
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -59,6 +61,21 @@ const Contracts = () => {
     });
     return () => unsubscribe();
   }, []);
+
+  // 👁️ Registrar contexto de página
+  useEffect(() => {
+    if (selectedContract) {
+      setPageContext({
+        type: 'contract-editor',
+        contractId: selectedContract.id.toString(),
+        status: selectedContract.status
+      });
+    } else {
+      setPageContext({ type: 'contract-list' });
+    }
+
+    return () => clearPageContext();
+  }, [selectedContract]);
 
   // Cargar la lista de contratos del usuario autenticado
   const contractsQuery = useQuery({
