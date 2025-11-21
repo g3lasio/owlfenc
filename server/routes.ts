@@ -1726,8 +1726,8 @@ Output must be between 200-900 characters in English.`;
   // Registrar ruta de contacto
   app.use("/api/contact", contactRoutes);
 
-  // Registrar rutas de soporte y ayuda (protegidas con Firebase auth)
-  app.use("/api/support", requireAuth, supportRoutes);
+  // Registrar rutas de soporte y ayuda (autenticación opcional - permite usuarios anónimos)
+  app.use("/api/support", optionalAuth, supportRoutes);
 
   // Registrar rutas de perfil de usuario y onboarding
   app.use("/api/user", userProfileRoutes);

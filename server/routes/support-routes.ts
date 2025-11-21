@@ -21,17 +21,15 @@ interface AuthRequest extends Request {
 
 router.post('/create', async (req: AuthRequest, res: Response) => {
   try {
-    if (!req.user?.uid) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
-
     const ticketData = insertSupportTicketSchema.parse(req.body);
+    
+    const isAuthenticated = !!req.user?.uid;
     
     const newTicket: Omit<SupportTicket, 'id'> = {
       ...ticketData,
-      userId: req.user.uid,
-      userEmail: req.user.email || ticketData.userEmail,
-      userName: req.user.displayName || ticketData.userName,
+      userId: isAuthenticated ? req.user.uid : 'anonymous',
+      userEmail: isAuthenticated ? (req.user.email || ticketData.userEmail) : ticketData.userEmail,
+      userName: isAuthenticated ? (req.user.displayName || ticketData.userName) : ticketData.userName,
       status: 'open',
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -311,7 +309,7 @@ async function sendSupportNotificationEmail(ticket: SupportTicket) {
 
     const success = await sendEmail({
       to: 'mervin@owlfenc.com',
-      from: 'notifications@mervinai.com',
+      from: 'noreply@owlfenc.com',
       subject: `[Support Ticket #${ticket.id?.substring(0, 8)}] ${ticket.subject}`,
       html: htmlContent,
       replyTo: ticket.userEmail,

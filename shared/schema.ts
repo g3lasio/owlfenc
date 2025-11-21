@@ -1101,10 +1101,13 @@ export const supportTicketResponseSchema = z.object({
 
 export const insertSupportTicketSchema = supportTicketSchema.omit({
   id: true,
+  userId: true,
   createdAt: true,
   updatedAt: true,
   resolvedAt: true,
   status: true,
+}).extend({
+  attachmentUrl: z.string().url().or(z.literal("")).optional(),
 });
 
 export const insertSupportTicketResponseSchema = supportTicketResponseSchema.omit({
