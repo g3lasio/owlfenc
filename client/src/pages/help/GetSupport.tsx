@@ -108,7 +108,7 @@ export default function GetSupport() {
           </div>
           <CardTitle className="text-2xl">Get Support</CardTitle>
           <p className="text-sm text-muted-foreground mt-2">
-            Send us a message and we'll respond to <strong>mervin@owlfenc.com</strong>
+            Send us a message and our support team will respond to you via email soon
           </p>
         </CardHeader>
         <CardContent>
