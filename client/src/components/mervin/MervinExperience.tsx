@@ -475,13 +475,8 @@ export function MervinExperience({ mode, onMinimize, isMinimized = false, onClos
     setAttachedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  // Determine container styles based on mode
-  const containerClass = mode === 'full' 
-    ? "flex flex-col h-full bg-black text-white"
-    : "flex flex-col h-full bg-black text-white";
-
   return (
-    <div className={containerClass}>
+    <div className="flex flex-col h-full w-full bg-black text-white">
       {/* Header - Simplified and Compact */}
       <div className="px-3 py-2 border-b border-cyan-900/30 bg-black/90 sticky top-0 z-40 flex-shrink-0">
         <div className="flex items-center justify-between gap-2">

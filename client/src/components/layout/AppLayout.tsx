@@ -26,7 +26,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const { user } = useAuth();
   const [location] = useLocation();
   const [sidebarWidth, setSidebarWidth] = useState(64);
-  const { layoutMode, chatWidth, isMinimized, toggleMinimize, isChatOpen, openChat, closeChat } = useChat();
+  const { layoutMode, chatWidth, setChatWidth, isMinimized, toggleMinimize, isChatOpen, openChat, closeChat } = useChat();
 
   // Verificar si la ruta actual es una página de autenticación
   const isAuthPage =
@@ -136,14 +136,50 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
             {/* Chat dock - persistent MervinExperience */}
             <div
-              className="flex-shrink-0 transition-all duration-300 overflow-hidden bg-black"
+              className="flex-shrink-0 transition-all duration-300 overflow-hidden bg-black relative"
               style={{
                 width: layoutMode === 'full' ? '100%' : `${chatDockWidth}px`,
                 // Full mode: always show | Sidebar: show only if open | Closed: never show
                 display: layoutMode === 'closed' ? 'none' : (layoutMode === 'sidebar' && !isChatOpen ? 'none' : 'flex'),
+                // Línea divisoria visible en modo sidebar
+                borderLeft: layoutMode === 'sidebar' ? '2px solid rgba(34, 211, 238, 0.3)' : 'none',
               }}
               data-testid={`chat-dock-${layoutMode}`}
             >
+              {/* Resize handle - draggable border for sidebar mode */}
+              {layoutMode === 'sidebar' && (
+                <div
+                  className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-cyan-500/50 transition-colors z-50 group"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    const startX = e.clientX;
+                    const startWidth = chatDockWidth;
+
+                    const handleMouseMove = (moveEvent: MouseEvent) => {
+                      const deltaX = startX - moveEvent.clientX;
+                      const newWidth = Math.min(480, Math.max(320, (startWidth || 380) + deltaX));
+                      setChatWidth(newWidth);
+                    };
+
+                    const handleMouseUp = () => {
+                      document.removeEventListener('mousemove', handleMouseMove);
+                      document.removeEventListener('mouseup', handleMouseUp);
+                      document.body.style.cursor = '';
+                      document.body.style.userSelect = '';
+                    };
+
+                    document.addEventListener('mousemove', handleMouseMove);
+                    document.addEventListener('mouseup', handleMouseUp);
+                    document.body.style.cursor = 'col-resize';
+                    document.body.style.userSelect = 'none';
+                  }}
+                  data-testid="chat-resize-handle"
+                  title="Arrastra para ajustar el ancho"
+                >
+                  <div className="absolute inset-y-0 left-0 w-1 bg-cyan-500/20 group-hover:bg-cyan-500/50 transition-colors" />
+                </div>
+              )}
+              
               <MervinExperience
                 mode={layoutMode === 'full' ? 'full' : 'sidebar'}
                 onMinimize={layoutMode === 'sidebar' ? toggleMinimize : undefined}
