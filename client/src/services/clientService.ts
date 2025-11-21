@@ -31,33 +31,24 @@ export interface Client {
 export type ClientInput = Omit<Client, 'id' | 'userId' | 'clientId' | 'createdAt' | 'updatedAt'>;
 
 /**
- * Obtener token de autenticación usando el sistema robusto
- * ENTERPRISE: Sistema con múltiples fallbacks y auto-recuperación
+ * Obtener token de autenticación de Firebase
  */
 async function getAuthToken(): Promise<string> {
-  console.log('🛡️ [CLIENT-SERVICE] Obteniendo token con sistema robusto...');
+  console.log('🔐 [CLIENT-SERVICE] Obteniendo token de Firebase...');
+  
+  const currentUser = auth.currentUser;
+  
+  if (!currentUser) {
+    throw new Error('Usuario no autenticado. Por favor, inicia sesión nuevamente.');
+  }
   
   try {
-    // Usar el sistema robusto de autenticación
-    const token = await robustAuth.getAuthToken();
-    
-    console.log('✅ [CLIENT-SERVICE] Token obtenido del sistema robusto');
+    const token = await currentUser.getIdToken(false); // false = usar cached si está fresco
+    console.log('✅ [CLIENT-SERVICE] Token obtenido exitosamente');
     return token;
   } catch (error) {
-    console.error('❌ [CLIENT-SERVICE] Error con sistema robusto, usando fallback:', error);
-    
-    // Fallback al método anterior como último recurso
-    const idToken = localStorage.getItem('firebase_id_token');
-    // SISTEMA UNIFICADO: Usar Firebase UID directamente desde contexto de autenticación
-    const auth = getAuth();
-    const userId = auth.currentUser?.uid;
-    
-    if (!idToken) {
-      throw new Error('CRÍTICO: Sistema de autenticación completamente fallido - contacta soporte');
-    }
-    
-    console.log('⚠️ [CLIENT-SERVICE] Usando fallback de emergencia para:', userId);
-    return idToken;
+    console.error('❌ [CLIENT-SERVICE] Error obteniendo token:', error);
+    throw new Error('Error de autenticación. Por favor, inicia sesión nuevamente.');
   }
 }
 
