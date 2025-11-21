@@ -65,7 +65,6 @@ import WebAuthnPopup from './pages/WebAuthnPopup';
 import HelpCenter from './pages/help/HelpCenter';
 import HelpArticle from './pages/help/HelpArticle';
 import GetSupport from './pages/help/GetSupport';
-import MyTickets from './pages/help/MyTickets';
 
 
 import { Redirect, useLocation } from "wouter";
@@ -326,12 +325,6 @@ function MainAppRouter() {
               </Route>
               <Route path="/help/get-support">
                 {() => <ProtectedRoute component={GetSupport} />}
-              </Route>
-              <Route path="/support/my-tickets">
-                {() => <ProtectedRoute component={MyTickets} />}
-              </Route>
-              <Route path="/help/my-tickets">
-                {() => <ProtectedRoute component={MyTickets} />}
               </Route>
 
               <Route path="/smart-contract-wizard">

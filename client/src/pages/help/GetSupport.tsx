@@ -37,15 +37,12 @@ export default function GetSupport() {
       return response;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/support/my-tickets'] });
       setIsSubmitted(true);
+      form.reset();
       toast({
         title: 'Support ticket created!',
-        description: 'We\'ve received your request and will respond soon.',
+        description: 'We\'ve received your request and will respond via email soon.',
       });
-      setTimeout(() => {
-        navigate('/support/my-tickets');
-      }, 3000);
     },
     onError: (error: any) => {
       toast({
@@ -78,10 +75,10 @@ export default function GetSupport() {
             </div>
             <div className="flex gap-3 justify-center pt-4">
               <Button 
-                data-testid="button-view-tickets"
-                onClick={() => navigate('/support/my-tickets')}
+                data-testid="button-submit-another"
+                onClick={() => setIsSubmitted(false)}
               >
-                View My Tickets
+                Submit Another Request
               </Button>
               <Button 
                 data-testid="button-back-help"

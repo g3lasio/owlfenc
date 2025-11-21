@@ -113,12 +113,6 @@ export const navigationGroups: NavigationGroup[] = [
         label: "Get Support",
         path: "/support/get-support",
         icon: "ri-customer-service-2-line"
-      },
-      {
-        id: "my-tickets",
-        label: "My Tickets",
-        path: "/support/my-tickets",
-        icon: "ri-file-list-3-line"
       }
     ]
   },
