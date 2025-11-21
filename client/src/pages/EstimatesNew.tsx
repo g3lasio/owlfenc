@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Search, Plus, User, Package, FileText, Eye, Send, Save, Trash2, Users, X } from 'lucide-react';
+import { getClients, type Client as ClientServiceType } from '@/services/clientService';
 
 // Types
 interface Client {
@@ -133,19 +134,18 @@ export default function EstimatesNew() {
     }));
   }, [estimate.items]);
 
-  // Load clients from Firebase
+  // Load clients using client service
   const loadClients = async () => {
     if (!currentUser) return;
 
     try {
       setIsLoadingClients(true);
-      const response = await fetch(`/api/clients?userId=${currentUser.uid}`);
-      if (response.ok) {
-        const data = await response.json();
-        setClients(data);
-      }
+      console.log('🔄 [ESTIMATES-NEW] Cargando clientes...');
+      const data = await getClients();
+      console.log('✅ [ESTIMATES-NEW] Clientes cargados:', data.length);
+      setClients(data as any[]); // Convertir tipo ClientServiceType a Client local
     } catch (error) {
-      console.error('Error loading clients:', error);
+      console.error('❌ [ESTIMATES-NEW] Error loading clients:', error);
       toast({
         title: 'Error',
         description: 'No se pudieron cargar los clientes',
