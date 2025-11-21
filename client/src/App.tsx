@@ -312,13 +312,25 @@ function MainAppRouter() {
               <Route path="/support/help-center/article/:id">
                 {() => <ProtectedRoute component={HelpArticle} />}
               </Route>
+              <Route path="/help/help-center/article/:id">
+                {() => <ProtectedRoute component={HelpArticle} />}
+              </Route>
               <Route path="/support/help-center">
+                {() => <ProtectedRoute component={HelpCenter} />}
+              </Route>
+              <Route path="/help/help-center">
                 {() => <ProtectedRoute component={HelpCenter} />}
               </Route>
               <Route path="/support/get-support">
                 {() => <ProtectedRoute component={GetSupport} />}
               </Route>
+              <Route path="/help/get-support">
+                {() => <ProtectedRoute component={GetSupport} />}
+              </Route>
               <Route path="/support/my-tickets">
+                {() => <ProtectedRoute component={MyTickets} />}
+              </Route>
+              <Route path="/help/my-tickets">
                 {() => <ProtectedRoute component={MyTickets} />}
               </Route>
 
