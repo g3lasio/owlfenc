@@ -53,18 +53,18 @@ async function getAuthToken(): Promise<string> {
 }
 
 /**
- * Configuración base para peticiones al backend
+ * Configuración base para peticiones al backend con autenticación Firebase
  */
 async function fetchWithAuth(url: string, options: RequestInit = {}) {
-  console.log('🔐 [UNIFIED-CLIENT-SERVICE] Fetching with unified authentication...');
+  console.log('🔐 [CLIENT-SERVICE] Fetching with Firebase authentication...');
   
   let token: string | null = null;
   
   try {
     token = await getAuthToken();
-    console.log('✅ [UNIFIED-CLIENT-SERVICE] Got authentication token');
+    console.log('✅ [CLIENT-SERVICE] Got authentication token');
   } catch (error) {
-    console.error('❌ [UNIFIED-CLIENT-SERVICE] Authentication failed - no token available:', error);
+    console.error('❌ [CLIENT-SERVICE] Authentication failed - no token available:', error);
     throw new Error('Usuario no autenticado. Por favor, inicia sesión nuevamente.');
   }
   
@@ -96,9 +96,8 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
  */
 export async function getClients(): Promise<Client[]> {
   try {
-    console.log('🔄 [UNIFIED-CLIENT-SERVICE] Obteniendo clientes desde PostgreSQL...');
+    console.log('🔄 [CLIENT-SERVICE] Obteniendo clientes desde Firebase...');
     
-    // ARQUITECTURA UNIFICADA: Solo PostgreSQL - sin endpoints duplicados
     const clients = await fetchWithAuth('/api/clients');
     
     // Convertir fechas de string a Date objects
@@ -108,10 +107,10 @@ export async function getClients(): Promise<Client[]> {
       updatedAt: new Date(client.updatedAt),
     }));
     
-    console.log(`✅ [UNIFIED-CLIENT-SERVICE] Successfully loaded ${processedClients.length} clients from PostgreSQL`);
+    console.log(`✅ [CLIENT-SERVICE] Successfully loaded ${processedClients.length} clients from Firebase`);
     return processedClients;
   } catch (error) {
-    console.error('❌ [UNIFIED-CLIENT-SERVICE] Error obteniendo clientes:', error);
+    console.error('❌ [CLIENT-SERVICE] Error obteniendo clientes:', error);
     throw error;
   }
 }

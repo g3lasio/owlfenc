@@ -53,16 +53,20 @@ export class FirebaseOnlyStorage implements IFirebaseOnlyStorage {
       snapshot.forEach((doc) => {
         const data = doc.data();
         clients.push({
-          id: data.id,
-          clientId: data.clientId,
+          id: doc.id, // El ID del documento de Firestore es el identificador principal
+          clientId: doc.id, // Usar el mismo ID para compatibilidad
           name: data.name || '',
           email: data.email || '',
           phone: data.phone || '',
+          mobilePhone: data.mobilePhone || '',
           address: data.address || '',
           city: data.city || '',
           state: data.state || '',
           zipCode: data.zipCode || '',
           notes: data.notes || '',
+          source: data.source || '',
+          classification: data.classification || '',
+          tags: data.tags || [],
           createdAt: data.createdAt?.toDate() || new Date(),
           updatedAt: data.updatedAt?.toDate() || new Date()
         });
@@ -99,16 +103,20 @@ export class FirebaseOnlyStorage implements IFirebaseOnlyStorage {
       
       const data = clientDoc.data()!;
       const client: FirebaseClient = {
-        id: data.id,
-        clientId: data.clientId,
+        id: clientDoc.id, // El ID del documento de Firestore es el identificador principal
+        clientId: clientDoc.id, // Usar el mismo ID para compatibilidad
         name: data.name || '',
         email: data.email || '',
         phone: data.phone || '',
+        mobilePhone: data.mobilePhone || '',
         address: data.address || '',
         city: data.city || '',
         state: data.state || '',
         zipCode: data.zipCode || '',
         notes: data.notes || '',
+        source: data.source || '',
+        classification: data.classification || '',
+        tags: data.tags || [],
         createdAt: data.createdAt?.toDate() || new Date(),
         updatedAt: data.updatedAt?.toDate() || new Date()
       };
@@ -129,21 +137,23 @@ export class FirebaseOnlyStorage implements IFirebaseOnlyStorage {
     try {
       console.log(`🔄 [FIREBASE-STORAGE] Creando cliente para UID: ${firebaseUid}`);
       
-      // Generar ID único para el cliente
+      // Generar ID único para el cliente (usado como ID del documento de Firestore)
       const clientId = `client_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
       const now = new Date();
       
       const clientData = {
-        id: Date.now(), // ID numérico para compatibilidad
-        clientId: clientId,
         name: client.name || '',
         email: client.email || '',
         phone: client.phone || '',
+        mobilePhone: client.mobilePhone || '',
         address: client.address || '',
         city: client.city || '',
         state: client.state || '',
         zipCode: client.zipCode || '',
         notes: client.notes || '',
+        source: client.source || '',
+        classification: client.classification || '',
+        tags: client.tags || [],
         createdAt: admin.firestore.Timestamp.fromDate(now),
         updatedAt: admin.firestore.Timestamp.fromDate(now)
       };
@@ -157,6 +167,8 @@ export class FirebaseOnlyStorage implements IFirebaseOnlyStorage {
       await clientRef.set(clientData);
       
       const newClient: FirebaseClient = {
+        id: clientId, // El ID del documento de Firestore es el identificador principal
+        clientId: clientId, // Mantener clientId para compatibilidad con el schema
         ...clientData,
         createdAt: now,
         updatedAt: now
@@ -190,10 +202,18 @@ export class FirebaseOnlyStorage implements IFirebaseOnlyStorage {
         throw new Error(`Cliente ${clientId} no encontrado`);
       }
       
-      const updateData = {
-        ...updates,
+      // Filtrar campos undefined y preparar actualización
+      const updateData: Record<string, any> = {
         updatedAt: admin.firestore.Timestamp.fromDate(new Date())
       };
+      
+      // Solo agregar campos que no sean undefined
+      Object.keys(updates).forEach(key => {
+        const value = (updates as any)[key];
+        if (value !== undefined && key !== 'id' && key !== 'createdAt') {
+          updateData[key] = value;
+        }
+      });
       
       await clientRef.update(updateData);
       
@@ -202,16 +222,20 @@ export class FirebaseOnlyStorage implements IFirebaseOnlyStorage {
       const data = updatedDoc.data()!;
       
       const updatedClient: FirebaseClient = {
-        id: data.id,
-        clientId: data.clientId,
+        id: updatedDoc.id, // El ID del documento de Firestore es el identificador principal
+        clientId: updatedDoc.id, // Usar el mismo ID para compatibilidad
         name: data.name || '',
         email: data.email || '',
         phone: data.phone || '',
+        mobilePhone: data.mobilePhone || '',
         address: data.address || '',
         city: data.city || '',
         state: data.state || '',
         zipCode: data.zipCode || '',
         notes: data.notes || '',
+        source: data.source || '',
+        classification: data.classification || '',
+        tags: data.tags || [],
         createdAt: data.createdAt?.toDate() || new Date(),
         updatedAt: data.updatedAt?.toDate() || new Date()
       };

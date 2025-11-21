@@ -1,7 +1,4 @@
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -9,10 +6,10 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { 
-  getClients as getFirebaseClients,
-  saveClient,
-  updateClient as updateFirebaseClient,
-  deleteClient as deleteFirebaseClient,
+  getClients,
+  createClient,
+  updateClient,
+  deleteClient,
   importClientsFromCsvWithAI,
   importClientsFromVcf,
   type Client
@@ -60,9 +57,9 @@ export default function Clients() {
     const fetchClients = async () => {
       try {
         setIsLoading(true);
-        console.log("🔄 [CLIENTES] Cargando clientes desde backend unificado...");
-        const data = await getFirebaseClients();
-        console.log("✅ [CLIENTES] Clientes cargados desde backend:", data.length);
+        console.log("🔄 [CLIENTES] Cargando clientes desde Firebase...");
+        const data = await getClients();
+        console.log("✅ [CLIENTES] Clientes cargados exitosamente:", data.length);
         setClients(data);
         setFilteredClients(data);
       } catch (error) {
@@ -121,7 +118,7 @@ export default function Clients() {
   const handleCreateClient = async (data: ClientFormData) => {
     try {
       console.log("🔄 [CLIENTES] Creando cliente:", data);
-      const newClient = await saveClient(data);
+      const newClient = await createClient(data);
       console.log("✅ [CLIENTES] Cliente creado exitosamente:", newClient);
       
       setClients(prev => [...prev, newClient]);
@@ -147,7 +144,7 @@ export default function Clients() {
 
     try {
       console.log("🔄 [CLIENTES] Actualizando cliente:", currentClient.id, data);
-      const updatedClient = await updateFirebaseClient(currentClient.id, data);
+      const updatedClient = await updateClient(currentClient.id, data);
       console.log("✅ [CLIENTES] Cliente actualizado exitosamente:", updatedClient);
       
       setClients(prev => prev.map(client => 
@@ -176,7 +173,7 @@ export default function Clients() {
 
     try {
       console.log("🔄 [CLIENTES] Eliminando cliente:", currentClient.id);
-      await deleteFirebaseClient(currentClient.id);
+      await deleteClient(currentClient.id);
       console.log("✅ [CLIENTES] Cliente eliminado exitosamente");
       
       setClients(prev => prev.filter(client => client.id !== currentClient.id));
@@ -211,7 +208,7 @@ export default function Clients() {
           const importedClients = await importClientsFromCsvWithAI(csvData);
           console.log("✅ [CLIENTES] Importación CSV inteligente exitosa:", importedClients.length);
           
-          const allClients = await getFirebaseClients();
+          const allClients = await getClients();
           setClients(allClients);
           setFilteredClients(allClients);
           
@@ -256,7 +253,7 @@ export default function Clients() {
           const importedClients = await importClientsFromVcf(vcfData);
           console.log("✅ [CLIENTES] Importación Apple exitosa:", importedClients.length);
           
-          const allClients = await getFirebaseClients();
+          const allClients = await getClients();
           setClients(allClients);
           setFilteredClients(allClients);
           
@@ -625,41 +622,3 @@ export default function Clients() {
     </div>
   );
 }
-
-// Assuming AddressAutocomplete component is defined elsewhere and imported
-// This is a placeholder, replace with your actual implementation
-const AddressAutocomplete = ({ value, onChange, placeholder }: {
-  value: string | undefined;
-  onChange: (value: string, details?: any) => void;
-  placeholder: string;
-}) => {
-  return (
-    <Input 
-      placeholder={placeholder} 
-      value={value || ""} 
-      onChange={e => onChange(e.target.value)} 
-    />
-  );
-};
-
-// Interfaz de cliente importada desde el servicio unificado
-
-// Schemas para la validación de formularios
-const clientFormSchema = z.object({
-  name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres" }),
-  email: z.string().email({ message: "Correo electrónico inválido" }).optional().or(z.literal("")),
-  phone: z.string().optional().or(z.literal("")),
-  mobilePhone: z.string().optional().or(z.literal("")),
-  address: z.string().optional().or(z.literal("")),
-  city: z.string().optional().or(z.literal("")),
-  state: z.string().optional().or(z.literal("")),
-  zipCode: z.string().optional().or(z.literal("")),
-  notes: z.string().optional().or(z.literal("")),
-  source: z.string().optional().or(z.literal("")),
-  classification: z.string().optional().or(z.literal("")),
-  tags: z.array(z.string()).optional(),
-});
-
-const csvImportSchema = z.object({
-  csvData: z.string().min(1, { message: "Por favor selecciona un archivo CSV" }),
-});

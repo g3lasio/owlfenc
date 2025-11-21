@@ -6281,6 +6281,92 @@ Output must be between 200-900 characters in English.`;
     }
   });
 
+  // 🔥 FIREBASE-ONLY: Obtener un cliente específico por ID
+  app.get("/api/clients/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      if (!req.firebaseUser?.uid) {
+        return res.status(401).json({ message: "Usuario no autenticado" });
+      }
+      
+      const clientId = req.params.id;
+      console.log(`🔥 [FIREBASE-CLIENTS] Getting client ${clientId} for Firebase UID: ${req.firebaseUser.uid}`);
+      
+      const { getFirebaseManager } = await import('./storage-firebase-only');
+      const firebaseManager = getFirebaseManager();
+      
+      const client = await firebaseManager.getClient(req.firebaseUser.uid, clientId);
+      
+      if (!client) {
+        return res.status(404).json({ message: "Cliente no encontrado" });
+      }
+      
+      console.log(`✅ [FIREBASE-CLIENTS] Client ${clientId} found in Firebase`);
+      res.json(client);
+    } catch (error) {
+      console.error("❌ [FIREBASE-CLIENTS] Error getting client:", error);
+      res.status(500).json({ message: "Error al obtener el cliente" });
+    }
+  });
+
+  // 🔥 FIREBASE-ONLY: Actualizar un cliente existente
+  app.patch("/api/clients/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      if (!req.firebaseUser?.uid) {
+        return res.status(401).json({ message: "Usuario no autenticado" });
+      }
+      
+      const clientId = req.params.id;
+      console.log(`🔥 [FIREBASE-CLIENTS] Updating client ${clientId} for Firebase UID: ${req.firebaseUser.uid}`);
+      
+      const { getFirebaseManager } = await import('./storage-firebase-only');
+      const firebaseManager = getFirebaseManager();
+      
+      const updates = {
+        name: req.body.name,
+        email: req.body.email,
+        phone: req.body.phone,
+        mobilePhone: req.body.mobilePhone,
+        address: req.body.address,
+        city: req.body.city,
+        state: req.body.state,
+        zipCode: req.body.zipCode,
+        notes: req.body.notes,
+        source: req.body.source,
+        classification: req.body.classification,
+        tags: req.body.tags
+      };
+
+      const updatedClient = await firebaseManager.updateClient(req.firebaseUser.uid, clientId, updates);
+      console.log(`✅ [FIREBASE-CLIENTS] Client ${clientId} updated in Firebase`);
+      res.json(updatedClient);
+    } catch (error) {
+      console.error("❌ [FIREBASE-CLIENTS] Error updating client:", error);
+      res.status(500).json({ message: "Error al actualizar el cliente" });
+    }
+  });
+
+  // 🔥 FIREBASE-ONLY: Eliminar un cliente
+  app.delete("/api/clients/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      if (!req.firebaseUser?.uid) {
+        return res.status(401).json({ message: "Usuario no autenticado" });
+      }
+      
+      const clientId = req.params.id;
+      console.log(`🔥 [FIREBASE-CLIENTS] Deleting client ${clientId} for Firebase UID: ${req.firebaseUser.uid}`);
+      
+      const { getFirebaseManager } = await import('./storage-firebase-only');
+      const firebaseManager = getFirebaseManager();
+      
+      await firebaseManager.deleteClient(req.firebaseUser.uid, clientId);
+      console.log(`✅ [FIREBASE-CLIENTS] Client ${clientId} deleted from Firebase`);
+      res.json({ success: true, message: "Cliente eliminado exitosamente" });
+    } catch (error) {
+      console.error("❌ [FIREBASE-CLIENTS] Error deleting client:", error);
+      res.status(500).json({ message: "Error al eliminar el cliente" });
+    }
+  });
+
   // Profile endpoint used by frontend
   app.get("/api/profile", async (req: Request, res: Response) => {
     try {
