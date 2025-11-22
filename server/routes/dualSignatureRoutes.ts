@@ -242,6 +242,15 @@ router.post("/sign", async (req, res) => {
     }
   } catch (error: any) {
     console.error("❌ [PUBLIC-API] Error in /sign:", error);
+    
+    // 📁 ARCHIVE-GUARD: Return 404 for archived contracts
+    if (error.message === 'Contract not found in Firebase') {
+      return res.status(404).json({
+        success: false,
+        message: "Contract not found",
+      });
+    }
+    
     res.status(500).json({
       success: false,
       message: "Internal server error",

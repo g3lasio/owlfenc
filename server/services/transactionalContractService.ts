@@ -76,6 +76,12 @@ class TransactionalContractService {
 
         const contract = contractDoc.data()!;
 
+        // 📁 CRITICAL: Block access to archived contracts
+        if (contract.isArchived === true) {
+          console.log(`🚫 [ARCHIVE-GUARD] Contract ${contractId} is archived and cannot be signed`);
+          throw new Error('Contract not found in Firebase');
+        }
+
         // IDEMPOTENCY CHECK: If already signed by this party, return current state
         const alreadySigned = party === 'contractor' 
           ? contract.contractorSigned 

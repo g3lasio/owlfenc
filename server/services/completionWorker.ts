@@ -326,6 +326,13 @@ class CompletionWorker {
       
       const contract = contractDoc.data()!;
       
+      // 📁 CRITICAL: Block completion of archived contracts
+      if (contract.isArchived === true) {
+        console.log(`🚫 [ARCHIVE-GUARD] Contract ${contractId} is archived and cannot be completed`);
+        errors.push('Contract not found');
+        return { isValid: false, errors, warnings };
+      }
+      
       // ===== SIGNATURE VALIDATION =====
       
       // Contractor signature
