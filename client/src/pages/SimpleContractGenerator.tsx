@@ -541,6 +541,7 @@ export default function SimpleContractGenerator() {
             contractorSigned: contract.contractorSigned,
             clientSigned: contract.clientSigned,
             createdAt: contract.createdAt,
+            completionDate: contract.completionDate || null,
             hasPdf: contract.isDownloadable,
             pdfUrl: contract.signedPdfPath,
             source: "dual-signature",
@@ -1652,32 +1653,11 @@ export default function SimpleContractGenerator() {
     const correctMalformedValue = (value: number, fieldName: string) => {
       if (!value || value <= 0) return 0;
 
-      // Check if value seems malformed (too large, likely stored as centavos incorrectly)
-      // Values over $100K are suspicious for typical projects and likely stored incorrectly
-      if (value > 100000) {
-        const corrected = value / 100;
-        console.log(
-          `💰 CORRECTING MALFORMED ${fieldName}:`,
-          value,
-          "→",
-          corrected,
-          "(divided by 100)",
-        );
-        return corrected;
-      }
-
-      // Check if value is in centavos format (large integer multiple of 100)
-      if (value > 10000 && value % 100 === 0 && Number.isInteger(value)) {
-        const corrected = value / 100;
-        console.log(
-          `💰 Converting ${fieldName} from centavos:`,
-          value,
-          "→",
-          corrected,
-        );
-        return corrected;
-      }
-
+      // ✅ FIXED: Removed faulty logic that was dividing valid dollar amounts by 100
+      // Previous logic incorrectly assumed all values > 10000 that are multiples of 100 were in centavos
+      // This caused $45,000 to display as $450 (and similar errors)
+      // Now we trust the stored values as they are in dollars
+      
       console.log(`💰 Using ${fieldName} as-is:`, value);
       return value;
     };
@@ -1764,32 +1744,35 @@ export default function SimpleContractGenerator() {
     }
     
     // PRIORITY 6: Top-level direct fields
+    // ✅ CRITICAL FIX: Use normalizeCurrency for legacy cent-based values
+    // normalizeCurrency safely detects and converts integers >= 10000 from cents to dollars
+    // without affecting proper dollar amounts with decimals (e.g., $45,000.00 stays as-is)
     if (project.displaySubtotal && project.displaySubtotal > 0) {
-      return correctMalformedValue(project.displaySubtotal, "displaySubtotal");
+      return normalizeCurrency(correctMalformedValue(project.displaySubtotal, "displaySubtotal"));
     }
     if (project.displayTotal && project.displayTotal > 0) {
-      return correctMalformedValue(project.displayTotal, "displayTotal");
+      return normalizeCurrency(correctMalformedValue(project.displayTotal, "displayTotal"));
     }
     if (project.totalPrice && project.totalPrice > 0) {
-      return correctMalformedValue(project.totalPrice, "totalPrice");
+      return normalizeCurrency(correctMalformedValue(project.totalPrice, "totalPrice"));
     }
     if (project.estimateAmount && project.estimateAmount > 0) {
-      return correctMalformedValue(project.estimateAmount, "estimateAmount");
+      return normalizeCurrency(correctMalformedValue(project.estimateAmount, "estimateAmount"));
     }
     if (project.total && project.total > 0) {
-      return correctMalformedValue(project.total, "total");
+      return normalizeCurrency(correctMalformedValue(project.total, "total"));
     }
     if (project.totalAmount && project.totalAmount > 0) {
-      return correctMalformedValue(project.totalAmount, "totalAmount");
+      return normalizeCurrency(correctMalformedValue(project.totalAmount, "totalAmount"));
     }
     if (project.contractTotal && project.contractTotal > 0) {
-      return correctMalformedValue(project.contractTotal, "contractTotal");
+      return normalizeCurrency(correctMalformedValue(project.contractTotal, "contractTotal"));
     }
     if (project.projectTotal && project.projectTotal > 0) {
-      return correctMalformedValue(project.projectTotal, "projectTotal");
+      return normalizeCurrency(correctMalformedValue(project.projectTotal, "projectTotal"));
     }
     if (project.totalCost && project.totalCost > 0) {
-      return correctMalformedValue(project.totalCost, "totalCost");
+      return normalizeCurrency(correctMalformedValue(project.totalCost, "totalCost"));
     }
 
     console.log("💰 Final calculated total:", 0);
