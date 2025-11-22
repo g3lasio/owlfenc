@@ -556,20 +556,21 @@ export class DualSignatureService {
 
       let finalStatus: string;
 
-      // If both signed, trigger completion workflow IMMEDIATELY
+      // If both signed, completion will be handled asynchronously by transactionalContractService
       if (bothSigned) {
         console.log(
-          "🎉 [FIREBASE-ONLY] Both parties signed! Triggering completion workflow..."
+          "🎉 [FIREBASE-ONLY] Both parties signed! Completion will be handled by CompletionWorker..."
         );
         
-        // completeContract() will set status to "completed" and save completionDate
-        await this.completeContract(submission.contractId);
-        finalStatus = "completed";
+        // ✅ PRODUCTION REFACTOR: Completion is now handled asynchronously by CompletionWorker
+        // The transactionalContractService already enqueued the completion job
+        // No need to call completeContract() here (eliminates duplicate completion logic)
+        finalStatus = "both_signed";
         
         console.log(
           `✅ [FIREBASE-ONLY] ${submission.party} signature processed successfully`
         );
-        console.log(`📊 [FIREBASE-ONLY] Contract completed - both parties signed`);
+        console.log(`📊 [FIREBASE-ONLY] Contract has both signatures - completion in progress`);
       } else {
         // Only one party signed - update status to specific signed state
         const newStatus = submission.party === 'contractor' ? 'contractor_signed' : 'client_signed';
@@ -580,18 +581,8 @@ export class DualSignatureService {
 
         finalStatus = newStatus;
 
-        // Sync with contractHistory collection
-        try {
-          await firebaseDb
-            .collection('contractHistory')
-            .doc(submission.contractId)
-            .update({
-              status: newStatus,
-              updatedAt: new Date(),
-            });
-        } catch (syncError) {
-          console.log(`⚠️ [FIREBASE-ONLY] Could not sync with contractHistory:`, syncError);
-        }
+        // ✅ PHASE 5 FIX: contractHistory sync removed (single source of truth in dualSignatureContracts)
+        // No longer syncing to contractHistory - using dualSignatureContracts collection only
 
         console.log(
           `✅ [FIREBASE-ONLY] ${submission.party} signature processed successfully`

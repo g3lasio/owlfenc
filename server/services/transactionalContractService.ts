@@ -2,11 +2,10 @@
  * Transactional Contract Service
  * Handles signature processing with transactions, idempotency, and legal seals
  * CRITICAL FIX: Now uses Firebase for contracts instead of PostgreSQL
+ * PRODUCTION REFACTOR: Uses async CompletionQueue for non-blocking completion
  */
 
-import { legalSealService } from './legalSealService';
-import fs from 'fs';
-import path from 'path';
+import { completionQueue } from './completionQueue';
 import crypto from 'crypto';
 import {
   createDigitalCertificate,
@@ -147,6 +146,29 @@ class TransactionalContractService {
 
         const bothSigned = otherPartySigned;
 
+        // ✅ CRITICAL FIX: Create completion job INSIDE transaction (atomic with signature)
+        if (bothSigned) {
+          console.log('🔥 [TRANSACTION] Both signed - creating completion job atomically');
+          
+          const completionJobRef = firebaseDb.collection('completionJobs').doc(contractId);
+          
+          // Create job document INSIDE transaction (atomic!)
+          transaction.set(completionJobRef, {
+            contractId,
+            finalSigningIp: ipAddress || 'unknown',
+            status: 'pending',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            retryCount: 0,
+          });
+          
+          // Update contract status to 'both_signed' (also inside transaction)
+          transaction.update(contractRef, {
+            status: 'both_signed',
+            updatedAt: new Date(),
+          });
+        }
+
         // Return result from transaction
         return {
           alreadySigned: false,
@@ -170,20 +192,74 @@ class TransactionalContractService {
       const bothSigned = transactionResult.bothSigned;
 
       if (bothSigned) {
-        console.log('🎉 [TRANSACTIONAL] Both parties signed - completing contract...');
+        console.log('🎉 [TRANSACTIONAL] Both parties signed - completion job created atomically in transaction');
 
-        // Complete contract
-        await this.completeContractInFirebase(
-          contractId,
-          ipAddress || 'unknown'
-        );
+        // ✅ CRITICAL FIX: Claim the job BEFORE enqueueing (distributed locking)
+        // This prevents other instances from claiming the same job
+        try {
+          const completionJobRef = firebaseDb.collection('completionJobs').doc(contractId);
+          
+          const claimed = await firebaseDb.runTransaction(async (transaction) => {
+            const jobDoc = await transaction.get(completionJobRef);
+            
+            if (!jobDoc.exists) {
+              console.warn(`⚠️ [TRANSACTIONAL] Job ${contractId} not found (race condition?)`);
+              return false;
+            }
+            
+            const jobData = jobDoc.data()!;
+            
+            // Only claim if pending (not already claimed by another instance)
+            if (jobData.status !== 'pending') {
+              console.log(`⏭️ [TRANSACTIONAL] Job ${contractId} already claimed (status: ${jobData.status})`);
+              return false;
+            }
+            
+            // Claim atomically
+            transaction.update(completionJobRef, {
+              status: 'processing',
+              claimedAt: new Date(),
+              claimedBy: 'local',
+              updatedAt: new Date(),
+            });
+            
+            return true;
+          });
+          
+          if (!claimed) {
+            console.log(`⚠️ [TRANSACTIONAL] Job ${contractId} was already claimed by another worker`);
+            // Job will be processed by other instance
+            return {
+              success: true,
+              message: 'Both parties signed - completion being handled by another worker',
+              status: 'both_signed',
+              bothSigned: true,
+              isCompleted: false,
+            };
+          }
+          
+          console.log(`✅ [TRANSACTIONAL] Job ${contractId} claimed successfully - enqueueing`);
+          
+          // Now enqueue (already claimed, safe to process)
+          completionQueue.enqueue(
+            contractId,
+            ipAddress || 'unknown'
+          ).catch(error => {
+            console.error(`⚠️ [TRANSACTIONAL] Failed to enqueue job (will be retried from Firestore):`, error);
+            // Don't fail - job is persisted and will be retried
+          });
+          
+        } catch (claimError: any) {
+          console.error(`❌ [TRANSACTIONAL] Failed to claim job ${contractId}:`, claimError);
+          // Don't fail the response - job will be retried from Firestore
+        }
 
         return {
           success: true,
-          message: 'Contract completed successfully',
-          status: 'completed',
+          message: 'Both parties signed - contract completion in progress',
+          status: 'both_signed',
           bothSigned: true,
-          isCompleted: true,
+          isCompleted: false, // Not yet completed (async job processing)
         };
       } else {
         // Only one party signed - update status
@@ -194,20 +270,8 @@ class TransactionalContractService {
           updatedAt: new Date(),
         });
 
-        // Sync with contractHistory collection
-        try {
-          await firebaseDb
-            .collection('contractHistory')
-            .doc(contractId)
-            .update({
-              status: newStatus,
-              updatedAt: new Date(),
-            });
-          console.log(`✅ [TRANSACTIONAL] Contract history updated to ${newStatus}`);
-        } catch (syncError) {
-          console.log(`⚠️ [TRANSACTIONAL] Could not sync with contractHistory:`, syncError);
-          // Don't fail the operation if sync fails
-        }
+        // ✅ PHASE 5 FIX: contractHistory sync removed (single source of truth in dualSignatureContracts)
+        // No longer syncing to contractHistory - using dualSignatureContracts collection only
 
         return {
           success: true,
@@ -228,128 +292,18 @@ class TransactionalContractService {
   }
 
   /**
-   * Complete contract in Firebase
-   * Generates PDF with legal seal and updates all fields
+   * ❌ REMOVED: completeContractInFirebase() method
+   * 
+   * Completion is now handled asynchronously by CompletionWorker
+   * via the CompletionQueue system. This eliminates:
+   * - Synchronous blocking operations (10-15s)
+   * - Duplicate completion logic
+   * - Race conditions
+   * - Data sync issues
+   * 
+   * See: server/services/completionWorker.ts
+   * See: server/services/completionQueue.ts
    */
-  private async completeContractInFirebase(
-    contractId: string,
-    finalSigningIp: string
-  ): Promise<void> {
-    try {
-      const { db: firebaseDb } = await import("../lib/firebase-admin");
-      const contractRef = firebaseDb.collection('dualSignatureContracts').doc(contractId);
-      const contractDoc = await contractRef.get();
-
-      if (!contractDoc.exists) {
-        throw new Error('Contract not found in completion');
-      }
-
-      const contract = contractDoc.data()!;
-
-      // IDEMPOTENCY: Check if already completed
-      if (contract.status === 'completed' && contract.finalPdfPath) {
-        console.log(`⚠️ [TRANSACTIONAL] Contract already completed - skipping PDF generation`);
-        return;
-      }
-
-      // Generate PDF with signatures
-      const { default: PremiumPdfService } = await import('./premiumPdfService');
-      const pdfService = new PremiumPdfService();
-
-      const pdfBuffer = await pdfService.generateContractWithSignatures({
-        contractHTML: contract.contractHtml || '',
-        contractorSignature: {
-          name: contract.contractorName,
-          signatureData: contract.contractorSignature || '',
-          typedName: contract.contractorSignatureType === 'typed' ? contract.contractorName : undefined,
-          signedAt: contract.contractorSignedAt || new Date(),
-        },
-        clientSignature: {
-          name: contract.clientName,
-          signatureData: contract.clientSignature || '',
-          typedName: contract.clientSignatureType === 'typed' ? contract.clientName : undefined,
-          signedAt: contract.clientSignedAt || new Date(),
-        },
-      });
-
-      // Create legal seal
-      const legalSeal = await legalSealService.createLegalSeal(
-        contractId,
-        pdfBuffer,
-        finalSigningIp
-      );
-
-      // Save final PDF to public filesystem location for web access
-      const pdfFilename = `contract_${contractId}_signed_${legalSeal.folio}.pdf`;
-      const publicPdfPath = path.join(process.cwd(), 'public', 'contracts', 'signed', pdfFilename);
-      const publicDir = path.dirname(publicPdfPath);
-
-      if (!fs.existsSync(publicDir)) {
-        fs.mkdirSync(publicDir, { recursive: true });
-      }
-
-      fs.writeFileSync(publicPdfPath, pdfBuffer);
-
-      // Create public URL for the PDF
-      const pdfUrl = `/contracts/signed/${pdfFilename}`;
-
-      // Update Firebase with completion data and PDF URL
-      await contractRef.update({
-        status: 'completed',
-        pdfUrl,  // Public accessible URL
-        hasPdf: true,  // Mark that PDF is available
-        finalPdfPath: pdfUrl,
-        signedPdfPath: pdfUrl,
-        permanentPdfUrl: pdfUrl,
-        folio: legalSeal.folio,
-        pdfHash: legalSeal.pdfHash,
-        signingIp: finalSigningIp,
-        completionDate: new Date(),  // Add completion date
-        updatedAt: new Date(),
-      });
-
-      // CRITICAL FIX: Sync completed status with contractHistory collection
-      try {
-        const contractData = contract;
-        await firebaseDb
-          .collection('contractHistory')
-          .doc(contractId)
-          .set({
-            ...contractData,  // Include all contract data
-            contractId,
-            userId: contractData.userId,
-            clientName: contractData.clientName,
-            projectType: contractData.projectType,
-            totalAmount: contractData.totalAmount,
-            status: 'completed',
-            pdfUrl,  // Public accessible URL
-            hasPdf: true,  // Mark that PDF is available
-            finalPdfPath: pdfUrl,
-            signedPdfPath: pdfUrl,
-            permanentPdfUrl: pdfUrl,
-            folio: legalSeal.folio,
-            pdfHash: legalSeal.pdfHash,
-            completionDate: new Date(),  // Add completion date
-            updatedAt: new Date(),
-          });
-        console.log(`✅ [TRANSACTIONAL] Contract history synced to completed status with PDF URL: ${pdfUrl}`);
-      } catch (syncError) {
-        console.error(`❌ [TRANSACTIONAL] Failed to sync contractHistory:`, syncError);
-        // Don't fail the operation if sync fails, but log it as critical
-        console.error(`🚨 CRITICAL: Contract ${contractId} is completed but not synced with history!`);
-      }
-
-      console.log(`✅ [TRANSACTIONAL] Contract completed with legal seal`);
-      console.log(`   📋 Folio: ${legalSeal.folio}`);
-      console.log(`   🔐 Hash: ${legalSeal.pdfHash.substring(0, 16)}...`);
-      console.log(`   💾 Path: ${pdfUrl}`);
-
-    } catch (error: any) {
-      console.error('❌ [TRANSACTIONAL] Error completing contract:', error);
-      throw error;
-    }
-  }
-
 
   /**
    * Get contract for signing (idempotent read)
