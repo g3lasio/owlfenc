@@ -492,8 +492,16 @@ class FirebaseContractsService {
     try {
       console.log(`📁 [ARCHIVE] Archiving contract ${contractId} for user ${userId}`);
 
-      const docRef = db.collection(this.collection).doc(contractId);
-      const docSnap = await docRef.get();
+      // Try contractHistory first
+      let docRef = db.collection(this.collection).doc(contractId);
+      let docSnap = await docRef.get();
+
+      // If not found, try dualSignatureContracts
+      if (!docSnap.exists) {
+        console.log(`📁 [ARCHIVE] Contract not found in contractHistory, checking dualSignatureContracts...`);
+        docRef = db.collection('dualSignatureContracts').doc(contractId);
+        docSnap = await docRef.get();
+      }
 
       if (!docSnap.exists) {
         throw new Error('Contract not found');
@@ -502,7 +510,7 @@ class FirebaseContractsService {
       const data = docSnap.data();
       
       // Validación de seguridad: verificar que el contrato pertenece al usuario
-      if (data?.userId !== userId) {
+      if (data?.userId !== userId && data?.firebaseUserId !== userId) {
         throw new Error('Unauthorized: Contract does not belong to user');
       }
 
@@ -514,7 +522,7 @@ class FirebaseContractsService {
         updatedAt: FieldValue.serverTimestamp()
       });
 
-      console.log(`✅ [ARCHIVE] Contract ${contractId} archived successfully`);
+      console.log(`✅ [ARCHIVE] Contract ${contractId} archived successfully in ${docRef.parent.id}`);
     } catch (error) {
       console.error('❌ [ARCHIVE] Error archiving contract:', error);
       throw error;
@@ -530,8 +538,16 @@ class FirebaseContractsService {
     try {
       console.log(`📂 [UNARCHIVE] Restoring contract ${contractId} for user ${userId}`);
 
-      const docRef = db.collection(this.collection).doc(contractId);
-      const docSnap = await docRef.get();
+      // Try contractHistory first
+      let docRef = db.collection(this.collection).doc(contractId);
+      let docSnap = await docRef.get();
+
+      // If not found, try dualSignatureContracts
+      if (!docSnap.exists) {
+        console.log(`📂 [UNARCHIVE] Contract not found in contractHistory, checking dualSignatureContracts...`);
+        docRef = db.collection('dualSignatureContracts').doc(contractId);
+        docSnap = await docRef.get();
+      }
 
       if (!docSnap.exists) {
         throw new Error('Contract not found');
@@ -540,7 +556,7 @@ class FirebaseContractsService {
       const data = docSnap.data();
       
       // Validación de seguridad: verificar que el contrato pertenece al usuario
-      if (data?.userId !== userId) {
+      if (data?.userId !== userId && data?.firebaseUserId !== userId) {
         throw new Error('Unauthorized: Contract does not belong to user');
       }
 
@@ -552,7 +568,7 @@ class FirebaseContractsService {
         updatedAt: FieldValue.serverTimestamp()
       });
 
-      console.log(`✅ [UNARCHIVE] Contract ${contractId} restored successfully`);
+      console.log(`✅ [UNARCHIVE] Contract ${contractId} restored successfully from ${docRef.parent.id}`);
     } catch (error) {
       console.error('❌ [UNARCHIVE] Error restoring contract:', error);
       throw error;
@@ -565,26 +581,56 @@ class FirebaseContractsService {
    */
   async getArchivedContracts(userId: string): Promise<ContractData[]> {
     try {
-      const snapshot = await db
+      console.log(`📁 [GET-ARCHIVED] Getting archived contracts for user ${userId}`);
+      
+      // Get from contractHistory
+      const historySnapshot = await db
         .collection(this.collection)
         .where('userId', '==', userId)
         .where('isArchived', '==', true)
-        .orderBy('archivedAt', 'desc')
         .get();
 
       const contracts: ContractData[] = [];
       
-      snapshot.forEach(doc => {
+      historySnapshot.forEach(doc => {
         const data = doc.data();
         contracts.push({
-          id: doc.id,
           ...data,
+          id: doc.id,
+          contractId: doc.id,
           createdAt: data.createdAt?.toDate() || new Date(),
           updatedAt: data.updatedAt?.toDate() || new Date(),
           archivedAt: data.archivedAt?.toDate()
-        } as ContractData);
+        } as any);
       });
 
+      // Get from dualSignatureContracts
+      const dualSnapshot = await db
+        .collection('dualSignatureContracts')
+        .where('firebaseUserId', '==', userId)
+        .where('isArchived', '==', true)
+        .get();
+
+      dualSnapshot.forEach(doc => {
+        const data = doc.data();
+        contracts.push({
+          ...data,
+          id: doc.id,
+          contractId: doc.id,
+          createdAt: data.createdAt?.toDate() || new Date(),
+          updatedAt: data.updatedAt?.toDate() || new Date(),
+          archivedAt: data.archivedAt?.toDate()
+        } as any);
+      });
+
+      // Sort by archivedAt desc
+      contracts.sort((a, b) => {
+        const dateA = a.archivedAt || a.updatedAt || a.createdAt;
+        const dateB = b.archivedAt || b.updatedAt || b.createdAt;
+        return dateB.getTime() - dateA.getTime();
+      });
+
+      console.log(`✅ [GET-ARCHIVED] Found ${contracts.length} archived contracts (${historySnapshot.size} from history, ${dualSnapshot.size} from dual)`);
       return contracts;
     } catch (error) {
       console.error('❌ [FIREBASE-CONTRACTS] Error getting archived contracts:', error);
