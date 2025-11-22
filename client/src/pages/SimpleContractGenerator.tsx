@@ -2482,6 +2482,7 @@ export default function SimpleContractGenerator() {
           selectedProject.client?.address ||
           selectedProject.address ||
           "",
+        projectTotal: totalAmount, // CRITICAL FIX: Initialize projectTotal from selected project
         paymentMilestones: [
           {
             id: 1,
@@ -3926,6 +3927,9 @@ export default function SimpleContractGenerator() {
     const virtualProject = createProjectFromScratch();
     setSelectedProject(virtualProject);
     
+    // Calculate project cost once for consistency
+    const projectCost = parseFloat(scratchContractData.projectCost) || 0;
+    
     // Pre-populate editable data
     setEditableData(prev => ({
       ...prev,
@@ -3933,9 +3937,10 @@ export default function SimpleContractGenerator() {
       clientEmail: scratchContractData.clientEmail,
       clientPhone: scratchContractData.clientPhone,
       clientAddress: scratchContractData.clientAddress,
+      projectTotal: projectCost, // CRITICAL FIX: Initialize projectTotal from scratch data
       paymentMilestones: [
-        { id: 1, description: "Initial deposit", percentage: 50, amount: parseFloat(scratchContractData.projectCost) * 0.5 },
-        { id: 2, description: "Project completion", percentage: 50, amount: parseFloat(scratchContractData.projectCost) * 0.5 },
+        { id: 1, description: "Initial deposit", percentage: 50, amount: projectCost * 0.5 },
+        { id: 2, description: "Project completion", percentage: 50, amount: projectCost * 0.5 },
       ],
     }));
 
