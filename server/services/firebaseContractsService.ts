@@ -61,6 +61,11 @@ export interface ContractData {
   completedAt?: Date;
   cancelledAt?: Date;
   cancellationReason?: string;
+  
+  // 📁 Archive System (Nov 2025)
+  isArchived?: boolean;
+  archivedAt?: Date;
+  archivedReason?: string; // 'cleanup', 'test', 'duplicate', 'user_action'
 }
 
 class FirebaseContractsService {
@@ -161,6 +166,7 @@ class FirebaseContractsService {
       startDate?: Date;
       endDate?: Date;
       limit?: number;
+      includeArchived?: boolean; // 📁 Nuevo: incluir archivados
     }
   ): Promise<ContractData[]> {
     try {
@@ -169,6 +175,11 @@ class FirebaseContractsService {
       // Query base: siempre filtrar por userId
       let q = db.collection(this.collection)
         .where('userId', '==', userId);
+
+      // 📁 IMPORTANTE: Por defecto EXCLUIR contratos archivados
+      if (!filters?.includeArchived) {
+        q = q.where('isArchived', '==', false);
+      }
 
       // Aplicar filtros adicionales
       if (filters?.status) {
@@ -201,7 +212,8 @@ class FirebaseContractsService {
           sentAt: data.sentAt?.toDate(),
           signedAt: data.signedAt?.toDate(),
           completedAt: data.completedAt?.toDate(),
-          cancelledAt: data.cancelledAt?.toDate()
+          cancelledAt: data.cancelledAt?.toDate(),
+          archivedAt: data.archivedAt?.toDate()
         } as ContractData);
       });
 
@@ -466,6 +478,118 @@ class FirebaseContractsService {
     stats.averageValue = stats.total > 0 ? stats.totalValue / stats.total : 0;
 
     return stats;
+  }
+
+  /**
+   * 📁 Archivar contrato
+   * @param contractId ID del contrato
+   * @param userId ID del usuario (validación de seguridad)
+   * @param reason Razón del archivado (opcional)
+   * 
+   * IMPORTANTE: No afecta contractsUsed en PostgreSQL
+   */
+  async archiveContract(contractId: string, userId: string, reason: string = 'user_action'): Promise<void> {
+    try {
+      console.log(`📁 [ARCHIVE] Archiving contract ${contractId} for user ${userId}`);
+
+      const docRef = db.collection(this.collection).doc(contractId);
+      const docSnap = await docRef.get();
+
+      if (!docSnap.exists) {
+        throw new Error('Contract not found');
+      }
+
+      const data = docSnap.data();
+      
+      // Validación de seguridad: verificar que el contrato pertenece al usuario
+      if (data?.userId !== userId) {
+        throw new Error('Unauthorized: Contract does not belong to user');
+      }
+
+      // Actualizar contrato
+      await docRef.update({
+        isArchived: true,
+        archivedAt: FieldValue.serverTimestamp(),
+        archivedReason: reason,
+        updatedAt: FieldValue.serverTimestamp()
+      });
+
+      console.log(`✅ [ARCHIVE] Contract ${contractId} archived successfully`);
+    } catch (error) {
+      console.error('❌ [ARCHIVE] Error archiving contract:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 📁 Desarchivar contrato
+   * @param contractId ID del contrato
+   * @param userId ID del usuario (validación de seguridad)
+   */
+  async unarchiveContract(contractId: string, userId: string): Promise<void> {
+    try {
+      console.log(`📂 [UNARCHIVE] Restoring contract ${contractId} for user ${userId}`);
+
+      const docRef = db.collection(this.collection).doc(contractId);
+      const docSnap = await docRef.get();
+
+      if (!docSnap.exists) {
+        throw new Error('Contract not found');
+      }
+
+      const data = docSnap.data();
+      
+      // Validación de seguridad: verificar que el contrato pertenece al usuario
+      if (data?.userId !== userId) {
+        throw new Error('Unauthorized: Contract does not belong to user');
+      }
+
+      // Actualizar contrato
+      await docRef.update({
+        isArchived: false,
+        archivedAt: null,
+        archivedReason: null,
+        updatedAt: FieldValue.serverTimestamp()
+      });
+
+      console.log(`✅ [UNARCHIVE] Contract ${contractId} restored successfully`);
+    } catch (error) {
+      console.error('❌ [UNARCHIVE] Error restoring contract:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 📁 Obtener contratos archivados de un usuario
+   * @param userId ID del usuario
+   */
+  async getArchivedContracts(userId: string): Promise<ContractData[]> {
+    try {
+      const snapshot = await db
+        .collection(this.collection)
+        .where('userId', '==', userId)
+        .where('isArchived', '==', true)
+        .orderBy('archivedAt', 'desc')
+        .get();
+
+      const contracts: ContractData[] = [];
+      
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        contracts.push({
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate() || new Date(),
+          updatedAt: data.updatedAt?.toDate() || new Date(),
+          archivedAt: data.archivedAt?.toDate()
+        } as ContractData);
+      });
+
+      return contracts;
+    } catch (error) {
+      console.error('❌ [FIREBASE-CONTRACTS] Error getting archived contracts:', error);
+      return [];
+    }
   }
 }
 
