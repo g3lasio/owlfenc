@@ -104,20 +104,16 @@ interface CompletedContract {
 function normalizeCurrency(value: number | undefined | null): number {
   if (value == null || value === 0) return 0;
   
-  // KEY INSIGHT: Values in cents are ALWAYS integers (no decimal places)
-  // Values in dollars typically have decimals OR are small amounts
-  const isInteger = Math.abs(value - Math.round(value)) < 0.001;
-  
-  // ONLY convert if:
-  // 1. Value is an integer (no decimals)
-  // 2. Value is >= 10000 (unlikely to be a dollar amount this large without decimals)
-  if (isInteger && value >= 10000) {
-    const normalized = value / 100;
-    console.log(`💰 [NORMALIZE] ${value} (cents-integer) → ${normalized} (dollars)`);
-    return normalized;
-  }
-  
-  // Otherwise, value is already in correct format (dollars)
+  // ✅ PRODUCTION FIX: All contract amounts are stored in dollars, not cents
+  // The previous logic incorrectly assumed integers >= 10000 were in cents
+  // This caused $45,000 to be divided by 100 → $450
+  // 
+  // Real-world data shows:
+  // - Amounts are stored as: 45000 (dollars), NOT 4500000 (cents)
+  // - Both integers (45000) and decimals (45000.00) represent dollars
+  // - No legacy cent-based values exist in the system
+  //
+  // Therefore, we trust all stored values as dollars and return them as-is
   return value;
 }
 
