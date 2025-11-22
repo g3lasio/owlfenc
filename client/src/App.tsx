@@ -350,6 +350,9 @@ function MainAppRouter() {
               <Route path="/simple-contract-generator">
                 {() => <ProtectedRoute component={SimpleContractGenerator} />}
               </Route>
+              <Route path="/dashboard/contracts">
+                {() => <ProtectedRoute component={SimpleContractGenerator} />}
+              </Route>
 
               <Route path="/unified-contracts">
                 {() => <ProtectedRoute component={UnifiedContractManager} />}
