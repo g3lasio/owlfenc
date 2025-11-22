@@ -40,6 +40,8 @@ export interface ContractHistoryEntry {
     financials: {
       total: number;
       subtotal?: number;
+      displayTotal?: number;
+      displaySubtotal?: number;
       tax?: number;
       materials?: number;
       labor?: number;

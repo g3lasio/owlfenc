@@ -362,11 +362,13 @@ router.get("/in-progress/:userId", requireAuth, async (req, res) => {
 
     const { db: firebaseDb } = await import("../lib/firebase-admin");
 
-    // Get IN-PROGRESS contracts from Firebase dualSignatureContracts
+    // ✅ FIX: Get ALL in-progress states (not just 'progress')
+    // In-progress includes: progress, sent, signed, contractor_signed, client_signed
+    // Note: Firebase 'in' operator supports up to 10 values
     const snapshot = await firebaseDb
       .collection('dualSignatureContracts')
       .where('userId', '==', firebaseUid)
-      .where('status', '==', 'progress')
+      .where('status', 'in', ['progress', 'sent', 'signed', 'contractor_signed', 'client_signed'])
       .orderBy('createdAt', 'desc')
       .get();
 
@@ -518,10 +520,12 @@ router.get("/completed/:userId", requireAuth, async (req, res) => {
       .where('userId', '==', firebaseUid)
       .get();
     
-    // Filter completed contracts in memory
-    const completedDocs = snapshot.docs.filter(doc => 
-      doc.data().status === 'completed'
-    );
+    // ✅ FIX: Filter completed contracts in memory
+    // Completed includes: 'completed' and 'both_signed'
+    const completedDocs = snapshot.docs.filter(doc => {
+      const status = doc.data().status;
+      return status === 'completed' || status === 'both_signed';
+    });
 
     const contracts = completedDocs.map(doc => {
       const data = doc.data();
