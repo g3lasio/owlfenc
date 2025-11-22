@@ -55,6 +55,7 @@ This AI-powered platform automates legal document and permit management for cont
 - **Stripe Integration**: Production-ready subscription system with health guardrails and Price ID registry.
 - **Stripe Express Contractor Payments**: Production-ready Stripe Express Connect integration for contractor payment processing with enterprise-grade security hardening.
 - **Automated Email Systems**: Welcome Email System and Payment Failure Blocking System, both utilizing Resend.
+- **Contract History System**: Production-ready classification system with robust Draft/In Progress/Completed categorization. Supports comprehensive state mapping (5 in-progress states, 2 completed states) with duplicate prevention and multi-source aggregation from contractHistory and dualSignatureContracts collections. Requires Firestore composite index for in-progress query optimization.
 
 ## External Dependencies
 - Firebase (Firestore, Admin SDK)
