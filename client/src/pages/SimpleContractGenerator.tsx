@@ -228,6 +228,7 @@ export default function SimpleContractGenerator() {
   const [clientSelectionMode, setClientSelectionMode] = useState<"existing" | "new">("new");
   const [existingClients, setExistingClients] = useState<any[]>([]);
   const [selectedExistingClient, setSelectedExistingClient] = useState<any>(null);
+  const [clientSearchTerm, setClientSearchTerm] = useState<string>("");
   const [isLoadingClients, setIsLoadingClients] = useState(false);
 
   // AI Enhancement states
@@ -4642,27 +4643,68 @@ export default function SimpleContractGenerator() {
                                 <p className="mt-2 text-gray-400">Loading clients...</p>
                               </div>
                             ) : existingClients.length > 0 ? (
-                              <div className="space-y-2 max-h-48 overflow-y-auto">
-                                {existingClients.map((client) => (
-                                  <div
-                                    key={client.id}
-                                    className={`p-3 border rounded-lg cursor-pointer transition-all ${
-                                      selectedExistingClient?.id === client.id
-                                        ? "border-cyan-400 bg-cyan-400/10"
-                                        : "border-gray-600 hover:border-gray-500"
-                                    }`}
-                                    onClick={() => handleExistingClientSelect(client)}
-                                  >
-                                    <div className="font-medium text-cyan-400">{client.name}</div>
-                                    {client.email && (
-                                      <div className="text-sm text-gray-400">{client.email}</div>
-                                    )}
-                                    {client.phone && (
-                                      <div className="text-sm text-gray-400">{client.phone}</div>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
+                              <>
+                                {/* Search Input */}
+                                <div className="relative">
+                                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                  <Input
+                                    type="text"
+                                    placeholder="Search by name, email or phone..."
+                                    value={clientSearchTerm}
+                                    onChange={(e) => setClientSearchTerm(e.target.value)}
+                                    className="pl-10 bg-gray-800 border-gray-600 text-white placeholder-gray-500"
+                                  />
+                                </div>
+                                
+                                {/* Client List */}
+                                <div className="space-y-2 max-h-48 overflow-y-auto">
+                                  {existingClients
+                                    .filter((client) => {
+                                      if (!clientSearchTerm.trim()) return true;
+                                      const searchLower = clientSearchTerm.toLowerCase();
+                                      return (
+                                        client.name?.toLowerCase().includes(searchLower) ||
+                                        client.email?.toLowerCase().includes(searchLower) ||
+                                        client.phone?.toLowerCase().includes(searchLower)
+                                      );
+                                    })
+                                    .map((client) => (
+                                      <div
+                                        key={client.id}
+                                        className={`p-3 border rounded-lg cursor-pointer transition-all ${
+                                          selectedExistingClient?.id === client.id
+                                            ? "border-cyan-400 bg-cyan-400/10"
+                                            : "border-gray-600 hover:border-gray-500"
+                                        }`}
+                                        onClick={() => handleExistingClientSelect(client)}
+                                      >
+                                        <div className="font-medium text-cyan-400">{client.name}</div>
+                                        {client.email && (
+                                          <div className="text-sm text-gray-400">{client.email}</div>
+                                        )}
+                                        {client.phone && (
+                                          <div className="text-sm text-gray-400">{client.phone}</div>
+                                        )}
+                                      </div>
+                                    ))}
+                                  
+                                  {/* No results message */}
+                                  {existingClients.filter((client) => {
+                                    if (!clientSearchTerm.trim()) return true;
+                                    const searchLower = clientSearchTerm.toLowerCase();
+                                    return (
+                                      client.name?.toLowerCase().includes(searchLower) ||
+                                      client.email?.toLowerCase().includes(searchLower) ||
+                                      client.phone?.toLowerCase().includes(searchLower)
+                                    );
+                                  }).length === 0 && (
+                                    <div className="text-center py-4">
+                                      <p className="text-gray-400">No clients match your search</p>
+                                      <p className="text-sm text-gray-500 mt-1">Try a different search term</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </>
                             ) : (
                               <div className="text-center py-4">
                                 <p className="text-gray-400">No existing clients found</p>
