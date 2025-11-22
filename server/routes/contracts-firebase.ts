@@ -422,4 +422,85 @@ router.get('/stats/summary', requireAuth, async (req, res) => {
   }
 });
 
+// 📁 POST /api/contracts/:id/archive - Archivar contrato
+router.post('/:id/archive', requireAuth, async (req, res) => {
+  try {
+    const userId = req.firebaseUser?.uid;
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+    
+    const contractId = req.params.id;
+    const { reason } = req.body;
+    
+    console.log(`📁 [CONTRACTS-API] Archivando contrato ${contractId} para usuario ${userId}`);
+    
+    await firebaseContractsService.archiveContract(contractId, userId, reason);
+    
+    res.json({ 
+      success: true, 
+      message: 'Contrato archivado exitosamente',
+      contractId 
+    });
+  } catch (error) {
+    console.error('❌ [CONTRACTS-API] Error al archivar contrato:', error);
+    res.status(500).json({ 
+      error: 'Error al archivar contrato',
+      message: error instanceof Error ? error.message : 'Error desconocido'
+    });
+  }
+});
+
+// 📂 POST /api/contracts/:id/unarchive - Desarchivar contrato
+router.post('/:id/unarchive', requireAuth, async (req, res) => {
+  try {
+    const userId = req.firebaseUser?.uid;
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+    
+    const contractId = req.params.id;
+    
+    console.log(`📂 [CONTRACTS-API] Desarchivando contrato ${contractId} para usuario ${userId}`);
+    
+    await firebaseContractsService.unarchiveContract(contractId, userId);
+    
+    res.json({ 
+      success: true, 
+      message: 'Contrato restaurado exitosamente',
+      contractId 
+    });
+  } catch (error) {
+    console.error('❌ [CONTRACTS-API] Error al restaurar contrato:', error);
+    res.status(500).json({ 
+      error: 'Error al restaurar contrato',
+      message: error instanceof Error ? error.message : 'Error desconocido'
+    });
+  }
+});
+
+// 📁 GET /api/contracts/archived - Obtener contratos archivados
+router.get('/archived', requireAuth, async (req, res) => {
+  try {
+    const userId = req.firebaseUser?.uid;
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+    
+    console.log(`📁 [CONTRACTS-API] Obteniendo contratos archivados para usuario ${userId}`);
+    
+    const archivedContracts = await firebaseContractsService.getArchivedContracts(userId);
+    
+    console.log(`✅ [CONTRACTS-API] Encontrados ${archivedContracts.length} contratos archivados`);
+    
+    res.json(archivedContracts);
+  } catch (error) {
+    console.error('❌ [CONTRACTS-API] Error al obtener contratos archivados:', error);
+    res.status(500).json({ 
+      error: 'Error al obtener contratos archivados',
+      message: error instanceof Error ? error.message : 'Error desconocido'
+    });
+  }
+});
+
 export default router;

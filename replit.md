@@ -58,6 +58,14 @@ This AI-powered platform automates legal document and permit management for cont
 - **Contract History System**: Production-ready classification system with robust Draft/In Progress/Completed categorization. Supports comprehensive state mapping (5 in-progress states, 2 completed states) with duplicate prevention and multi-source aggregation from contractHistory and dualSignatureContracts collections. Requires Firestore composite index for in-progress query optimization.
   - **Financial Data Display**: All contract amounts stored in dollars (e.g., 45000 = $45,000). No cent-based normalization applied. Values trusted as-is from Firestore.
   - **Completion Date Tracking**: Dual-signature contracts include completionDate field mapping for accurate display in Completed contracts section.
+  - **Contract Archiving System (Nov 2025)**: Production-ready reversible archiving system for contract lifecycle management. Features include:
+    - **Reversible Archiving**: Contracts can be archived and restored without data loss, maintaining full audit trail.
+    - **Usage Count Integrity**: Archive/unarchive operations never affect contractsUsed counter (anti-fraud measure).
+    - **Four-Tab UI**: Drafts, In Progress, Completed, and Archived tabs with purple color scheme for archived section.
+    - **Archive Buttons**: Available in both Draft and Completed contract cards for user-initiated archiving.
+    - **Backend Implementation**: isArchived boolean flags, timestamps (archivedAt, archivedBy, archiveReason), query filtering to exclude archived by default.
+    - **API Endpoints**: POST /api/contracts/:id/archive, POST /api/contracts/:id/unarchive, GET /api/contracts/archived with Firebase authentication.
+    - **Mobile & Desktop Support**: Consistent UI across all devices with responsive design and badge counters showing archive count.
 - **Dual Signature Completion System (Nov 2025)**: Production-ready distributed completion workflow with comprehensive race condition prevention and crash recovery. Features include:
   - **Atomic Job Creation**: Completion jobs created inside Firestore transactions alongside signatures, guaranteeing no lost jobs even on server crashes.
   - **Distributed Locking**: Compare-and-set (CAS) transactions ensure only one worker instance can process each completion job, preventing duplicate PDFs and emails across multi-instance deployments.

@@ -56,6 +56,8 @@ import {
   ArrowRight,
   ChevronUp,
   ChevronDown,
+  Archive,
+  ArchiveRestore,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -133,7 +135,7 @@ export default function SimpleContractGenerator() {
     "contracts",
   );
   const [historyTab, setHistoryTab] = useState<
-    "drafts" | "in-progress" | "completed"
+    "drafts" | "in-progress" | "completed" | "archived"
   >("drafts");
   const [contractHistory, setContractHistory] = useState<
     ContractHistoryEntry[]
@@ -156,6 +158,10 @@ export default function SimpleContractGenerator() {
   // In-progress contracts state
   const [inProgressContracts, setInProgressContracts] = useState<any[]>([]);
   const [isLoadingInProgress, setIsLoadingInProgress] = useState(false);
+
+  // 📁 Archived contracts state (Nov 2025)
+  const [archivedContracts, setArchivedContracts] = useState<any[]>([]);
+  const [isLoadingArchived, setIsLoadingArchived] = useState(false);
 
   // Auto-save state
   const [isAutoSaving, setIsAutoSaving] = useState(false);
@@ -696,6 +702,118 @@ export default function SimpleContractGenerator() {
       setIsLoadingInProgress(false);
     }
   }, [currentUser, currentUser?.uid, toast]);
+
+  // 📁 Load archived contracts (Nov 2025)
+  const loadArchivedContracts = useCallback(async () => {
+    if (!currentUser?.uid) {
+      console.log("⏳ Waiting for Firebase Auth to initialize...");
+      return;
+    }
+
+    setIsLoadingArchived(true);
+    try {
+      console.log("📁 Loading archived contracts for user:", currentUser.uid);
+
+      const token = await currentUser.getIdToken();
+      const response = await fetch('/api/contracts/archived', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setArchivedContracts(data || []);
+        console.log("✅ Archived contracts loaded:", data?.length || 0, "contracts");
+      } else {
+        console.warn("⚠️ Could not load archived contracts");
+        setArchivedContracts([]);
+      }
+    } catch (error) {
+      console.error("❌ Error loading archived contracts:", error);
+      setArchivedContracts([]);
+    } finally {
+      setIsLoadingArchived(false);
+    }
+  }, [currentUser]);
+
+  // 📁 Archive a contract
+  const archiveContract = useCallback(async (contractId: string, reason: string = 'user_action') => {
+    if (!currentUser?.uid) return;
+
+    try {
+      const token = await currentUser.getIdToken();
+      const response = await fetch(`/api/contracts/${contractId}/archive`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({ reason })
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Contract Archived",
+          description: "The contract has been moved to the Archived section",
+        });
+        
+        // Reload current view
+        if (historyTab === 'drafts') loadDraftContracts();
+        else if (historyTab === 'completed') loadCompletedContracts();
+        else if (historyTab === 'in-progress') loadInProgressContracts();
+      } else {
+        throw new Error('Failed to archive contract');
+      }
+    } catch (error) {
+      console.error("❌ Error archiving contract:", error);
+      toast({
+        title: "Error",
+        description: "Failed to archive contract",
+        variant: "destructive",
+      });
+    }
+  }, [currentUser, historyTab, loadDraftContracts, loadCompletedContracts, loadInProgressContracts, toast]);
+
+  // 📂 Unarchive (restore) a contract
+  const unarchiveContract = useCallback(async (contractId: string) => {
+    if (!currentUser?.uid) return;
+
+    try {
+      const token = await currentUser.getIdToken();
+      const response = await fetch(`/api/contracts/${contractId}/unarchive`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Contract Restored",
+          description: "The contract has been restored from the archive",
+        });
+        
+        // Reload archived contracts
+        loadArchivedContracts();
+      } else {
+        throw new Error('Failed to restore contract');
+      }
+    } catch (error) {
+      console.error("❌ Error restoring contract:", error);
+      toast({
+        title: "Error",
+        description: "Failed to restore contract",
+        variant: "destructive",
+      });
+    }
+  }, [currentUser, loadArchivedContracts, toast]);
 
   // Load projects from Firebase (same logic as ProjectToContractSelector)
   const loadProjectsFromFirebase = useCallback(async () => {
@@ -3963,11 +4081,11 @@ export default function SimpleContractGenerator() {
   // ✅ AUTO-REFRESH REMOVED: Manual refresh prevents annoying auto-scrolling
   // Users can refresh manually if needed by switching tabs or using refresh button
 
-  // Load in-progress contracts when switching to in-progress tab
+  // Load contracts when switching tabs
   useEffect(() => {
     if (historyTab === "drafts") {
       // Firebase direct access - can use effectiveUid
-      if (currentUser?.uid || currentUser?.uid) {
+      if (currentUser?.uid) {
         loadDraftContracts();
       }
     } else if (historyTab === "in-progress") {
@@ -3980,14 +4098,19 @@ export default function SimpleContractGenerator() {
       if (currentUser?.uid) {
         loadCompletedContracts();
       }
+    } else if (historyTab === "archived") {
+      // 📁 API call - needs currentUser.uid
+      if (currentUser?.uid) {
+        loadArchivedContracts();
+      }
     }
   }, [
     historyTab,
     currentUser?.uid,
-    currentUser?.uid,
     loadDraftContracts,
     loadInProgressContracts,
     loadCompletedContracts,
+    loadArchivedContracts,
   ]);
 
   // Load projects from Firebase when component mounts
@@ -6043,7 +6166,8 @@ export default function SimpleContractGenerator() {
                   <Badge className="bg-cyan-600 text-white ml-2">
                     {draftContracts.length +
                       inProgressContracts.length +
-                      completedContracts.length}{" "}
+                      completedContracts.length +
+                      archivedContracts.length}{" "}
                     total
                   </Badge>
                 </CardTitle>
@@ -6131,10 +6255,33 @@ export default function SimpleContractGenerator() {
                           }
                         </div>
                       </button>
+
+                      <button
+                        onClick={() => setHistoryTab("archived")}
+                        className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all ${
+                          historyTab === "archived"
+                            ? "bg-purple-600 text-black border-purple-400"
+                            : "bg-gray-800 text-gray-300 border-gray-600 hover:bg-gray-700"
+                        }`}
+                      >
+                        <div className="flex items-center">
+                          <Archive className="h-4 w-4 mr-2" />
+                          <span className="font-medium">Archived</span>
+                        </div>
+                        <div
+                          className={`px-2 py-1 rounded-full text-xs font-bold ${
+                            historyTab === "archived"
+                              ? "bg-black/20 text-black"
+                              : "bg-purple-600 text-white"
+                          }`}
+                        >
+                          {archivedContracts.length}
+                        </div>
+                      </button>
                     </div>
 
                     {/* Desktop: Traditional Tab Layout */}
-                    <TabsList className="hidden sm:grid w-full grid-cols-3 bg-gray-800 border-gray-700 h-auto">
+                    <TabsList className="hidden sm:grid w-full grid-cols-4 bg-gray-800 border-gray-700 h-auto">
                       <TabsTrigger
                         value="drafts"
                         className="data-[state=active]:bg-cyan-600 data-[state=active]:text-black flex-col py-3 px-2"
@@ -6174,6 +6321,18 @@ export default function SimpleContractGenerator() {
                               .length
                           }
                           )
+                        </div>
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="archived"
+                        className="data-[state=active]:bg-purple-600 data-[state=active]:text-black flex-col py-3 px-2"
+                      >
+                        <div className="flex items-center mb-1">
+                          <Archive className="h-4 w-4 mr-1" />
+                          <span className="text-sm font-medium">Archived</span>
+                        </div>
+                        <div className="text-xs opacity-75">
+                          ({archivedContracts.length})
                         </div>
                       </TabsTrigger>
                     </TabsList>
@@ -6247,6 +6406,7 @@ export default function SimpleContractGenerator() {
                                     loadContractFromHistory(contract)
                                   }
                                   className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black text-xs w-full sm:w-auto"
+                                  data-testid={`button-resume-${contract.id}`}
                                 >
                                   <Edit2 className="h-3 w-3 mr-1" />
                                   Resume Editing
@@ -6261,6 +6421,16 @@ export default function SimpleContractGenerator() {
                                 >
                                   <Eye className="h-3 w-3 mr-1" />
                                   View Details
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => archiveContract(contract.contractId || contract.id, 'user_action')}
+                                  className="border-purple-400 text-purple-400 hover:bg-purple-400 hover:text-black text-xs w-full sm:w-auto"
+                                  data-testid={`button-archive-${contract.contractId || contract.id}`}
+                                >
+                                  <Archive className="h-3 w-3 mr-1" />
+                                  Archive
                                 </Button>
                               </div>
                             </div>
@@ -6517,8 +6687,8 @@ export default function SimpleContractGenerator() {
                                   </Badge>
                                 </div>
 
-                                {/* Mobile-Responsive Action Buttons - Always show same 3 buttons */}
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                {/* Mobile-Responsive Action Buttons */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                   <Button
                                     size="sm"
                                     variant="outline"
@@ -6529,6 +6699,7 @@ export default function SimpleContractGenerator() {
                                       )
                                     }
                                     className="border-green-400 text-green-400 hover:bg-green-400 hover:text-black text-xs w-full"
+                                    data-testid={`button-download-${contract.contractId}`}
                                   >
                                     <Download className="h-3 w-3 mr-1" />
                                     Download
@@ -6560,6 +6731,16 @@ export default function SimpleContractGenerator() {
                                   >
                                     <Share2 className="h-3 w-3 mr-1" />
                                     Share
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => archiveContract(contract.contractId, 'user_action')}
+                                    className="border-purple-400 text-purple-400 hover:bg-purple-400 hover:text-black text-xs w-full"
+                                    data-testid={`button-archive-${contract.contractId}`}
+                                  >
+                                    <Archive className="h-3 w-3 mr-1" />
+                                    Archive
                                   </Button>
                                 </div>
                               </div>
@@ -6602,6 +6783,126 @@ export default function SimpleContractGenerator() {
                         <p className="text-sm text-gray-500">
                           Signed contracts will appear here for secure download
                           and sharing
+                        </p>
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  {/* 📁 Archived Contracts Tab (Nov 2025) */}
+                  <TabsContent value="archived" className="space-y-4 mt-6">
+                    <div className="flex justify-between items-center">
+                      <p className="text-sm text-purple-300">
+                        Archived contracts - moved here for cleanup
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={loadArchivedContracts}
+                        disabled={isLoadingArchived}
+                        className="border-purple-400 text-purple-400 hover:bg-purple-400 hover:text-black"
+                      >
+                        <RefreshCw
+                          className={`h-4 w-4 mr-2 ${isLoadingArchived ? "animate-spin" : ""}`}
+                        />
+                        Refresh
+                      </Button>
+                    </div>
+
+                    {isLoadingArchived ? (
+                      <div className="text-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-400 mx-auto"></div>
+                        <p className="mt-2 text-gray-400">
+                          Loading archived contracts...
+                        </p>
+                      </div>
+                    ) : archivedContracts.length > 0 ? (
+                      <div className="space-y-3">
+                        {archivedContracts.map((contract, index) => (
+                          <div
+                            key={contract.contractId || `archived-${index}`}
+                            className="bg-gray-800 border border-purple-600/50 rounded-lg p-4 opacity-75"
+                          >
+                            <div className="flex items-center justify-between mb-3">
+                              <div>
+                                <h3 className="font-bold text-white text-lg">
+                                  {contract.clientName}
+                                </h3>
+                                <p className="text-purple-400 font-semibold">
+                                  ${(contract.totalAmount || 0).toLocaleString()}
+                                </p>
+                              </div>
+                              <Badge className="bg-purple-600 text-white">
+                                <Archive className="h-3 w-3 mr-1" />
+                                ARCHIVED
+                              </Badge>
+                            </div>
+
+                            <div className="space-y-3">
+                              {/* Archived Details */}
+                              <div className="bg-gray-700 rounded-lg p-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                                  <div className="space-y-1">
+                                    <span className="text-gray-400 block">
+                                      Contract ID:
+                                    </span>
+                                    <p className="text-gray-200 font-mono text-xs break-all">
+                                      {contract.contractId}
+                                    </p>
+                                  </div>
+                                  <div className="space-y-1">
+                                    <span className="text-gray-400 block">
+                                      Archived Date:
+                                    </span>
+                                    <p className="text-gray-200">
+                                      {contract.archivedAt
+                                        ? new Date(contract.archivedAt).toLocaleDateString()
+                                        : "N/A"}
+                                    </p>
+                                  </div>
+                                  <div className="space-y-1">
+                                    <span className="text-gray-400 block">
+                                      Original Status:
+                                    </span>
+                                    <p className="text-gray-200 capitalize">
+                                      {contract.status || "N/A"}
+                                    </p>
+                                  </div>
+                                  {contract.archiveReason && (
+                                    <div className="space-y-1">
+                                      <span className="text-gray-400 block">
+                                        Reason:
+                                      </span>
+                                      <p className="text-gray-200 capitalize">
+                                        {contract.archiveReason.replace(/_/g, ' ')}
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Restore Button */}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => unarchiveContract(contract.contractId)}
+                                className="border-purple-400 text-purple-400 hover:bg-purple-400 hover:text-black text-xs w-full"
+                                data-testid={`button-restore-${contract.contractId}`}
+                              >
+                                <ArchiveRestore className="h-3 w-3 mr-1" />
+                                Restore Contract
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <Archive className="h-12 w-12 text-gray-600 mx-auto mb-4" />
+                        <p className="text-gray-400 mb-2">
+                          No archived contracts
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          Archived contracts will appear here for later cleanup
                         </p>
                       </div>
                     )}
