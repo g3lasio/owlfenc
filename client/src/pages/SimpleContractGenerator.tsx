@@ -59,6 +59,16 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   collection,
   query,
   where,
@@ -222,6 +232,16 @@ export default function SimpleContractGenerator() {
 
   // AI Enhancement states
   const [isAIProcessing, setIsAIProcessing] = useState(false);
+
+  // Manual total entry modal state (for corrupted legacy drafts)
+  const [isManualTotalModalOpen, setIsManualTotalModalOpen] = useState(false);
+  const [manualTotalInput, setManualTotalInput] = useState("");
+  const [pendingContractData, setPendingContractData] = useState<{
+    contract: any;
+    contractDataFromHistory: any;
+    projectFromHistory: any;
+    paymentMilestones: any[];
+  } | null>(null);
 
   const { currentUser } = useAuth();
   const { profile } = useProfile();
@@ -1661,52 +1681,114 @@ export default function SimpleContractGenerator() {
       return value;
     };
 
-    // PRIORITY 1: Check displaySubtotal (but correct if malformed)
+    // CRITICAL FIX: Extended lookup matrix for ALL legacy financial field shapes
+    
+    // PRIORITY 1: User-edited values (formFields - HIGHEST PRIORITY)
+    if (project.formFields?.projectTotal && project.formFields.projectTotal > 0) {
+      return normalizeCurrency(correctMalformedValue(project.formFields.projectTotal, "formFields.projectTotal"));
+    }
+    if (project.formFields?.projectDetails?.total && project.formFields.projectDetails.total > 0) {
+      return normalizeCurrency(correctMalformedValue(project.formFields.projectDetails.total, "formFields.projectDetails.total"));
+    }
+    if (project.formFields?.projectDetails?.totalCost && project.formFields.projectDetails.totalCost > 0) {
+      return normalizeCurrency(correctMalformedValue(project.formFields.projectDetails.totalCost, "formFields.projectDetails.totalCost"));
+    }
+    if (project.formFields?.financials?.displaySubtotal && project.formFields.financials.displaySubtotal > 0) {
+      return normalizeCurrency(correctMalformedValue(project.formFields.financials.displaySubtotal, "formFields.financials.displaySubtotal"));
+    }
+    if (project.formFields?.financials?.total && project.formFields.financials.total > 0) {
+      return normalizeCurrency(correctMalformedValue(project.formFields.financials.total, "formFields.financials.total"));
+    }
+    if (project.formFields?.financials?.grandTotal && project.formFields.financials.grandTotal > 0) {
+      return normalizeCurrency(correctMalformedValue(project.formFields.financials.grandTotal, "formFields.financials.grandTotal"));
+    }
+    
+    // PRIORITY 2: Project cost structures (from estimates)
+    if (project.projectTotalCosts?.totalSummary?.finalTotal && project.projectTotalCosts.totalSummary.finalTotal > 0) {
+      return normalizeCurrency(correctMalformedValue(project.projectTotalCosts.totalSummary.finalTotal, "projectTotalCosts.totalSummary.finalTotal"));
+    }
+    if (project.projectTotalCosts?.totalSummary?.total && project.projectTotalCosts.totalSummary.total > 0) {
+      return normalizeCurrency(correctMalformedValue(project.projectTotalCosts.totalSummary.total, "projectTotalCosts.totalSummary.total"));
+    }
+    if (project.projectTotalCosts?.totalSummary?.grandTotal && project.projectTotalCosts.totalSummary.grandTotal > 0) {
+      return normalizeCurrency(correctMalformedValue(project.projectTotalCosts.totalSummary.grandTotal, "projectTotalCosts.totalSummary.grandTotal"));
+    }
+    if (project.projectTotalCosts?.total && project.projectTotalCosts.total > 0) {
+      return normalizeCurrency(correctMalformedValue(project.projectTotalCosts.total, "projectTotalCosts.total"));
+    }
+    if (project.projectTotalCosts?.grandTotal && project.projectTotalCosts.grandTotal > 0) {
+      return normalizeCurrency(correctMalformedValue(project.projectTotalCosts.grandTotal, "projectTotalCosts.grandTotal"));
+    }
+    
+    // PRIORITY 3: Financial summary structures
+    if (project.financialSummary?.finalTotal && project.financialSummary.finalTotal > 0) {
+      return normalizeCurrency(correctMalformedValue(project.financialSummary.finalTotal, "financialSummary.finalTotal"));
+    }
+    if (project.financialSummary?.total && project.financialSummary.total > 0) {
+      return normalizeCurrency(correctMalformedValue(project.financialSummary.total, "financialSummary.total"));
+    }
+    if (project.financialSummary?.displayTotal && project.financialSummary.displayTotal > 0) {
+      return normalizeCurrency(correctMalformedValue(project.financialSummary.displayTotal, "financialSummary.displayTotal"));
+    }
+    if (project.financialSummary?.grandTotal && project.financialSummary.grandTotal > 0) {
+      return normalizeCurrency(correctMalformedValue(project.financialSummary.grandTotal, "financialSummary.grandTotal"));
+    }
+    
+    // PRIORITY 4: Financial data structures (legacy)
+    if (project.financialData?.displaySubtotal && project.financialData.displaySubtotal > 0) {
+      return normalizeCurrency(correctMalformedValue(project.financialData.displaySubtotal, "financialData.displaySubtotal"));
+    }
+    if (project.financialData?.displayTotal && project.financialData.displayTotal > 0) {
+      return normalizeCurrency(correctMalformedValue(project.financialData.displayTotal, "financialData.displayTotal"));
+    }
+    if (project.financialData?.total && project.financialData.total > 0) {
+      return normalizeCurrency(correctMalformedValue(project.financialData.total, "financialData.total"));
+    }
+    if (project.financialData?.grandTotal && project.financialData.grandTotal > 0) {
+      return normalizeCurrency(correctMalformedValue(project.financialData.grandTotal, "financialData.grandTotal"));
+    }
+    
+    // PRIORITY 5: Historic estimate references
+    if (project.historicEstimate?.totalAmount && project.historicEstimate.totalAmount > 0) {
+      return normalizeCurrency(correctMalformedValue(project.historicEstimate.totalAmount, "historicEstimate.totalAmount"));
+    }
+    if (project.historicEstimate?.finalTotal && project.historicEstimate.finalTotal > 0) {
+      return normalizeCurrency(correctMalformedValue(project.historicEstimate.finalTotal, "historicEstimate.finalTotal"));
+    }
+    if (project.historicEstimate?.total && project.historicEstimate.total > 0) {
+      return normalizeCurrency(correctMalformedValue(project.historicEstimate.total, "historicEstimate.total"));
+    }
+    if (project.historicEstimate?.displayTotal && project.historicEstimate.displayTotal > 0) {
+      return normalizeCurrency(correctMalformedValue(project.historicEstimate.displayTotal, "historicEstimate.displayTotal"));
+    }
+    
+    // PRIORITY 6: Top-level direct fields
     if (project.displaySubtotal && project.displaySubtotal > 0) {
-      const corrected = correctMalformedValue(
-        project.displaySubtotal,
-        "displaySubtotal",
-      );
-      return corrected;
+      return correctMalformedValue(project.displaySubtotal, "displaySubtotal");
     }
-
-    // PRIORITY 2: Check displayTotal (but correct if malformed)
     if (project.displayTotal && project.displayTotal > 0) {
-      const corrected = correctMalformedValue(
-        project.displayTotal,
-        "displayTotal",
-      );
-      return corrected;
+      return correctMalformedValue(project.displayTotal, "displayTotal");
     }
-
-    // PRIORITY 3: Check totalPrice
     if (project.totalPrice && project.totalPrice > 0) {
-      const corrected = correctMalformedValue(project.totalPrice, "totalPrice");
-      return corrected;
+      return correctMalformedValue(project.totalPrice, "totalPrice");
     }
-
-    // PRIORITY 4: Check estimateAmount
     if (project.estimateAmount && project.estimateAmount > 0) {
-      const corrected = correctMalformedValue(
-        project.estimateAmount,
-        "estimateAmount",
-      );
-      return corrected;
+      return correctMalformedValue(project.estimateAmount, "estimateAmount");
     }
-
-    // PRIORITY 5: Check total
     if (project.total && project.total > 0) {
-      const corrected = correctMalformedValue(project.total, "total");
-      return corrected;
+      return correctMalformedValue(project.total, "total");
     }
-
-    // PRIORITY 6: Check totalAmount
     if (project.totalAmount && project.totalAmount > 0) {
-      const corrected = correctMalformedValue(
-        project.totalAmount,
-        "totalAmount",
-      );
-      return corrected;
+      return correctMalformedValue(project.totalAmount, "totalAmount");
+    }
+    if (project.contractTotal && project.contractTotal > 0) {
+      return correctMalformedValue(project.contractTotal, "contractTotal");
+    }
+    if (project.projectTotal && project.projectTotal > 0) {
+      return correctMalformedValue(project.projectTotal, "projectTotal");
+    }
+    if (project.totalCost && project.totalCost > 0) {
+      return correctMalformedValue(project.totalCost, "totalCost");
     }
 
     console.log("💰 Final calculated total:", 0);
@@ -1859,6 +1941,102 @@ export default function SimpleContractGenerator() {
     setAutoSaveTimer(newTimer);
   }, [autoSaveTimer, performAutoSave]);
 
+  // REUSABLE HYDRATION HELPER: Converts contract history data into editable state
+  // Used by both loadContractFromHistory and handleManualTotalConfirm
+  const hydrateContractState = useCallback((
+    contractDataFromHistory: any,
+    contract: ContractHistoryEntry,
+    contractTotal: number, // MUST be pre-normalized
+    paymentMilestonesInput: any[]
+  ) => {
+    // Deep-clone milestones to avoid mutations
+    let paymentMilestones = JSON.parse(JSON.stringify(paymentMilestonesInput));
+
+    if (paymentMilestones.length > 0 && contractTotal > 0) {
+      // 🔧 MILESTONE REHYDRATION PASS - backfill amounts from percentages
+      paymentMilestones = paymentMilestones.map((milestone: any) => {
+        let finalAmount: number;
+        
+        if (milestone.amount != null && milestone.amount !== 0) {
+          // (a) Normalize any provided amount
+          finalAmount = normalizeCurrency(milestone.amount);
+          console.log(`💰 [MILESTONE] Using stored amount: ${milestone.amount} → ${finalAmount}`);
+        } else if (milestone.percentage != null && milestone.percentage > 0) {
+          // (b) Backfill from percentage using contractTotal
+          finalAmount = Math.round((milestone.percentage / 100) * contractTotal * 100) / 100;
+          console.log(`💰 [MILESTONE] Rehydrated from ${milestone.percentage}%: ${finalAmount}`);
+        } else {
+          // (c) No percentage or amount - will regenerate later
+          finalAmount = 0;
+          console.log(`💰 [MILESTONE] Missing data, setting to 0 for regeneration`);
+        }
+        
+        return {
+          ...milestone,
+          amount: finalAmount,
+        };
+      });
+
+      // Verify milestone sum matches contract total
+      const milestonesSum = paymentMilestones.reduce((sum: number, m: any) => sum + (m.amount || 0), 0);
+      const totalPercentage = paymentMilestones.reduce((sum: number, m: any) => sum + (m.percentage || 0), 0);
+      
+      // If milestones sum to 100% and have valid amounts, use that as verification
+      if (totalPercentage === 100 && milestonesSum > 0) {
+        const tolerance = Math.abs(contractTotal * 0.02); // 2% tolerance
+        if (Math.abs(milestonesSum - contractTotal) <= tolerance) {
+          console.log(`✅ [HYDRATE] Milestones sum (${milestonesSum}) matches contract total (${contractTotal})`);
+        } else {
+          console.log(`⚠️ [HYDRATE] Milestones sum (${milestonesSum}) differs from contract total (${contractTotal}), using milestones`);
+          contractTotal = milestonesSum;
+        }
+      }
+    } else if (paymentMilestones.length === 0 || contractTotal === 0) {
+      // Regenerate default milestones if none exist or total is 0
+      paymentMilestones = [
+        {
+          id: 1,
+          description: "Initial deposit",
+          percentage: 50,
+          amount: contractTotal * 0.5,
+        },
+        {
+          id: 2,
+          description: "Project completion",
+          percentage: 50,
+          amount: contractTotal * 0.5,
+        },
+      ];
+      console.log(`💰 [HYDRATE] Generated default milestones for total: ${contractTotal}`);
+    }
+
+    // Build editable data
+    const editableData = {
+      clientName: contractDataFromHistory.client?.name || contract.clientName,
+      clientEmail: contractDataFromHistory.client?.email || "",
+      clientPhone: contractDataFromHistory.client?.phone || "",
+      clientAddress: contractDataFromHistory.client?.address || "",
+      startDate: contractDataFromHistory.formFields?.startDate || contractDataFromHistory.timeline?.startDate || "",
+      completionDate: contractDataFromHistory.formFields?.completionDate || contractDataFromHistory.timeline?.completionDate || "",
+      permitRequired: (contractDataFromHistory as any).permitInfo?.required ? "yes" : "no",
+      permitResponsibility: contractDataFromHistory.formFields?.permitResponsibility || (contractDataFromHistory as any).permitInfo?.responsibility || "contractor",
+      warrantyYears: (contractDataFromHistory.formFields as any)?.warrantyYears || "1",
+      projectTotal: contractTotal, // Editable project total from history
+      paymentMilestones: paymentMilestones as any,
+    };
+
+    // Build clauses
+    const suggestedClauses = contractDataFromHistory.protections?.map((p: any) => ({
+      id: p.id,
+      title: p.clause,
+      category: p.category,
+    })) || [];
+    
+    const selectedClauses = contractDataFromHistory.protections?.map((p: any) => p.id) || [];
+
+    return { editableData, suggestedClauses, selectedClauses };
+  }, [normalizeCurrency]);
+
   // Load contract from history and resume editing
   const loadContractFromHistory = useCallback(
     async (contract: ContractHistoryEntry) => {
@@ -1871,7 +2049,8 @@ export default function SimpleContractGenerator() {
         // Extract contract data
         const contractDataFromHistory = contract.contractData;
 
-        // Set up project data from contract history
+        // CRITICAL FIX: Build projectFromHistory with ALL possible financial field lookups
+        // This enables getCorrectProjectTotal to use its comprehensive normalization logic
         const projectFromHistory = {
           id: contract.contractId,
           clientName:
@@ -1883,8 +2062,19 @@ export default function SimpleContractGenerator() {
             contractDataFromHistory.project?.type || contract.projectType,
           projectDescription:
             contractDataFromHistory.project?.description || "",
-          totalAmount: contractDataFromHistory.financials?.total || 0,
-          displaySubtotal: contractDataFromHistory.financials?.total || 0,
+          // Populate ALL financial fields for getCorrectProjectTotal to normalize
+          displaySubtotal: contractDataFromHistory.financials?.subtotal || contractDataFromHistory.financials?.displaySubtotal || (contractDataFromHistory as any).financialData?.displaySubtotal || (contractDataFromHistory as any).displaySubtotal || 0,
+          displayTotal: contractDataFromHistory.financials?.displayTotal || (contractDataFromHistory as any).financialData?.displayTotal || (contractDataFromHistory as any).displayTotal || 0,
+          totalPrice: contractDataFromHistory.financials?.total || (contractDataFromHistory as any).totalPrice || 0,
+          estimateAmount: (contractDataFromHistory as any).estimateAmount || (contractDataFromHistory as any).historicEstimate?.totalAmount || 0,
+          total: contractDataFromHistory.financials?.total || (contractDataFromHistory as any).total || 0,
+          totalAmount: contractDataFromHistory.financials?.total || (contractDataFromHistory as any).totalAmount || 0,
+          // Additional nested structures for comprehensive normalization
+          projectTotalCosts: (contractDataFromHistory as any).projectTotalCosts,
+          formFields: contractDataFromHistory.formFields,
+          project: contractDataFromHistory.project,
+          financialData: (contractDataFromHistory as any).financialData,
+          historicEstimate: (contractDataFromHistory as any).historicEstimate,
           materials: contractDataFromHistory.materials || [],
           originalData: contractDataFromHistory,
         };
@@ -1893,114 +2083,46 @@ export default function SimpleContractGenerator() {
         setSelectedProject(projectFromHistory);
         setContractData(contractDataFromHistory);
 
-        // Set editable data from contract history
-        // CRITICAL FIX: Normalize projectTotal from possible cents storage
-        const rawProjectTotal = 
-          (contractDataFromHistory.formFields as any)?.projectTotal ||
-          contractDataFromHistory.financials?.total || 
-          0;
-        let contractTotal = normalizeCurrency(rawProjectTotal);
+        // CRITICAL FIX: Use getCorrectProjectTotal to normalize total from ALL storage locations
+        // This reuses the proven helper with malformed-value detection and comprehensive fallbacks
+        let contractTotal = getCorrectProjectTotal(projectFromHistory);
+        console.log(`💰 [CONTRACT-LOAD] Normalized total using getCorrectProjectTotal: ${contractTotal}`);
+
+        // CRITICAL FIX: Check for corrupted legacy drafts (percentage-only milestones with no stored total)
+        let paymentMilestones = contractDataFromHistory.paymentTerms || [];
+        const hasPercentageOnlyMilestones = paymentMilestones.length > 0 && 
+          paymentMilestones.some((m: any) => (m.percentage != null && m.percentage > 0) && (m.amount == null || m.amount === 0));
         
-        console.log(`💰 [CONTRACT-LOAD] Raw total: ${rawProjectTotal} → Normalized: ${contractTotal}`);
-
-        // Ensure payment milestones always have amount field defined
-        let paymentMilestones = contractDataFromHistory.paymentTerms || [
-          {
-            id: 1,
-            description: "Initial deposit",
-            percentage: 50,
-            amount: contractTotal * 0.5,
-          },
-          {
-            id: 2,
-            description: "Project completion",
-            percentage: 50,
-            amount: contractTotal * 0.5,
-          },
-        ];
-
-        // 🔧 ROBUST MILESTONE NORMALIZATION WITH AUTO-CORRECTION
-        paymentMilestones = paymentMilestones.map((milestone: any) => {
-          const percentage = milestone.percentage || 0;
-          const expectedAmount = (contractTotal * percentage) / 100;
-          
-          // If milestone has a saved amount, normalize it
-          let finalAmount: number;
-          if (milestone.amount != null) {
-            const normalizedSaved = normalizeCurrency(milestone.amount);
-            
-            // If normalized amount is close to expected, use it
-            // Otherwise recalculate from percentage
-            const tolerance = Math.abs(expectedAmount * 0.02); // 2% tolerance
-            if (Math.abs(normalizedSaved - expectedAmount) <= tolerance) {
-              finalAmount = normalizedSaved;
-              console.log(`💰 [MILESTONE] Using normalized saved amount: ${milestone.amount} → ${finalAmount} (expected: ${expectedAmount})`);
-            } else {
-              finalAmount = normalizedSaved; // USE SAVED VALUE instead of recalculating
-              console.log(`💰 [MILESTONE] Using saved amount ${milestone.amount} (normalized: ${normalizedSaved}) over expected ${expectedAmount} - will auto-correct total`);
-            }
-          } else {
-            finalAmount = expectedAmount;
-            console.log(`💰 [MILESTONE] No saved amount, calculating: ${contractTotal} × ${percentage}% = ${finalAmount}`);
-          }
-          
-          return {
-            ...milestone,
-            amount: finalAmount,
-          };
-        });
-
-        // 🔧 AUTO-CORRECT PROJECT TOTAL if milestones sum doesn't match
-        // This fixes cases where projectTotal was saved incorrectly in Firebase
-        const milestonesSum = paymentMilestones.reduce((sum: number, m: any) => sum + (m.amount || 0), 0);
-        const totalPercentage = paymentMilestones.reduce((sum: number, m: any) => sum + (m.percentage || 0), 0);
-        
-        if (totalPercentage === 100 && milestonesSum > 0) {
-          const tolerance = Math.abs(contractTotal * 0.05); // 5% tolerance
-          if (Math.abs(milestonesSum - contractTotal) > tolerance) {
-            console.log(`🔧 [AUTO-CORRECT] ProjectTotal ${contractTotal} doesn't match milestones sum ${milestonesSum}, correcting...`);
-            contractTotal = milestonesSum;
-          }
+        if (contractTotal === 0 && hasPercentageOnlyMilestones) {
+          console.warn(`⚠️ [CONTRACT-LOAD] CORRUPTED LEGACY DRAFT: Contract has percentage-only milestones but no stored total. Opening manual entry modal.`);
+          // Store pending contract data for manual total entry
+          setPendingContractData({
+            contract,
+            contractDataFromHistory,
+            projectFromHistory,
+            paymentMilestones,
+          });
+          setManualTotalInput("");
+          setIsManualTotalModalOpen(true);
+          // STOP here - modal will handle continuation
+          return;
         }
-
-        setEditableData({
-          clientName:
-            contractDataFromHistory.client?.name || contract.clientName,
-          clientEmail: contractDataFromHistory.client?.email || "",
-          clientPhone: contractDataFromHistory.client?.phone || "",
-          clientAddress: contractDataFromHistory.client?.address || "",
-          startDate:
-            contractDataFromHistory.formFields?.startDate ||
-            contractDataFromHistory.timeline?.startDate ||
-            "",
-          completionDate:
-            contractDataFromHistory.formFields?.completionDate ||
-            contractDataFromHistory.timeline?.completionDate ||
-            "",
-          permitRequired: (contractDataFromHistory as any).permitInfo?.required
-            ? "yes"
-            : "no",
-          permitResponsibility:
-            contractDataFromHistory.formFields?.permitResponsibility ||
-            (contractDataFromHistory as any).permitInfo?.responsibility ||
-            "contractor",
-          warrantyYears:
-            (contractDataFromHistory.formFields as any)?.warrantyYears || "1",
-          projectTotal: contractTotal, // Editable project total from history
-          paymentMilestones: paymentMilestones as any,
-        });
-
-        // Set clauses from history
-        setSuggestedClauses(
-          contractDataFromHistory.protections?.map((p) => ({
-            id: p.id,
-            title: p.clause,
-            category: p.category,
-          })) || [],
+        
+        if (contractTotal === 0) {
+          console.warn(`⚠️ [CONTRACT-LOAD] Contract total is $0 after normalization. Proceeding with zero.`);
+        }
+        
+        // Use reusable hydration helper to build state
+        const hydrated = hydrateContractState(
+          contractDataFromHistory,
+          contract,
+          contractTotal,
+          paymentMilestones
         );
-        setSelectedClauses(
-          contractDataFromHistory.protections?.map((p) => p.id) || [],
-        );
+
+        setEditableData(hydrated.editableData);
+        setSuggestedClauses(hydrated.suggestedClauses);
+        setSelectedClauses(hydrated.selectedClauses);
 
         // Switch to contract view and go to step 2 (review)
         setCurrentView("contracts");
@@ -2023,6 +2145,130 @@ export default function SimpleContractGenerator() {
     },
     [toast],
   );
+
+  // Manual total entry confirmation handler (for corrupted legacy drafts)
+  const handleManualTotalConfirm = useCallback(() => {
+    if (!pendingContractData) return;
+
+    // Validate input
+    const rawManualTotal = parseFloat(manualTotalInput);
+    if (isNaN(rawManualTotal) || rawManualTotal <= 0) {
+      toast({
+        title: "Invalid Total",
+        description: "Please enter a valid positive number for the contract total.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { contract, contractDataFromHistory, projectFromHistory, paymentMilestones } = pendingContractData;
+      
+      console.log(`✅ [MANUAL-ENTRY] User provided total: $${rawManualTotal}`);
+
+      // CRITICAL: Deep-clone BOTH projectFromHistory AND contractDataFromHistory to avoid mutations
+      const updatedProjectFromHistory = JSON.parse(JSON.stringify(projectFromHistory));
+      const updatedContractDataFromHistory = JSON.parse(JSON.stringify(contractDataFromHistory));
+      
+      // Temporarily update project with manual total in ONE field (enables getCorrectProjectTotal to normalize)
+      updatedProjectFromHistory.totalAmount = rawManualTotal;
+
+      // CRITICAL: RERUN getCorrectProjectTotal over updated project (applies malformed-value correction pipeline)
+      const normalizedManualTotal = getCorrectProjectTotal(updatedProjectFromHistory);
+      console.log(`✅ [MANUAL-ENTRY] Normalized manual total via getCorrectProjectTotal: ${rawManualTotal} → ${normalizedManualTotal}`);
+
+      // NOW update ALL fields in project with NORMALIZED total
+      updatedProjectFromHistory.totalAmount = normalizedManualTotal;
+      updatedProjectFromHistory.displaySubtotal = normalizedManualTotal;
+      updatedProjectFromHistory.displayTotal = normalizedManualTotal;
+      updatedProjectFromHistory.totalPrice = normalizedManualTotal;
+      updatedProjectFromHistory.estimateAmount = normalizedManualTotal;
+      updatedProjectFromHistory.total = normalizedManualTotal;
+
+      // Update ALL nested financial fields in contractData with NORMALIZED total
+      if (!updatedContractDataFromHistory.financials) {
+        updatedContractDataFromHistory.financials = {};
+      }
+      updatedContractDataFromHistory.financials.total = normalizedManualTotal;
+      updatedContractDataFromHistory.financials.displayTotal = normalizedManualTotal;
+      updatedContractDataFromHistory.financials.displaySubtotal = normalizedManualTotal;
+
+      // Update legacy financial locations
+      if (!updatedContractDataFromHistory.financialData) {
+        updatedContractDataFromHistory.financialData = {};
+      }
+      updatedContractDataFromHistory.financialData.total = normalizedManualTotal;
+      updatedContractDataFromHistory.financialData.displayTotal = normalizedManualTotal;
+      updatedContractDataFromHistory.financialData.displaySubtotal = normalizedManualTotal;
+
+      if (!updatedContractDataFromHistory.financialSummary) {
+        updatedContractDataFromHistory.financialSummary = {};
+      }
+      updatedContractDataFromHistory.financialSummary.total = normalizedManualTotal;
+      updatedContractDataFromHistory.financialSummary.displayTotal = normalizedManualTotal;
+
+      // Update top-level total fields
+      updatedContractDataFromHistory.total = normalizedManualTotal;
+      updatedContractDataFromHistory.totalAmount = normalizedManualTotal;
+      updatedContractDataFromHistory.displayTotal = normalizedManualTotal;
+      updatedContractDataFromHistory.displaySubtotal = normalizedManualTotal;
+
+      // Update projectTotalCosts if exists
+      if (!updatedContractDataFromHistory.projectTotalCosts) {
+        updatedContractDataFromHistory.projectTotalCosts = {};
+      }
+      updatedContractDataFromHistory.projectTotalCosts.total = normalizedManualTotal;
+      updatedContractDataFromHistory.projectTotalCosts.displayTotal = normalizedManualTotal;
+      updatedContractDataFromHistory.projectTotalCosts.userEditedTotal = normalizedManualTotal;
+
+      // Update historicEstimate if exists
+      if (!updatedContractDataFromHistory.historicEstimate) {
+        updatedContractDataFromHistory.historicEstimate = {};
+      }
+      updatedContractDataFromHistory.historicEstimate.totalAmount = normalizedManualTotal;
+      updatedContractDataFromHistory.historicEstimate.displayTotal = normalizedManualTotal;
+
+      // Deep-clone paymentMilestones to avoid mutations
+      const clonedMilestones = JSON.parse(JSON.stringify(paymentMilestones));
+
+      // Use SAME hydration helper as loadContractFromHistory (reuses proven pipeline)
+      const hydrated = hydrateContractState(
+        updatedContractDataFromHistory,
+        contract,
+        normalizedManualTotal,
+        clonedMilestones
+      );
+
+      // Set all states with hydrated data (SAME sequence as non-modal path)
+      setSelectedProject(updatedProjectFromHistory);
+      setContractData(updatedContractDataFromHistory);
+      setEditableData(hydrated.editableData);
+      setSuggestedClauses(hydrated.suggestedClauses);
+      setSelectedClauses(hydrated.selectedClauses);
+      setCurrentContractId(contract.id || null);
+
+      // Close modal and proceed to Step 2
+      setIsManualTotalModalOpen(false);
+      setPendingContractData(null);
+      setManualTotalInput("");
+      setCurrentView("contracts");
+      setCurrentStep(2);
+
+      toast({
+        title: "Contract Loaded",
+        description: `Resumed contract for ${contract.clientName} with manual total: $${normalizedManualTotal.toFixed(2)}`,
+      });
+
+      console.log("✅ Contract loaded from history with manual total entry");
+    } catch (error) {
+      console.error("❌ Error processing manual total:", error);
+      toast({
+        title: "Error",
+        description: "Failed to process manual total entry",
+        variant: "destructive",
+      });
+    }
+  }, [pendingContractData, manualTotalInput, toast, hydrateContractState, getCorrectProjectTotal]);
 
   // Filter and search contracts
   const filteredContracts = contractHistory.filter((contract) => {
@@ -6345,6 +6591,51 @@ export default function SimpleContractGenerator() {
           </div>
         )}
       </div>
+
+      {/* Manual Total Entry Modal (for corrupted legacy drafts) */}
+      <AlertDialog open={isManualTotalModalOpen} onOpenChange={setIsManualTotalModalOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Contract Total Required</AlertDialogTitle>
+            <AlertDialogDescription>
+              This draft contains payment milestones with percentages but is missing the total contract amount. 
+              Please enter the original contract total to restore this draft correctly.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Label htmlFor="manualTotal" className="text-sm font-medium">
+              Contract Total Amount ($)
+            </Label>
+            <Input
+              id="manualTotal"
+              type="number"
+              placeholder="Enter total amount (e.g., 5000.00)"
+              value={manualTotalInput}
+              onChange={(e) => setManualTotalInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleManualTotalConfirm();
+                }
+              }}
+              className="mt-2"
+              autoFocus
+              data-testid="input-manual-total"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setIsManualTotalModalOpen(false);
+              setPendingContractData(null);
+              setManualTotalInput("");
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleManualTotalConfirm} data-testid="button-confirm-manual-total">
+              Continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
