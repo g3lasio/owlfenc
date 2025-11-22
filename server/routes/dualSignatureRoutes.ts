@@ -372,7 +372,13 @@ router.get("/in-progress/:userId", requireAuth, async (req, res) => {
       .orderBy('createdAt', 'desc')
       .get();
 
-    const contracts = snapshot.docs.map(doc => {
+    // 📁 IMPORTANT: Filter out archived contracts
+    const nonArchivedDocs = snapshot.docs.filter(doc => {
+      const data = doc.data();
+      return data.isArchived !== true;
+    });
+
+    const contracts = nonArchivedDocs.map(doc => {
       const data = doc.data();
       return {
         contractId: data.contractId || doc.id,
@@ -448,7 +454,13 @@ router.get("/drafts/:userId", requireAuth, async (req, res) => {
       .orderBy('createdAt', 'desc')
       .get();
 
-    const contracts = snapshot.docs.map(doc => {
+    // 📁 IMPORTANT: Filter out archived contracts
+    const nonArchivedDocs = snapshot.docs.filter(doc => {
+      const data = doc.data();
+      return data.isArchived !== true;
+    });
+
+    const contracts = nonArchivedDocs.map(doc => {
       const data = doc.data();
       return {
         id: doc.id,
@@ -522,9 +534,12 @@ router.get("/completed/:userId", requireAuth, async (req, res) => {
     
     // ✅ FIX: Filter completed contracts in memory
     // Completed includes: 'completed' and 'both_signed'
+    // 📁 IMPORTANT: Exclude archived contracts
     const completedDocs = snapshot.docs.filter(doc => {
-      const status = doc.data().status;
-      return status === 'completed' || status === 'both_signed';
+      const data = doc.data();
+      const status = data.status;
+      const isArchived = data.isArchived === true;
+      return (status === 'completed' || status === 'both_signed') && !isArchived;
     });
 
     const contracts = completedDocs.map(doc => {

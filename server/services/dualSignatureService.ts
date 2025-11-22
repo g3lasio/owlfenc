@@ -343,6 +343,15 @@ export class DualSignatureService {
 
       const contract = contractDoc.data();
 
+      // 📁 CRITICAL: Block access to archived contracts
+      if (contract?.isArchived === true) {
+        console.log(`🚫 [ARCHIVE-GUARD] Contract ${contractId} is archived and cannot be accessed for signing`);
+        return {
+          success: false,
+          message: "Contract not found",
+        };
+      }
+
       // Check if already signed
       const alreadySigned =
         party === "contractor"
@@ -645,6 +654,15 @@ export class DualSignatureService {
       }
 
       const contract = contractDoc.data()!;
+
+      // 📁 CRITICAL: Block access to archived contracts
+      if (contract.isArchived === true) {
+        console.log(`🚫 [ARCHIVE-GUARD] Contract ${contractId} is archived and cannot be downloaded`);
+        return {
+          success: false,
+          message: "Contract not found in Firebase",
+        };
+      }
 
       // Security check - optional for public contracts
       if (requestingUserId && contract.userId !== requestingUserId) {

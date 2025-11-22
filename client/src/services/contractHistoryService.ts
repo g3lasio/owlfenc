@@ -295,15 +295,22 @@ class ContractHistoryService {
       );
 
       const historySnapshot = await Promise.race([historyPromise, timeoutPromise]);
-      historyContracts = historySnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          createdAt: data.createdAt?.toDate() || new Date(),
-          updatedAt: data.updatedAt?.toDate() || new Date()
-        } as ContractHistoryEntry;
-      });
+      
+      // 📁 IMPORTANT: Filter out archived contracts
+      historyContracts = historySnapshot.docs
+        .filter(doc => {
+          const data = doc.data();
+          return data.isArchived !== true;
+        })
+        .map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toDate() || new Date(),
+            updatedAt: data.updatedAt?.toDate() || new Date()
+          } as ContractHistoryEntry;
+        });
       
       console.log('✅ [CONTRACT-HISTORY] Loaded from contractHistory:', historyContracts.length);
     } catch (historyError: any) {
@@ -325,10 +332,17 @@ class ContractHistoryService {
       );
 
       const dualSnapshot = await Promise.race([dualPromise, timeoutPromise]);
-      dualContracts = dualSnapshot.docs.map(doc => {
-        const data = doc.data();
-        return this.mapDualSignatureToHistory(doc.id, data);
-      });
+      
+      // 📁 IMPORTANT: Filter out archived contracts
+      dualContracts = dualSnapshot.docs
+        .filter(doc => {
+          const data = doc.data();
+          return data.isArchived !== true;
+        })
+        .map(doc => {
+          const data = doc.data();
+          return this.mapDualSignatureToHistory(doc.id, data);
+        });
 
       console.log('✅ [CONTRACT-HISTORY] Loaded from dualSignatureContracts:', dualContracts.length);
     } catch (dualError: any) {
