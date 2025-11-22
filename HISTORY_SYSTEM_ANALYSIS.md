@@ -366,6 +366,71 @@ financials: {
 
 ---
 
-**Fecha de Análisis:** 2025-01-XX
+## 🔥 FIRESTORE COMPOSITE INDEX REQUERIDO
+
+### ⚠️ CRÍTICO: Crear Index Antes de Deploy
+
+El endpoint `/api/dual-signature/in-progress/:userId` requiere un **composite index** en Firestore para funcionar correctamente.
+
+**Colección:** `dualSignatureContracts`
+
+**Campos:**
+```
+userId (==)
+status (in)
+createdAt (desc)
+```
+
+### Cómo Crear el Index:
+
+**Opción A - Automático (Recomendado):**
+1. Ejecutar el endpoint en desarrollo
+2. Firestore generará un link de error con URL para crear el index
+3. Hacer click en el link y confirmar creación
+
+**Opción B - Manual:**
+1. Ir a Firebase Console → Firestore Database → Indexes
+2. Click "Create Index"
+3. Configurar:
+   - Collection: `dualSignatureContracts`
+   - Field 1: `userId` - Ascending
+   - Field 2: `status` - Array Contains Any
+   - Field 3: `createdAt` - Descending
+4. Click "Create"
+
+### Index Configuration (firestore.indexes.json):
+```json
+{
+  "indexes": [
+    {
+      "collectionGroup": "dualSignatureContracts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### ⚠️ Sin Este Index:
+- La query fallará con error: "requires an index"
+- El tab "In Progress" mostrará error
+- Los contratos con firmas parciales NO aparecerán
+
+---
+
+**Fecha de Análisis:** 2025-11-22
 **Analista:** Replit Agent
-**Estado:** READY FOR IMPLEMENTATION
+**Estado:** ✅ IMPLEMENTATION COMPLETED - INDEX DOCUMENTATION PENDING
