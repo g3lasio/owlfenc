@@ -184,9 +184,9 @@ class CompletionQueue extends EventEmitter {
   clearCompletedJobs(): void {
     const completedJobs: string[] = [];
     
-    for (const [contractId, job] of this.jobs.entries()) {
+    const entries = Array.from(this.jobs.entries());
+    for (const [contractId, job] of entries) {
       if (job.status === JobStatus.COMPLETED || job.status === JobStatus.FAILED) {
-        // Only clear jobs older than 1 hour
         const oneHourAgo = new Date();
         oneHourAgo.setHours(oneHourAgo.getHours() - 1);
         
@@ -221,37 +221,24 @@ async function processPendingJobsFromFirestore() {
     
     const { db: firebaseDb } = await import('../lib/firebase-admin');
     
-    // ✅ CRITICAL FIX: Also recover stale 'processing' jobs (crash recovery)
-    // A job is stale if it's been processing for >5 minutes (worker probably crashed)
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-    
-    // Query all pending, failed, OR stale processing jobs
+    // ✅ FIX: Simplified query to avoid index requirement
+    // Only query pending/failed jobs on startup (no stale processing check)
+    // Stale processing jobs will be recovered by next worker poll
     const pendingJobs = await firebaseDb
       .collection('completionJobs')
       .where('status', 'in', ['pending', 'failed'])
       .limit(100)
       .get();
     
-    // Also query stale processing jobs separately (can't use IN with < operator)
-    const staleProcessingJobs = await firebaseDb
-      .collection('completionJobs')
-      .where('status', '==', 'processing')
-      .where('claimedAt', '<', fiveMinutesAgo)
-      .limit(50)
-      .get();
-    
-    // Combine both result sets
-    const allJobs = [...pendingJobs.docs, ...staleProcessingJobs.docs];
-    
-    if (allJobs.length === 0) {
+    if (pendingJobs.empty) {
       console.log('✅ [QUEUE] No pending jobs found in Firestore');
       return;
     }
     
-    console.log(`📋 [QUEUE] Found ${allJobs.length} jobs in Firestore (${pendingJobs.size} pending/failed, ${staleProcessingJobs.size} stale processing)`);
+    console.log(`📋 [QUEUE] Found ${pendingJobs.size} pending/failed jobs in Firestore`);
     
     // Enqueue all pending jobs with distributed locking
-    for (const doc of allJobs) {
+    for (const doc of pendingJobs.docs) {
       const job = doc.data();
       
       // Skip if retry count exceeded
@@ -317,7 +304,7 @@ async function processPendingJobsFromFirestore() {
       }
     }
     
-    console.log(`✅ [QUEUE] Processed ${allJobs.length} jobs from Firestore`);
+    console.log(`✅ [QUEUE] Processed ${pendingJobs.size} jobs from Firestore`);
     
   } catch (error: any) {
     console.error('❌ [QUEUE] Error processing pending jobs from Firestore:', error);

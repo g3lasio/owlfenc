@@ -56,6 +56,8 @@ This AI-powered platform automates legal document and permit management for cont
 - **Stripe Express Contractor Payments**: Production-ready Stripe Express Connect integration for contractor payment processing with enterprise-grade security hardening.
 - **Automated Email Systems**: Welcome Email System and Payment Failure Blocking System, both utilizing Resend.
 - **Contract History System**: Production-ready classification system with robust Draft/In Progress/Completed categorization. Supports comprehensive state mapping (5 in-progress states, 2 completed states) with duplicate prevention and multi-source aggregation from contractHistory and dualSignatureContracts collections. Requires Firestore composite index for in-progress query optimization.
+  - **Financial Data Display**: All contract amounts stored in dollars (e.g., 45000 = $45,000). No cent-based normalization applied. Values trusted as-is from Firestore.
+  - **Completion Date Tracking**: Dual-signature contracts include completionDate field mapping for accurate display in Completed contracts section.
 - **Dual Signature Completion System (Nov 2025)**: Production-ready distributed completion workflow with comprehensive race condition prevention and crash recovery. Features include:
   - **Atomic Job Creation**: Completion jobs created inside Firestore transactions alongside signatures, guaranteeing no lost jobs even on server crashes.
   - **Distributed Locking**: Compare-and-set (CAS) transactions ensure only one worker instance can process each completion job, preventing duplicate PDFs and emails across multi-instance deployments.
