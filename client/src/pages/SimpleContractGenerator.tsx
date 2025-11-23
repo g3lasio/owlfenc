@@ -148,21 +148,9 @@ export default function SimpleContractGenerator() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showAllProjects, setShowAllProjects] = useState(false);
 
-  // Completed contracts state
-  const [completedContracts, setCompletedContracts] = useState<any[]>([]);
-  const [isLoadingCompleted, setIsLoadingCompleted] = useState(false);
-
-  // Draft contracts state
-  const [draftContracts, setDraftContracts] = useState<any[]>([]);
-  const [isLoadingDrafts, setIsLoadingDrafts] = useState(false);
-
-  // In-progress contracts state
-  const [inProgressContracts, setInProgressContracts] = useState<any[]>([]);
-  const [isLoadingInProgress, setIsLoadingInProgress] = useState(false);
-
-  // 📁 Archived contracts state (Nov 2025)
-  const [archivedContracts, setArchivedContracts] = useState<any[]>([]);
-  const [isLoadingArchived, setIsLoadingArchived] = useState(false);
+  // ✅ MIGRATION: Using unified contractsStore for ALL contract tabs (Nov 2025)
+  // REMOVED legacy state: draftContracts,  inProgressContracts, archivedContracts
+  // NOW using: contractsStore.{drafts, inProgress, completed, archived}
 
   // Auto-save state
   const [isAutoSaving, setIsAutoSaving] = useState(false);
@@ -409,340 +397,9 @@ export default function SimpleContractGenerator() {
     }
   }, [currentUser?.uid, toast]);
 
-  // Load completed contracts from both contract history and dual signature system
-  const loadCompletedContracts = useCallback(async () => {
-    // 🔐 CRITICAL: ONLY use currentUser.uid for authenticated API calls
-    // NEVER use currentUser?.uid as it may be stale/from different user
-    if (!currentUser?.uid) {
-      console.log("⏳ Waiting for Firebase Auth to initialize...");
-      return;
-    }
-
-    setIsLoadingCompleted(true);
-    try {
-      console.log("📋 Loading completed contracts for user:", currentUser.uid);
-
-      // ✅ PRE-FLIGHT CHECK: Ensure Firebase token is available before API calls
-      // This prevents the empty-object error during first invocation
-      if (currentUser && typeof currentUser.getIdToken === 'function') {
-        try {
-          // Wait for a valid token with timeout
-          await Promise.race([
-            currentUser.getIdToken(),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Token acquisition timeout')), 5000))
-          ]);
-        } catch (tokenError: any) {
-          console.warn("⚠️ Token not yet available - deferring load:", tokenError.message || tokenError);
-          // Early return - component will retry when auth is fully ready
-          setIsLoadingCompleted(false);
-          return;
-        }
-      }
-
-      // ✅ SECURE & ROBUST: Use unified endpoint with proper authentication
-      // The backend uses unified-session-auth middleware (session cookie OR token)
-      
-      // Get Firebase token for authentication
-      let authHeaders: HeadersInit = {
-        'Content-Type': 'application/json'
-      };
-      
-      // ✅ Token is guaranteed to be available now
-      if (currentUser && typeof currentUser.getIdToken === 'function') {
-        try {
-          const token = await currentUser.getIdToken();
-          authHeaders['Authorization'] = `Bearer ${token}`;
-          console.log("✅ Firebase token obtained for API authentication");
-        } catch (tokenError) {
-          console.warn("⚠️ Could not get Firebase token - relying on session cookie:", tokenError);
-          // Session cookie will be sent automatically by browser if available
-        }
-      } else {
-        console.warn("⚠️ Firebase user not fully initialized - relying on session cookie");
-      }
-
-      // ✅ PRODUCTION-READY: Add timeout wrapper for all promises
-      const withTimeout = <T,>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> => {
-        return Promise.race([
-          promise,
-          new Promise<T>((_, reject) => 
-            setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs}ms`)), timeoutMs)
-          )
-        ]);
-      };
-
-      const dataPromises: Promise<any>[] = [
-        // Source 1: Contract History (contracts completed via Simple Generator)
-        // This uses Firebase directly, doesn't need API token
-        withTimeout(
-          contractHistoryService.getContractHistory(currentUser.uid),
-          15000, // 15 second timeout
-          'Contract History Query'
-        ),
-        
-        // Source 2: Unified Dual Signature System (SECURE with auth)
-        // 🔐 CRITICAL: Must use currentUser.uid (matches session cookie)
-        withTimeout(
-          fetch(`/api/dual-signature/completed/${currentUser.uid}`, {
-            method: 'GET',
-            headers: authHeaders,
-            credentials: 'include' // Include session cookies
-          }).then(async (res) => {
-            if (!res.ok) {
-              // ✅ Treat auth errors as empty result, not fatal error
-              if (res.status === 401 || res.status === 403) {
-                console.warn(`⚠️ Auth required for dual signature contracts (${res.status}) - using partial data`);
-                return { success: true, contracts: [], count: 0 };
-              }
-              throw new Error(`API returned ${res.status}: Cannot load dual signature contracts`);
-            }
-            return res.json();
-          }),
-          15000, // 15 second timeout
-          'Dual Signature API'
-        )
-      ];
-
-      // Load from available sources and merge
-      const responses = await Promise.allSettled(dataPromises);
-
-      let allCompleted: any[] = [];
-
-      // Process response[0]: Contract History (always present)
-      const historyResponse = responses[0];
-      if (historyResponse.status === "fulfilled") {
-        const historyCompleted = historyResponse.value
-          .filter((contract: any) => contract.status === "completed")
-          .map((contract: any) => ({
-            contractId: contract.contractId,
-            clientName: contract.clientName,
-            totalAmount: contract.contractData?.financials?.total || 0,
-            isCompleted: true,
-            isDownloadable: !!contract.pdfUrl,
-            contractorSigned: true,
-            clientSigned: true,
-            createdAt: contract.createdAt,
-            hasPdf: !!contract.pdfUrl,
-            pdfUrl: contract.pdfUrl,
-            source: "history",
-          }));
-        allCompleted = [...allCompleted, ...historyCompleted];
-        console.log(`✅ Loaded ${historyCompleted.length} contracts from history`);
-      } else {
-        console.error("❌ Critical: Failed to load contracts from history:", historyResponse.reason);
-      }
-
-      // Process response[1]: Dual Signature (only if auth token was available)
-      if (responses.length > 1) {
-        const dualSignatureResponse = responses[1];
-        if (dualSignatureResponse.status === "fulfilled") {
-          const dualSignatureCompleted = (
-            dualSignatureResponse.value.contracts || []
-          ).map((contract: any) => ({
-            contractId: contract.contractId,
-            clientName: contract.clientName,
-            totalAmount: contract.totalAmount || 0,
-            isCompleted: contract.isCompleted,
-            isDownloadable: contract.isDownloadable,
-            contractorSigned: contract.contractorSigned,
-            clientSigned: contract.clientSigned,
-            createdAt: contract.createdAt,
-            completionDate: contract.completionDate || null,
-            hasPdf: contract.isDownloadable,
-            pdfUrl: contract.signedPdfPath,
-            source: "dual-signature",
-          }));
-          allCompleted = [...allCompleted, ...dualSignatureCompleted];
-          console.log(`✅ Loaded ${dualSignatureCompleted.length} contracts from dual signature`);
-        } else {
-          console.warn("⚠️ Could not load contracts from dual signature API:", dualSignatureResponse.reason);
-        }
-      } else {
-        console.warn("⚠️ Dual signature contracts not loaded - auth token unavailable");
-      }
-
-      // Remove duplicates (same contractId)
-      const uniqueCompleted = allCompleted.filter(
-        (contract, index, self) =>
-          index === self.findIndex((c) => c.contractId === contract.contractId),
-      );
-
-      setCompletedContracts(uniqueCompleted);
-      
-      const sourcesLoaded = responses.length;
-      const sourcesSuccessful = responses.filter(r => r.status === "fulfilled").length;
-      
-      console.log(
-        `✅ Completed contracts loaded: ${uniqueCompleted.length} contracts from ${sourcesSuccessful}/${sourcesLoaded} available sources`,
-      );
-      
-      // ✅ PRODUCTION-READY: Only show error if BOTH sources fail completely
-      if (sourcesSuccessful === 0 && sourcesLoaded > 0) {
-        console.error("🚨 CRITICAL: All data sources failed - database connection issue");
-        toast({
-          title: "Database Connection Error",
-          description: "Cannot load contracts. Check your internet connection and try refreshing.",
-          variant: "destructive",
-        });
-      } else if (uniqueCompleted.length > 0) {
-        console.log("✅ Contract data loaded successfully");
-      } else if (sourcesSuccessful > 0 && uniqueCompleted.length === 0) {
-        console.log("ℹ️ No completed contracts found for this user");
-      }
-      
-      // ⚠️ Warn if some sources failed but we still have data
-      if (sourcesSuccessful < sourcesLoaded && uniqueCompleted.length > 0) {
-        console.warn(`⚠️ Partial load: ${sourcesSuccessful}/${sourcesLoaded} sources succeeded`);
-      }
-    } catch (error) {
-      console.error("❌ Critical error loading completed contracts:", error);
-      // ✅ PRODUCTION-READY: Only show toast for real errors, not auth issues
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      if (!errorMessage.includes('token') && !errorMessage.includes('auth') && !errorMessage.includes('403')) {
-        toast({
-          title: "Error",
-          description: "Failed to load contract data. Please refresh the page.",
-          variant: "destructive",
-        });
-      }
-    } finally {
-      setIsLoadingCompleted(false);
-    }
-  }, [currentUser, currentUser?.uid, toast]);
-
-  // Load draft contracts from contract history
-  const loadDraftContracts = useCallback(async () => {
-    // ✅ CRITICAL: Use currentUser.uid for authenticated API calls
-    const effectiveUid = currentUser?.uid;
-    
-    // ✅ FIXED: Resilient auth check
-    if (!effectiveUid) return;
-
-    setIsLoadingDrafts(true);
-    try {
-      console.log("📋 Loading draft contracts for user:", effectiveUid);
-
-      // Load from contract history service
-      const history = await contractHistoryService.getContractHistory(
-        effectiveUid!,
-      );
-      const drafts = history.filter((contract) => contract.status === "draft");
-
-      setDraftContracts(drafts);
-      console.log("✅ Draft contracts loaded:", drafts.length, "contracts");
-    } catch (error) {
-      console.error("❌ Error loading draft contracts:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load draft contracts",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoadingDrafts(false);
-    }
-  }, [currentUser?.uid, toast]);
-
-  const loadInProgressContracts = useCallback(async () => {
-    // 🔐 CRITICAL: ONLY use currentUser.uid for authenticated API calls
-    if (!currentUser?.uid) {
-      console.log("⏳ Waiting for Firebase Auth to initialize...");
-      return;
-    }
-
-    setIsLoadingInProgress(true);
-    try {
-      console.log(
-        "📋 Loading in-progress contracts for user:",
-        currentUser.uid,
-      );
-
-      // Try to get Firebase token for authentication
-      let authHeaders: HeadersInit = {
-        'Content-Type': 'application/json'
-      };
-      
-      // ✅ FIX: Verify currentUser exists before trying to get token
-      if (currentUser && typeof currentUser.getIdToken === 'function') {
-        try {
-          const token = await currentUser.getIdToken();
-          authHeaders['Authorization'] = `Bearer ${token}`;
-        } catch (tokenError) {
-          console.warn("⚠️ Could not get Firebase token for in-progress - relying on session cookie:", tokenError);
-        }
-      } else {
-        console.warn("⚠️ Firebase user not available - using session cookie authentication");
-      }
-
-      // Load from dual signature system (contracts with signature links sent)
-      // 🔐 CRITICAL: Must use currentUser.uid (matches session cookie)
-      const response = await fetch(
-        `/api/dual-signature/in-progress/${currentUser.uid}`,
-        {
-          method: 'GET',
-          headers: authHeaders,
-          credentials: 'include' // Include session cookies
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        setInProgressContracts(data.contracts || []);
-        console.log(
-          "✅ In-progress contracts loaded:",
-          data.contracts?.length || 0,
-          "contracts",
-        );
-      } else {
-        console.warn(
-          "⚠️ In-progress contracts API not available, using empty array",
-        );
-        setInProgressContracts([]);
-      }
-    } catch (error) {
-      console.error("❌ Error loading in-progress contracts:", error);
-      // Don't show error toast for in-progress contracts as it's not critical
-      setInProgressContracts([]);
-    } finally {
-      setIsLoadingInProgress(false);
-    }
-  }, [currentUser, currentUser?.uid, toast]);
-
-  // 📁 Load archived contracts (Nov 2025)
-  const loadArchivedContracts = useCallback(async () => {
-    if (!currentUser?.uid) {
-      console.log("⏳ Waiting for Firebase Auth to initialize...");
-      return;
-    }
-
-    setIsLoadingArchived(true);
-    try {
-      console.log("📁 Loading archived contracts for user:", currentUser.uid);
-
-      const token = await currentUser.getIdToken();
-      const response = await fetch('/api/contracts/archived', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include'
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setArchivedContracts(data || []);
-        console.log("✅ Archived contracts loaded:", data?.length || 0, "contracts");
-      } else {
-        console.warn("⚠️ Could not load archived contracts");
-        setArchivedContracts([]);
-      }
-    } catch (error) {
-      console.error("❌ Error loading archived contracts:", error);
-      setArchivedContracts([]);
-    } finally {
-      setIsLoadingArchived(false);
-    }
-  }, [currentUser]);
+  // ✅ MIGRATION COMPLETE: All contract loading now uses contractsStore
+  // Legacy functions removed: contractsStore.refetch, contractsStore.refetch, contractsStore.refetch, contractsStore.refetch
+  // Data now comes from: contractsStore.{drafts, inProgress, completed, archived}
 
   // 📁 Archive a contract
   // ✅ OPTIMISTIC ARCHIVE: Instant UI update with rollback on error
@@ -757,12 +414,7 @@ export default function SimpleContractGenerator() {
         description: "The contract has been moved to the Archived section",
       });
       
-      // ✅ NO MORE DELAYS: Optimistic update already moved the contract instantly
-      // Reload legacy state for compatibility with existing UI code
-      if (historyTab === 'drafts') await loadDraftContracts();
-      else if (historyTab === 'completed') await loadCompletedContracts();
-      else if (historyTab === 'in-progress') await loadInProgressContracts();
-      await loadArchivedContracts();
+      // ✅ Optimistic update handles UI instantly - no reload needed
       
     } catch (error) {
       console.error("❌ Error archiving contract:", error);
@@ -772,7 +424,7 @@ export default function SimpleContractGenerator() {
         variant: "destructive",
       });
     }
-  }, [contractsStore, currentUser, historyTab, loadDraftContracts, loadCompletedContracts, loadInProgressContracts, loadArchivedContracts, toast]);
+  }, [contractsStore, currentUser, toast]);
 
   // ✅ OPTIMISTIC UNARCHIVE: Instant UI update with rollback on error
   const unarchiveContract = useCallback(async (contractId: string) => {
@@ -786,12 +438,7 @@ export default function SimpleContractGenerator() {
         description: "The contract has been restored from the archive",
       });
       
-      // ✅ NO MORE DELAYS: Optimistic update already moved the contract instantly
-      // Reload legacy state for compatibility with existing UI code
-      await loadArchivedContracts();
-      await loadDraftContracts();
-      await loadCompletedContracts();
-      await loadInProgressContracts();
+      // ✅ Optimistic update handles UI instantly - no reload needed
       
     } catch (error) {
       console.error("❌ Error restoring contract:", error);
@@ -801,7 +448,7 @@ export default function SimpleContractGenerator() {
         variant: "destructive",
       });
     }
-  }, [contractsStore, currentUser, loadArchivedContracts, loadDraftContracts, loadCompletedContracts, loadInProgressContracts, toast]);
+  }, [contractsStore, currentUser, toast]);
 
   // Load projects from Firebase (same logic as ProjectToContractSelector)
   const loadProjectsFromFirebase = useCallback(async () => {
@@ -1171,7 +818,7 @@ export default function SimpleContractGenerator() {
         });
       }
     },
-    [toast, currentUser, completedContracts],
+    [toast, currentUser],
   );
 
   // View contract HTML in new window with embedded signatures
@@ -1293,7 +940,7 @@ export default function SimpleContractGenerator() {
             });
 
             // Refresh the completed contracts list
-            await loadCompletedContracts();
+            await contractsStore.refetch();
           } else {
             // Check if it's a Chrome dependency error
             const isChromeDependencyError =
@@ -1339,7 +986,7 @@ export default function SimpleContractGenerator() {
         });
       }
     },
-    [toast, loadCompletedContracts],
+    [toast, contractsStore.refetch],
   );
 
   // Copy contract link to clipboard
@@ -1373,7 +1020,7 @@ export default function SimpleContractGenerator() {
         console.log("👁️ Viewing signed contract PDF for:", contractId);
 
         // Find the contract to get its PDF URL
-        const contract = completedContracts.find(c => c.contractId === contractId);
+        const contract = contractsStore.completed.find((c: any) => c.contractId === contractId);
         
         if (contract?.pdfUrl) {
           // Open the existing PDF in a new tab
@@ -1537,7 +1184,7 @@ export default function SimpleContractGenerator() {
       });
     }
     },
-    [completedContracts, toast, currentUser],
+    [ toast, currentUser],
   );
 
   // Share contract PDF file using native share API or download
@@ -1655,7 +1302,7 @@ export default function SimpleContractGenerator() {
         });
       }
     },
-    [toast, currentUser, completedContracts],
+    [toast, currentUser],
   );
 
   // Download contract as HTML file
@@ -4051,55 +3698,9 @@ export default function SimpleContractGenerator() {
     };
   }, [autoSaveTimer]);
 
-  // Load contract history on component mount
-  useEffect(() => {
-    // 🔐 CRITICAL: Only load when Firebase Auth is ready
-    // loadContractHistory uses Firebase directly (can use effectiveUid)
-    // loadCompletedContracts calls authenticated API (needs currentUser.uid)
-    if (currentUser?.uid || currentUser?.uid) {
-      loadContractHistory();
-    }
-    
-    // Load completed contracts ONLY when Firebase Auth is ready
-    if (currentUser?.uid) {
-      loadCompletedContracts();
-    }
-  }, [currentUser?.uid, currentUser?.uid, loadContractHistory, loadCompletedContracts]);
-
-  // ✅ AUTO-REFRESH REMOVED: Manual refresh prevents annoying auto-scrolling
-  // Users can refresh manually if needed by switching tabs or using refresh button
-
-  // Load contracts when switching tabs
-  useEffect(() => {
-    if (historyTab === "drafts") {
-      // Firebase direct access - can use effectiveUid
-      if (currentUser?.uid) {
-        loadDraftContracts();
-      }
-    } else if (historyTab === "in-progress") {
-      // API call - needs currentUser.uid
-      if (currentUser?.uid) {
-        loadInProgressContracts();
-      }
-    } else if (historyTab === "completed") {
-      // API call - needs currentUser.uid
-      if (currentUser?.uid) {
-        loadCompletedContracts();
-      }
-    } else if (historyTab === "archived") {
-      // 📁 API call - needs currentUser.uid
-      if (currentUser?.uid) {
-        loadArchivedContracts();
-      }
-    }
-  }, [
-    historyTab,
-    currentUser?.uid,
-    loadDraftContracts,
-    loadInProgressContracts,
-    loadCompletedContracts,
-    loadArchivedContracts,
-  ]);
+  // ✅ MIGRATION COMPLETE: All contract data now comes from contractsStore
+  // REMOVED legacy useEffect hooks that called load* functions
+  // contractsStore auto-loads and auto-refreshes all contract data
 
   // Load projects from Firebase when component mounts
   useEffect(() => {
@@ -4360,7 +3961,7 @@ export default function SimpleContractGenerator() {
               onClick={() => {
                 setCurrentView("history");
                 loadContractHistory();
-                loadCompletedContracts();
+                contractsStore.refetch();
               }}
               className={`flex items-center gap-2 px-4 py-2 ${
                 currentView === "history"
@@ -4371,9 +3972,9 @@ export default function SimpleContractGenerator() {
               <History className="h-4 w-4" />
               History
               {(contractHistory.length > 0 ||
-                completedContracts.length > 0) && (
+                contractsStore.completed.length > 0) && (
                 <Badge className="bg-cyan-600 text-white ml-1 px-1.5 py-0.5 text-xs">
-                  {contractHistory.length + completedContracts.length}
+                  {contractHistory.length + contractsStore.completed.length}
                 </Badge>
               )}
             </Button>
@@ -6152,10 +5753,10 @@ export default function SimpleContractGenerator() {
                   <History className="h-5 w-5" />
                   Contract Management
                   <Badge className="bg-cyan-600 text-white ml-2">
-                    {draftContracts.length +
-                      inProgressContracts.length +
-                      completedContracts.length +
-                      archivedContracts.length}{" "}
+                    {contractsStore.drafts.length +
+                      contractsStore.inProgress.length +
+                      contractsStore.completed.length +
+                      contractsStore.archived.length}{" "}
                     total
                   </Badge>
                 </CardTitle>
@@ -6191,7 +5792,7 @@ export default function SimpleContractGenerator() {
                               : "bg-cyan-600 text-white"
                           }`}
                         >
-                          {draftContracts.length}
+                          {contractsStore.drafts.length}
                         </div>
                       </button>
 
@@ -6214,7 +5815,7 @@ export default function SimpleContractGenerator() {
                               : "bg-yellow-600 text-white"
                           }`}
                         >
-                          {inProgressContracts.length}
+                          {contractsStore.inProgress.length}
                         </div>
                       </button>
 
@@ -6237,10 +5838,7 @@ export default function SimpleContractGenerator() {
                               : "bg-green-600 text-white"
                           }`}
                         >
-                          {
-                            completedContracts.filter((c) => c.isCompleted)
-                              .length
-                          }
+                          {contractsStore.completed.length}
                         </div>
                       </button>
 
@@ -6263,7 +5861,7 @@ export default function SimpleContractGenerator() {
                               : "bg-purple-600 text-white"
                           }`}
                         >
-                          {archivedContracts.length}
+                          {contractsStore.archived.length}
                         </div>
                       </button>
                     </div>
@@ -6279,7 +5877,7 @@ export default function SimpleContractGenerator() {
                           <span className="text-sm font-medium">Drafts</span>
                         </div>
                         <div className="text-xs opacity-75">
-                          ({draftContracts.length})
+                          ({contractsStore.drafts.length})
                         </div>
                       </TabsTrigger>
                       <TabsTrigger
@@ -6291,7 +5889,7 @@ export default function SimpleContractGenerator() {
                           <span className="text-sm font-medium">Progress</span>
                         </div>
                         <div className="text-xs opacity-75">
-                          ({inProgressContracts.length})
+                          ({contractsStore.inProgress.length})
                         </div>
                       </TabsTrigger>
                       <TabsTrigger
@@ -6304,10 +5902,7 @@ export default function SimpleContractGenerator() {
                         </div>
                         <div className="text-xs opacity-75">
                           (
-                          {
-                            completedContracts.filter((c) => c.isCompleted)
-                              .length
-                          }
+                          {contractsStore.completed.length}
                           )
                         </div>
                       </TabsTrigger>
@@ -6320,7 +5915,7 @@ export default function SimpleContractGenerator() {
                           <span className="text-sm font-medium">Archived</span>
                         </div>
                         <div className="text-xs opacity-75">
-                          ({archivedContracts.length})
+                          ({contractsStore.archived.length})
                         </div>
                       </TabsTrigger>
                     </TabsList>
@@ -6335,27 +5930,27 @@ export default function SimpleContractGenerator() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={loadDraftContracts}
-                        disabled={isLoadingDrafts}
+                        onClick={contractsStore.refetch}
+                        disabled={contractsStore.isLoading}
                         className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black"
                       >
                         <RefreshCw
-                          className={`h-4 w-4 mr-2 ${isLoadingDrafts ? "animate-spin" : ""}`}
+                          className={`h-4 w-4 mr-2 ${contractsStore.isLoading ? "animate-spin" : ""}`}
                         />
                         Refresh
                       </Button>
                     </div>
 
-                    {isLoadingDrafts ? (
+                    {contractsStore.isLoading ? (
                       <div className="text-center py-8">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400 mx-auto"></div>
                         <p className="mt-2 text-gray-400">
                           Loading contract drafts...
                         </p>
                       </div>
-                    ) : draftContracts.length > 0 ? (
+                    ) : contractsStore.drafts.length > 0 ? (
                       <div className="space-y-3">
-                        {draftContracts.map((contract, index) => (
+                        {contractsStore.drafts.map((contract, index) => (
                           <div
                             key={contract.id || `draft-${index}`}
                             className="bg-gray-800 border border-gray-600 rounded-lg p-4"
@@ -6370,7 +5965,7 @@ export default function SimpleContractGenerator() {
                                   {(contract.totalAmount || 0).toLocaleString()}
                                 </p>
                                 <p className="text-gray-400 text-sm">
-                                  {contract.projectDescription ||
+                                  {contract.projectType ||
                                     "Draft Contract"}
                                 </p>
                               </div>
@@ -6413,7 +6008,7 @@ export default function SimpleContractGenerator() {
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  onClick={() => archiveContract(contract.contractId || contract.id, 'user_action')}
+                                  onClick={() => archiveContract(contract.contractId || contract.id || '', 'user_action')}
                                   className="border-purple-400 text-purple-400 hover:bg-purple-400 hover:text-black text-xs w-full sm:w-auto"
                                   data-testid={`button-archive-${contract.contractId || contract.id}`}
                                 >
@@ -6449,27 +6044,27 @@ export default function SimpleContractGenerator() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={loadInProgressContracts}
-                        disabled={isLoadingInProgress}
+                        onClick={contractsStore.refetch}
+                        disabled={contractsStore.isLoading}
                         className="border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-black"
                       >
                         <RefreshCw
-                          className={`h-4 w-4 mr-2 ${isLoadingInProgress ? "animate-spin" : ""}`}
+                          className={`h-4 w-4 mr-2 ${contractsStore.isLoading ? "animate-spin" : ""}`}
                         />
                         Refresh
                       </Button>
                     </div>
 
-                    {isLoadingInProgress ? (
+                    {contractsStore.isLoading ? (
                       <div className="text-center py-8">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400 mx-auto"></div>
                         <p className="mt-2 text-gray-400">
                           Loading in-progress contracts...
                         </p>
                       </div>
-                    ) : inProgressContracts.length > 0 ? (
+                    ) : contractsStore.inProgress.length > 0 ? (
                       <div className="space-y-3">
-                        {inProgressContracts.map((contract, index) => (
+                        {contractsStore.inProgress.map((contract, index) => (
                           <div
                             key={contract.id || `contract-${index}`}
                             className="bg-gray-800 border border-gray-600 rounded-lg p-4"
@@ -6498,12 +6093,12 @@ export default function SimpleContractGenerator() {
                                   </span>
                                   <Badge
                                     className={`ml-2 text-xs ${
-                                      contract.contractorSigned
+                                      contract.status === 'contractor_signed' || contract.status === 'both_signed' || contract.status === 'completed'
                                         ? "bg-green-600 text-white"
                                         : "bg-red-600 text-white"
                                     }`}
                                   >
-                                    {contract.contractorSigned
+                                    {contract.status === 'contractor_signed' || contract.status === 'both_signed' || contract.status === 'completed'
                                       ? "SIGNED"
                                       : "PENDING"}
                                   </Badge>
@@ -6514,12 +6109,12 @@ export default function SimpleContractGenerator() {
                                   </span>
                                   <Badge
                                     className={`ml-2 text-xs ${
-                                      contract.clientSigned
+                                      contract.status === 'client_signed' || contract.status === 'both_signed' || contract.status === 'completed'
                                         ? "bg-green-600 text-white"
                                         : "bg-red-600 text-white"
                                     }`}
                                   >
-                                    {contract.clientSigned
+                                    {contract.status === 'client_signed' || contract.status === 'both_signed' || contract.status === 'completed'
                                       ? "SIGNED"
                                       : "PENDING"}
                                   </Badge>
@@ -6612,12 +6207,12 @@ export default function SimpleContractGenerator() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={loadCompletedContracts}
-                        disabled={isLoadingCompleted}
+                        onClick={contractsStore.refetch}
+                        disabled={contractsStore.isLoading}
                         className="border-green-400 text-green-400 hover:bg-green-400 hover:text-black"
                       >
                         <RefreshCw
-                          className={`h-4 w-4 mr-2 ${isLoadingCompleted ? "animate-spin" : ""}`}
+                          className={`h-4 w-4 mr-2 ${contractsStore.isLoading ? "animate-spin" : ""}`}
                         />
                         Refresh
                       </Button>
@@ -6785,27 +6380,27 @@ export default function SimpleContractGenerator() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={loadArchivedContracts}
-                        disabled={isLoadingArchived}
+                        onClick={contractsStore.refetch}
+                        disabled={contractsStore.isLoading}
                         className="border-purple-400 text-purple-400 hover:bg-purple-400 hover:text-black"
                       >
                         <RefreshCw
-                          className={`h-4 w-4 mr-2 ${isLoadingArchived ? "animate-spin" : ""}`}
+                          className={`h-4 w-4 mr-2 ${contractsStore.isLoading ? "animate-spin" : ""}`}
                         />
                         Refresh
                       </Button>
                     </div>
 
-                    {isLoadingArchived ? (
+                    {contractsStore.isLoading ? (
                       <div className="text-center py-8">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-400 mx-auto"></div>
                         <p className="mt-2 text-gray-400">
                           Loading archived contracts...
                         </p>
                       </div>
-                    ) : archivedContracts.length > 0 ? (
+                    ) : contractsStore.archived.length > 0 ? (
                       <div className="space-y-3">
-                        {archivedContracts.map((contract, index) => (
+                        {contractsStore.archived.map((contract, index) => (
                           <div
                             key={contract.contractId || `archived-${index}`}
                             className="bg-gray-800 border border-purple-600/50 rounded-lg p-4 opacity-75"
@@ -6855,13 +6450,13 @@ export default function SimpleContractGenerator() {
                                       {contract.status || "N/A"}
                                     </p>
                                   </div>
-                                  {contract.archiveReason && (
+                                  {contract.archivedReason && (
                                     <div className="space-y-1">
                                       <span className="text-gray-400 block">
                                         Reason:
                                       </span>
                                       <p className="text-gray-200 capitalize">
-                                        {contract.archiveReason.replace(/_/g, ' ')}
+                                        {contract.archivedReason.replace(/_/g, ' ')}
                                       </p>
                                     </div>
                                   )}
