@@ -613,7 +613,7 @@ class FirebaseContractsService {
       // Get ALL contracts from dualSignatureContracts, filter in memory
       const dualSnapshot = await db
         .collection('dualSignatureContracts')
-        .where('firebaseUserId', '==', userId)
+        .where('userId', '==', userId)  // ✅ FIX: Use 'userId' not 'firebaseUserId'
         .get();
 
       let dualCount = 0;
