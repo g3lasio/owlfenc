@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
 import { usePermissions } from "@/contexts/PermissionContext";
+import { useContractsStore } from "@/hooks/useContractsStore";
 import {
   Database,
   Eye,
@@ -258,6 +259,9 @@ export default function SimpleContractGenerator() {
     isTrialUser,
     trialDaysRemaining
   } = usePermissions();
+  
+  // ✅ OPTIMISTIC UPDATES: Instant archive/unarchive with React Query
+  const contractsStore = useContractsStore();
 
   // Get current plan information for UI restrictions
   const currentPlan = userPlan;
@@ -741,41 +745,25 @@ export default function SimpleContractGenerator() {
   }, [currentUser]);
 
   // 📁 Archive a contract
+  // ✅ OPTIMISTIC ARCHIVE: Instant UI update with rollback on error
   const archiveContract = useCallback(async (contractId: string, reason: string = 'user_action') => {
     if (!currentUser?.uid) return;
 
     try {
-      const token = await currentUser.getIdToken();
-      const response = await fetch(`/api/contracts/${contractId}/archive`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include',
-        body: JSON.stringify({ reason })
+      await contractsStore.archiveContract(contractId, reason);
+      
+      toast({
+        title: "Contract Archived",
+        description: "The contract has been moved to the Archived section",
       });
-
-      if (response.ok) {
-        toast({
-          title: "Contract Archived",
-          description: "The contract has been moved to the Archived section",
-        });
-        
-        // ✅ FIX: Wait for Firebase to propagate changes before reloading
-        // This prevents showing stale data due to eventual consistency
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Reload current view
-        if (historyTab === 'drafts') await loadDraftContracts();
-        else if (historyTab === 'completed') await loadCompletedContracts();
-        else if (historyTab === 'in-progress') await loadInProgressContracts();
-        
-        // Also reload archived list if user will switch to it
-        await loadArchivedContracts();
-      } else {
-        throw new Error('Failed to archive contract');
-      }
+      
+      // ✅ NO MORE DELAYS: Optimistic update already moved the contract instantly
+      // Reload legacy state for compatibility with existing UI code
+      if (historyTab === 'drafts') await loadDraftContracts();
+      else if (historyTab === 'completed') await loadCompletedContracts();
+      else if (historyTab === 'in-progress') await loadInProgressContracts();
+      await loadArchivedContracts();
+      
     } catch (error) {
       console.error("❌ Error archiving contract:", error);
       toast({
@@ -784,40 +772,27 @@ export default function SimpleContractGenerator() {
         variant: "destructive",
       });
     }
-  }, [currentUser, historyTab, loadDraftContracts, loadCompletedContracts, loadInProgressContracts, toast]);
+  }, [contractsStore, currentUser, historyTab, loadDraftContracts, loadCompletedContracts, loadInProgressContracts, loadArchivedContracts, toast]);
 
-  // 📂 Unarchive (restore) a contract
+  // ✅ OPTIMISTIC UNARCHIVE: Instant UI update with rollback on error
   const unarchiveContract = useCallback(async (contractId: string) => {
     if (!currentUser?.uid) return;
 
     try {
-      const token = await currentUser.getIdToken();
-      const response = await fetch(`/api/contracts/${contractId}/unarchive`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include'
+      await contractsStore.unarchiveContract(contractId);
+      
+      toast({
+        title: "Contract Restored",
+        description: "The contract has been restored from the archive",
       });
-
-      if (response.ok) {
-        toast({
-          title: "Contract Restored",
-          description: "The contract has been restored from the archive",
-        });
-        
-        // ✅ FIX: Wait for Firebase to propagate changes before reloading
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Reload ALL views to ensure contract appears in correct tab
-        await loadArchivedContracts();
-        await loadDraftContracts();
-        await loadCompletedContracts();
-        await loadInProgressContracts();
-      } else {
-        throw new Error('Failed to restore contract');
-      }
+      
+      // ✅ NO MORE DELAYS: Optimistic update already moved the contract instantly
+      // Reload legacy state for compatibility with existing UI code
+      await loadArchivedContracts();
+      await loadDraftContracts();
+      await loadCompletedContracts();
+      await loadInProgressContracts();
+      
     } catch (error) {
       console.error("❌ Error restoring contract:", error);
       toast({
@@ -826,7 +801,7 @@ export default function SimpleContractGenerator() {
         variant: "destructive",
       });
     }
-  }, [currentUser, loadArchivedContracts, toast]);
+  }, [contractsStore, currentUser, loadArchivedContracts, loadDraftContracts, loadCompletedContracts, loadInProgressContracts, toast]);
 
   // Load projects from Firebase (same logic as ProjectToContractSelector)
   const loadProjectsFromFirebase = useCallback(async () => {
@@ -6649,23 +6624,23 @@ export default function SimpleContractGenerator() {
                     </div>
 
                     {(() => {
-                      console.log(`🔍 [RENDER-DEBUG] Completed Tab - isLoading: ${isLoadingCompleted}, completedContracts.length: ${completedContracts.length}`);
-                      if (completedContracts.length > 0) {
-                        console.log(`🔍 [RENDER-DEBUG] First 3 contracts:`, completedContracts.slice(0, 3).map(c => ({ id: c.contractId, name: c.clientName, amount: c.totalAmount })));
+                      console.log(`🔍 [RENDER-DEBUG] Completed Tab - isLoading: ${contractsStore.isLoading}, contractsStore.completed.length: ${contractsStore.completed.length}`);
+                      if (contractsStore.completed.length > 0) {
+                        console.log(`🔍 [RENDER-DEBUG] First 3 contracts:`, contractsStore.completed.slice(0, 3).map(c => ({ id: c.contractId, name: c.clientName, amount: c.totalAmount })));
                       }
                       return null;
                     })()}
 
-                    {isLoadingCompleted ? (
+                    {contractsStore.isLoading ? (
                       <div className="text-center py-8">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-400 mx-auto"></div>
                         <p className="mt-2 text-gray-400">
                           Loading completed contracts...
                         </p>
                       </div>
-                    ) : completedContracts.length > 0 ? (
+                    ) : contractsStore.completed.length > 0 ? (
                       <div className="space-y-3">
-                        {completedContracts.map((contract, index) => (
+                        {contractsStore.completed.map((contract, index) => (
                           <div
                             key={contract.contractId || `completed-${index}`}
                             className="bg-gray-800 border border-gray-600 rounded-lg p-4"

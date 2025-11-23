@@ -9,6 +9,9 @@ interface NormalizedContract extends ContractHistoryEntry {
   isArchived?: boolean;
   archivedAt?: Date;
   archivedReason?: string;
+  // Compatibility fields for legacy UI
+  totalAmount?: number;
+  completionDate?: Date | string | null;
 }
 
 interface ContractsStore {
@@ -81,7 +84,9 @@ export function useContractsStore(): ContractsStore {
             source: 'contractHistory',
             isArchived: (contract as any).isArchived || false,
             archivedAt: (contract as any).archivedAt,
-            archivedReason: (contract as any).archivedReason
+            archivedReason: (contract as any).archivedReason,
+            totalAmount: contract.contractData?.financials?.total || contract.contractData?.financials?.displayTotal || 0,
+            completionDate: (contract.contractData?.formFields as any)?.completionDate || null
           });
         });
       }
@@ -105,7 +110,9 @@ export function useContractsStore(): ContractsStore {
               source: 'dualSignature',
               isArchived: contract.isArchived || false,
               archivedAt: contract.archivedAt,
-              archivedReason: contract.archivedReason
+              archivedReason: contract.archivedReason,
+              totalAmount: contract.totalAmount || 0,
+              completionDate: contract.completionDate || null
             } as NormalizedContract);
           }
         });
