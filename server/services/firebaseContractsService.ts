@@ -578,49 +578,59 @@ class FirebaseContractsService {
   /**
    * 📁 Obtener contratos archivados de un usuario
    * @param userId ID del usuario
+   * 
+   * NOTA: Filtramos en memoria para evitar índices compuestos de Firestore
    */
   async getArchivedContracts(userId: string): Promise<ContractData[]> {
     try {
       console.log(`📁 [GET-ARCHIVED] Getting archived contracts for user ${userId}`);
       
-      // Get from contractHistory
+      const contracts: ContractData[] = [];
+      
+      // Get ALL contracts from contractHistory, filter in memory
       const historySnapshot = await db
         .collection(this.collection)
         .where('userId', '==', userId)
-        .where('isArchived', '==', true)
         .get();
-
-      const contracts: ContractData[] = [];
       
+      let historyCount = 0;
       historySnapshot.forEach(doc => {
         const data = doc.data();
-        contracts.push({
-          ...data,
-          id: doc.id,
-          contractId: doc.id,
-          createdAt: data.createdAt?.toDate() || new Date(),
-          updatedAt: data.updatedAt?.toDate() || new Date(),
-          archivedAt: data.archivedAt?.toDate()
-        } as any);
+        // Filter for archived contracts
+        if (data.isArchived === true) {
+          contracts.push({
+            ...data,
+            id: doc.id,
+            contractId: doc.id,
+            createdAt: data.createdAt?.toDate() || new Date(),
+            updatedAt: data.updatedAt?.toDate() || new Date(),
+            archivedAt: data.archivedAt?.toDate()
+          } as any);
+          historyCount++;
+        }
       });
 
-      // Get from dualSignatureContracts
+      // Get ALL contracts from dualSignatureContracts, filter in memory
       const dualSnapshot = await db
         .collection('dualSignatureContracts')
         .where('firebaseUserId', '==', userId)
-        .where('isArchived', '==', true)
         .get();
 
+      let dualCount = 0;
       dualSnapshot.forEach(doc => {
         const data = doc.data();
-        contracts.push({
-          ...data,
-          id: doc.id,
-          contractId: doc.id,
-          createdAt: data.createdAt?.toDate() || new Date(),
-          updatedAt: data.updatedAt?.toDate() || new Date(),
-          archivedAt: data.archivedAt?.toDate()
-        } as any);
+        // Filter for archived contracts
+        if (data.isArchived === true) {
+          contracts.push({
+            ...data,
+            id: doc.id,
+            contractId: doc.id,
+            createdAt: data.createdAt?.toDate() || new Date(),
+            updatedAt: data.updatedAt?.toDate() || new Date(),
+            archivedAt: data.archivedAt?.toDate()
+          } as any);
+          dualCount++;
+        }
       });
 
       // Sort by archivedAt desc
@@ -630,7 +640,7 @@ class FirebaseContractsService {
         return dateB.getTime() - dateA.getTime();
       });
 
-      console.log(`✅ [GET-ARCHIVED] Found ${contracts.length} archived contracts (${historySnapshot.size} from history, ${dualSnapshot.size} from dual)`);
+      console.log(`✅ [GET-ARCHIVED] Found ${contracts.length} archived contracts (${historyCount} from history, ${dualCount} from dual)`);
       return contracts;
     } catch (error) {
       console.error('❌ [FIREBASE-CONTRACTS] Error getting archived contracts:', error);
