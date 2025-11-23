@@ -55,8 +55,8 @@ export function useContractsStore(): ContractsStore {
         }
       }
 
-      // Load from both sources in parallel
-      const [historyResponse, dualSignatureResponse] = await Promise.allSettled([
+      // Load from three sources in parallel: contractHistory (non-archived), dualSignature completed (non-archived), and archived
+      const [historyResponse, dualSignatureResponse, archivedResponse] = await Promise.allSettled([
         contractHistoryService.getContractHistory(userId),
         fetch(`/api/dual-signature/completed/${userId}`, {
           method: 'GET',
@@ -66,6 +66,19 @@ export function useContractsStore(): ContractsStore {
           if (!res.ok) {
             if (res.status === 401 || res.status === 403) {
               return { contracts: [] };
+            }
+            throw new Error(`API returned ${res.status}`);
+          }
+          return res.json();
+        }),
+        fetch(`/api/contracts/archived`, {
+          method: 'GET',
+          headers: authHeaders,
+          credentials: 'include'
+        }).then(async (res) => {
+          if (!res.ok) {
+            if (res.status === 401 || res.status === 403) {
+              return [];
             }
             throw new Error(`API returned ${res.status}`);
           }
@@ -112,6 +125,33 @@ export function useContractsStore(): ContractsStore {
               archivedAt: contract.archivedAt,
               archivedReason: contract.archivedReason,
               totalAmount: contract.totalAmount || 0,
+              completionDate: contract.completionDate || null
+            } as NormalizedContract);
+          }
+        });
+      }
+
+      // Add archived contracts (avoid duplicates)
+      if (archivedResponse.status === 'fulfilled') {
+        const archivedContracts = Array.isArray(archivedResponse.value) ? archivedResponse.value : [];
+        archivedContracts.forEach((contract: any) => {
+          // Only add if not already present
+          if (!normalized.find(c => c.contractId === contract.contractId)) {
+            normalized.push({
+              id: contract.contractId,
+              userId: contract.userId || userId,
+              contractId: contract.contractId,
+              clientName: contract.clientName,
+              projectType: contract.projectType || contract.projectDescription || 'Unknown',
+              status: contract.status || 'completed',
+              createdAt: contract.createdAt ? new Date(contract.createdAt) : new Date(),
+              updatedAt: contract.updatedAt ? new Date(contract.updatedAt) : new Date(),
+              contractData: contract.contractData || {},
+              source: contract.source === 'contractHistory' ? 'contractHistory' : 'dualSignature',
+              isArchived: true,
+              archivedAt: contract.archivedAt ? new Date(contract.archivedAt) : undefined,
+              archivedReason: contract.archivedReason,
+              totalAmount: contract.totalAmount || (contract.contractData?.financials?.total) || 0,
               completionDate: contract.completionDate || null
             } as NormalizedContract);
           }
