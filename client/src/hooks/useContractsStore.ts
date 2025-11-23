@@ -1,0 +1,269 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/hooks/use-auth';
+import { contractHistoryService, ContractHistoryEntry } from '@/services/contractHistoryService';
+import { auth } from '@/lib/firebase';
+import { useMemo } from 'react';
+
+interface NormalizedContract extends ContractHistoryEntry {
+  source: 'contractHistory' | 'dualSignature';
+  isArchived?: boolean;
+  archivedAt?: Date;
+  archivedReason?: string;
+}
+
+interface ContractsStore {
+  drafts: NormalizedContract[];
+  inProgress: NormalizedContract[];
+  completed: NormalizedContract[];
+  archived: NormalizedContract[];
+  isLoading: boolean;
+  error: Error | null;
+  archiveContract: (contractId: string, reason: string) => Promise<void>;
+  unarchiveContract: (contractId: string) => Promise<void>;
+  refetch: () => Promise<void>;
+}
+
+const DRAFT_STATUSES = ['draft'];
+const IN_PROGRESS_STATUSES = ['in_progress', 'contractor_signed', 'client_signed', 'processing', 'error'];
+const COMPLETED_STATUSES = ['completed', 'both_signed'];
+
+export function useContractsStore(): ContractsStore {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const userId = auth.currentUser?.uid;
+
+  // Unified query for all contracts
+  const { data: contracts = [], isLoading, error, refetch } = useQuery<NormalizedContract[]>({
+    queryKey: ['contracts', userId],
+    queryFn: async () => {
+      if (!userId) return [];
+
+      // Get auth headers for API calls
+      let authHeaders: HeadersInit = {
+        'Content-Type': 'application/json'
+      };
+      
+      if (auth.currentUser) {
+        try {
+          const token = await auth.currentUser.getIdToken();
+          authHeaders['Authorization'] = `Bearer ${token}`;
+        } catch (err) {
+          console.warn('⚠️ Could not get Firebase token:', err);
+        }
+      }
+
+      // Load from both sources in parallel
+      const [historyResponse, dualSignatureResponse] = await Promise.allSettled([
+        contractHistoryService.getContractHistory(userId),
+        fetch(`/api/dual-signature/completed/${userId}`, {
+          method: 'GET',
+          headers: authHeaders,
+          credentials: 'include'
+        }).then(async (res) => {
+          if (!res.ok) {
+            if (res.status === 401 || res.status === 403) {
+              return { contracts: [] };
+            }
+            throw new Error(`API returned ${res.status}`);
+          }
+          return res.json();
+        })
+      ]);
+
+      // Normalize contracts from both sources
+      const normalized: NormalizedContract[] = [];
+      
+      // Add contractHistory contracts
+      if (historyResponse.status === 'fulfilled') {
+        historyResponse.value.forEach((contract: ContractHistoryEntry) => {
+          normalized.push({
+            ...contract,
+            source: 'contractHistory',
+            isArchived: (contract as any).isArchived || false,
+            archivedAt: (contract as any).archivedAt,
+            archivedReason: (contract as any).archivedReason
+          });
+        });
+      }
+
+      // Add dualSignature contracts (avoid duplicates)
+      if (dualSignatureResponse.status === 'fulfilled') {
+        const dualContracts = dualSignatureResponse.value.contracts || [];
+        dualContracts.forEach((contract: any) => {
+          // Only add if not already present from contractHistory
+          if (!normalized.find(c => c.contractId === contract.contractId)) {
+            normalized.push({
+              id: contract.contractId,
+              userId: contract.userId,
+              contractId: contract.contractId,
+              clientName: contract.clientName,
+              projectType: contract.projectType || 'Unknown',
+              status: contract.status || 'completed',
+              createdAt: contract.createdAt ? new Date(contract.createdAt) : new Date(),
+              updatedAt: contract.updatedAt ? new Date(contract.updatedAt) : new Date(),
+              contractData: contract.contractData || {},
+              source: 'dualSignature',
+              isArchived: contract.isArchived || false,
+              archivedAt: contract.archivedAt,
+              archivedReason: contract.archivedReason
+            } as NormalizedContract);
+          }
+        });
+      }
+
+      return normalized;
+    },
+    enabled: !!userId,
+    staleTime: 30000,
+    refetchOnWindowFocus: false
+  });
+
+  // Memoized selectors for each tab
+  const drafts = useMemo(
+    () => contracts.filter(c => !c.isArchived && DRAFT_STATUSES.includes(c.status)),
+    [contracts]
+  );
+
+  const inProgress = useMemo(
+    () => contracts.filter(c => !c.isArchived && IN_PROGRESS_STATUSES.includes(c.status)),
+    [contracts]
+  );
+
+  const completed = useMemo(
+    () => contracts.filter(c => !c.isArchived && COMPLETED_STATUSES.includes(c.status)),
+    [contracts]
+  );
+
+  const archived = useMemo(
+    () => contracts.filter(c => c.isArchived === true),
+    [contracts]
+  );
+
+  // Optimistic archive mutation
+  const archiveMutation = useMutation({
+    mutationFn: async ({ contractId, reason }: { contractId: string; reason: string }) => {
+      let authHeaders: HeadersInit = {
+        'Content-Type': 'application/json'
+      };
+      
+      if (auth.currentUser) {
+        try {
+          const token = await auth.currentUser.getIdToken();
+          authHeaders['Authorization'] = `Bearer ${token}`;
+        } catch (err) {
+          console.warn('⚠️ Could not get Firebase token:', err);
+        }
+      }
+      
+      const response = await fetch(`/api/contracts/${contractId}/archive`, {
+        method: 'POST',
+        headers: authHeaders,
+        credentials: 'include',
+        body: JSON.stringify({ reason })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to archive contract');
+      }
+      return response.json();
+    },
+    onMutate: async ({ contractId, reason }) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['contracts', userId] });
+
+      // Snapshot previous value
+      const previousContracts = queryClient.getQueryData<NormalizedContract[]>(['contracts', userId]);
+
+      // Optimistically update cache
+      queryClient.setQueryData<NormalizedContract[]>(['contracts', userId], (old = []) => {
+        return old.map(contract => 
+          contract.contractId === contractId
+            ? { ...contract, isArchived: true, archivedAt: new Date(), archivedReason: reason }
+            : contract
+        );
+      });
+
+      return { previousContracts };
+    },
+    onError: (_err, _variables, context) => {
+      // Rollback on error
+      if (context?.previousContracts) {
+        queryClient.setQueryData(['contracts', userId], context.previousContracts);
+      }
+    },
+    onSettled: () => {
+      // Refetch to ensure consistency
+      queryClient.invalidateQueries({ queryKey: ['contracts', userId] });
+    }
+  });
+
+  // Optimistic unarchive mutation
+  const unarchiveMutation = useMutation({
+    mutationFn: async (contractId: string) => {
+      let authHeaders: HeadersInit = {
+        'Content-Type': 'application/json'
+      };
+      
+      if (auth.currentUser) {
+        try {
+          const token = await auth.currentUser.getIdToken();
+          authHeaders['Authorization'] = `Bearer ${token}`;
+        } catch (err) {
+          console.warn('⚠️ Could not get Firebase token:', err);
+        }
+      }
+      
+      const response = await fetch(`/api/contracts/${contractId}/unarchive`, {
+        method: 'POST',
+        headers: authHeaders,
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to unarchive contract');
+      }
+      return response.json();
+    },
+    onMutate: async (contractId) => {
+      await queryClient.cancelQueries({ queryKey: ['contracts', userId] });
+
+      const previousContracts = queryClient.getQueryData<NormalizedContract[]>(['contracts', userId]);
+
+      queryClient.setQueryData<NormalizedContract[]>(['contracts', userId], (old = []) => {
+        return old.map(contract => 
+          contract.contractId === contractId
+            ? { ...contract, isArchived: false, archivedAt: undefined, archivedReason: undefined }
+            : contract
+        );
+      });
+
+      return { previousContracts };
+    },
+    onError: (_err, _variables, context) => {
+      if (context?.previousContracts) {
+        queryClient.setQueryData(['contracts', userId], context.previousContracts);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['contracts', userId] });
+    }
+  });
+
+  return {
+    drafts,
+    inProgress,
+    completed,
+    archived,
+    isLoading,
+    error: error as Error | null,
+    archiveContract: async (contractId: string, reason: string) => {
+      await archiveMutation.mutateAsync({ contractId, reason });
+    },
+    unarchiveContract: async (contractId: string) => {
+      await unarchiveMutation.mutateAsync(contractId);
+    },
+    refetch: async () => {
+      await refetch();
+    }
+  };
+}
