@@ -762,10 +762,17 @@ export default function SimpleContractGenerator() {
           description: "The contract has been moved to the Archived section",
         });
         
+        // ✅ FIX: Wait for Firebase to propagate changes before reloading
+        // This prevents showing stale data due to eventual consistency
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         // Reload current view
-        if (historyTab === 'drafts') loadDraftContracts();
-        else if (historyTab === 'completed') loadCompletedContracts();
-        else if (historyTab === 'in-progress') loadInProgressContracts();
+        if (historyTab === 'drafts') await loadDraftContracts();
+        else if (historyTab === 'completed') await loadCompletedContracts();
+        else if (historyTab === 'in-progress') await loadInProgressContracts();
+        
+        // Also reload archived list if user will switch to it
+        await loadArchivedContracts();
       } else {
         throw new Error('Failed to archive contract');
       }
@@ -800,8 +807,14 @@ export default function SimpleContractGenerator() {
           description: "The contract has been restored from the archive",
         });
         
-        // Reload archived contracts
-        loadArchivedContracts();
+        // ✅ FIX: Wait for Firebase to propagate changes before reloading
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Reload ALL views to ensure contract appears in correct tab
+        await loadArchivedContracts();
+        await loadDraftContracts();
+        await loadCompletedContracts();
+        await loadInProgressContracts();
       } else {
         throw new Error('Failed to restore contract');
       }
