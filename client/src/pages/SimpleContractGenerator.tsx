@@ -403,19 +403,12 @@ export default function SimpleContractGenerator() {
 
   // 📁 Archive a contract
   // ✅ OPTIMISTIC ARCHIVE: Instant UI update with rollback on error
+  // ✅ NO TOAST: UI already shows change via optimistic update
   const archiveContract = useCallback(async (contractId: string, reason: string = 'user_action') => {
     if (!currentUser?.uid) return;
 
     try {
       await contractsStore.archiveContract(contractId, reason);
-      
-      toast({
-        title: "Contract Archived",
-        description: "The contract has been moved to the Archived section",
-      });
-      
-      // ✅ Optimistic update handles UI instantly - no reload needed
-      
     } catch (error) {
       console.error("❌ Error archiving contract:", error);
       toast({
@@ -427,19 +420,12 @@ export default function SimpleContractGenerator() {
   }, [contractsStore, currentUser, toast]);
 
   // ✅ OPTIMISTIC UNARCHIVE: Instant UI update with rollback on error
+  // ✅ NO TOAST: UI already shows change via optimistic update
   const unarchiveContract = useCallback(async (contractId: string) => {
     if (!currentUser?.uid) return;
 
     try {
       await contractsStore.unarchiveContract(contractId);
-      
-      toast({
-        title: "Contract Restored",
-        description: "The contract has been restored from the archive",
-      });
-      
-      // ✅ Optimistic update handles UI instantly - no reload needed
-      
     } catch (error) {
       console.error("❌ Error restoring contract:", error);
       toast({
@@ -795,11 +781,8 @@ export default function SimpleContractGenerator() {
             document.body.removeChild(a);
           }, 100);
 
+          // ✅ NO TOAST: Browser shows download notification
           console.log("✅ [PDF-DOWNLOAD] PDF downloaded successfully to device");
-          toast({
-            title: "✅ PDF Downloaded",
-            description: `Signed contract for ${clientName} saved to Downloads`,
-          });
         } else {
           const errorData = await pdfResponse.json().catch(() => ({}));
           console.error("❌ [PDF-DOWNLOAD] PDF generation failed:", errorData);
@@ -881,15 +864,11 @@ export default function SimpleContractGenerator() {
         const htmlContent = await htmlResponse.text();
 
         // Replace loading content with actual contract
+        // ✅ NO TOAST: User sees the new window with contract content
         newWindow.document.open();
         newWindow.document.write(htmlContent);
         newWindow.document.close();
         newWindow.document.title = `Signed Contract - ${clientName}`;
-
-        toast({
-          title: "Contract Opened",
-          description: `Signed contract for ${clientName} opened in new window`,
-        });
       } catch (error: any) {
         console.error("❌ Error viewing contract:", error);
         
@@ -990,6 +969,7 @@ export default function SimpleContractGenerator() {
   );
 
   // Copy contract link to clipboard
+  // ✅ NO SUCCESS TOAST: User clicked copy, visual feedback via button state is sufficient
   const copyContractLink = useCallback(
     async (contractId: string, clientName: string) => {
       try {
@@ -997,10 +977,7 @@ export default function SimpleContractGenerator() {
         const fullUrl = `${window.location.origin}${downloadUrl}`;
 
         await navigator.clipboard.writeText(fullUrl);
-        toast({
-          title: "Link Copied",
-          description: `Contract link for ${clientName} copied to clipboard`,
-        });
+        // Success - no toast needed, button state change is sufficient feedback
       } catch (error) {
         console.error("❌ Error copying link:", error);
         toast({
@@ -1024,13 +1001,8 @@ export default function SimpleContractGenerator() {
         
         if (contract?.pdfUrl) {
           // Open the existing PDF in a new tab
+          // ✅ NO TOAST: Browser shows new tab opening, no notification needed
           window.open(contract.pdfUrl, '_blank');
-          
-          toast({
-            title: "Opening PDF",
-            description: "Your signed contract is opening in a new tab...",
-            variant: "default",
-          });
           return;
         }
 
@@ -1264,11 +1236,7 @@ export default function SimpleContractGenerator() {
                 title: `Signed Contract - ${clientName}`,
                 text: `Signed contract for ${clientName}`,
               });
-
-              toast({
-                title: "PDF Shared",
-                description: "Signed PDF shared successfully",
-              });
+              // ✅ NO TOAST: Native share UI provides feedback
               return;
             } catch (shareError: any) {
               // User cancelled or share failed
@@ -1280,6 +1248,7 @@ export default function SimpleContractGenerator() {
         }
 
         // Fallback: Download the PDF
+        // ✅ NO TOAST: Browser shows download notification
         const url = window.URL.createObjectURL(pdfBlob);
         const link = document.createElement('a');
         link.href = url;
@@ -1288,11 +1257,6 @@ export default function SimpleContractGenerator() {
         link.click();
         document.body.removeChild(link);
         window.URL.revokeObjectURL(url);
-
-        toast({
-          title: "PDF Downloaded",
-          description: "Signed PDF downloaded to your device",
-        });
       } catch (error: any) {
         console.error("❌ Error sharing contract:", error);
         toast({
@@ -2784,19 +2748,13 @@ export default function SimpleContractGenerator() {
           }
           
           // If share was not successful, use fallback methods
+          // ✅ NO TOAST: Browser/OS shows PDF opened or download notification
           if (!shareSuccessful) {
             // Fallback: Open in new tab or download directly
             const url = window.URL.createObjectURL(blob);
             const newTab = window.open(url, '_blank');
             
-            if (newTab) {
-              toast({
-                title: "📄 PDF Opened",
-                description: isIOS || isIPadOS 
-                  ? "Tap the share button (↗) in Safari to save to Files or share" 
-                  : "Use the menu (⋮) to download or share the PDF",
-              });
-            } else {
+            if (!newTab) {
               // Popup blocked - force download
               const a = document.createElement("a");
               a.href = url;
@@ -2805,13 +2763,6 @@ export default function SimpleContractGenerator() {
               document.body.appendChild(a);
               a.click();
               document.body.removeChild(a);
-              
-              toast({
-                title: "📥 PDF Downloaded",
-                description: isIOS || isIPadOS
-                  ? "Check your Files app in the Downloads folder"
-                  : "Check your Downloads folder",
-              });
             }
             
             // Clean up after a delay
@@ -2819,6 +2770,7 @@ export default function SimpleContractGenerator() {
           }
         } else {
           // Desktop: Traditional download
+          // ✅ NO TOAST: Browser shows download notification
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement("a");
           a.href = url;
@@ -2827,11 +2779,6 @@ export default function SimpleContractGenerator() {
           a.click();
           document.body.removeChild(a);
           window.URL.revokeObjectURL(url);
-
-          toast({
-            title: "✅ PDF Downloaded",
-            description: `Contract saved to Downloads folder`,
-          });
         }
       } else {
         const errorText = await response.text();

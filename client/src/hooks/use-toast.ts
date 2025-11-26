@@ -6,7 +6,13 @@ import type {
 } from "@/components/ui/toast"
 
 const TOAST_LIMIT = 1
-const TOAST_REMOVE_DELAY = 3000
+const TOAST_REMOVE_DELAY = 2000
+
+const DURATION_BY_VARIANT = {
+  default: 2000,
+  success: 1500,
+  destructive: 4000,
+} as const
 
 type ToasterToast = ToastProps & {
   id: string
@@ -161,8 +167,10 @@ function toast({ ...props }: Toast) {
     },
   })
 
-  // Programar auto-dismiss SIEMPRE - usar duración especificada o 3 segundos por defecto
-  const autoDismissDelay = props.duration !== undefined ? props.duration : 3000;
+  const variant = props.variant || 'default'
+  const variantDuration = DURATION_BY_VARIANT[variant as keyof typeof DURATION_BY_VARIANT] || DURATION_BY_VARIANT.default
+  const autoDismissDelay = props.duration !== undefined ? props.duration : variantDuration
+  
   if (autoDismissDelay > 0) {
     setTimeout(() => {
       dismiss()
