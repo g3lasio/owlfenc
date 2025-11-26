@@ -302,8 +302,25 @@ app.get('/api/contractor-payments/stripe/account-status', async (req, res) => {
         fullyActive: isFullyActive,
       });
       
+      // FIXED: Return standardized contract that frontend expects
       return res.json({
         success: true,
+        // Standardized fields for frontend compatibility
+        hasStripeAccount: true,
+        isActive: isFullyActive,
+        needsOnboarding: !isFullyActive,
+        needsDashboardLink: needsMoreInfo,
+        // Account details in standardized format
+        accountDetails: {
+          id: account.id,
+          email: account.email || undefined,
+          businessType: account.business_type || undefined,
+          chargesEnabled: account.charges_enabled,
+          payoutsEnabled: account.payouts_enabled,
+          defaultCurrency: account.default_currency || undefined,
+          country: account.country || undefined,
+        },
+        // Legacy fields for backward compatibility
         connected: true,
         accountId: account.id,
         chargesEnabled: account.charges_enabled,
@@ -314,6 +331,7 @@ app.get('/api/contractor-payments/stripe/account-status', async (req, res) => {
         requirements: account.requirements,
         email: account.email,
         organizationMode: true,
+        lastUpdated: new Date().toISOString(),
       });
     }
     
@@ -352,8 +370,25 @@ app.get('/api/contractor-payments/stripe/account-status', async (req, res) => {
       needsMoreInfo,
     });
     
+    // FIXED: Return standardized contract that frontend expects
     res.json({
       success: true,
+      // Standardized fields for frontend compatibility
+      hasStripeAccount: true,
+      isActive: isFullyActive,
+      needsOnboarding: !isFullyActive,
+      needsDashboardLink: needsMoreInfo,
+      // Account details in standardized format
+      accountDetails: {
+        id: account.id,
+        email: account.email || undefined,
+        businessType: account.business_type || undefined,
+        chargesEnabled: account.charges_enabled,
+        payoutsEnabled: account.payouts_enabled,
+        defaultCurrency: account.default_currency || undefined,
+        country: account.country || undefined,
+      },
+      // Legacy fields for backward compatibility
       connected: true,
       accountId: account.id,
       chargesEnabled: account.charges_enabled,
@@ -363,6 +398,7 @@ app.get('/api/contractor-payments/stripe/account-status', async (req, res) => {
       needsMoreInfo,
       requirements: account.requirements,
       email: account.email,
+      lastUpdated: new Date().toISOString(),
     });
   } catch (error: any) {
     console.error('❌ [STRIPE-STATUS] Error:', error);
