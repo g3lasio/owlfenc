@@ -396,8 +396,28 @@ class PremiumPdfService {
         const isContractor = dateLineCount % 2 === 1;
         const sigDate = isContractor ? contractorSignature.signedAt : clientSignature.signedAt;
         const sigName = isContractor ? 'CONTRACTOR' : 'CLIENT';
-        // ✅ Convert to Date object if it's a string/timestamp from Firebase
-        const dateObj = sigDate instanceof Date ? sigDate : new Date(sigDate);
+        // ✅ FIXED: Handle Firestore Timestamp, Date, string, and number formats
+        let dateObj: Date;
+        if (sigDate instanceof Date) {
+          dateObj = sigDate;
+        } else if (sigDate && typeof (sigDate as any).toDate === 'function') {
+          // Firestore Timestamp
+          dateObj = (sigDate as any).toDate();
+        } else if (typeof sigDate === 'number') {
+          // Unix timestamp (milliseconds or seconds)
+          dateObj = new Date(sigDate < 1e12 ? sigDate * 1000 : sigDate);
+        } else if (typeof sigDate === 'string' && sigDate) {
+          dateObj = new Date(sigDate);
+        } else {
+          // Fallback to current date if all else fails
+          dateObj = new Date();
+          console.warn(`⚠️ [SIGNATURE-DEBUG] Could not parse date for ${sigName}, using current date. Original value:`, sigDate);
+        }
+        // Validate the date
+        if (isNaN(dateObj.getTime())) {
+          console.warn(`⚠️ [SIGNATURE-DEBUG] Invalid date for ${sigName}, using current date. Original value:`, sigDate);
+          dateObj = new Date();
+        }
         const formattedDate = dateObj.toLocaleDateString('en-US', {
           year: 'numeric',
           month: 'long',
