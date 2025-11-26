@@ -1,0 +1,60 @@
+🔥 Revisión urgente y completa del módulo Archive en Legal Defense
+
+Necesito que hagas un análisis minucioso y detallado del funcionamiento de Archive dentro de la página Legal Defense, porque esta sección está llena de errores graves y comportamientos inconsistentes.
+
+✔️ Problemas actuales
+	1.	Los contratos NO se están moviendo realmente
+	•	Cuando intento archivar un contrato, aparece un mensaje de éxito,
+pero el archivo sigue apareciendo en su lista original
+(ya sea Drafts o Completed).
+	•	Eso significa que no se mueve nada,
+solo se muestra un mensaje vacío sin acción real.
+	2.	Se están copiando contratos en lugar de moverlos
+	•	En algunos casos, en la sección Completed aparece una copia del contrato en Archive,
+pero el original nunca desaparece de su sección.
+	•	Esto NO sirve.
+Archive debe mover, no duplicar.
+	3.	La sección Archive pierde datos después de refresh o deployment
+	•	A veces aparece la copia del contrato.
+	•	Después de un refresh o un deployment, desaparece por completo.
+	•	Eso indica corrupción de datos, mala escritura o lógica rota.
+	4.	El archivo NO aparece de inmediato
+	•	Si Archive funcionara correctamente, el cambio debería verse al instante.
+	•	Esto no es un archivo gigantesco ni un proceso costoso.
+	•	No hay excusas para que un “move” se tarde minutos o desaparezca después.
+
+⸻
+
+✔️ Lo que quiero que revises (sin desviarte)
+
+Enfócate específicamente en:
+
+La sección History
+	•	Drafts
+	•	In Progress
+	•	Completed
+	•	Archive
+
+Ahí debe existir un flujo consistente:
+Mover → eliminar de la lista original → aparecer en Archive sin fallos.
+
+Si en ese flujo hay problemas —y claramente los hay— debes detectar EXACTAMENTE dónde están:
+	•	errores en la lógica del front,
+	•	fallos de escritura en la base de datos,
+	•	endpoints incorrectos,
+	•	duplicaciones,
+	•	listeners ejecutándose dos veces,
+	•	o lo que sea que esté rompiendo la consistencia.
+
+⸻
+
+✔️ Objetivo
+
+Quiero un sistema donde:
+	•	Archivar mueva el contrato,
+	•	NO cree copias,
+	•	NO pierda los datos,
+	•	NO desaparezca tras refresh o deployment,
+	•	Y que la actualización sea instantánea.
+
+Hasta que esto no esté completamente resuelto, la sección de History seguirá siendo un punto débil en la aplicación.
