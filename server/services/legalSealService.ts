@@ -33,7 +33,7 @@ class LegalSealService {
   /**
    * Calculate SHA-256 hash of PDF file
    */
-  async calculatePdfHash(pdfBuffer: Buffer): string {
+  calculatePdfHash(pdfBuffer: Buffer): string {
     const hash = crypto.createHash('sha256');
     hash.update(pdfBuffer);
     return hash.digest('hex');
@@ -73,11 +73,7 @@ class LegalSealService {
         contractId,
       };
 
-      console.log(`✅ [LEGAL-SEAL] Created seal for contract ${contractId}`);
-      console.log(`   📋 Folio: ${folio}`);
-      console.log(`   🔐 Hash: ${pdfHash.substring(0, 16)}...`);
-      console.log(`   🌐 IP: ${ipAddress}`);
-      console.log(`   ⏰ Time: ${timestamp}`);
+      console.log(`✅ [LEGAL-SEAL] Created seal for contract ${contractId} (folio: ${folio})`);
 
       return sealData;
     } catch (error: any) {
@@ -143,6 +139,274 @@ class LegalSealService {
       ipAddress: sealData.ipAddress,
       contractId: sealData.contractId,
     };
+  }
+
+  /**
+   * Append legal seal page to PDF using pdf-lib
+   * 
+   * Adds a dedicated seal page with folio, verification URL, and signing metadata.
+   * The hash is NOT embedded in the PDF to avoid self-reference paradox.
+   * Instead, the hash is calculated on the final PDF and stored server-side.
+   */
+  async appendSealPage(
+    pdfBuffer: Buffer,
+    folio: string,
+    contractId: string,
+    signingMetadata: {
+      contractorName: string;
+      contractorIp: string;
+      contractorSignedAt: Date;
+      clientName: string;
+      clientIp: string;
+      clientSignedAt: Date;
+    }
+  ): Promise<Buffer> {
+    try {
+      const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib');
+      
+      // Load existing PDF
+      const pdfDoc = await PDFDocument.load(pdfBuffer);
+      const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+      
+      // Add new page for legal seal
+      const page = pdfDoc.addPage([612, 792]); // Letter size
+      const { width, height } = page.getSize();
+      
+      // Colors
+      const darkBlue = rgb(0.1, 0.21, 0.36);
+      const gray = rgb(0.29, 0.33, 0.39);
+      const lightGray = rgb(0.4, 0.45, 0.5);
+      
+      // Draw header
+      page.drawRectangle({
+        x: 40,
+        y: height - 100,
+        width: width - 80,
+        height: 60,
+        color: darkBlue,
+      });
+      
+      page.drawText('DIGITAL CERTIFICATE OF AUTHENTICITY', {
+        x: width / 2 - 150,
+        y: height - 75,
+        size: 16,
+        font: helveticaBold,
+        color: rgb(1, 1, 1),
+      });
+      
+      // Draw folio box
+      const folioY = height - 150;
+      page.drawText('Document Folio:', {
+        x: 50,
+        y: folioY,
+        size: 12,
+        font: helveticaBold,
+        color: darkBlue,
+      });
+      
+      page.drawText(folio, {
+        x: 160,
+        y: folioY,
+        size: 14,
+        font: helveticaBold,
+        color: gray,
+      });
+      
+      page.drawText(`Contract ID: ${contractId.substring(0, 20)}...`, {
+        x: 50,
+        y: folioY - 20,
+        size: 10,
+        font: helvetica,
+        color: lightGray,
+      });
+      
+      // Draw signing info sections
+      const formatDate = (date: Date): string => {
+        return date.toLocaleString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          timeZoneName: 'short'
+        });
+      };
+      
+      // Contractor section
+      const contractorY = folioY - 80;
+      page.drawRectangle({
+        x: 40,
+        y: contractorY - 80,
+        width: 250,
+        height: 100,
+        borderColor: darkBlue,
+        borderWidth: 1,
+      });
+      
+      page.drawText('CONTRACTOR SIGNATURE', {
+        x: 50,
+        y: contractorY,
+        size: 11,
+        font: helveticaBold,
+        color: darkBlue,
+      });
+      
+      page.drawText(`Name: ${signingMetadata.contractorName}`, {
+        x: 50,
+        y: contractorY - 20,
+        size: 10,
+        font: helvetica,
+        color: gray,
+      });
+      
+      page.drawText(`IP: ${signingMetadata.contractorIp}`, {
+        x: 50,
+        y: contractorY - 35,
+        size: 9,
+        font: helvetica,
+        color: lightGray,
+      });
+      
+      page.drawText(`Signed: ${formatDate(signingMetadata.contractorSignedAt)}`, {
+        x: 50,
+        y: contractorY - 50,
+        size: 9,
+        font: helvetica,
+        color: lightGray,
+      });
+      
+      // Client section
+      page.drawRectangle({
+        x: 310,
+        y: contractorY - 80,
+        width: 250,
+        height: 100,
+        borderColor: darkBlue,
+        borderWidth: 1,
+      });
+      
+      page.drawText('CLIENT SIGNATURE', {
+        x: 320,
+        y: contractorY,
+        size: 11,
+        font: helveticaBold,
+        color: darkBlue,
+      });
+      
+      page.drawText(`Name: ${signingMetadata.clientName}`, {
+        x: 320,
+        y: contractorY - 20,
+        size: 10,
+        font: helvetica,
+        color: gray,
+      });
+      
+      page.drawText(`IP: ${signingMetadata.clientIp}`, {
+        x: 320,
+        y: contractorY - 35,
+        size: 9,
+        font: helvetica,
+        color: lightGray,
+      });
+      
+      page.drawText(`Signed: ${formatDate(signingMetadata.clientSignedAt)}`, {
+        x: 320,
+        y: contractorY - 50,
+        size: 9,
+        font: helvetica,
+        color: lightGray,
+      });
+      
+      // Verification section
+      const verifyY = contractorY - 140;
+      page.drawRectangle({
+        x: 40,
+        y: verifyY - 60,
+        width: width - 80,
+        height: 70,
+        color: rgb(0.95, 0.95, 0.97),
+        borderColor: darkBlue,
+        borderWidth: 1,
+      });
+      
+      page.drawText('VERIFICATION', {
+        x: 50,
+        y: verifyY,
+        size: 11,
+        font: helveticaBold,
+        color: darkBlue,
+      });
+      
+      // Build verification URL with folio
+      const verificationUrl = `https://app.owlfenc.com/verify?folio=${encodeURIComponent(folio)}`;
+      
+      page.drawText('To verify this document, visit:', {
+        x: 50,
+        y: verifyY - 18,
+        size: 10,
+        font: helvetica,
+        color: gray,
+      });
+      
+      page.drawText(verificationUrl, {
+        x: 50,
+        y: verifyY - 35,
+        size: 9,
+        font: helveticaBold,
+        color: darkBlue,
+      });
+      
+      page.drawText('Or scan the QR code at app.owlfenc.com/verify and enter the folio number.', {
+        x: 50,
+        y: verifyY - 50,
+        size: 8,
+        font: helvetica,
+        color: lightGray,
+      });
+      
+      // Legal disclaimer footer
+      const disclaimerY = 80;
+      page.drawText('This document was digitally signed by both parties. The signatures, timestamps, and IP', {
+        x: 50,
+        y: disclaimerY,
+        size: 9,
+        font: helvetica,
+        color: lightGray,
+      });
+      page.drawText('addresses above serve as legal evidence of consent. Document integrity is verified via', {
+        x: 50,
+        y: disclaimerY - 12,
+        size: 9,
+        font: helvetica,
+        color: lightGray,
+      });
+      page.drawText('SHA-256 hash stored in our secure database.', {
+        x: 50,
+        y: disclaimerY - 24,
+        size: 9,
+        font: helvetica,
+        color: lightGray,
+      });
+      
+      page.drawText(`Generated: ${new Date().toISOString()}`, {
+        x: 50,
+        y: disclaimerY - 45,
+        size: 8,
+        font: helvetica,
+        color: lightGray,
+      });
+      
+      // Save and return
+      const finalPdfBytes = await pdfDoc.save();
+      console.log(`✅ [LEGAL-SEAL] Appended seal page to PDF (${pdfBuffer.length} → ${finalPdfBytes.length} bytes)`);
+      
+      return Buffer.from(finalPdfBytes);
+      
+    } catch (error: any) {
+      console.error('❌ [LEGAL-SEAL] Error appending seal page:', error);
+      throw new Error(`Failed to append seal page: ${error.message}`);
+    }
   }
 }
 

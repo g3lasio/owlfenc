@@ -327,6 +327,27 @@ class PremiumPdfService {
       }
     );
 
+    // ✅ HELPER: Safely parse any date format (Firestore Timestamp, Date, string, number)
+    const parseDateSafe = (date: any, context: string): Date => {
+      if (date instanceof Date && !isNaN(date.getTime())) {
+        return date;
+      }
+      if (date && typeof date.toDate === 'function') {
+        // Firestore Timestamp
+        return date.toDate();
+      }
+      if (typeof date === 'number') {
+        // Unix timestamp (seconds or milliseconds)
+        return new Date(date < 1e12 ? date * 1000 : date);
+      }
+      if (typeof date === 'string' && date) {
+        const parsed = new Date(date);
+        if (!isNaN(parsed.getTime())) return parsed;
+      }
+      console.warn(`⚠️ [SIGNATURE-DEBUG] Could not parse date for ${context}, using current date. Value:`, date);
+      return new Date();
+    };
+
     // Strategy 3: Replace "[object Object]" dates - alternates contractor/client
     let dateObjectCount = 0;
     modifiedHTML = modifiedHTML.replace(
@@ -336,8 +357,7 @@ class PremiumPdfService {
         const isContractor = dateObjectCount % 2 === 1;
         const sigDate = isContractor ? contractorSignature.signedAt : clientSignature.signedAt;
         const sigName = isContractor ? 'CONTRACTOR' : 'CLIENT';
-        // ✅ Convert to Date object if it's a string/timestamp from Firebase
-        const dateObj = sigDate instanceof Date ? sigDate : new Date(sigDate);
+        const dateObj = parseDateSafe(sigDate, sigName);
         const formattedDate = dateObj.toLocaleDateString('en-US', {
           year: 'numeric',
           month: 'long',
@@ -357,8 +377,7 @@ class PremiumPdfService {
         const isContractor = dateCount % 2 === 1;
         const sigDate = isContractor ? contractorSignature.signedAt : clientSignature.signedAt;
         const sigName = isContractor ? 'CONTRACTOR' : 'CLIENT';
-        // ✅ Convert to Date object if it's a string/timestamp from Firebase
-        const dateObj = sigDate instanceof Date ? sigDate : new Date(sigDate);
+        const dateObj = parseDateSafe(sigDate, sigName);
         const formattedDate = dateObj.toLocaleDateString('en-US', {
           year: 'numeric',
           month: 'long',
@@ -396,28 +415,7 @@ class PremiumPdfService {
         const isContractor = dateLineCount % 2 === 1;
         const sigDate = isContractor ? contractorSignature.signedAt : clientSignature.signedAt;
         const sigName = isContractor ? 'CONTRACTOR' : 'CLIENT';
-        // ✅ FIXED: Handle Firestore Timestamp, Date, string, and number formats
-        let dateObj: Date;
-        if (sigDate instanceof Date) {
-          dateObj = sigDate;
-        } else if (sigDate && typeof (sigDate as any).toDate === 'function') {
-          // Firestore Timestamp
-          dateObj = (sigDate as any).toDate();
-        } else if (typeof sigDate === 'number') {
-          // Unix timestamp (milliseconds or seconds)
-          dateObj = new Date(sigDate < 1e12 ? sigDate * 1000 : sigDate);
-        } else if (typeof sigDate === 'string' && sigDate) {
-          dateObj = new Date(sigDate);
-        } else {
-          // Fallback to current date if all else fails
-          dateObj = new Date();
-          console.warn(`⚠️ [SIGNATURE-DEBUG] Could not parse date for ${sigName}, using current date. Original value:`, sigDate);
-        }
-        // Validate the date
-        if (isNaN(dateObj.getTime())) {
-          console.warn(`⚠️ [SIGNATURE-DEBUG] Invalid date for ${sigName}, using current date. Original value:`, sigDate);
-          dateObj = new Date();
-        }
+        const dateObj = parseDateSafe(sigDate, sigName);
         const formattedDate = dateObj.toLocaleDateString('en-US', {
           year: 'numeric',
           month: 'long',
@@ -448,9 +446,9 @@ class PremiumPdfService {
     } else {
       // Fallback: add signature section at the end if EXECUTION section not found
       console.log("⚠️ [SIGNATURE-DEBUG] Adding fallback signature section");
-      // ✅ Convert dates to Date objects if they're strings/timestamps from Firebase
-      const contractorDateObj = contractorSignature.signedAt instanceof Date ? contractorSignature.signedAt : new Date(contractorSignature.signedAt);
-      const clientDateObj = clientSignature.signedAt instanceof Date ? clientSignature.signedAt : new Date(clientSignature.signedAt);
+      // ✅ FIXED: Use parseDateSafe for robust date handling
+      const contractorDateObj = parseDateSafe(contractorSignature.signedAt, 'CONTRACTOR fallback');
+      const clientDateObj = parseDateSafe(clientSignature.signedAt, 'CLIENT fallback');
       const signatureSection = `
         <div style="margin-top: 40px; page-break-inside: avoid; border-top: 2px solid #000; padding-top: 20px;">
           <h3 style="text-align: center; margin-bottom: 30px;">DIGITAL SIGNATURES</h3>

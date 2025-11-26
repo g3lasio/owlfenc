@@ -142,26 +142,74 @@ class CompletionWorker {
       console.log(`✅ [COMPLETION-WORKER] Validation passed`);
       
       // ==========================================================
-      // PHASE 2: PDF GENERATION
+      // PHASE 2: PDF GENERATION WITH LEGAL SEAL PAGE
       // ==========================================================
       
       await this.updateState(contractId, CompletionState.GENERATING_PDF);
-      pdfBuffer = await this.generatePDF(contractId);
+      
+      // Step 2a: Pre-generate folio before PDF (avoids self-reference paradox)
+      const folio = legalSealService.generateFolio(contractId);
+      console.log(`📋 [COMPLETION-WORKER] Pre-generated folio: ${folio}`);
+      
+      // Step 2b: Generate initial PDF with signatures
+      const initialPdfBuffer = await this.generatePDF(contractId);
+      console.log(`✅ [COMPLETION-WORKER] Initial PDF generated (${initialPdfBuffer.length} bytes)`);
+      
+      // Step 2c: Fetch signing metadata for seal page
+      const contractDoc = await firebaseDb.collection('dualSignatureContracts').doc(contractId).get();
+      const contract = contractDoc.data()!;
+      
+      // Helper to parse dates safely
+      const parseDate = (value: any): Date => {
+        if (!value) return new Date();
+        if (value instanceof Date) return value;
+        if (typeof value.toDate === 'function') return value.toDate();
+        if (typeof value === 'number') return new Date(value < 1e12 ? value * 1000 : value);
+        if (typeof value === 'string') return new Date(value);
+        return new Date();
+      };
+      
+      const signingMetadata = {
+        contractorName: contract.contractorName || 'N/A',
+        contractorIp: contract.contractorCertificate?.ipAddress || contract.contractorIpAddress || 'N/A',
+        contractorSignedAt: parseDate(contract.contractorSignedAt),
+        clientName: contract.clientName || 'N/A',
+        clientIp: contract.clientCertificate?.ipAddress || contract.clientIpAddress || finalSigningIp,
+        clientSignedAt: parseDate(contract.clientSignedAt),
+      };
+      
+      // Step 2d: Append legal seal page using pdf-lib
+      pdfBuffer = await legalSealService.appendSealPage(
+        initialPdfBuffer,
+        folio,
+        contractId,
+        signingMetadata
+      );
+      
       await this.updateState(contractId, CompletionState.PDF_GENERATED);
-      console.log(`✅ [COMPLETION-WORKER] PDF generated (${pdfBuffer.length} bytes)`);
+      console.log(`✅ [COMPLETION-WORKER] Final PDF with seal page generated (${pdfBuffer.length} bytes)`);
       
       // ==========================================================
-      // PHASE 3: LEGAL SEAL CREATION
+      // PHASE 3: LEGAL SEAL CREATION (hash calculation)
       // ==========================================================
       
       await this.updateState(contractId, CompletionState.CREATING_SEAL);
-      legalSeal = await legalSealService.createLegalSeal(
+      
+      // Calculate hash on the FINAL PDF (including seal page)
+      const pdfHash = legalSealService.calculatePdfHash(pdfBuffer);
+      const timestamp = new Date().toISOString();
+      
+      // Create legal seal data with pre-generated folio and calculated hash
+      legalSeal = {
+        folio,
+        pdfHash,
+        timestamp,
+        ipAddress: finalSigningIp,
         contractId,
-        pdfBuffer,
-        finalSigningIp
-      );
+      };
+      
       await this.updateState(contractId, CompletionState.SEAL_CREATED);
-      console.log(`✅ [COMPLETION-WORKER] Legal seal created:`, {
+      console.log(`✅ [COMPLETION-WORKER] Legal seal finalized:`, {
         folio: legalSeal.folio,
         hash: legalSeal.pdfHash.substring(0, 16) + '...',
       });
@@ -545,13 +593,30 @@ class CompletionWorker {
       
       const contract = contractDoc.data()!;
       
+      // ✅ Generate Digital Certificate Footer with signing metadata
+      const digitalCertificateHtml = this.generateDigitalCertificateHtml(contract, contractId);
+      
+      // Inject certificate into HTML properly (before </body> if exists, otherwise append)
+      let htmlWithCertificate = contract.contractHtml || '';
+      const bodyCloseMatch = htmlWithCertificate.match(/<\/body>/i);
+      if (bodyCloseMatch) {
+        // Insert before </body>
+        htmlWithCertificate = htmlWithCertificate.replace(
+          /<\/body>/i,
+          `${digitalCertificateHtml}</body>`
+        );
+      } else {
+        // No </body> tag - just append (template is likely partial HTML)
+        htmlWithCertificate = htmlWithCertificate + digitalCertificateHtml;
+      }
+      
       // Import PDF service
       const { default: PremiumPdfService } = await import('./premiumPdfService');
       const pdfService = new PremiumPdfService();
       
-      // Generate PDF
+      // Generate PDF with embedded digital certificate
       const pdfBuffer = await pdfService.generateContractWithSignatures({
-        contractHTML: contract.contractHtml || '',
+        contractHTML: htmlWithCertificate,
         contractorSignature: {
           name: contract.contractorName,
           signatureData: contract.contractorSignature || contract.contractorSignatureData || '',
@@ -594,6 +659,142 @@ class CompletionWorker {
       console.error('❌ [COMPLETION-WORKER] PDF generation error:', error);
       throw new Error(`PDF generation failed: ${error.message}`);
     }
+  }
+  
+  /**
+   * Generate Digital Certificate HTML with signing metadata
+   * 
+   * Embeds IP address, timestamp, device info, and certificate verification
+   * data directly into the PDF for legal compliance and tamper evidence.
+   */
+  private generateDigitalCertificateHtml(contract: any, contractId: string): string {
+    // Helper to safely parse dates (handles Firestore Timestamps)
+    const parseDate = (value: any): Date => {
+      if (!value) return new Date();
+      if (value instanceof Date) return value;
+      if (typeof value.toDate === 'function') return value.toDate(); // Firestore Timestamp
+      if (typeof value === 'number') return new Date(value < 1e12 ? value * 1000 : value);
+      if (typeof value === 'string') return new Date(value);
+      return new Date();
+    };
+
+    // Extract certificate data from contractor signature
+    const contractorCert = contract.contractorCertificate || {};
+    const contractorSignedAt = parseDate(contract.contractorSignedAt);
+    const contractorIp = contractorCert.ipAddress || contract.contractorIpAddress || 'N/A';
+    const contractorDevice = contractorCert.userAgent || contract.contractorUserAgent || 'N/A';
+    const contractorCertHash = contractorCert.hash || 'N/A';
+
+    // Extract certificate data from client signature
+    const clientCert = contract.clientCertificate || {};
+    const clientSignedAt = parseDate(contract.clientSignedAt);
+    const clientIp = clientCert.ipAddress || contract.clientIpAddress || 'N/A';
+    const clientDevice = clientCert.userAgent || contract.clientUserAgent || 'N/A';
+    const clientCertHash = clientCert.hash || 'N/A';
+
+    // Format dates
+    const formatDateTime = (date: Date): string => {
+      return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        timeZoneName: 'short'
+      });
+    };
+
+    // Truncate user agent for readability
+    const truncateDevice = (ua: string): string => {
+      if (ua === 'N/A' || !ua) return 'N/A';
+      if (ua.length > 80) return ua.substring(0, 77) + '...';
+      return ua;
+    };
+
+    console.log(`🔏 [COMPLETION-WORKER] Generating digital certificate HTML for contract ${contractId}`);
+
+    return `
+      <div style="page-break-before: always; margin-top: 40px; padding: 20px; border: 2px solid #1a365d; background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%); font-family: 'Arial', sans-serif;">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <h2 style="color: #1a365d; margin: 0; font-size: 18px; text-transform: uppercase; letter-spacing: 2px;">
+            🔏 DIGITAL CERTIFICATE OF AUTHENTICITY
+          </h2>
+          <p style="color: #4a5568; margin: 5px 0 0; font-size: 12px;">
+            Contract ID: ${contractId}
+          </p>
+        </div>
+        
+        <div style="display: flex; justify-content: space-between; gap: 20px; margin-bottom: 20px;">
+          <!-- Contractor Certificate -->
+          <div style="flex: 1; background: white; padding: 15px; border-radius: 8px; border: 1px solid #cbd5e0;">
+            <h3 style="color: #2d3748; margin: 0 0 10px; font-size: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;">
+              📋 CONTRACTOR SIGNATURE
+            </h3>
+            <table style="width: 100%; font-size: 11px; color: #4a5568;">
+              <tr>
+                <td style="font-weight: bold; width: 80px; padding: 3px 0;">Name:</td>
+                <td>${contract.contractorName || 'N/A'}</td>
+              </tr>
+              <tr>
+                <td style="font-weight: bold; padding: 3px 0;">Signed:</td>
+                <td>${formatDateTime(contractorSignedAt)}</td>
+              </tr>
+              <tr>
+                <td style="font-weight: bold; padding: 3px 0;">IP Address:</td>
+                <td style="font-family: monospace;">${contractorIp}</td>
+              </tr>
+              <tr>
+                <td style="font-weight: bold; padding: 3px 0;">Device:</td>
+                <td style="font-size: 9px; word-break: break-all;">${truncateDevice(contractorDevice)}</td>
+              </tr>
+              <tr>
+                <td style="font-weight: bold; padding: 3px 0;">Cert Hash:</td>
+                <td style="font-family: monospace; font-size: 9px;">${contractorCertHash.substring(0, 24)}...</td>
+              </tr>
+            </table>
+          </div>
+          
+          <!-- Client Certificate -->
+          <div style="flex: 1; background: white; padding: 15px; border-radius: 8px; border: 1px solid #cbd5e0;">
+            <h3 style="color: #2d3748; margin: 0 0 10px; font-size: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;">
+              📋 CLIENT SIGNATURE
+            </h3>
+            <table style="width: 100%; font-size: 11px; color: #4a5568;">
+              <tr>
+                <td style="font-weight: bold; width: 80px; padding: 3px 0;">Name:</td>
+                <td>${contract.clientName || 'N/A'}</td>
+              </tr>
+              <tr>
+                <td style="font-weight: bold; padding: 3px 0;">Signed:</td>
+                <td>${formatDateTime(clientSignedAt)}</td>
+              </tr>
+              <tr>
+                <td style="font-weight: bold; padding: 3px 0;">IP Address:</td>
+                <td style="font-family: monospace;">${clientIp}</td>
+              </tr>
+              <tr>
+                <td style="font-weight: bold; padding: 3px 0;">Device:</td>
+                <td style="font-size: 9px; word-break: break-all;">${truncateDevice(clientDevice)}</td>
+              </tr>
+              <tr>
+                <td style="font-weight: bold; padding: 3px 0;">Cert Hash:</td>
+                <td style="font-family: monospace; font-size: 9px;">${clientCertHash.substring(0, 24)}...</td>
+              </tr>
+            </table>
+          </div>
+        </div>
+        
+        <div style="text-align: center; padding: 10px; background: #1a365d; color: white; border-radius: 4px; font-size: 10px;">
+          <p style="margin: 0;">
+            ⚖️ This contract was digitally signed by both parties. The signatures, timestamps, and IP addresses above serve as legal evidence of consent.
+          </p>
+          <p style="margin: 5px 0 0; font-family: monospace; font-size: 9px;">
+            Generated: ${new Date().toISOString()}
+          </p>
+        </div>
+      </div>
+    `;
   }
   
   /**

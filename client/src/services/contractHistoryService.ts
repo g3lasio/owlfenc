@@ -350,39 +350,70 @@ class ContractHistoryService {
       // Continue execution - don't fail completely if one source fails
     }
 
-    // ✅ IMPROVED MERGE: Deduplicate using BOTH document ID and contractId
-    const allContracts: ContractHistoryEntry[] = [];
-    const seenDocumentIds = new Set<string>();
-    const seenContractIds = new Set<string>();
+    // ✅ IMPROVED MERGE: Deduplicate using contractId, prefer most advanced status
+    // Status priority: completed/both_signed > in_progress/contractor_signed/client_signed > draft
+    const getStatusPriority = (status: string): number => {
+      if (status === 'completed' || status === 'both_signed') return 3;
+      if (status === 'contractor_signed' || status === 'client_signed' || status === 'in_progress') return 2;
+      return 1; // draft or unknown
+    };
+
+    // Use Map to track contracts by contractId, keeping the one with highest status priority
+    const contractsByContractId = new Map<string, ContractHistoryEntry>();
+    const contractsByDocId = new Map<string, ContractHistoryEntry>();
     
-    // Helper to add with deduplication
-    const addWithDedup = (contract: ContractHistoryEntry): boolean => {
+    // Helper to add with smart deduplication (prefer completed status)
+    const addWithSmartDedup = (contract: ContractHistoryEntry, source: string): boolean => {
       const docId = contract.id || '';
       const contractId = contract.contractId || '';
+      const newPriority = getStatusPriority(contract.status);
       
-      // Skip if we've seen this document ID or contractId before
-      if ((docId && seenDocumentIds.has(docId)) || (contractId && seenContractIds.has(contractId))) {
-        console.log(`🔄 [CONTRACT-HISTORY] Skipping duplicate: id=${docId}, contractId=${contractId}`);
-        return false;
+      // Check by contractId first (more reliable for dual-signature workflows)
+      if (contractId) {
+        const existing = contractsByContractId.get(contractId);
+        if (existing) {
+          const existingPriority = getStatusPriority(existing.status);
+          if (newPriority > existingPriority) {
+            console.log(`🔄 [CONTRACT-HISTORY] Replacing ${existing.status} with ${contract.status} for contractId=${contractId}`);
+            contractsByContractId.set(contractId, contract);
+            return true;
+          } else {
+            console.log(`🔄 [CONTRACT-HISTORY] Skipping ${contract.status} (existing ${existing.status} has higher priority) for contractId=${contractId}`);
+            return false;
+          }
+        }
+        contractsByContractId.set(contractId, contract);
       }
       
-      if (docId) seenDocumentIds.add(docId);
-      if (contractId) seenContractIds.add(contractId);
-      allContracts.push(contract);
+      // Also track by docId for contracts without contractId
+      if (docId && !contractId) {
+        if (contractsByDocId.has(docId)) {
+          console.log(`🔄 [CONTRACT-HISTORY] Skipping duplicate docId=${docId}`);
+          return false;
+        }
+        contractsByDocId.set(docId, contract);
+      }
+      
       return true;
     };
     
-    // Add history contracts first
-    let historyAdded = 0;
-    for (const contract of historyContracts) {
-      if (addWithDedup(contract)) historyAdded++;
-    }
-    
-    // Add dual signature contracts (only if not duplicates)
+    // Add dualSignature contracts FIRST (they have the most up-to-date status)
     let dualAdded = 0;
     for (const dualContract of dualContracts) {
-      if (addWithDedup(dualContract)) dualAdded++;
+      if (addWithSmartDedup(dualContract, 'dual')) dualAdded++;
     }
+    
+    // Add history contracts (will be skipped if dualSignature has same contractId with better status)
+    let historyAdded = 0;
+    for (const contract of historyContracts) {
+      if (addWithSmartDedup(contract, 'history')) historyAdded++;
+    }
+    
+    // Combine both maps into final array
+    const allContracts: ContractHistoryEntry[] = [
+      ...Array.from(contractsByContractId.values()),
+      ...Array.from(contractsByDocId.values())
+    ];
 
     // Ordenar por fecha de creación (más reciente primero)
     allContracts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
