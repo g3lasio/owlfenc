@@ -36,6 +36,7 @@ export function useContractsStore(): ContractsStore {
   const userId = auth.currentUser?.uid;
 
   // Unified query for all contracts
+  // ✅ FIX: Removed duplicate loading - contractHistoryService.getContractHistory() already combines both collections
   const { data: contracts = [], isLoading, error, refetch } = useQuery<NormalizedContract[]>({
     queryKey: ['contracts', userId],
     queryFn: async () => {
@@ -55,22 +56,9 @@ export function useContractsStore(): ContractsStore {
         }
       }
 
-      // Load from three sources in parallel: contractHistory (non-archived), dualSignature completed (non-archived), and archived
-      const [historyResponse, dualSignatureResponse, archivedResponse] = await Promise.allSettled([
+      // ✅ SIMPLIFIED: Load from TWO sources only (contractHistoryService already combines contractHistory + dualSignatureContracts)
+      const [historyResponse, archivedResponse] = await Promise.allSettled([
         contractHistoryService.getContractHistory(userId),
-        fetch(`/api/dual-signature/completed/${userId}`, {
-          method: 'GET',
-          headers: authHeaders,
-          credentials: 'include'
-        }).then(async (res) => {
-          if (!res.ok) {
-            if (res.status === 401 || res.status === 403) {
-              return { contracts: [] };
-            }
-            throw new Error(`API returned ${res.status}`);
-          }
-          return res.json();
-        }),
         fetch(`/api/contracts/archived`, {
           method: 'GET',
           headers: authHeaders,
@@ -86,13 +74,33 @@ export function useContractsStore(): ContractsStore {
         })
       ]);
 
-      // Normalize contracts from both sources
+      // ✅ IMPROVED DEDUPLICATION: Use Sets to track both document ID and contractId
+      const seenDocumentIds = new Set<string>();
+      const seenContractIds = new Set<string>();
       const normalized: NormalizedContract[] = [];
       
-      // Add contractHistory contracts
+      // Helper to add contract with deduplication
+      const addContract = (contract: NormalizedContract) => {
+        const docId = contract.id || '';
+        const contractId = contract.contractId || '';
+        
+        // Skip if we've already seen this document ID or contractId
+        if ((docId && seenDocumentIds.has(docId)) || (contractId && seenContractIds.has(contractId))) {
+          console.log(`🔄 [DEDUP] Skipping duplicate: docId=${docId}, contractId=${contractId}`);
+          return false;
+        }
+        
+        // Track this contract
+        if (docId) seenDocumentIds.add(docId);
+        if (contractId) seenContractIds.add(contractId);
+        normalized.push(contract);
+        return true;
+      };
+      
+      // Add contracts from contractHistoryService (already merged and deduplicated by service)
       if (historyResponse.status === 'fulfilled') {
         historyResponse.value.forEach((contract: ContractHistoryEntry) => {
-          normalized.push({
+          addContract({
             ...contract,
             source: 'contractHistory',
             isArchived: (contract as any).isArchived || false,
@@ -102,65 +110,37 @@ export function useContractsStore(): ContractsStore {
             completionDate: (contract.contractData?.formFields as any)?.completionDate || null
           });
         });
-      }
-
-      // Add dualSignature contracts (avoid duplicates)
-      if (dualSignatureResponse.status === 'fulfilled') {
-        const dualContracts = dualSignatureResponse.value.contracts || [];
-        dualContracts.forEach((contract: any) => {
-          // Only add if not already present from contractHistory
-          if (!normalized.find(c => c.contractId === contract.contractId)) {
-            // ✅ CRITICAL FIX: Use Firestore document ID (id or docId) not contractId
-            // The API should return the document ID as 'id' or 'docId'
-            normalized.push({
-              id: contract.id || contract.docId || contract.contractId,
-              userId: contract.userId,
-              contractId: contract.contractId,
-              clientName: contract.clientName,
-              projectType: contract.projectType || 'Unknown',
-              status: contract.status || 'completed',
-              createdAt: contract.createdAt ? new Date(contract.createdAt) : new Date(),
-              updatedAt: contract.updatedAt ? new Date(contract.updatedAt) : new Date(),
-              contractData: contract.contractData || {},
-              source: 'dualSignature',
-              isArchived: contract.isArchived || false,
-              archivedAt: contract.archivedAt,
-              archivedReason: contract.archivedReason,
-              totalAmount: contract.totalAmount || 0,
-              completionDate: contract.completionDate || null
-            } as NormalizedContract);
-          }
-        });
+        console.log(`✅ [CONTRACTS-STORE] Loaded ${historyResponse.value.length} contracts from history service`);
       }
 
       // Add archived contracts (avoid duplicates)
       if (archivedResponse.status === 'fulfilled') {
         const archivedContracts = Array.isArray(archivedResponse.value) ? archivedResponse.value : [];
+        let addedCount = 0;
         archivedContracts.forEach((contract: any) => {
-          // Only add if not already present
-          if (!normalized.find(c => c.contractId === contract.contractId)) {
-            // ✅ CRITICAL FIX: Use Firestore document ID (id or docId) not contractId
-            normalized.push({
-              id: contract.id || contract.docId || contract.contractId,
-              userId: contract.userId || userId,
-              contractId: contract.contractId,
-              clientName: contract.clientName,
-              projectType: contract.projectType || contract.projectDescription || 'Unknown',
-              status: contract.status || 'completed',
-              createdAt: contract.createdAt ? new Date(contract.createdAt) : new Date(),
-              updatedAt: contract.updatedAt ? new Date(contract.updatedAt) : new Date(),
-              contractData: contract.contractData || {},
-              source: contract.source === 'contractHistory' ? 'contractHistory' : 'dualSignature',
-              isArchived: true,
-              archivedAt: contract.archivedAt ? new Date(contract.archivedAt) : undefined,
-              archivedReason: contract.archivedReason,
-              totalAmount: contract.totalAmount || (contract.contractData?.financials?.total) || 0,
-              completionDate: contract.completionDate || null
-            } as NormalizedContract);
-          }
+          const added = addContract({
+            id: contract.id || contract.docId || contract.contractId,
+            userId: contract.userId || userId,
+            contractId: contract.contractId,
+            clientName: contract.clientName,
+            projectType: contract.projectType || contract.projectDescription || 'Unknown',
+            status: contract.status || 'completed',
+            createdAt: contract.createdAt ? new Date(contract.createdAt) : new Date(),
+            updatedAt: contract.updatedAt ? new Date(contract.updatedAt) : new Date(),
+            contractData: contract.contractData || {},
+            source: contract.source === 'contractHistory' ? 'contractHistory' : 'dualSignature',
+            isArchived: true,
+            archivedAt: contract.archivedAt ? new Date(contract.archivedAt) : undefined,
+            archivedReason: contract.archivedReason,
+            totalAmount: contract.totalAmount || (contract.contractData?.financials?.total) || 0,
+            completionDate: contract.completionDate || null
+          } as NormalizedContract);
+          if (added) addedCount++;
         });
+        console.log(`✅ [CONTRACTS-STORE] Loaded ${addedCount} archived contracts (${archivedContracts.length - addedCount} duplicates skipped)`);
       }
 
+      console.log(`📊 [CONTRACTS-STORE] Total unique contracts: ${normalized.length}`);
       return normalized;
     },
     enabled: !!userId,
@@ -169,10 +149,43 @@ export function useContractsStore(): ContractsStore {
   });
 
   // Memoized selectors for each tab
-  const drafts = useMemo(
-    () => contracts.filter(c => !c.isArchived && DRAFT_STATUSES.includes(c.status)),
-    [contracts]
-  );
+  // ✅ CRITICAL FIX: For drafts, apply additional deduplication by composite key (clientName + projectType)
+  // This handles legacy duplicates created by autosave race conditions
+  const drafts = useMemo(() => {
+    const rawDrafts = contracts.filter(c => !c.isArchived && DRAFT_STATUSES.includes(c.status));
+    
+    // Collapse duplicates by normalized composite key, keeping the most recently updated
+    const draftsByCompositeKey = new Map<string, NormalizedContract>();
+    
+    for (const draft of rawDrafts) {
+      // Normalize composite key: userId + trimmed lowercase clientName + trimmed lowercase projectType
+      const normalizedClientName = (draft.clientName || '').trim().toLowerCase();
+      const normalizedProjectType = (draft.projectType || '').trim().toLowerCase();
+      const compositeKey = `${draft.userId}|${normalizedClientName}|${normalizedProjectType}`;
+      
+      const existing = draftsByCompositeKey.get(compositeKey);
+      if (!existing) {
+        draftsByCompositeKey.set(compositeKey, draft);
+      } else {
+        // Keep the one with the most recent updatedAt
+        const existingTime = existing.updatedAt?.getTime() || 0;
+        const draftTime = draft.updatedAt?.getTime() || 0;
+        if (draftTime > existingTime) {
+          console.log(`🔄 [DRAFTS-DEDUP] Replacing older draft for "${draft.clientName}" with newer version`);
+          draftsByCompositeKey.set(compositeKey, draft);
+        } else {
+          console.log(`🔄 [DRAFTS-DEDUP] Skipping older duplicate for "${draft.clientName}"`);
+        }
+      }
+    }
+    
+    const uniqueDrafts = Array.from(draftsByCompositeKey.values());
+    if (rawDrafts.length !== uniqueDrafts.length) {
+      console.log(`✅ [DRAFTS-DEDUP] Filtered ${rawDrafts.length - uniqueDrafts.length} duplicate drafts`);
+    }
+    
+    return uniqueDrafts;
+  }, [contracts]);
 
   const inProgress = useMemo(
     () => contracts.filter(c => !c.isArchived && IN_PROGRESS_STATUSES.includes(c.status)),

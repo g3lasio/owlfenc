@@ -350,21 +350,46 @@ class ContractHistoryService {
       // Continue execution - don't fail completely if one source fails
     }
 
-    // ✅ MERGE: Combinar y eliminar duplicados basado en contractId
-    const allContracts = [...historyContracts];
-    const existingContractIds = new Set(historyContracts.map(c => c.contractId));
+    // ✅ IMPROVED MERGE: Deduplicate using BOTH document ID and contractId
+    const allContracts: ContractHistoryEntry[] = [];
+    const seenDocumentIds = new Set<string>();
+    const seenContractIds = new Set<string>();
     
-    for (const dualContract of dualContracts) {
-      if (!existingContractIds.has(dualContract.contractId)) {
-        allContracts.push(dualContract);
+    // Helper to add with deduplication
+    const addWithDedup = (contract: ContractHistoryEntry): boolean => {
+      const docId = contract.id || '';
+      const contractId = contract.contractId || '';
+      
+      // Skip if we've seen this document ID or contractId before
+      if ((docId && seenDocumentIds.has(docId)) || (contractId && seenContractIds.has(contractId))) {
+        console.log(`🔄 [CONTRACT-HISTORY] Skipping duplicate: id=${docId}, contractId=${contractId}`);
+        return false;
       }
+      
+      if (docId) seenDocumentIds.add(docId);
+      if (contractId) seenContractIds.add(contractId);
+      allContracts.push(contract);
+      return true;
+    };
+    
+    // Add history contracts first
+    let historyAdded = 0;
+    for (const contract of historyContracts) {
+      if (addWithDedup(contract)) historyAdded++;
+    }
+    
+    // Add dual signature contracts (only if not duplicates)
+    let dualAdded = 0;
+    for (const dualContract of dualContracts) {
+      if (addWithDedup(dualContract)) dualAdded++;
     }
 
     // Ordenar por fecha de creación (más reciente primero)
     allContracts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
-    console.log('✅ [CONTRACT-HISTORY] Total combined:', allContracts.length, 'contracts');
-    console.log('📊 [CONTRACT-HISTORY] Sources - History:', historyContracts.length, 'Dual:', dualContracts.length);
+    console.log('✅ [CONTRACT-HISTORY] Total unique:', allContracts.length, 'contracts');
+    console.log('📊 [CONTRACT-HISTORY] Added - History:', historyAdded, 'Dual:', dualAdded);
+    console.log('📊 [CONTRACT-HISTORY] Duplicates filtered:', (historyContracts.length + dualContracts.length) - allContracts.length);
     
     return allContracts;
   }
