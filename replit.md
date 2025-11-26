@@ -97,6 +97,15 @@ This AI-powered platform automates legal document and permit management for cont
   - **Comprehensive Validation**: Pre-completion checks verify both signatures, digital certificates, required fields, and contract integrity before processing.
   - **Performance**: Target <1s completion time (down from 10-15s), 99.9% success rate.
   - **Services**: CompletionWorker (consolidated logic), CompletionQueue (async job processing with Firestore persistence), updated transactionalContractService and dualSignatureService.
+- **Unified Data Source Architecture (Nov 2025)**: All project and estimate data now uses a single source of truth.
+  - **Single Collection**: The 'estimates' Firestore collection is the sole source for all project/estimate data
+  - **Removed Dual-Writes**: EstimatesWizard now writes ONLY to 'estimates' collection (previously wrote to both 'estimates' and 'projects')
+  - **Migrated Components**: History, CyberpunkLegalDefense, SimpleContractGenerator, ProjectToContractSelector, ProjectPayments, PermitAdvisor, ProjectsSimple all now read exclusively from 'estimates'
+  - **Already Correct**: Projects.tsx and Invoices.tsx were already using 'estimates' only
+  - **Deprecated Functions**: firebase.ts saveProject() and getProjects() are deprecated with console warnings
+  - **User Identification**: All queries use firebaseUserId for consistent user filtering
+  - **Price Normalization**: Values > 10000 and integer are treated as cents and converted to dollars
+  - **Date Normalization**: createdAt field handled via toDate() for Firestore Timestamps or new Date() for strings
 
 ## External Dependencies
 - Firebase (Firestore, Admin SDK)
