@@ -472,11 +472,46 @@ export default function SimpleContractGenerator() {
           data.client?.email ||
           "";
 
-        const clientPhone =
+        let rawClientPhone =
           data.clientInformation?.phone ||
           data.clientPhone ||
           data.client?.phone ||
           "";
+
+        let rawAddress =
+          data.clientInformation?.address ||
+          data.clientInformation?.fullAddress ||
+          data.clientAddress ||
+          data.client?.address ||
+          data.address ||
+          "";
+
+        // 🔧 FIX: Detect and correct when phone field contains address data
+        // Address indicators: street suffixes, numbers with letters, no phone-like patterns
+        const addressIndicators = /\b(Ave|Avenue|St|Street|Rd|Road|Dr|Drive|Blvd|Boulevard|Ln|Lane|Ct|Court|Way|Pl|Place|Cir|Circle)\b/i;
+        const phonePattern = /^[\d\s\-\(\)\+\.]+$/; // Only digits and phone separators
+        
+        // If phone looks like an address and address is empty or short, swap them
+        if (rawClientPhone && addressIndicators.test(rawClientPhone) && !phonePattern.test(rawClientPhone)) {
+          console.log(`⚠️ [DATA-FIX] Detected address in phone field: "${rawClientPhone}"`);
+          
+          // If current address is empty, short (like just a city), or the phone looks more like an address
+          if (!rawAddress || rawAddress.length < rawClientPhone.length) {
+            const correctedAddress = rawClientPhone;
+            const correctedPhone = rawAddress && phonePattern.test(rawAddress) ? rawAddress : "";
+            
+            console.log(`✅ [DATA-FIX] Correcting: phone="${correctedPhone}", address="${correctedAddress}"`);
+            rawClientPhone = correctedPhone;
+            rawAddress = correctedAddress;
+          } else {
+            // Just clear the phone since it's clearly an address
+            console.log(`✅ [DATA-FIX] Clearing invalid phone, keeping address: "${rawAddress}"`);
+            rawClientPhone = "";
+          }
+        }
+
+        const clientPhone = rawClientPhone;
+        const address = rawAddress;
 
         let totalValue =
           data.projectTotalCosts?.totalSummary?.finalTotal ||
@@ -494,14 +529,6 @@ export default function SimpleContractGenerator() {
           data.projectName ||
           data.title ||
           `Estimado para ${clientName}`;
-
-        const address =
-          data.clientInformation?.address ||
-          data.clientInformation?.fullAddress ||
-          data.clientAddress ||
-          data.client?.address ||
-          data.address ||
-          "";
 
         return {
           id: doc.id,

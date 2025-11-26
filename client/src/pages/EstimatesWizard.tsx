@@ -1691,12 +1691,23 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         firebaseUserId: currentUser?.uid,
         estimateNumber,
 
-        // Información completa del cliente
+        // Información completa del cliente - ESTRUCTURA EXPLÍCITA para evitar mapeo incorrecto
         clientName: estimate.client.name,
         clientEmail: estimate.client.email || "",
         clientPhone: estimate.client.phone || "",
         clientAddress: estimate.client.address || "",
-        clientInformation: estimate.client,
+        clientInformation: {
+          id: estimate.client.id || null,
+          name: estimate.client.name || "",
+          email: estimate.client.email || "",
+          phone: estimate.client.phone || "",
+          address: estimate.client.address || "",
+          city: estimate.client.city || "",
+          state: estimate.client.state || "",
+          zipCode: estimate.client.zipCode || "",
+          fullAddress:
+            `${estimate.client.address || ""}, ${estimate.client.city || ""}, ${estimate.client.state || ""} ${estimate.client.zipCode || ""}`.trim(),
+        },
 
         // Detalles del proyecto
         projectDescription: estimate.projectDetails,
