@@ -51,6 +51,12 @@ This AI-powered platform automates legal document and permit management for cont
 - **Permissions System**: Centralized architecture for plan limits.
 - **Rate Limiting & Usage Tracking**: Redis-based rate limiting and PostgreSQL persistent usage tracking.
 - **Legal Defense Access Control System**: Enterprise-grade subscription-based access control.
+  - **CONTRACT_GUARD Pattern (Nov 2025)**: Comprehensive security audit ensuring all contract generation endpoints enforce plan limits:
+    - **Protected Endpoints**: All 15+ contract generation endpoints now use unified CONTRACT_GUARD middleware (verifyFirebaseAuth + requireLegalDefenseAccess + validateUsageLimit + incrementUsageOnSuccess)
+    - **Plan Enforcement**: Primo Chambeador (0 contracts - BLOCKED), Mero Patrón (50/month), Master Contractor (unlimited), Free Trial (unlimited during trial)
+    - **Bypass Prevention**: All alternative paths (preview, PDF-to-contract, type='contract' in generic endpoints) blocked or protected
+    - **Counting Design**: Contracts counted at GENERATION point, not at status changes (Draft→Completed→Archived does not affect count)
+    - **PostgreSQL Source of Truth**: subscription_plans table synchronized with permissions-config.ts for consistent limits
 - **PDF Digital Signature System**: Premium PDF service with robust signature embedding and dual signature workflow.
 - **Stripe Integration**: Production-ready subscription system with health guardrails and Price ID registry.
 - **Stripe Express Contractor Payments**: Production-ready Stripe Express Connect integration for contractor payment processing with enterprise-grade security hardening.
