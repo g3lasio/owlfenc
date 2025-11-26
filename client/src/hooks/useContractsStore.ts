@@ -173,14 +173,51 @@ export function useContractsStore(): ContractsStore {
   // Memoized selectors for each tab
   // ✅ CRITICAL FIX: For drafts, apply additional deduplication by composite key (clientName + projectType)
   // This handles legacy duplicates created by autosave race conditions
+  // ✅ NEW: Also exclude drafts that have a completed/in-progress version (same client + project)
   const drafts = useMemo(() => {
     const rawDrafts = contracts.filter(c => !c.isArchived && DRAFT_STATUSES.includes(c.status));
     
-    // Collapse duplicates by normalized composite key, keeping the most recently updated
+    // Build set of composite keys for VISIBLE completed and in-progress contracts
+    // ✅ FIX: Exclude archived contracts - a draft should remain visible if the only completed version is archived
+    // ✅ FIX: Only add keys when BOTH clientName and projectType are non-empty to avoid false positives
+    const completedOrInProgressKeys = new Set<string>();
+    contracts.forEach(c => {
+      // Must be non-archived and in completed/in-progress status
+      if (!c.isArchived && (COMPLETED_STATUSES.includes(c.status) || IN_PROGRESS_STATUSES.includes(c.status))) {
+        const normalizedClientName = (c.clientName || '').trim().toLowerCase();
+        const normalizedProjectType = (c.projectType || '').trim().toLowerCase();
+        
+        // Only create composite key if both fields are meaningful (non-empty)
+        // This prevents false collisions like `userId||` matching multiple unrelated drafts
+        if (normalizedClientName && normalizedProjectType) {
+          const compositeKey = `${c.userId}|${normalizedClientName}|${normalizedProjectType}`;
+          completedOrInProgressKeys.add(compositeKey);
+        }
+      }
+    });
+    
+    // Filter out drafts that have a completed/in-progress equivalent
+    const filteredDrafts = rawDrafts.filter(draft => {
+      const normalizedClientName = (draft.clientName || '').trim().toLowerCase();
+      const normalizedProjectType = (draft.projectType || '').trim().toLowerCase();
+      
+      // Only check for hiding if both fields are meaningful (non-empty)
+      // Drafts with empty clientName or projectType are always kept
+      if (normalizedClientName && normalizedProjectType) {
+        const compositeKey = `${draft.userId}|${normalizedClientName}|${normalizedProjectType}`;
+        
+        if (completedOrInProgressKeys.has(compositeKey)) {
+          console.log(`🔄 [DRAFTS-CLEANUP] Hiding draft "${draft.clientName}" - already has completed/in-progress version`);
+          return false;
+        }
+      }
+      return true;
+    });
+    
+    // Collapse remaining duplicates by normalized composite key, keeping the most recently updated
     const draftsByCompositeKey = new Map<string, NormalizedContract>();
     
-    for (const draft of rawDrafts) {
-      // Normalize composite key: userId + trimmed lowercase clientName + trimmed lowercase projectType
+    for (const draft of filteredDrafts) {
       const normalizedClientName = (draft.clientName || '').trim().toLowerCase();
       const normalizedProjectType = (draft.projectType || '').trim().toLowerCase();
       const compositeKey = `${draft.userId}|${normalizedClientName}|${normalizedProjectType}`;
@@ -205,8 +242,11 @@ export function useContractsStore(): ContractsStore {
     const uniqueDrafts = Array.from(draftsByCompositeKey.values())
       .sort((a, b) => getContractTimestamp(b) - getContractTimestamp(a));
     
-    if (rawDrafts.length !== uniqueDrafts.length) {
-      console.log(`✅ [DRAFTS-DEDUP] Filtered ${rawDrafts.length - uniqueDrafts.length} duplicate drafts`);
+    const hiddenByCompletion = rawDrafts.length - filteredDrafts.length;
+    const hiddenByDedup = filteredDrafts.length - uniqueDrafts.length;
+    
+    if (hiddenByCompletion > 0 || hiddenByDedup > 0) {
+      console.log(`✅ [DRAFTS-CLEANUP] Result: ${uniqueDrafts.length} drafts (${hiddenByCompletion} hidden by completion, ${hiddenByDedup} deduplicated)`);
     }
     
     return uniqueDrafts;
