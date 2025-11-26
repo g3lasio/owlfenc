@@ -1,0 +1,74 @@
+⚠️ Problemas críticos con el sistema de Dual Signature
+
+Quiero que revises estos fallos de inmediato, porque están afectando directamente la funcionalidad central de la plataforma.
+
+1️⃣ El enlace del cliente tarda demasiado en cargar
+
+En producción, el URL del cliente sí abre, pero tarda muchísimo en cargar el contenido.
+
+En development sucede exactamente lo mismo.
+
+El enlace del contractor, en cambio, funciona perfecto y carga al instante.
+
+Esto indica un problema específico en el flujo del cliente, no del sistema completo. Necesito que encuentres qué está causando ese retraso.
+
+2️⃣ Problemas después de que ambas partes firman
+
+Al completarse las dos firmas (cliente + contratista), aparecen dos fallos gravísimos:
+
+❌ Error 1: El contrato completado NO aparece en History → Completed
+
+Esto es completamente inaceptable.
+Si un contrato fue firmado por ambas partes, tiene que quedar registrado en Completed automáticamente, sin excepciones.
+
+❌ Error 2: No se está enviando el PDF final al contratista
+
+El sistema debería:
+
+Generar el PDF final firmado y sellado
+
+Incluir fecha y sello de validación
+
+Enviarlo automáticamente solo al correo del contratista
+
+No al cliente
+
+No a ambos
+
+Únicamente al contratista
+
+En este momento no está pasando nada de eso.
+
+3️⃣ Flujo correcto esperado
+
+Cuando cliente y contratista han firmado:
+
+El documento final debe generarse inmediatamente
+
+Debe guardarse en Completed dentro de History
+
+Debe mostrarse ahí con integridad total para:
+
+revisar
+
+descargar
+
+compartir
+
+El contratista debe recibir automáticamente una copia del PDF final con firmas y sello
+
+Esto no es opcional. Es parte central del sistema.
+
+🔧 Resumen de lo que debes corregir
+
+Lento cargado del enlace del cliente
+
+Contrato completado no aparece en History
+
+Falta de generación del PDF final firmado
+
+Falta de envío del PDF al contratista
+
+Asegurar flujo completo, rápido y confiable en producción y development
+
+Haz un análisis exhaustivo y corrige esto de raíz. Esto debe quedar listo para producción.

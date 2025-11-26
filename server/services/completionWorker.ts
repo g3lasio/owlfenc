@@ -70,6 +70,7 @@ export interface CompletionError {
   timestamp: Date;
   retryCount: number;
   stack?: string;
+  severity?: 'error' | 'warning' | 'info'; // For non-fatal errors that allow completion to continue
 }
 
 /**
@@ -166,17 +167,32 @@ class CompletionWorker {
       });
       
       // ==========================================================
-      // PHASE 4: FIREBASE STORAGE UPLOAD
+      // PHASE 4: FIREBASE STORAGE UPLOAD (NON-BLOCKING)
       // ==========================================================
       
       await this.updateState(contractId, CompletionState.UPLOADING);
-      permanentUrl = await this.uploadToFirebaseStorage(
-        contractId,
-        pdfBuffer,
-        legalSeal.folio
-      );
-      await this.updateState(contractId, CompletionState.UPLOADED);
-      console.log(`✅ [COMPLETION-WORKER] PDF uploaded to Firebase Storage:`, permanentUrl);
+      try {
+        permanentUrl = await this.uploadToFirebaseStorage(
+          contractId,
+          pdfBuffer,
+          legalSeal.folio
+        );
+        await this.updateState(contractId, CompletionState.UPLOADED);
+        console.log(`✅ [COMPLETION-WORKER] PDF uploaded to Firebase Storage:`, permanentUrl);
+      } catch (uploadError: any) {
+        console.warn(`⚠️ [COMPLETION-WORKER] Firebase Storage upload failed (non-blocking):`, uploadError.message);
+        console.log(`⏭️ [COMPLETION-WORKER] Continuing without permanent URL - contract will still be marked complete`);
+        permanentUrl = null;
+        // Store soft error for observability but don't fail completion
+        await this.storeCompletionError(contractId, {
+          code: 'STORAGE_UPLOAD_FAILED',
+          message: uploadError.message,
+          state: CompletionState.UPLOADING,
+          timestamp: new Date(),
+          retryCount: 0,
+          severity: 'warning', // Not a fatal error - contract will still complete
+        });
+      }
       
       // ==========================================================
       // PHASE 5: ATOMIC FINALIZATION
@@ -186,7 +202,7 @@ class CompletionWorker {
       await this.finalizeCompletion(contractId, {
         pdfBuffer,
         legalSeal,
-        permanentUrl,
+        permanentUrl: permanentUrl || '', // Use empty string if upload failed
       });
       await this.updateState(contractId, CompletionState.COMPLETED);
       console.log(`✅ [COMPLETION-WORKER] Contract finalized and marked completed`);

@@ -942,6 +942,139 @@ export class ResendEmailAdvanced {
   }
 
   /**
+   * Send completion notification to contractor with signed PDF
+   * This is called when both parties have signed the contract
+   */
+  async sendContractCompletedNotification(params: {
+    contractorEmail: string;
+    contractorName: string;
+    clientName: string;
+    projectDescription: string;
+    totalAmount: number;
+    contractId: string;
+    pdfBuffer: Buffer;
+    folio?: string;
+  }): Promise<EmailDeliveryResult> {
+    try {
+      console.log(`📧 [COMPLETION-EMAIL] Sending signed contract to contractor: ${params.contractorEmail}`);
+
+      const recipient = this.getRecipient(params.contractorEmail, 'contractor');
+      const fromEmail = this.generateFromEmail('contracts');
+      
+      const formattedAmount = new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD'
+      }).format(params.totalAmount || 0);
+
+      const completionDate = new Date().toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <title>Contract Completed - Signatures Received</title>
+          </head>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; border-radius: 12px; text-align: center; margin-bottom: 30px;">
+              <h1 style="color: white; margin: 0; font-size: 28px;">✅ Contract Completed!</h1>
+              <p style="color: rgba(255,255,255,0.9); margin-top: 10px; font-size: 16px;">Both signatures received and verified</p>
+            </div>
+            
+            <div style="background: #f8fafc; padding: 25px; border-radius: 12px; border-left: 4px solid #10b981; margin-bottom: 25px;">
+              <h2 style="color: #1e293b; margin-top: 0; font-size: 20px;">📋 Contract Details</h2>
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 8px 0; color: #64748b;">Contract ID:</td>
+                  <td style="padding: 8px 0; font-weight: 600; color: #1e293b;">${params.contractId}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #64748b;">Client:</td>
+                  <td style="padding: 8px 0; font-weight: 600; color: #1e293b;">${params.clientName}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #64748b;">Project:</td>
+                  <td style="padding: 8px 0; color: #1e293b;">${params.projectDescription || 'Construction Project'}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #64748b;">Total Amount:</td>
+                  <td style="padding: 8px 0; font-weight: 700; color: #10b981; font-size: 18px;">${formattedAmount}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #64748b;">Completion Date:</td>
+                  <td style="padding: 8px 0; font-weight: 600; color: #1e293b;">${completionDate}</td>
+                </tr>
+                ${params.folio ? `
+                <tr>
+                  <td style="padding: 8px 0; color: #64748b;">Legal Folio:</td>
+                  <td style="padding: 8px 0; font-weight: 600; color: #7c3aed;">${params.folio}</td>
+                </tr>
+                ` : ''}
+              </table>
+            </div>
+            
+            <div style="background: #fef3c7; padding: 20px; border-radius: 12px; border-left: 4px solid #f59e0b; margin-bottom: 25px;">
+              <h3 style="color: #92400e; margin-top: 0; font-size: 16px;">📎 Attached Document</h3>
+              <p style="color: #78350f; margin-bottom: 0;">
+                The signed and legally sealed contract PDF is attached to this email. Please save this document for your records.
+              </p>
+            </div>
+            
+            <div style="background: #eff6ff; padding: 20px; border-radius: 12px; margin-bottom: 25px;">
+              <h3 style="color: #1e40af; margin-top: 0; font-size: 16px;">🔐 Digital Verification</h3>
+              <p style="color: #1e3a8a; margin-bottom: 0; font-size: 14px;">
+                This contract has been digitally signed by both parties and includes a cryptographic seal for authenticity verification.
+                The document is legally binding and can be used as proof of agreement.
+              </p>
+            </div>
+            
+            <div style="text-align: center; padding: 20px; color: #64748b; font-size: 12px; border-top: 1px solid #e2e8f0;">
+              <p style="margin: 0;">Owl Fenc Legal Services</p>
+              <p style="margin: 5px 0;">This is an automated notification. Do not reply to this email.</p>
+            </div>
+          </body>
+        </html>
+      `;
+
+      const result = await this.resend.emails.send({
+        from: fromEmail,
+        to: recipient,
+        subject: `✅ Contract Completed - ${params.clientName} | ${formattedAmount}`,
+        html: htmlContent,
+        attachments: [
+          {
+            filename: `Contract_${params.contractId}_Signed.pdf`,
+            content: params.pdfBuffer,
+            contentType: 'application/pdf'
+          }
+        ]
+      });
+
+      console.log(`✅ [COMPLETION-EMAIL] Email sent successfully to ${recipient}, ID: ${result.data?.id || 'unknown'}`);
+      
+      return {
+        success: true,
+        emailId: result.data?.id,
+        message: `Completion email sent to ${params.contractorEmail}`,
+        strategy: 'direct'
+      };
+
+    } catch (error: any) {
+      console.error('❌ [COMPLETION-EMAIL] Failed to send completion email:', error);
+      return {
+        success: false,
+        message: `Failed to send completion email: ${error.message}`,
+        error: error.message
+      };
+    }
+  }
+
+  /**
    * Check service health
    */
   async checkHealth(): Promise<{ healthy: boolean; message: string }> {
