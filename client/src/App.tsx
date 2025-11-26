@@ -26,7 +26,6 @@ import Subscription from "@/pages/Subscription";
 import SubscriptionTest from "@/pages/SubscriptionTest";
 
 import Billing from "./pages/Billing";
-import History from "@/pages/History";
 import ProjectPayments from "@/pages/ProjectPayments";
 import Invoices from "@/pages/Invoices";
 
@@ -58,7 +57,6 @@ import { ChatProvider } from "@/contexts/ChatContext";
 import { PageContextProvider } from "@/contexts/PageContext";
 import AuthDiagnostic from './pages/AuthDiagnostic';
 import { lazy } from 'react';
-import CyberpunkLegalDefense from './pages/CyberpunkLegalDefense';
 import SimpleContractGenerator from './pages/SimpleContractGenerator';
 import ContractSignature from './pages/ContractSignature';
 import SharedEstimate from './pages/SharedEstimate';
@@ -305,9 +303,6 @@ function MainAppRouter() {
               <Route path="/billing">
                 {() => <ProtectedRoute component={Billing} />}
               </Route>
-              <Route path="/history">
-                {() => <ProtectedRoute component={History} />}
-              </Route>
 
               {/* Help & Support Routes */}
               <Route path="/support/help-center/article/:id">
@@ -340,9 +335,6 @@ function MainAppRouter() {
               </Route>
               <Route path="/legal-defense">
                 {() => <ProtectedRoute component={SimpleContractGenerator} />}
-              </Route>
-              <Route path="/cyberpunk-legal-defense">
-                {() => <ProtectedRoute component={CyberpunkLegalDefense} />}
               </Route>
               <Route path="/simple-contracts">
                 {() => <ProtectedRoute component={SimpleContractGenerator} />}
