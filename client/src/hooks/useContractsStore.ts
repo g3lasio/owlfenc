@@ -148,6 +148,28 @@ export function useContractsStore(): ContractsStore {
     refetchOnWindowFocus: false
   });
 
+  // ✅ Helper to safely normalize any date-like value to milliseconds
+  // Handles Date, string, number, Firestore Timestamp, null/undefined
+  const normalizeToMillis = (val: any): number | null => {
+    if (val == null) return null;
+    if (typeof val === 'number') return val;
+    if (val instanceof Date) return val.getTime();
+    if (typeof val.toDate === 'function') {
+      // Firestore Timestamp
+      try { return val.toDate().getTime(); } catch { return null; }
+    }
+    if (typeof val === 'string') {
+      const parsed = Date.parse(val);
+      return isNaN(parsed) ? null : parsed;
+    }
+    return null;
+  };
+
+  // Get the best timestamp for ordering (prefer updatedAt, fallback to createdAt)
+  const getContractTimestamp = (contract: NormalizedContract): number => {
+    return normalizeToMillis(contract.updatedAt) ?? normalizeToMillis(contract.createdAt) ?? 0;
+  };
+
   // Memoized selectors for each tab
   // ✅ CRITICAL FIX: For drafts, apply additional deduplication by composite key (clientName + projectType)
   // This handles legacy duplicates created by autosave race conditions
@@ -167,19 +189,22 @@ export function useContractsStore(): ContractsStore {
       if (!existing) {
         draftsByCompositeKey.set(compositeKey, draft);
       } else {
-        // Keep the one with the most recent updatedAt
-        const existingTime = existing.updatedAt?.getTime() || 0;
-        const draftTime = draft.updatedAt?.getTime() || 0;
+        // Keep the one with the most recent timestamp (safe comparison)
+        const existingTime = getContractTimestamp(existing);
+        const draftTime = getContractTimestamp(draft);
         if (draftTime > existingTime) {
-          console.log(`🔄 [DRAFTS-DEDUP] Replacing older draft for "${draft.clientName}" with newer version`);
+          console.log(`🔄 [DRAFTS-DEDUP] Replacing older draft (id=${existing.id}) with newer (id=${draft.id}) for "${draft.clientName}"`);
           draftsByCompositeKey.set(compositeKey, draft);
         } else {
-          console.log(`🔄 [DRAFTS-DEDUP] Skipping older duplicate for "${draft.clientName}"`);
+          console.log(`🔄 [DRAFTS-DEDUP] Skipping older duplicate (id=${draft.id}) for "${draft.clientName}"`);
         }
       }
     }
     
-    const uniqueDrafts = Array.from(draftsByCompositeKey.values());
+    // Convert to array and sort by timestamp descending (most recent first)
+    const uniqueDrafts = Array.from(draftsByCompositeKey.values())
+      .sort((a, b) => getContractTimestamp(b) - getContractTimestamp(a));
+    
     if (rawDrafts.length !== uniqueDrafts.length) {
       console.log(`✅ [DRAFTS-DEDUP] Filtered ${rawDrafts.length - uniqueDrafts.length} duplicate drafts`);
     }
