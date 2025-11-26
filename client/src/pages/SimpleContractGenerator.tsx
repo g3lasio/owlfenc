@@ -6008,9 +6008,9 @@ export default function SimpleContractGenerator() {
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  onClick={() => archiveContract(contract.contractId || contract.id || '', 'user_action')}
+                                  onClick={() => archiveContract(contract.id || contract.contractId || '', 'user_action')}
                                   className="border-purple-400 text-purple-400 hover:bg-purple-400 hover:text-black text-xs w-full sm:w-auto"
-                                  data-testid={`button-archive-${contract.contractId || contract.id}`}
+                                  data-testid={`button-archive-${contract.id || contract.contractId}`}
                                 >
                                   <Archive className="h-3 w-3 mr-1" />
                                   Archive
@@ -6318,9 +6318,9 @@ export default function SimpleContractGenerator() {
                                   <Button
                                     size="sm"
                                     variant="outline"
-                                    onClick={() => archiveContract(contract.contractId, 'user_action')}
+                                    onClick={() => archiveContract(contract.id || contract.contractId || '', 'user_action')}
                                     className="border-purple-400 text-purple-400 hover:bg-purple-400 hover:text-black text-xs w-full"
-                                    data-testid={`button-archive-${contract.contractId}`}
+                                    data-testid={`button-archive-${contract.id || contract.contractId}`}
                                   >
                                     <Archive className="h-3 w-3 mr-1" />
                                     Archive
@@ -6467,9 +6467,9 @@ export default function SimpleContractGenerator() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => unarchiveContract(contract.contractId)}
+                                onClick={() => unarchiveContract(contract.id || contract.contractId || '')}
                                 className="border-purple-400 text-purple-400 hover:bg-purple-400 hover:text-black text-xs w-full"
-                                data-testid={`button-restore-${contract.contractId}`}
+                                data-testid={`button-restore-${contract.id || contract.contractId}`}
                               >
                                 <ArchiveRestore className="h-3 w-3 mr-1" />
                                 Restore Contract

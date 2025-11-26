@@ -110,8 +110,10 @@ export function useContractsStore(): ContractsStore {
         dualContracts.forEach((contract: any) => {
           // Only add if not already present from contractHistory
           if (!normalized.find(c => c.contractId === contract.contractId)) {
+            // ✅ CRITICAL FIX: Use Firestore document ID (id or docId) not contractId
+            // The API should return the document ID as 'id' or 'docId'
             normalized.push({
-              id: contract.contractId,
+              id: contract.id || contract.docId || contract.contractId,
               userId: contract.userId,
               contractId: contract.contractId,
               clientName: contract.clientName,
@@ -137,8 +139,9 @@ export function useContractsStore(): ContractsStore {
         archivedContracts.forEach((contract: any) => {
           // Only add if not already present
           if (!normalized.find(c => c.contractId === contract.contractId)) {
+            // ✅ CRITICAL FIX: Use Firestore document ID (id or docId) not contractId
             normalized.push({
-              id: contract.contractId,
+              id: contract.id || contract.docId || contract.contractId,
               userId: contract.userId || userId,
               contractId: contract.contractId,
               clientName: contract.clientName,
@@ -186,9 +189,11 @@ export function useContractsStore(): ContractsStore {
     [contracts]
   );
 
-  // Optimistic archive mutation
+  // Optimistic archive mutation - uses document ID for API calls
   const archiveMutation = useMutation({
-    mutationFn: async ({ contractId, reason }: { contractId: string; reason: string }) => {
+    mutationFn: async ({ documentId, reason }: { documentId: string; reason: string }) => {
+      console.log(`📁 [ARCHIVE] Archiving contract with document ID: ${documentId}`);
+      
       let authHeaders: HeadersInit = {
         'Content-Type': 'application/json'
       };
@@ -202,7 +207,7 @@ export function useContractsStore(): ContractsStore {
         }
       }
       
-      const response = await fetch(`/api/contracts/${contractId}/archive`, {
+      const response = await fetch(`/api/contracts/${documentId}/archive`, {
         method: 'POST',
         headers: authHeaders,
         credentials: 'include',
@@ -210,21 +215,27 @@ export function useContractsStore(): ContractsStore {
       });
       
       if (!response.ok) {
-        throw new Error('Failed to archive contract');
+        const errorText = await response.text();
+        console.error(`❌ [ARCHIVE] Failed to archive: ${errorText}`);
+        throw new Error(`Failed to archive contract: ${errorText}`);
       }
+      
+      console.log(`✅ [ARCHIVE] Successfully archived contract ${documentId}`);
       return response.json();
     },
-    onMutate: async ({ contractId, reason }) => {
+    onMutate: async ({ documentId, reason }) => {
+      console.log(`📁 [ARCHIVE] Optimistically updating cache for: ${documentId}`);
+      
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: ['contracts', userId] });
 
       // Snapshot previous value
       const previousContracts = queryClient.getQueryData<NormalizedContract[]>(['contracts', userId]);
 
-      // Optimistically update cache
+      // Optimistically update cache - match by both id and contractId
       queryClient.setQueryData<NormalizedContract[]>(['contracts', userId], (old = []) => {
         return old.map(contract => 
-          contract.contractId === contractId
+          (contract.id === documentId || contract.contractId === documentId)
             ? { ...contract, isArchived: true, archivedAt: new Date(), archivedReason: reason }
             : contract
         );
@@ -232,21 +243,25 @@ export function useContractsStore(): ContractsStore {
 
       return { previousContracts };
     },
-    onError: (_err, _variables, context) => {
+    onError: (err, _variables, context) => {
+      console.error('❌ [ARCHIVE] Error, rolling back:', err);
       // Rollback on error
       if (context?.previousContracts) {
         queryClient.setQueryData(['contracts', userId], context.previousContracts);
       }
     },
     onSettled: () => {
+      console.log('📁 [ARCHIVE] Refetching contracts after archive operation');
       // Refetch to ensure consistency
       queryClient.invalidateQueries({ queryKey: ['contracts', userId] });
     }
   });
 
-  // Optimistic unarchive mutation
+  // Optimistic unarchive mutation - uses document ID for API calls
   const unarchiveMutation = useMutation({
-    mutationFn: async (contractId: string) => {
+    mutationFn: async (documentId: string) => {
+      console.log(`📂 [UNARCHIVE] Restoring contract with document ID: ${documentId}`);
+      
       let authHeaders: HeadersInit = {
         'Content-Type': 'application/json'
       };
@@ -260,25 +275,32 @@ export function useContractsStore(): ContractsStore {
         }
       }
       
-      const response = await fetch(`/api/contracts/${contractId}/unarchive`, {
+      const response = await fetch(`/api/contracts/${documentId}/unarchive`, {
         method: 'POST',
         headers: authHeaders,
         credentials: 'include'
       });
       
       if (!response.ok) {
-        throw new Error('Failed to unarchive contract');
+        const errorText = await response.text();
+        console.error(`❌ [UNARCHIVE] Failed to restore: ${errorText}`);
+        throw new Error(`Failed to unarchive contract: ${errorText}`);
       }
+      
+      console.log(`✅ [UNARCHIVE] Successfully restored contract ${documentId}`);
       return response.json();
     },
-    onMutate: async (contractId) => {
+    onMutate: async (documentId) => {
+      console.log(`📂 [UNARCHIVE] Optimistically updating cache for: ${documentId}`);
+      
       await queryClient.cancelQueries({ queryKey: ['contracts', userId] });
 
       const previousContracts = queryClient.getQueryData<NormalizedContract[]>(['contracts', userId]);
 
+      // Match by both id and contractId
       queryClient.setQueryData<NormalizedContract[]>(['contracts', userId], (old = []) => {
         return old.map(contract => 
-          contract.contractId === contractId
+          (contract.id === documentId || contract.contractId === documentId)
             ? { ...contract, isArchived: false, archivedAt: undefined, archivedReason: undefined }
             : contract
         );
@@ -286,12 +308,14 @@ export function useContractsStore(): ContractsStore {
 
       return { previousContracts };
     },
-    onError: (_err, _variables, context) => {
+    onError: (err, _variables, context) => {
+      console.error('❌ [UNARCHIVE] Error, rolling back:', err);
       if (context?.previousContracts) {
         queryClient.setQueryData(['contracts', userId], context.previousContracts);
       }
     },
     onSettled: () => {
+      console.log('📂 [UNARCHIVE] Refetching contracts after restore operation');
       queryClient.invalidateQueries({ queryKey: ['contracts', userId] });
     }
   });
@@ -303,11 +327,15 @@ export function useContractsStore(): ContractsStore {
     archived,
     isLoading,
     error: error as Error | null,
-    archiveContract: async (contractId: string, reason: string) => {
-      await archiveMutation.mutateAsync({ contractId, reason });
+    archiveContract: async (documentId: string, reason: string) => {
+      // documentId should be the Firestore document ID (contract.id), not contractId
+      console.log(`📁 [STORE] archiveContract called with ID: ${documentId}`);
+      await archiveMutation.mutateAsync({ documentId, reason });
     },
-    unarchiveContract: async (contractId: string) => {
-      await unarchiveMutation.mutateAsync(contractId);
+    unarchiveContract: async (documentId: string) => {
+      // documentId should be the Firestore document ID (contract.id), not contractId
+      console.log(`📂 [STORE] unarchiveContract called with ID: ${documentId}`);
+      await unarchiveMutation.mutateAsync(documentId);
     },
     refetch: async () => {
       await refetch();
