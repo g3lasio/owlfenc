@@ -436,183 +436,101 @@ export default function SimpleContractGenerator() {
     }
   }, [contractsStore, currentUser, toast]);
 
-  // Load projects from Firebase (same logic as ProjectToContractSelector)
+  // Load projects from Firebase - UNIFIED: Only load from 'estimates' collection
   const loadProjectsFromFirebase = useCallback(async () => {
-    // ✅ CRITICAL FIX: Only use currentUser.uid
     const effectiveUid = currentUser?.uid;
     
-    // ✅ FIXED: Exit early if no valid UID - prevents invalid Firebase query
     if (!effectiveUid) {
-      console.log("⏳ Waiting for Firebase Auth to initialize before loading projects...");
+      console.log("⏳ Waiting for Firebase Auth to initialize before loading estimates...");
       return;
     }
 
     try {
       setIsLoading(true);
-      console.log("🔥 Loading projects from Firebase for Legal Defense...");
+      console.log("🔥 Loading estimates from Firebase for Legal Defense...");
 
-      let allEstimates: any[] = [];
-
-      // Load from projects collection (same as EstimatesWizard)
-      try {
-        const projectsQuery = query(
-          collection(db, "projects"),
-          where("firebaseUserId", "==", effectiveUid),
-        );
-
-        const projectsSnapshot = await getDocs(projectsQuery);
-        const projectEstimates = projectsSnapshot.docs
-          .filter((doc) => {
-            const data = doc.data();
-            return data.status === "estimate" || data.estimateNumber;
-          })
-          .map((doc) => {
-            const data = doc.data();
-
-            const clientName =
-              data.clientInformation?.name ||
-              data.clientName ||
-              data.client?.name ||
-              "Cliente sin nombre";
-
-            const clientEmail =
-              data.clientInformation?.email ||
-              data.clientEmail ||
-              data.client?.email ||
-              "";
-
-            const clientPhone =
-              data.clientInformation?.phone ||
-              data.clientPhone ||
-              data.client?.phone ||
-              "";
-
-            // Total calculation with multiple paths
-            let totalValue =
-              data.projectTotalCosts?.totalSummary?.finalTotal ||
-              data.projectTotalCosts?.total ||
-              data.total ||
-              data.estimateAmount ||
-              0;
-
-            const displayTotal = totalValue;
-
-            const projectTitle =
-              data.projectDetails?.name ||
-              data.projectName ||
-              data.title ||
-              `Estimado para ${clientName}`;
-
-            const address =
-              data.clientInformation?.address ||
-              data.clientAddress ||
-              data.client?.address ||
-              data.address ||
-              "";
-
-            return {
-              id: doc.id,
-              estimateNumber: data.estimateNumber || `EST-${doc.id.slice(-6)}`,
-              title: projectTitle,
-              clientName: clientName,
-              clientEmail: clientEmail,
-              clientPhone: clientPhone,
-              totalAmount: displayTotal,
-              totalPrice: displayTotal,
-              displaySubtotal: displayTotal,
-              status: data.status || "draft",
-              estimateDate: data.createdAt
-                ? data.createdAt.toDate?.() || new Date(data.createdAt)
-                : new Date(),
-              items:
-                data.projectTotalCosts?.materialCosts?.items ||
-                data.items ||
-                [],
-              projectType:
-                data.projectType || data.projectDetails?.type || "fence",
-              address: address,
-              projectDescription:
-                data.projectDescription || data.description || "",
-              originalData: data,
-            };
-          });
-
-        allEstimates = [...allEstimates, ...projectEstimates];
-        console.log(
-          `📊 Loaded ${projectEstimates.length} projects from projects collection`,
-        );
-      } catch (projectError) {
-        console.warn("Could not load from projects collection:", projectError);
-      }
-
-      // Load from estimates collection
-      try {
-        const estimatesQuery = query(
-          collection(db, "estimates"),
-          where("firebaseUserId", "==", effectiveUid),
-        );
-
-        const estimatesSnapshot = await getDocs(estimatesQuery);
-        const firebaseEstimates = estimatesSnapshot.docs.map((doc) => {
-          const data = doc.data();
-
-          const clientName =
-            data.clientName || data.client?.name || "Cliente sin nombre";
-          const clientEmail = data.clientEmail || data.client?.email || "";
-          const clientPhone = data.clientPhone || data.client?.phone || "";
-
-          let totalValue = data.total || data.estimateAmount || 0;
-          const displayTotal = totalValue;
-
-          const projectTitle = data.title || `Estimado para ${clientName}`;
-          const address = data.address || data.clientAddress || "";
-
-          return {
-            id: doc.id,
-            estimateNumber: data.estimateNumber || `EST-${doc.id.slice(-6)}`,
-            title: projectTitle,
-            clientName: clientName,
-            clientEmail: clientEmail,
-            clientPhone: clientPhone,
-            totalAmount: displayTotal,
-            totalPrice: displayTotal,
-            displaySubtotal: displayTotal,
-            status: data.status || "estimate",
-            estimateDate: data.createdAt
-              ? data.createdAt.toDate?.() || new Date(data.createdAt)
-              : new Date(),
-            items: data.items || [],
-            projectType: data.projectType || "fence",
-            address: address,
-            projectDescription: data.description || "",
-            originalData: data,
-          };
-        });
-
-        allEstimates = [...allEstimates, ...firebaseEstimates];
-        console.log(
-          `📋 Loaded ${firebaseEstimates.length} additional estimates`,
-        );
-      } catch (estimatesError) {
-        console.warn(
-          "Could not load from estimates collection:",
-          estimatesError,
-        );
-      }
-
-      // Remove duplicates and filter eligible projects
-      const uniqueProjects = allEstimates.filter(
-        (project, index, self) =>
-          index ===
-          self.findIndex(
-            (p) =>
-              p.id === project.id ||
-              (p.clientName === project.clientName &&
-                p.address === project.address),
-          ),
+      const estimatesQuery = query(
+        collection(db, "estimates"),
+        where("firebaseUserId", "==", effectiveUid),
       );
 
-      const eligibleProjects = uniqueProjects.filter((project) => {
+      const estimatesSnapshot = await getDocs(estimatesQuery);
+      console.log(`📊 [LEGAL-DEFENSE] Found ${estimatesSnapshot.size} estimates`);
+      
+      const allEstimates = estimatesSnapshot.docs.map((doc) => {
+        const data = doc.data();
+
+        const clientName =
+          data.clientInformation?.name ||
+          data.clientName ||
+          data.client?.name ||
+          "Cliente sin nombre";
+
+        const clientEmail =
+          data.clientInformation?.email ||
+          data.clientEmail ||
+          data.client?.email ||
+          "";
+
+        const clientPhone =
+          data.clientInformation?.phone ||
+          data.clientPhone ||
+          data.client?.phone ||
+          "";
+
+        let totalValue =
+          data.projectTotalCosts?.totalSummary?.finalTotal ||
+          data.projectTotalCosts?.total ||
+          data.total ||
+          data.estimateAmount ||
+          0;
+
+        if (totalValue > 10000 && Number.isInteger(totalValue)) {
+          totalValue = totalValue / 100;
+        }
+
+        const projectTitle =
+          data.projectDetails?.name ||
+          data.projectName ||
+          data.title ||
+          `Estimado para ${clientName}`;
+
+        const address =
+          data.clientInformation?.address ||
+          data.clientInformation?.fullAddress ||
+          data.clientAddress ||
+          data.client?.address ||
+          data.address ||
+          "";
+
+        return {
+          id: doc.id,
+          estimateNumber: data.estimateNumber || `EST-${doc.id.slice(-6)}`,
+          title: projectTitle,
+          clientName: clientName,
+          clientEmail: clientEmail,
+          clientPhone: clientPhone,
+          totalAmount: totalValue,
+          totalPrice: totalValue,
+          displaySubtotal: totalValue,
+          status: data.status || "estimate",
+          estimateDate: data.createdAt
+            ? data.createdAt.toDate?.() || new Date(data.createdAt)
+            : new Date(),
+          items:
+            data.projectTotalCosts?.materialCosts?.items ||
+            data.items ||
+            [],
+          projectType:
+            data.projectType || data.projectDetails?.type || "fence",
+          address: address,
+          projectDescription:
+            data.projectDescription || data.description || projectTitle,
+          originalData: data,
+        };
+      });
+
+      const eligibleProjects = allEstimates.filter((project) => {
         const hasRequiredData =
           project.clientName &&
           project.totalAmount > 0 &&
@@ -620,15 +538,19 @@ export default function SimpleContractGenerator() {
         return hasRequiredData;
       });
 
+      eligibleProjects.sort((a, b) => {
+        const dateA = a.estimateDate instanceof Date ? a.estimateDate : new Date(a.estimateDate || 0);
+        const dateB = b.estimateDate instanceof Date ? b.estimateDate : new Date(b.estimateDate || 0);
+        return dateB.getTime() - dateA.getTime();
+      });
+
       setProjects(eligibleProjects);
-      console.log(
-        `✅ Total: ${eligibleProjects.length} unique projects loaded for Legal Defense`,
-      );
+      console.log(`✅ [LEGAL-DEFENSE] ${eligibleProjects.length} estimates loaded for contract generation`);
     } catch (error) {
-      console.error("Error loading projects:", error);
+      console.error("Error loading estimates:", error);
       toast({
         title: "Error",
-        description: "Failed to load projects",
+        description: "Failed to load estimates",
         variant: "destructive",
       });
     } finally {

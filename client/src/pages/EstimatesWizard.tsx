@@ -2740,40 +2740,10 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         total: estimateData.displayTotal,
       });
 
-      // Guardar también en Firebase para máxima compatibilidad
-      try {
-        const firebaseDoc = {
-          ...estimateData,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          type: "estimate",
-          source: "estimates-wizard",
-        };
-
-        const estimateRef = await addDoc(
-          collection(db, "estimates"),
-          firebaseDoc,
-        );
-        console.log("✅ También guardado en Firebase:", estimateRef.id);
-
-        const projectRef = await addDoc(collection(db, "projects"), {
-          ...firebaseDoc,
-          projectId: estimateData.projectId,
-          status: "estimate",
-          type: "project",
-        });
-        console.log("✅ Proyecto creado en Firebase:", projectRef.id);
-      } catch (firebaseError) {
-        console.warn(
-          "⚠️ No se pudo guardar en Firebase, pero PostgreSQL funcionó:",
-          firebaseError,
-        );
-      }
-
       console.log("💾 Guardando estimado:", estimateData);
 
-      // 3. Save directly to Firebase (primary storage)
-      console.log("💾 Guardando directamente en Firebase...");
+      // UNIFIED DATA SOURCE: Save ONLY to 'estimates' collection
+      console.log("💾 Guardando en Firebase estimates (fuente única de datos)...");
 
       const estimateDoc = {
         ...estimateData,
@@ -2783,30 +2753,11 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         source: "estimates-wizard",
       };
 
-      // Save to Firebase estimates collection
       const estimateRef = await addDoc(
         collection(db, "estimates"),
         estimateDoc,
       );
-      console.log(
-        "✅ Estimado guardado en Firebase estimates:",
-        estimateRef.id,
-      );
-
-      // Also save to Firebase projects collection for dashboard integration
-      const projectDoc = {
-        ...estimateData,
-        projectId: estimateRef.id,
-        estimateId: estimateRef.id,
-        type: "project",
-        source: "estimate",
-        status: "estimate",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      const projectRef = await addDoc(collection(db, "projects"), projectDoc);
-      console.log("✅ Estimado guardado en Firebase projects:", projectRef.id);
+      console.log("✅ Estimado guardado en Firebase estimates:", estimateRef.id);
 
       // 4. Save to localStorage as final backup
       try {
@@ -2814,7 +2765,6 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           ...estimateData,
           savedAt: new Date().toISOString(),
           estimateId: estimateRef.id,
-          projectId: projectRef.id,
         };
 
         const existingEstimates = JSON.parse(
@@ -2833,7 +2783,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       // 5. Success feedback
       toast({
         title: "✅ Estimado guardado exitosamente",
-        description: `${estimateNumber} se guardó en tus estimados y proyectos`,
+        description: `${estimateNumber} se guardó correctamente`,
         duration: 5000,
       });
 

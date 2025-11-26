@@ -26,149 +26,85 @@ const ProjectToContractSelector: React.FC<ProjectToContractSelectorProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  // Cargar proyectos desde Firebase (replica la lógica exacta de EstimatesWizard)
+  // UNIFIED DATA SOURCE: Load ONLY from 'estimates' collection
   const loadProjectsFromFirebase = async () => {
     if (!currentUser?.uid) return;
 
     try {
       setIsLoading(true);
-      console.log("🔥 Loading projects from Firebase for Legal Defense...");
+      console.log("🔥 Loading estimates from Firebase for Contract Selector...");
 
-      let allEstimates = [];
+      const estimatesQuery = query(
+        collection(db, "estimates"),
+        where("firebaseUserId", "==", currentUser.uid),
+      );
 
-      // Cargar desde colección "projects" (igual que EstimatesWizard)
-      try {
-        const projectsQuery = query(
-          collection(db, "projects"),
-          where("firebaseUserId", "==", currentUser.uid),
-        );
+      const estimatesSnapshot = await getDocs(estimatesQuery);
+      console.log(`📊 [CONTRACT-SELECTOR] Found ${estimatesSnapshot.size} estimates`);
+      
+      const allEstimates = estimatesSnapshot.docs.map((doc) => {
+        const data = doc.data();
 
-        const projectsSnapshot = await getDocs(projectsQuery);
-        const projectEstimates = projectsSnapshot.docs
-          .filter((doc) => {
-            const data = doc.data();
-            return data.status === "estimate" || data.estimateNumber;
-          })
-          .map((doc) => {
-            const data = doc.data();
+        const clientName =
+          data.clientInformation?.name ||
+          data.clientName ||
+          data.client?.name ||
+          "Cliente sin nombre";
 
-            const clientName =
-              data.clientInformation?.name ||
-              data.clientName ||
-              data.client?.name ||
-              "Cliente sin nombre";
+        const clientEmail =
+          data.clientInformation?.email ||
+          data.clientEmail ||
+          data.client?.email ||
+          "";
 
-            const clientEmail =
-              data.clientInformation?.email ||
-              data.clientEmail ||
-              data.client?.email ||
-              "";
+        let totalValue =
+          data.projectTotalCosts?.totalSummary?.finalTotal ||
+          data.projectTotalCosts?.total ||
+          data.total ||
+          data.estimateAmount ||
+          0;
 
-            // Total calculation with multiple paths
-            let totalValue =
-              data.projectTotalCosts?.totalSummary?.finalTotal ||
-              data.projectTotalCosts?.total ||
-              data.total ||
-              data.estimateAmount ||
-              0;
+        if (totalValue > 10000 && Number.isInteger(totalValue)) {
+          totalValue = totalValue / 100;
+        }
 
-            const displayTotal = totalValue;
+        const projectTitle =
+          data.projectDetails?.name ||
+          data.projectName ||
+          data.title ||
+          `Estimado para ${clientName}`;
 
-            const projectTitle =
-              data.projectDetails?.name ||
-              data.projectName ||
-              data.title ||
-              `Estimado para ${clientName}`;
+        const address =
+          data.clientInformation?.address ||
+          data.clientInformation?.fullAddress ||
+          data.clientAddress ||
+          data.client?.address ||
+          data.address ||
+          "";
 
-            const address =
-              data.clientInformation?.address ||
-              data.clientAddress ||
-              data.client?.address ||
-              data.address ||
-              "";
+        return {
+          id: doc.id,
+          estimateNumber: data.estimateNumber || `EST-${doc.id.slice(-6)}`,
+          title: projectTitle,
+          clientName: clientName,
+          clientEmail: clientEmail,
+          total: totalValue,
+          status: data.status || "estimate",
+          estimateDate: data.createdAt
+            ? data.createdAt.toDate?.() || new Date(data.createdAt)
+            : new Date(),
+          items: data.projectTotalCosts?.materialCosts?.items || data.items || [],
+          projectType: data.projectType || data.projectDetails?.type || "fence",
+          address: address,
+          originalData: data,
+        };
+      });
 
-            return {
-              id: doc.id,
-              estimateNumber: data.estimateNumber || `EST-${doc.id.slice(-6)}`,
-              title: projectTitle,
-              clientName: clientName,
-              clientEmail: clientEmail,
-              total: displayTotal,
-              status: data.status || "draft",
-              estimateDate: data.createdAt
-                ? data.createdAt.toDate?.() || new Date(data.createdAt)
-                : new Date(),
-              items: data.projectTotalCosts?.materialCosts?.items || data.items || [],
-              projectType: data.projectType || data.projectDetails?.type || "fence",
-              address: address,
-              originalData: data,
-            };
-          });
+      allEstimates.sort((a, b) =>
+        new Date(b.estimateDate).getTime() - new Date(a.estimateDate).getTime()
+      );
 
-        allEstimates = [...allEstimates, ...projectEstimates];
-        console.log(`📊 Loaded ${projectEstimates.length} projects from projects collection`);
-      } catch (projectError) {
-        console.warn("Could not load from projects collection:", projectError);
-      }
-
-      // Cargar desde colección "estimates" (igual que EstimatesWizard)
-      try {
-        const estimatesQuery = query(
-          collection(db, "estimates"),
-          where("firebaseUserId", "==", currentUser.uid),
-        );
-
-        const estimatesSnapshot = await getDocs(estimatesQuery);
-        const firebaseEstimates = estimatesSnapshot.docs.map((doc) => {
-          const data = doc.data();
-
-          const clientName = data.clientName || data.client?.name || "Cliente sin nombre";
-          const clientEmail = data.clientEmail || data.client?.email || "";
-
-          let totalValue = data.total || data.estimateAmount || 0;
-          const displayTotal = totalValue;
-
-          const address = data.clientAddress || data.client?.address || data.address || "";
-
-          return {
-            id: doc.id,
-            estimateNumber: data.estimateNumber || `EST-${doc.id.slice(-6)}`,
-            title: data.title || data.projectName || `Estimado para ${clientName}`,
-            clientName: clientName,
-            clientEmail: clientEmail,
-            total: displayTotal,
-            status: data.status || "estimate",
-            estimateDate: data.createdAt
-              ? data.createdAt.toDate?.() || new Date(data.createdAt)
-              : new Date(),
-            items: data.items || [],
-            projectType: data.projectType || data.fenceType || "fence",
-            address: address,
-            originalData: data,
-          };
-        });
-
-        allEstimates = [...allEstimates, ...firebaseEstimates];
-        console.log(`📋 Loaded ${firebaseEstimates.length} additional estimates`);
-      } catch (estimatesError) {
-        console.warn("Could not load from estimates collection:", estimatesError);
-      }
-
-      // Deduplicar y ordenar (igual que EstimatesWizard)
-      const uniqueEstimates = allEstimates
-        .filter(
-          (estimate, index, self) =>
-            index ===
-            self.findIndex((e) => e.estimateNumber === estimate.estimateNumber),
-        )
-        .sort(
-          (a, b) =>
-            new Date(b.estimateDate).getTime() -
-            new Date(a.estimateDate).getTime(),
-        );
-
-      // Convertir a formato Project para compatibility
-      const formattedProjects: Project[] = uniqueEstimates.map((estimate) => ({
+      const formattedProjects: Project[] = allEstimates.map((estimate) => ({
         id: estimate.id,
         clientName: estimate.clientName,
         clientEmail: estimate.clientEmail,
@@ -181,9 +117,9 @@ const ProjectToContractSelector: React.FC<ProjectToContractSelectorProps> = ({
       }));
 
       setProjects(formattedProjects);
-      console.log(`✅ Total: ${uniqueEstimates.length} unique projects loaded for Legal Defense`);
+      console.log(`✅ [CONTRACT-SELECTOR] ${allEstimates.length} estimates loaded`);
     } catch (error) {
-      console.error("Error loading projects from Firebase:", error);
+      console.error("Error loading estimates from Firebase:", error);
     } finally {
       setIsLoading(false);
     }

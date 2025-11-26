@@ -60,51 +60,58 @@ function ProjectsSimple() {
         return;
       }
 
-      // Cargar datos de Firebase
+      // UNIFIED DATA SOURCE: Load ONLY from 'estimates' collection
       const { collection, getDocs, query, where } = await import("firebase/firestore");
       const { db } = await import("@/lib/firebase");
 
-      const allProjects: Project[] = [];
+      console.log(`🔒 [PROJECTS-SIMPLE] Loading estimates for user: ${user.uid}`);
 
-      // Cargar estimados
       const estimatesRef = collection(db, "estimates");
-      const estimatesQuery = query(estimatesRef, where("userId", "==", user.uid));
+      const estimatesQuery = query(estimatesRef, where("firebaseUserId", "==", user.uid));
       const estimatesSnapshot = await getDocs(estimatesQuery);
+
+      console.log(`📊 [PROJECTS-SIMPLE] Found ${estimatesSnapshot.size} estimates`);
+
+      const allProjects: Project[] = [];
 
       estimatesSnapshot.forEach((doc) => {
         const data = doc.data();
+        
+        const clientName = data.clientInformation?.name || 
+                          data.clientName || 
+                          data.client?.name || 
+                          "Cliente no especificado";
+
+        const address = data.clientInformation?.address ||
+                       data.clientInformation?.fullAddress ||
+                       data.address || 
+                       data.clientAddress || 
+                       "Dirección no especificada";
+
+        let totalPrice = data.projectTotalCosts?.totalSummary?.finalTotal ||
+                        data.projectTotalCosts?.total ||
+                        data.totalAmount || 
+                        data.totalPrice || 
+                        data.total ||
+                        0;
+
+        if (totalPrice > 10000 && Number.isInteger(totalPrice)) {
+          totalPrice = totalPrice / 100;
+        }
+
         allProjects.push({
           id: doc.id,
-          clientName: data.clientName || "Cliente no especificado",
-          address: data.address || data.clientAddress || "Dirección no especificada",
-          projectType: data.projectType || "General",
+          clientName: clientName,
+          address: address,
+          projectType: data.projectType || data.projectDetails?.type || "General",
           status: data.status || "estimate",
-          totalPrice: data.totalAmount || data.totalPrice || 0,
+          totalPrice: totalPrice,
           createdAt: data.createdAt,
           source: "estimates"
         });
       });
 
-      // Cargar proyectos
-      const projectsRef = collection(db, "projects");
-      const projectsQuery = query(projectsRef, where("userId", "==", user.uid));
-      const projectsSnapshot = await getDocs(projectsQuery);
-
-      projectsSnapshot.forEach((doc) => {
-        const data = doc.data();
-        allProjects.push({
-          id: doc.id,
-          clientName: data.clientName || "Cliente no especificado",
-          address: data.address || data.clientAddress || "Dirección no especificada",
-          projectType: data.projectType || "General",
-          status: data.status || "active",
-          totalPrice: data.totalPrice || data.totalAmount || 0,
-          createdAt: data.createdAt,
-          source: "projects"
-        });
-      });
-
-      console.log(`✅ Proyectos cargados: ${allProjects.length}`);
+      console.log(`✅ [PROJECTS-SIMPLE] Loaded ${allProjects.length} estimates`);
       setProjects(allProjects);
 
     } catch (error) {

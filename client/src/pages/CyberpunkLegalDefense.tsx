@@ -990,38 +990,12 @@ export default function CyberpunkLegalDefense() {
                 `🔍 Found ${firebaseEstimates.length} estimates ready for contracts`,
               );
             } catch (estimatesError) {
-              console.warn("Could not load estimates:", estimatesError);
-
-              // FALLBACK: Try projects collection as backup
-              try {
-                console.log("🔍 Trying projects collection as backup...");
-                const projectsQuery = query(
-                  collection(db, "projects"),
-                  where("firebaseUserId", "==", user.uid),
-                );
-
-                const projectsSnapshot = await getDocs(projectsQuery);
-                const firebaseProjects = projectsSnapshot.docs
-                  .map((doc) => ({
-                    id: doc.id,
-                    ...doc.data(),
-                    source: "project",
-                  }))
-                  .filter(
-                    (project) =>
-                      project.status === "approved" ||
-                      project.status === "estimate" ||
-                      project.status === "client_approved" ||
-                      project.projectProgress === "approved",
-                  );
-
-                allProjects = [...firebaseProjects];
-                console.log(
-                  `🔍 Found ${firebaseProjects.length} backup projects`,
-                );
-              } catch (projectsError) {
-                console.warn("Backup projects also failed:", projectsError);
-              }
+              console.error("❌ Could not load estimates:", estimatesError);
+              toast({
+                title: "⚡ Error Loading Estimates",
+                description: "Could not load your saved estimates. Please try again.",
+                variant: "destructive",
+              });
             }
 
             if (allProjects.length > 0) {
@@ -1073,82 +1047,13 @@ export default function CyberpunkLegalDefense() {
               });
             }
           } catch (error: any) {
-            console.error("Error loading projects:", error);
-
-            // BACKUP SYSTEM: Try PostgreSQL when Firebase fails
-            if (
-              error.code === "failed-precondition" ||
-              error.code === "permission-denied"
-            ) {
-              console.log(
-                "🔄 BACKUP: Attempting to load projects from PostgreSQL...",
-              );
-
-              try {
-                const backupResponse = await fetch("/api/projects", {
-                  method: "GET",
-                  headers: {
-                    "Content-Type": "application/json",
-                    "X-Firebase-UID": user.uid, // Pass user ID for security
-                  },
-                });
-
-                if (backupResponse.ok) {
-                  const backupProjects = await backupResponse.json();
-
-                  // Filter only approved projects and format for contract system
-                  const approvedBackupProjects = backupProjects
-                    .filter((project: any) => project.status === "approved")
-                    .map((project: any) => ({
-                      id: project.id,
-                      clientName: project.clientName || "Unknown Client",
-                      clientEmail: project.clientEmail || "",
-                      clientPhone: project.clientPhone || "",
-                      address: project.address || "",
-                      projectType: project.projectType || "Fence Project",
-                      projectDescription: project.description || "",
-                      totalAmount: project.totalPrice || 0,
-                      status: project.status,
-                      createdAt:
-                        project.createdAt || new Date().toLocaleDateString(),
-                      userId: user.uid, // Ensure user ID is attached
-                    }));
-
-                  setApprovedProjects(approvedBackupProjects);
-
-                  toast({
-                    title: "🔄 BACKUP SYSTEM ACTIVATED",
-                    description: `Loaded ${approvedBackupProjects.length} projects from backup database.`,
-                  });
-
-                  console.log(
-                    `✅ BACKUP: Successfully loaded ${approvedBackupProjects.length} projects from PostgreSQL`,
-                  );
-                } else {
-                  throw new Error("Backup system also failed");
-                }
-              } catch (backupError) {
-                console.error("Backup system failed:", backupError);
-
-                // Final fallback with helpful message
-                toast({
-                  title: "⚡ DATABASE CONNECTION ISSUE",
-                  description:
-                    "Both Firebase and backup systems are temporarily unavailable. Please try again in a few minutes.",
-                  variant: "destructive",
-                });
-                setApprovedProjects([]);
-              }
-            } else {
-              // Handle other types of errors
-              toast({
-                title: "⚡ CONNECTION ERROR",
-                description:
-                  "Cannot connect to project database. Try again later.",
-                variant: "destructive",
-              });
-              setApprovedProjects([]);
-            }
+            console.error("Error loading estimates:", error);
+            toast({
+              title: "⚡ CONNECTION ERROR",
+              description: "Cannot connect to estimates database. Please try again later.",
+              variant: "destructive",
+            });
+            setApprovedProjects([]);
           }
           resolve();
         });

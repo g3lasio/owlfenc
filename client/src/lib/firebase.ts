@@ -318,10 +318,11 @@ if (typeof window !== 'undefined') {
   checkCorsAndCSP();
 }
 
-// Projects collection
+// DEPRECATED: Use 'estimates' collection instead - this writes to legacy 'projects' collection
+// @deprecated - Legacy function, will be removed. Use EstimatesWizard which saves to 'estimates' collection.
 export const saveProject = async (projectData: any) => {
+  console.warn("⚠️ DEPRECATED: saveProject() writes to legacy 'projects' collection. Use EstimatesWizard instead.");
   try {
-    // Ensure project has a status, default to "draft" if not provided
     const projectWithStatus = {
       ...projectData,
       status: projectData.status || "draft",
@@ -337,9 +338,11 @@ export const saveProject = async (projectData: any) => {
   }
 };
 
+// DEPRECATED: Use direct queries to 'estimates' collection instead
+// @deprecated - Legacy function, will be removed. Query 'estimates' collection directly.
 export const getProjects = async (filters?: { status?: string, fenceType?: string }) => {
+  console.warn("⚠️ DEPRECATED: getProjects() reads from legacy 'projects' collection. Query 'estimates' collection directly.");
   try {
-    // CRITICAL SECURITY: Wait for auth to be ready and get current authenticated user
     const currentUser = await waitForAuth();
     if (!currentUser) {
       console.warn("🔒 SECURITY: No authenticated user - returning empty array");

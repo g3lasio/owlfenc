@@ -207,116 +207,71 @@ export default function PermitAdvisor() {
 
     try {
       setLoadingProjects(true);
-      console.log(`🔒 Loading projects for user: ${user.uid}`);
+      console.log(`🔒 [PERMIT-ADVISOR] Loading estimates for user: ${user.uid}`);
 
-      let allProjects: any[] = [];
+      // UNIFIED DATA SOURCE: Load ONLY from 'estimates' collection
+      const estimatesQuery = query(
+        collection(db, "estimates"),
+        where("firebaseUserId", "==", user.uid),
+      );
 
-      // 1. Load from projects collection (same as Legal Defense)
-      try {
-        const projectsQuery = query(
-          collection(db, "projects"),
-          where("firebaseUserId", "==", user.uid),
-        );
+      const estimatesSnapshot = await getDocs(estimatesQuery);
+      console.log(`📊 [PERMIT-ADVISOR] Found ${estimatesSnapshot.size} estimates`);
 
-        const projectsSnapshot = await getDocs(projectsQuery);
-        const projectEstimates = projectsSnapshot.docs
-          .filter((doc) => {
-            const data = doc.data();
-            return data.status === "estimate" || data.estimateNumber;
-          })
-          .map((doc) => {
-            const data = doc.data();
+      const allProjects = estimatesSnapshot.docs.map((doc) => {
+        const data = doc.data();
 
-            const clientName =
-              data.clientInformation?.name ||
-              data.clientName ||
-              data.client?.name ||
-              "Cliente sin nombre";
+        const clientName =
+          data.clientInformation?.name ||
+          data.clientName ||
+          data.client?.name ||
+          "Cliente sin nombre";
 
-            const address =
-              data.clientInformation?.address ||
-              data.clientAddress ||
-              data.client?.address ||
-              data.address ||
-              data.projectAddress ||
-              data.location ||
-              data.workAddress ||
-              data.propertyAddress ||
-              "";
+        const address =
+          data.clientInformation?.address ||
+          data.clientInformation?.fullAddress ||
+          data.clientAddress ||
+          data.client?.address ||
+          data.address ||
+          data.projectAddress ||
+          data.location ||
+          data.workAddress ||
+          data.propertyAddress ||
+          "";
 
-            const projectType = data.projectType || data.projectDetails?.type || "fence";
+        const projectType = data.projectType || data.projectDetails?.type || "fence";
 
-            const projectDescription = 
-              data.projectDetails?.description ||
-              data.projectDescription ||
-              data.description ||
-              `${projectType} project for ${clientName}`;
+        const projectDescription = 
+          data.projectDetails?.description ||
+          data.projectDescription ||
+          data.description ||
+          `${projectType} project for ${clientName}`;
 
-            return {
-              id: doc.id,
-              clientName: clientName,
-              address: address,
-              projectType: projectType,
-              projectDescription: projectDescription,
-              status: data.status || "draft",
-              createdAt: data.createdAt || { toDate: () => new Date() },
-              totalPrice: data.projectTotalCosts?.totalSummary?.finalTotal || 
-                         data.projectTotalCosts?.total ||
-                         data.total ||
-                         data.estimateAmount ||
-                         0,
-              clientEmail: data.clientInformation?.email || data.clientEmail || "",
-              clientPhone: data.clientInformation?.phone || data.clientPhone || "",
-            };
-          });
+        let totalPrice = data.projectTotalCosts?.totalSummary?.finalTotal || 
+                       data.projectTotalCosts?.total ||
+                       data.total ||
+                       data.estimateAmount ||
+                       0;
 
-        allProjects = [...allProjects, ...projectEstimates];
-        console.log(`📊 Loaded ${projectEstimates.length} projects from projects collection`);
-      } catch (projectError) {
-        console.warn("Could not load from projects collection:", projectError);
-      }
+        if (totalPrice > 10000 && Number.isInteger(totalPrice)) {
+          totalPrice = totalPrice / 100;
+        }
 
-      // 2. Load from estimates collection (same as Legal Defense)
-      try {
-        const estimatesQuery = query(
-          collection(db, "estimates"),
-          where("firebaseUserId", "==", user.uid),
-        );
+        return {
+          id: doc.id,
+          clientName: clientName,
+          address: address,
+          projectType: projectType,
+          projectDescription: projectDescription,
+          status: data.status || "estimate",
+          createdAt: data.createdAt || { toDate: () => new Date() },
+          totalPrice: totalPrice,
+          clientEmail: data.clientInformation?.email || data.clientEmail || "",
+          clientPhone: data.clientInformation?.phone || data.clientPhone || "",
+        };
+      });
 
-        const estimatesSnapshot = await getDocs(estimatesQuery);
-        const firebaseEstimates = estimatesSnapshot.docs.map((doc) => {
-          const data = doc.data();
-
-          const clientName = data.clientName || data.client?.name || "Cliente sin nombre";
-          const address = data.address || 
-                         data.clientAddress || 
-                         data.projectAddress ||
-                         data.location ||
-                         data.workAddress ||
-                         data.propertyAddress ||
-                         "";
-          const projectType = data.projectType || "fence";
-          const projectDescription = data.projectDescription || `${projectType} project for ${clientName}`;
-
-          return {
-            id: doc.id,
-            clientName: clientName,
-            address: address,
-            projectType: projectType,
-            projectDescription: projectDescription,
-            status: data.status || "draft",
-            createdAt: data.createdAt || { toDate: () => new Date() },
-            totalPrice: data.total || data.estimateAmount || 0,
-            clientEmail: data.clientEmail || "",
-            clientPhone: data.clientPhone || "",
-          };
-        });
-
-        allProjects = [...allProjects, ...firebaseEstimates];
-        console.log(`📋 Loaded ${firebaseEstimates.length} additional estimates`);
-      } catch (estimatesError) {
-        console.warn("Could not load from estimates collection:", estimatesError);
-      }
+      console.log(`✅ [PERMIT-ADVISOR] Loaded ${allProjects.length} estimates`);
 
       // 3. Filter for valid projects with comprehensive data validation
       const validProjects = allProjects.filter((project: any) => {
