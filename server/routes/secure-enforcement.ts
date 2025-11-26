@@ -7,6 +7,7 @@
 import { Router } from 'express';
 import { secureTrialService } from '../services/secureTrialService.js';
 import { verifyFirebaseAuth, AuthenticatedRequest } from '../middleware/firebase-auth-middleware.js';
+import { requireLegalDefenseAccess } from '../middleware/subscription-auth.js';
 
 const router = Router();
 
@@ -14,8 +15,9 @@ const router = Router();
  * POST /api/secure-enforcement/generate-contract
  * Generate contract with STRONG enforcement (cannot be bypassed)
  * REQUIRES FIREBASE AUTHENTICATION - NO BYPASS POSSIBLE
+ * 🔐 SECURITY FIX: Added requireLegalDefenseAccess to block Primo Chambeador
  */
-router.post('/generate-contract', verifyFirebaseAuth, async (req, res) => {
+router.post('/generate-contract', verifyFirebaseAuth, requireLegalDefenseAccess, async (req, res) => {
   try {
     // SECURITY: Get UID from verified Firebase token, not request body
     const uid = (req as AuthenticatedRequest).uid;

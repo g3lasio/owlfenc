@@ -10,6 +10,11 @@ import Anthropic from '@anthropic-ai/sdk';
 import { LegalDefenseEngine } from '../../client/src/services/legalDefenseEngine';
 import { verifyFirebaseAuth } from '../middleware/firebase-auth';
 import { userMappingService } from '../services/userMappingService';
+import { 
+  requireLegalDefenseAccess,
+  validateUsageLimit,
+  incrementUsageOnSuccess 
+} from '../middleware/subscription-auth';
 
 const router = Router();
 
@@ -61,7 +66,14 @@ const anthropic = new Anthropic({
  * Endpoint principal: PDF → Contrato Blindado
  * 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth para proteger procesamiento de PDFs legales
  */
-router.post('/pdf-to-contract', verifyFirebaseAuth, upload.single('estimatePdf'), async (req, res) => {
+// 🔐 SECURITY FIX: Full CONTRACT_GUARD applied to pdf-to-contract
+router.post('/pdf-to-contract', 
+  verifyFirebaseAuth, 
+  requireLegalDefenseAccess,
+  validateUsageLimit('contracts'),
+  upload.single('estimatePdf'), 
+  incrementUsageOnSuccess('contracts'),
+  async (req, res) => {
   console.log('🛡️ LEGAL DEFENSE ENGINE: Processing document for defensive contract...');
   
   try {

@@ -10,6 +10,7 @@ import { productionUsageService } from '../services/productionUsageService.js';
 import { rateLimiters } from '../middleware/rate-limit-middleware.js';
 import { EstimatorService } from '../services/estimatorService.js';
 import { professionalContractGenerator } from '../services/contractGenerator.js';
+import { requireLegalDefenseAccess } from '../middleware/subscription-auth.js';
 
 const router = Router();
 
@@ -139,7 +140,8 @@ router.post('/generate-ai-estimate', verifyFirebaseAuth, rateLimiters.aiEstimate
  * POST /api/features/generate-contract
  * Generate contract with usage tracking
  */
-router.post('/generate-contract', verifyFirebaseAuth, rateLimiters.contracts, async (req, res) => {
+// 🔐 SECURITY FIX: Added requireLegalDefenseAccess to block Primo Chambeador
+router.post('/generate-contract', verifyFirebaseAuth, requireLegalDefenseAccess, rateLimiters.contracts, async (req, res) => {
   try {
     const uid = (req as AuthenticatedRequest).uid;
     const { contractData, clientInfo, templateType } = req.body;

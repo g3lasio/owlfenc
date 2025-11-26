@@ -2,6 +2,11 @@ import express from 'express';
 import Anthropic from '@anthropic-ai/sdk';
 import { verifyFirebaseAuth } from '../middleware/firebase-auth';
 import { userMappingService } from '../services/userMappingService';
+import { 
+  requireLegalDefenseAccess,
+  validateUsageLimit,
+  incrementUsageOnSuccess 
+} from '../middleware/subscription-auth';
 
 const router = express.Router();
 
@@ -364,8 +369,14 @@ IMPORTANTE: Cualquier valor numérico debe ser un número, no un string.
 
 /**
  * Contract Generation Endpoint
+ * 🔐 SECURITY FIX: Added full contract protection middleware
  */
-router.post('/generate-contract', async (req, res) => {
+router.post('/generate-contract', 
+  verifyFirebaseAuth,
+  requireLegalDefenseAccess,
+  validateUsageLimit('contracts'),
+  incrementUsageOnSuccess('contracts'),
+  async (req, res) => {
   try {
     const { contractData } = req.body;
 

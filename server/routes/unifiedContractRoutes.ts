@@ -8,6 +8,11 @@ import { Anthropic } from '@anthropic-ai/sdk';
 import { ContractData, GeneratedContract, contractDataSchema } from '@shared/contractSchema';
 import { verifyFirebaseAuth } from '../middleware/firebase-auth';
 import { userMappingService } from '../services/userMappingService';
+import { 
+  requireLegalDefenseAccess,
+  validateUsageLimit,
+  incrementUsageOnSuccess 
+} from '../middleware/subscription-auth';
 
 const router = Router();
 
@@ -108,8 +113,14 @@ router.post('/complete-contract-data', verifyFirebaseAuth, async (req: Request, 
 
 /**
  * Generate defensive contract using Anthropic AI
+ * 🔐 SECURITY FIX: Added full contract protection middleware
  */
-router.post('/generate-defensive-contract', async (req: Request, res: Response) => {
+router.post('/generate-defensive-contract', 
+  verifyFirebaseAuth,
+  requireLegalDefenseAccess,
+  validateUsageLimit('contracts'),
+  incrementUsageOnSuccess('contracts'),
+  async (req: Request, res: Response) => {
   try {
     const { contractData, protectionLevel = 'standard' } = req.body;
 

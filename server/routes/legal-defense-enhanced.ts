@@ -7,6 +7,11 @@ import pdf from 'pdf-parse';
 import { LegalDefenseEngine } from '../../client/src/services/legalDefenseEngine';
 import { verifyFirebaseAuth } from '../middleware/firebase-auth';
 import { userMappingService } from '../services/userMappingService';
+import { 
+  requireLegalDefenseAccess,
+  validateUsageLimit,
+  incrementUsageOnSuccess 
+} from '../middleware/subscription-auth';
 
 const router = Router();
 
@@ -183,7 +188,14 @@ router.post('/advanced-analysis', async (req, res) => {
 /**
  * Endpoint: Generación simple con respaldo robusto
  */
-router.post('/pdf-to-contract-simple', upload.single('estimatePdf'), async (req, res) => {
+// 🔐 SECURITY FIX: CRITICAL - This endpoint had NO AUTH! Full CONTRACT_GUARD applied
+router.post('/pdf-to-contract-simple', 
+  verifyFirebaseAuth,
+  requireLegalDefenseAccess,
+  validateUsageLimit('contracts'),
+  upload.single('estimatePdf'), 
+  incrementUsageOnSuccess('contracts'),
+  async (req, res) => {
   console.log('🛡️ LEGAL DEFENSE: Generación simple de respaldo...');
   
   try {

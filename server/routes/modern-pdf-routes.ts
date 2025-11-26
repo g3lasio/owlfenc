@@ -7,6 +7,11 @@ import { Router } from 'express';
 import { modernPdfService } from '../services/ModernPdfService';
 import { verifyFirebaseAuth } from '../middleware/firebase-auth';
 import { userMappingService } from '../services/userMappingService';
+import { 
+  requireLegalDefenseAccess,
+  validateUsageLimit,
+  incrementUsageOnSuccess 
+} from '../middleware/subscription-auth';
 
 const router = Router();
 
@@ -52,14 +57,22 @@ router.post('/generate-pdf', verifyFirebaseAuth, async (req, res) => {
     console.log(`📄 [MODERN-ENDPOINT] Generando PDF tipo: ${type}`);
     console.log(`📏 [MODERN-ENDPOINT] Tamaño HTML: ${html.length} caracteres`);
 
+    // 🔐 SECURITY FIX: Block contract generation through this endpoint
+    // Contracts MUST use /generate-contract endpoint with CONTRACT_GUARD protection
+    if (type === 'contract') {
+      console.warn(`⚠️ [SECURITY] Rejected contract generation via /generate-pdf for user: ${userId}`);
+      return res.status(403).json({
+        success: false,
+        error: 'Contract generation not allowed through this endpoint',
+        message: 'Use /api/modern-pdf/generate-contract endpoint for contracts',
+        code: 'CONTRACT_GUARD_REQUIRED'
+      });
+    }
+
     let result;
 
-    // Usar el método específico según el tipo
-    if (type === 'contract') {
-      result = await modernPdfService.generateContractPdf(html, estimateId || 'contract');
-    } else {
-      result = await modernPdfService.generateEstimatePdf(html, estimateId || 'estimate');
-    }
+    // Only estimates allowed through this endpoint
+    result = await modernPdfService.generateEstimatePdf(html, estimateId || 'estimate');
 
     if (!result.success) {
       console.error('❌ [MODERN-ENDPOINT] Error generando PDF:', result.error);
@@ -110,9 +123,14 @@ router.post('/generate-estimate', verifyFirebaseAuth, async (req, res) => {
 
 /**
  * Endpoint específico para contratos (futuro uso)
- * 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth
+ * 🔐 SECURITY FIX: Full CONTRACT_GUARD applied
  */
-router.post('/generate-contract', verifyFirebaseAuth, async (req, res) => {
+router.post('/generate-contract', 
+  verifyFirebaseAuth, 
+  requireLegalDefenseAccess,
+  validateUsageLimit('contracts'),
+  incrementUsageOnSuccess('contracts'),
+  async (req, res) => {
   console.log('📋 [MODERN-ENDPOINT] Solicitud específica de contrato');
   req.body.type = 'contract';
   return router.handle(req, res, () => {});

@@ -4,6 +4,11 @@ import { Router } from 'express';
 import Anthropic from '@anthropic-ai/sdk';
 import { verifyFirebaseAuth } from '../middleware/firebase-auth';
 import { userMappingService } from '../services/userMappingService';
+import { 
+  requireLegalDefenseAccess,
+  validateUsageLimit,
+  incrementUsageOnSuccess 
+} from '../middleware/subscription-auth';
 
 const router = Router();
 
@@ -14,9 +19,14 @@ const anthropic = new Anthropic({
 
 /**
  * Endpoint para generar contratos usando Anthropic Claude
- * 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth para proteger generación de contratos
+ * 🔐 SECURITY FIX: Added full contract protection middleware
  */
-router.post('/generate-contract', verifyFirebaseAuth, async (req, res) => {
+router.post('/generate-contract', 
+  verifyFirebaseAuth,
+  requireLegalDefenseAccess,
+  validateUsageLimit('contracts'),
+  incrementUsageOnSuccess('contracts'),
+  async (req, res) => {
   try {
     // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden generar contratos con IA
     const firebaseUid = req.firebaseUser?.uid;

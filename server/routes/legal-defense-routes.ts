@@ -8,6 +8,12 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import OpenAI from 'openai';
+import { verifyFirebaseAuth } from '../middleware/firebase-auth';
+import { 
+  requireLegalDefenseAccess,
+  validateUsageLimit,
+  incrementUsageOnSuccess 
+} from '../middleware/subscription-auth';
 
 const router = Router();
 
@@ -32,7 +38,13 @@ const projectSchema = z.object({
 });
 
 // Endpoint para generar contrato defensivo con Anthropic
-router.post('/generate-defensive-contract', async (req, res) => {
+// 🔐 SECURITY FIX: Added full contract protection middleware
+router.post('/generate-defensive-contract', 
+  verifyFirebaseAuth,
+  requireLegalDefenseAccess,
+  validateUsageLimit('contracts'),
+  incrementUsageOnSuccess('contracts'),
+  async (req, res) => {
   console.log('🛡️ Iniciando generación de contrato defensivo...');
   
   try {

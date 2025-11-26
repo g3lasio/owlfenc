@@ -9,6 +9,11 @@ import { hybridContractGenerator } from "../services/hybridContractGenerator";
 import OpenAI from "openai";
 import { verifyFirebaseAuth } from '../middleware/firebase-auth';
 import { userMappingService } from '../services/userMappingService';
+import { 
+  requireLegalDefenseAccess,
+  validateUsageLimit,
+  incrementUsageOnSuccess 
+} from '../middleware/subscription-auth';
 
 // Inicializar router y servicios
 const router = express.Router();
@@ -51,7 +56,14 @@ interface DatosExtraidos {
 
 // Generate contract preview HTML
 // 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth para proteger generación de contratos
-router.post('/preview', verifyFirebaseAuth, async (req, res) => {
+// 🔐 SECURITY FIX: Preview endpoint now has full CONTRACT_GUARD protection
+// Preview returns full contract HTML - must enforce same limits as generate-contract
+router.post('/preview', 
+  verifyFirebaseAuth, 
+  requireLegalDefenseAccess,
+  validateUsageLimit('contracts'),
+  incrementUsageOnSuccess('contracts'),
+  async (req, res) => {
   try {
     console.log('📋 Generando preview del contrato...');
     
@@ -103,7 +115,13 @@ router.post('/preview', verifyFirebaseAuth, async (req, res) => {
 });
 
 // Generate contract pdf
-router.post("/generate-contract", verifyFirebaseAuth, async (req, res) => {
+// 🔐 SECURITY FIX: Added full contract protection middleware
+router.post("/generate-contract", 
+  verifyFirebaseAuth,
+  requireLegalDefenseAccess,
+  validateUsageLimit('contracts'),
+  incrementUsageOnSuccess('contracts'),
+  async (req, res) => {
   try {
     // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden generar contratos
     const firebaseUid = req.firebaseUser?.uid;
@@ -347,7 +365,15 @@ router.post("/questions/next", verifyFirebaseAuth, async (req, res) => {
   }
 });
 
-router.post("/generar-contrato", verifyFirebaseAuth, upload.single("pdf"), async (req, res) => {
+// 🔐 SECURITY FIX: PDF-to-contract endpoint needs full CONTRACT_GUARD
+// Returns full contract HTML - counts as contract generation
+router.post("/generar-contrato", 
+  verifyFirebaseAuth, 
+  requireLegalDefenseAccess,
+  validateUsageLimit('contracts'),
+  upload.single("pdf"), 
+  incrementUsageOnSuccess('contracts'),
+  async (req, res) => {
   try {
     // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden generar contratos desde PDF
     const firebaseUid = req.firebaseUser?.uid;
