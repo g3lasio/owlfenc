@@ -488,55 +488,65 @@ class FirebaseContractsService {
    * @param userId ID del usuario (validación de seguridad)
    * @param reason Razón del archivado (opcional)
    * 
-   * IMPORTANTE: Busca en contractHistory Y dualSignatureContracts
+   * IMPORTANTE: Actualiza isArchived en TODAS las colecciones donde existe el contrato
+   * para evitar que reaparezca al cargar desde múltiples fuentes
    */
   async archiveContract(contractId: string, userId: string, reason: string = 'user_action'): Promise<void> {
     try {
       console.log(`📁 [ARCHIVE] Archiving contract ${contractId} for user ${userId}`);
 
-      // Try contractHistory first (main collection for contracts)
-      let docRef = db.collection(this.contractHistoryCollection).doc(contractId);
-      let docSnap = await docRef.get();
-      let foundCollection = this.contractHistoryCollection;
+      const collections = [
+        this.contractHistoryCollection,
+        this.dualSignatureCollection,
+        this.collection
+      ];
 
-      // If not found, try dualSignatureContracts
-      if (!docSnap.exists) {
-        console.log(`📁 [ARCHIVE] Contract not found in ${this.contractHistoryCollection}, checking ${this.dualSignatureCollection}...`);
-        docRef = db.collection(this.dualSignatureCollection).doc(contractId);
-        docSnap = await docRef.get();
-        foundCollection = this.dualSignatureCollection;
-      }
+      let foundAtLeastOne = false;
+      let userVerified = false;
+      const updatedCollections: string[] = [];
 
-      // If still not found, try the contracts collection as fallback
-      if (!docSnap.exists) {
-        console.log(`📁 [ARCHIVE] Contract not found in ${this.dualSignatureCollection}, checking ${this.collection}...`);
-        docRef = db.collection(this.collection).doc(contractId);
-        docSnap = await docRef.get();
-        foundCollection = this.collection;
-      }
-
-      if (!docSnap.exists) {
-        console.error(`❌ [ARCHIVE] Contract ${contractId} not found in any collection`);
-        throw new Error(`Contract not found: ${contractId}`);
-      }
-
-      const data = docSnap.data();
-      
-      // Validación de seguridad: verificar que el contrato pertenece al usuario
-      if (data?.userId !== userId && data?.firebaseUserId !== userId) {
-        console.error(`❌ [ARCHIVE] Unauthorized: Contract belongs to ${data?.userId || data?.firebaseUserId}, not ${userId}`);
-        throw new Error('Unauthorized: Contract does not belong to user');
-      }
-
-      // Actualizar contrato con isArchived = true
-      await docRef.update({
+      const archiveData = {
         isArchived: true,
         archivedAt: FieldValue.serverTimestamp(),
         archivedReason: reason,
         updatedAt: FieldValue.serverTimestamp()
-      });
+      };
 
-      console.log(`✅ [ARCHIVE] Contract ${contractId} archived successfully in ${foundCollection}`);
+      for (const collectionName of collections) {
+        try {
+          const docRef = db.collection(collectionName).doc(contractId);
+          const docSnap = await docRef.get();
+
+          if (docSnap.exists) {
+            const data = docSnap.data();
+            
+            if (!userVerified) {
+              if (data?.userId !== userId && data?.firebaseUserId !== userId) {
+                console.error(`❌ [ARCHIVE] Unauthorized: Contract belongs to ${data?.userId || data?.firebaseUserId}, not ${userId}`);
+                throw new Error('Unauthorized: Contract does not belong to user');
+              }
+              userVerified = true;
+            }
+
+            await docRef.update(archiveData);
+            updatedCollections.push(collectionName);
+            foundAtLeastOne = true;
+            console.log(`📁 [ARCHIVE] Updated isArchived=true in ${collectionName}`);
+          }
+        } catch (collectionError: any) {
+          if (collectionError.message?.includes('Unauthorized')) {
+            throw collectionError;
+          }
+          console.warn(`⚠️ [ARCHIVE] Could not update in ${collectionName}:`, collectionError.message);
+        }
+      }
+
+      if (!foundAtLeastOne) {
+        console.error(`❌ [ARCHIVE] Contract ${contractId} not found in any collection`);
+        throw new Error(`Contract not found: ${contractId}`);
+      }
+
+      console.log(`✅ [ARCHIVE] Contract ${contractId} archived successfully in: ${updatedCollections.join(', ')}`);
     } catch (error) {
       console.error('❌ [ARCHIVE] Error archiving contract:', error);
       throw error;
@@ -547,54 +557,65 @@ class FirebaseContractsService {
    * 📁 Desarchivar contrato
    * @param contractId ID del contrato (document ID)
    * @param userId ID del usuario (validación de seguridad)
+   * 
+   * IMPORTANTE: Actualiza isArchived en TODAS las colecciones donde existe el contrato
    */
   async unarchiveContract(contractId: string, userId: string): Promise<void> {
     try {
       console.log(`📂 [UNARCHIVE] Restoring contract ${contractId} for user ${userId}`);
 
-      // Try contractHistory first (main collection)
-      let docRef = db.collection(this.contractHistoryCollection).doc(contractId);
-      let docSnap = await docRef.get();
-      let foundCollection = this.contractHistoryCollection;
+      const collections = [
+        this.contractHistoryCollection,
+        this.dualSignatureCollection,
+        this.collection
+      ];
 
-      // If not found, try dualSignatureContracts
-      if (!docSnap.exists) {
-        console.log(`📂 [UNARCHIVE] Contract not found in ${this.contractHistoryCollection}, checking ${this.dualSignatureCollection}...`);
-        docRef = db.collection(this.dualSignatureCollection).doc(contractId);
-        docSnap = await docRef.get();
-        foundCollection = this.dualSignatureCollection;
-      }
+      let foundAtLeastOne = false;
+      let userVerified = false;
+      const updatedCollections: string[] = [];
 
-      // If still not found, try the contracts collection as fallback
-      if (!docSnap.exists) {
-        console.log(`📂 [UNARCHIVE] Contract not found in ${this.dualSignatureCollection}, checking ${this.collection}...`);
-        docRef = db.collection(this.collection).doc(contractId);
-        docSnap = await docRef.get();
-        foundCollection = this.collection;
-      }
-
-      if (!docSnap.exists) {
-        console.error(`❌ [UNARCHIVE] Contract ${contractId} not found in any collection`);
-        throw new Error(`Contract not found: ${contractId}`);
-      }
-
-      const data = docSnap.data();
-      
-      // Validación de seguridad: verificar que el contrato pertenece al usuario
-      if (data?.userId !== userId && data?.firebaseUserId !== userId) {
-        console.error(`❌ [UNARCHIVE] Unauthorized: Contract belongs to ${data?.userId || data?.firebaseUserId}, not ${userId}`);
-        throw new Error('Unauthorized: Contract does not belong to user');
-      }
-
-      // Actualizar contrato con isArchived = false
-      await docRef.update({
+      const unarchiveData = {
         isArchived: false,
         archivedAt: FieldValue.delete(),
         archivedReason: FieldValue.delete(),
         updatedAt: FieldValue.serverTimestamp()
-      });
+      };
 
-      console.log(`✅ [UNARCHIVE] Contract ${contractId} restored successfully from ${foundCollection}`);
+      for (const collectionName of collections) {
+        try {
+          const docRef = db.collection(collectionName).doc(contractId);
+          const docSnap = await docRef.get();
+
+          if (docSnap.exists) {
+            const data = docSnap.data();
+            
+            if (!userVerified) {
+              if (data?.userId !== userId && data?.firebaseUserId !== userId) {
+                console.error(`❌ [UNARCHIVE] Unauthorized: Contract belongs to ${data?.userId || data?.firebaseUserId}, not ${userId}`);
+                throw new Error('Unauthorized: Contract does not belong to user');
+              }
+              userVerified = true;
+            }
+
+            await docRef.update(unarchiveData);
+            updatedCollections.push(collectionName);
+            foundAtLeastOne = true;
+            console.log(`📂 [UNARCHIVE] Updated isArchived=false in ${collectionName}`);
+          }
+        } catch (collectionError: any) {
+          if (collectionError.message?.includes('Unauthorized')) {
+            throw collectionError;
+          }
+          console.warn(`⚠️ [UNARCHIVE] Could not update in ${collectionName}:`, collectionError.message);
+        }
+      }
+
+      if (!foundAtLeastOne) {
+        console.error(`❌ [UNARCHIVE] Contract ${contractId} not found in any collection`);
+        throw new Error(`Contract not found: ${contractId}`);
+      }
+
+      console.log(`✅ [UNARCHIVE] Contract ${contractId} restored successfully in: ${updatedCollections.join(', ')}`);
     } catch (error) {
       console.error('❌ [UNARCHIVE] Error restoring contract:', error);
       throw error;
