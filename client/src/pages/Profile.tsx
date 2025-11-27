@@ -40,8 +40,6 @@ import {
   CheckCircle,
   AlertCircle,
   Loader2,
-  Moon,
-  Sun,
   Bell,
   Shield,
   User as UserIcon,
@@ -133,15 +131,11 @@ export default function Profile() {
   // ===== USER SETTINGS STATES =====
   // Types for settings
   interface UserSettings {
-    language?: 'en' | 'es' | 'fr';
     emailNotifications?: boolean;
     smsNotifications?: boolean;
-    darkMode?: boolean;
   }
 
   // Local state for user settings
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [language, setLanguage] = useState<'en' | 'es' | 'fr'>('en');
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [smsNotifications, setSmsNotifications] = useState(false);
 
@@ -747,25 +741,6 @@ export default function Profile() {
     }, 1500);
   };
 
-  const handleLanguageChange = (value: 'en' | 'es' | 'fr') => {
-    setLanguage(value);
-    scheduleBatchedUpdate({ language: value });
-    toast({
-      title: "Language Updated",
-      description: `Language changed to ${value === "en" ? "English" : value === "es" ? "Español" : "Français"}`,
-    });
-  };
-
-  const handleDarkModeToggle = (checked: boolean) => {
-    setIsDarkMode(checked);
-    localStorage.setItem('darkMode', checked.toString());
-    scheduleBatchedUpdate({ darkMode: checked });
-    toast({
-      title: checked ? "Dark Mode Enabled" : "Light Mode Enabled",
-      description: "Theme preference will be saved",
-    });
-  };
-
   const handleEmailNotificationsToggle = (checked: boolean) => {
     setEmailNotifications(checked);
     scheduleBatchedUpdate({ emailNotifications: checked });
@@ -1042,24 +1017,11 @@ export default function Profile() {
     }
   };
 
-  // Apply dark mode theme whenever isDarkMode changes
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', isDarkMode);
-  }, [isDarkMode]);
-
   // Sync state with loaded settings
   useEffect(() => {
     if (settings) {
-      setLanguage(settings.language || 'en');
       setEmailNotifications(settings.emailNotifications ?? true);
       setSmsNotifications(settings.smsNotifications ?? false);
-      setIsDarkMode(settings.darkMode ?? false);
-    }
-    
-    // Load dark mode from localStorage for immediate application
-    const savedDarkMode = localStorage.getItem('darkMode');
-    if (savedDarkMode && !settings?.darkMode) {
-      setIsDarkMode(savedDarkMode === 'true');
     }
   }, [settings]);
 
@@ -1855,47 +1817,6 @@ export default function Profile() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Language */}
-                <div className="space-y-2">
-                  <Label className="text-gray-300">Language</Label>
-                  <Select 
-                    value={language} 
-                    onValueChange={handleLanguageChange}
-                    disabled={updateSettingsMutation.isPending}
-                  >
-                    <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="en">English</SelectItem>
-                      <SelectItem value="es">Español</SelectItem>
-                      <SelectItem value="fr">Français</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <Separator className="bg-gray-700" />
-
-                {/* Dark Mode */}
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label className="text-gray-300 flex items-center gap-2">
-                      {isDarkMode ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-                      Dark Mode
-                    </Label>
-                    <p className="text-sm text-gray-400">
-                      Toggle dark mode for the entire application
-                    </p>
-                  </div>
-                  <Switch
-                    checked={isDarkMode}
-                    onCheckedChange={handleDarkModeToggle}
-                    disabled={updateSettingsMutation.isPending}
-                  />
-                </div>
-
-                <Separator className="bg-gray-700" />
-
                 {/* Notifications */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium text-cyan-400 flex items-center gap-2">
