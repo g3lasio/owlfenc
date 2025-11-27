@@ -2315,24 +2315,31 @@ Output must be between 200-900 characters in English.`;
             : "None",
         });
 
-        // Process items data
+        // Process items data with proper currency formatting
         let processedItems = [];
         if (items && Array.isArray(items)) {
-          processedItems = items.map((item, index) => ({
-            code: item.name || item.materialId || `Item ${index + 1}`,
-            description: item.description || "No description available",
-            qty: item.quantity || item.qty || 1,
-            unit_price: `$${(item.price || 0).toFixed(2)}`,
-            total: "$" + item.total,
-          }));
+          processedItems = items.map((item, index) => {
+            const price = typeof item.price === 'number' ? item.price : parseFloat(String(item.price || 0).replace(/[$,]/g, '')) || 0;
+            const itemTotal = typeof item.total === 'number' ? item.total : parseFloat(String(item.total || 0).replace(/[$,]/g, '')) || 0;
+            const roundedPrice = Math.round(price * 100) / 100;
+            const roundedTotal = Math.round(itemTotal * 100) / 100;
+            
+            return {
+              code: item.name || item.materialId || `Item ${index + 1}`,
+              description: item.description || "No description available",
+              qty: item.quantity || item.qty || 1,
+              unit_price: `$${roundedPrice.toFixed(2)}`,
+              total: `$${roundedTotal.toFixed(2)}`,
+            };
+          });
         }
 
-        // Calculate financial summary
-        const subtotal = projectTotalCosts?.subtotal || 0;
-        const discount = projectTotalCosts?.discount || 0;
+        // Calculate financial summary with proper rounding
+        const subtotal = Math.round((projectTotalCosts?.subtotal || 0) * 100) / 100;
+        const discount = Math.round((projectTotalCosts?.discount || 0) * 100) / 100;
         const taxRate = projectTotalCosts?.taxRate || 0;
-        const taxAmount = projectTotalCosts?.tax || 0;
-        const total = projectTotalCosts?.total || subtotal;
+        const taxAmount = Math.round((projectTotalCosts?.tax || 0) * 100) / 100;
+        const total = Math.round((projectTotalCosts?.total || subtotal) * 100) / 100;
 
         // Extract premium template parameters from request
         const templateMode = requestData.templateMode;

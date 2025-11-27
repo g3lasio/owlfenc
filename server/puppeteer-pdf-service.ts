@@ -3,6 +3,7 @@ import path from "path";
 import handlebars from "handlebars";
 import fs from "fs/promises";
 import { fileURLToPath } from "url";
+import { formatCurrency, roundToTwoDecimals, parseCurrency } from "./utils/currencyFormatter";
 
 interface EstimateData {
   company: {
@@ -38,8 +39,9 @@ interface EstimateData {
     phone?: string;
     address?: string;
   };
-  isMembership?:boolean;
+  isMembership?: boolean;
   selectedTemplate?: string;
+  templateMode?: string;
 }
 
 export class PuppeteerPdfService {
@@ -111,200 +113,600 @@ export class PuppeteerPdfService {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
 
-    // Template mapping based on selectedTemplate - Fixed with actual filenames
-    const templateMapping: Record<string, string> = {
-      basic: "universal-estimate-template.html",
-      premium: "premium-estimate-template.html",
-      // Legacy support for old template names
-      professional: "premium-estimate-template.html", 
-      luxury: "premium-estimate-template.html",
-      standard: "universal-estimate-template.html",
-      free: "universal-estimate-template.html"
-    };
-
     // AUTOMATIC TEMPLATE DETECTION - Check data object for premium parameters
-    console.log(`🔍 AUTO TEMPLATE: isMembership=${data.isMembership}, templateMode=${data.templateMode}, selectedTemplate=${data.selectedTemplate}`);
+    console.log(`🔍 AUTO TEMPLATE: isMembership=${data.isMembership}, templateMode=${(data as any).templateMode}, selectedTemplate=${data.selectedTemplate}`);
     
-    let templateFile = "universal-estimate-template.html"; // Default to basic
-    
-    // ENHANCED AUTO-DETECTION: Check multiple premium indicators from data object
-    const isPremium = data.templateMode === "premium" || 
+    const isPremium = (data as any).templateMode === "premium" || 
                      data.isMembership === true || 
                      data.selectedTemplate === "premium";
                      
-    console.log(`🎯 FINAL PREMIUM CHECK: templateMode=${data.templateMode}, isMembership=${data.isMembership}, selectedTemplate=${data.selectedTemplate}, isPremium=${isPremium}`);
+    console.log(`🎯 FINAL PREMIUM CHECK: isPremium=${isPremium}`);
                      
-    if (isPremium) {
-      // USE BEAUTIFUL HTML FROM PREVIEW INSTEAD OF TEMPLATE FILE
-      console.log("✅ AUTO-SELECTED: PREMIUM template - Using preview-style HTML generation");
-      return this.generatePremiumHtmlFromPreview(data);
-    } else {
-      console.log("✅ AUTO-SELECTED: BASIC template (no premium indicators found)");
-    }
-
-    const templatePath = path.join(
-      __dirname,
-      "../client/src/templates/",
-      templateFile
-    );
-    
-    console.log(`🎨 Using template: ${templateFile} for selectedTemplate: ${data.selectedTemplate}`);
-    const html = await fs.readFile(templatePath, "utf-8");
-
-    const template = handlebars.compile(html);
-
-    const mappedData = {
-      number: data.estimate.number || `EST-${Date.now()}`,
-      date: data.estimate.date || new Date().toLocaleDateString(),
-      validUntil:
-        data.estimate.valid_until ||
-        new Date(Date.now() + 30 * 86400000).toLocaleDateString(),
-      client: {
-        name: data.client.name || "",
-        address: data.client.address || "",
-        phone: data.client.phone || "",
-        email: data.client.email || "",
-      },
-      contractorInfo: {
-        name: data.company.name || "",
-        address: data.company.address || "",
-        phone: data.company.phone || "",
-        email: data.company.email || "",
-        license: data.company.license || "",
-        logo: data.company.logo || "",
-      },
-      project: {
-        description: data.estimate.project_description || "",
-      },
-      items: data.estimate.items.map((item) => ({
-        name: item.code,
-        description: item.description,
-        quantity: item.qty,
-        price: item.unit_price,
-        total: item.total,
-      })),
-      subtotal: data.estimate.subtotal || "0",
-      discount: data.estimate.discounts || "0",
-      taxRate: data.estimate.tax_rate || 0,
-      taxAmount: data.estimate.tax_amount || "0",
-      total: data.estimate.total || "0",
-      terms: [
-        "Payment is due within 30 days of receipt of invoice.",
-        "Late payments are subject to a 1.5% monthly interest charge.",
-        "This estimate is valid for 30 days from the date of issue.",
-      ],
-    };
-
-    return template(mappedData);
+    // Always use the new futuristic template for better quality
+    console.log("✅ Using Futuristic Professional Template");
+    return this.generateFuturisticTemplate(data);
   }
 
-  private generatePremiumHtmlFromPreview(data: EstimateData): string {
-    // Fixed data mapping to use correct EstimateData structure
-    const estimateNumber = data.estimate.number || `EST-${Date.now()}`;
-    const estimateDate = data.estimate.date || new Date().toLocaleDateString();
+  /**
+   * Formats a price value ensuring proper 2 decimal places
+   * Handles both string and number inputs
+   */
+  private formatPrice(value: string | number | undefined): string {
+    if (value === undefined || value === null) return "$0.00";
     
-    // Calculate discount amount for conditional display
-    const discountAmount = parseFloat(data.estimate.discounts?.replace(/[\$,-]/g, '') || '0');
-    const taxAmount = parseFloat(data.estimate.tax_amount?.replace(/[\$,]/g, '') || '0');
+    let numericValue: number;
+    if (typeof value === 'string') {
+      numericValue = parseCurrency(value);
+    } else {
+      numericValue = value;
+    }
+    
+    return formatCurrency(numericValue);
+  }
 
-    return `
-      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+  /**
+   * Generates the new futuristic, clean, and professional template
+   */
+  private generateFuturisticTemplate(data: EstimateData): string {
+    const estimateNumber = data.estimate.number || `EST-${Date.now()}`;
+    const estimateDate = data.estimate.date || new Date().toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+    const validUntil = data.estimate.valid_until || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long', 
+      day: 'numeric'
+    });
+
+    // Process items with proper formatting
+    const processedItems = (data.estimate?.items || []).map((item, index) => {
+      const unitPrice = this.formatPrice(item.unit_price);
+      const total = this.formatPrice(item.total);
+      
+      return {
+        ...item,
+        unit_price: unitPrice,
+        total: total,
+        index: index + 1
+      };
+    });
+
+    // Format financial values
+    const subtotal = this.formatPrice(data.estimate?.subtotal);
+    const discountRaw = parseCurrency(data.estimate?.discounts || '0');
+    const hasDiscount = discountRaw > 0;
+    const discount = hasDiscount ? formatCurrency(discountRaw) : '$0.00';
+    const taxRate = data.estimate?.tax_rate || 0;
+    const taxAmount = this.formatPrice(data.estimate?.tax_amount);
+    const total = this.formatPrice(data.estimate?.total);
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Estimate - ${estimateNumber}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
         
-        <!-- Header with Company Info and Logo -->
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px;">
-          <div style="flex: 1;">
-            ${data.company?.logo ? `<img src="${data.company.logo}" alt="Company Logo" style="max-width: 120px; max-height: 80px; margin-bottom: 10px;" />` : `<div style="width: 120px; height: 80px; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; color: #666; font-size: 14px;">Logo</div>`}
-            <h2 style="margin: 0; color: #2563eb; font-size: 1.5em;">${data.company?.name || ""}</h2>
-            <p style="margin: 5px 0; color: #666;">
-              ${data.company?.address || ""}<br>
-              ${data.company?.phone || ""}<br>
-              ${data.company?.email || ""}
-            </p>
-            ${data.company?.license ? `<p style="margin: 5px 0; font-size: 0.9em; color: #666;">License: ${data.company.license}</p>` : ""}
-          </div>
-          
-          <div style="text-align: right;">
-            <h1 style="margin: 0; color: #2563eb; font-size: 2.2em;">PROFESSIONAL ESTIMATE</h1>
-            <p style="margin: 10px 0; font-size: 1.1em;"><strong>Estimate #:</strong> ${estimateNumber}</p>
-            <p style="margin: 5px 0;"><strong>Date:</strong> ${estimateDate}</p>
-          </div>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary: #0066FF;
+            --primary-dark: #0052CC;
+            --primary-light: #E6F0FF;
+            --secondary: #1A1A2E;
+            --accent: #00D4AA;
+            --text-dark: #0F172A;
+            --text-medium: #475569;
+            --text-light: #94A3B8;
+            --border: #E2E8F0;
+            --bg-light: #F8FAFC;
+            --white: #FFFFFF;
+            --success: #10B981;
+            --warning: #F59E0B;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--white);
+            color: var(--text-dark);
+            line-height: 1.6;
+            font-size: 14px;
+        }
+        
+        .container {
+            max-width: 850px;
+            margin: 0 auto;
+            padding: 40px;
+        }
+        
+        /* Header Section */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding-bottom: 30px;
+            border-bottom: 2px solid var(--primary);
+            margin-bottom: 35px;
+        }
+        
+        .company-section {
+            flex: 1;
+        }
+        
+        .company-logo {
+            max-width: 140px;
+            max-height: 70px;
+            margin-bottom: 12px;
+            object-fit: contain;
+        }
+        
+        .company-name {
+            font-size: 26px;
+            font-weight: 800;
+            color: var(--secondary);
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+        }
+        
+        .company-details {
+            font-size: 13px;
+            color: var(--text-medium);
+            line-height: 1.7;
+        }
+        
+        .company-details div {
+            margin-bottom: 2px;
+        }
+        
+        .license-badge {
+            display: inline-block;
+            background: var(--primary-light);
+            color: var(--primary);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+        
+        .estimate-badge-section {
+            text-align: right;
+        }
+        
+        .estimate-title {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--primary);
+            letter-spacing: -1px;
+            margin-bottom: 10px;
+        }
+        
+        .estimate-meta {
+            font-size: 13px;
+            color: var(--text-medium);
+        }
+        
+        .estimate-meta div {
+            margin-bottom: 4px;
+        }
+        
+        .estimate-meta strong {
+            color: var(--text-dark);
+            font-weight: 600;
+        }
+        
+        .estimate-number {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        /* Client Section */
+        .client-section {
+            background: linear-gradient(135deg, var(--bg-light) 0%, var(--white) 100%);
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--primary);
+            border-radius: 0 8px 8px 0;
+            padding: 24px;
+            margin-bottom: 30px;
+        }
+        
+        .section-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+        
+        .client-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+        }
+        
+        .client-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 8px;
+            font-size: 13px;
+            color: var(--text-medium);
+        }
+        
+        .client-details span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        /* Project Description */
+        .project-section {
+            margin-bottom: 30px;
+        }
+        
+        .project-description {
+            background: var(--bg-light);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            font-size: 14px;
+            color: var(--text-medium);
+            line-height: 1.8;
+        }
+        
+        /* Items Table */
+        .items-section {
+            margin-bottom: 30px;
+        }
+        
+        .items-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .items-table thead {
+            background: var(--secondary);
+        }
+        
+        .items-table th {
+            color: var(--white);
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 16px 14px;
+            text-align: left;
+        }
+        
+        .items-table th:nth-child(2),
+        .items-table th:nth-child(3) {
+            text-align: center;
+        }
+        
+        .items-table th:nth-child(4),
+        .items-table th:nth-child(5) {
+            text-align: right;
+        }
+        
+        .items-table td {
+            padding: 14px;
+            border-bottom: 1px solid var(--border);
+            font-size: 13px;
+            color: var(--text-dark);
+        }
+        
+        .items-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .items-table tbody tr:nth-child(even) {
+            background: var(--bg-light);
+        }
+        
+        .items-table tbody tr:hover {
+            background: var(--primary-light);
+        }
+        
+        .item-name {
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+        
+        .item-description {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-top: 4px;
+        }
+        
+        .items-table td:nth-child(2),
+        .items-table td:nth-child(3) {
+            text-align: center;
+        }
+        
+        .items-table td:nth-child(4),
+        .items-table td:nth-child(5) {
+            text-align: right;
+            font-weight: 500;
+        }
+        
+        .items-table td:nth-child(5) {
+            font-weight: 700;
+            color: var(--primary-dark);
+        }
+        
+        /* Totals Section */
+        .totals-section {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 30px;
+        }
+        
+        .totals-box {
+            width: 320px;
+            background: var(--bg-light);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            font-size: 14px;
+            color: var(--text-medium);
+        }
+        
+        .total-row.subtotal {
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .total-row.discount {
+            color: var(--success);
+        }
+        
+        .total-row.final {
+            background: var(--primary);
+            color: var(--white);
+            font-weight: 700;
+            font-size: 18px;
+            padding: 16px 20px;
+            margin: 14px -20px -20px -20px;
+            border-radius: 0 0 8px 8px;
+        }
+        
+        .total-row span:last-child {
+            font-weight: 600;
+        }
+        
+        /* Terms Section */
+        .terms-section {
+            background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);
+            border: 1px solid #FCD34D;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .terms-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #92400E;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .terms-list {
+            font-size: 12px;
+            color: #78350F;
+            line-height: 1.8;
+        }
+        
+        .terms-list li {
+            margin-bottom: 4px;
+            list-style: none;
+            padding-left: 16px;
+            position: relative;
+        }
+        
+        .terms-list li::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #D97706;
+        }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding-top: 30px;
+            border-top: 2px solid var(--border);
+        }
+        
+        .footer-message {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+        }
+        
+        .footer-validity {
+            font-size: 13px;
+            color: var(--text-medium);
+            margin-bottom: 12px;
+        }
+        
+        .footer-thanks {
+            font-size: 14px;
+            color: var(--primary);
+            font-weight: 500;
+        }
+        
+        /* Print Styles */
+        @media print {
+            body {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            
+            .container {
+                max-width: none;
+                margin: 0;
+                padding: 20px;
+            }
+            
+            .items-table {
+                page-break-inside: avoid;
+            }
+            
+            .totals-section, .terms-section, .footer {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="company-section">
+                ${data.company?.logo ? 
+                    `<img src="${data.company.logo}" alt="Company Logo" class="company-logo" />` : 
+                    ''
+                }
+                <div class="company-name">${data.company?.name || "Your Company"}</div>
+                <div class="company-details">
+                    ${data.company?.address ? `<div>${data.company.address}</div>` : ''}
+                    ${data.company?.phone ? `<div>${data.company.phone}</div>` : ''}
+                    ${data.company?.email ? `<div>${data.company.email}</div>` : ''}
+                </div>
+                ${data.company?.license ? `<span class="license-badge">License: ${data.company.license}</span>` : ''}
+            </div>
+            
+            <div class="estimate-badge-section">
+                <div class="estimate-title">PROFESSIONAL ESTIMATE</div>
+                <div class="estimate-meta">
+                    <div class="estimate-number">${estimateNumber}</div>
+                    <div><strong>Date:</strong> ${estimateDate}</div>
+                    <div><strong>Valid Until:</strong> ${validUntil}</div>
+                </div>
+            </div>
         </div>
         
         <!-- Client Information -->
-        <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
-          <div style="flex: 1; padding-right: 20px;">
-            <h3 style="color: #2563eb; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">BILL TO:</h3>
-            <p style="margin: 5px 0; font-size: 1.1em; color: #000000;"><strong>${data.client?.name || "Client not specified"}</strong></p>
-            <p style="margin: 5px 0; color: #000000;">${data.client?.email || ""}</p>
-            <p style="margin: 5px 0; color: #000000;">${data.client?.phone || ""}</p>
-            <p style="margin: 5px 0; color: #000000;">${data.client?.address || ""}</p>
-          </div>
-        </div>
-
-        <!-- Project Details -->
-        <div style="margin-bottom: 30px;">
-          <h3 style="color: #2563eb; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">MATERIALS AND SERVICES:</h3>
-          <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #2563eb; line-height: 1.6;">
-            ${data.estimate?.project_description?.replace(/\n/g, "<br>") || "Professional construction services"}
-          </div>
-        </div>
-
-        <!-- Materials & Labor Table -->
-        <table style="width: 100%; border-collapse: collapse; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 30px;">
-          <thead>
-            <tr style="background: #2563eb; color: white;">
-              <th style="border: 1px solid #2563eb; padding: 12px; text-align: left; font-weight: bold;">Description</th>
-              <th style="border: 1px solid #2563eb; padding: 12px; text-align: center; font-weight: bold;">Qty.</th>
-              <th style="border: 1px solid #2563eb; padding: 12px; text-align: center; font-weight: bold;">Unit</th>
-              <th style="border: 1px solid #2563eb; padding: 12px; text-align: right; font-weight: bold;">Unit Price</th>
-              <th style="border: 1px solid #2563eb; padding: 12px; text-align: right; font-weight: bold;">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${data.estimate?.items?.map((item, index) => `
-              <tr style="background: ${index % 2 === 0 ? "#f8fafc" : "#ffffff"};">
-                <td style="border: 1px solid #ddd; padding: 12px; color: #000000;">
-                  <strong>${item.code || ""}</strong>
-                  ${item.description ? `<br><small style="color: #333333;">${item.description}</small>` : ""}
-                </td>
-                <td style="border: 1px solid #ddd; padding: 12px; text-align: center; color: #000000;">${item.qty || ""}</td>
-                <td style="border: 1px solid #ddd; padding: 12px; text-align: center; color: #000000;">unit</td>
-                <td style="border: 1px solid #ddd; padding: 12px; text-align: right; color: #000000;">${item.unit_price || ""}</td>
-                <td style="border: 1px solid #ddd; padding: 12px; text-align: right; font-weight: bold; color: #000000;">${item.total || ""}</td>
-              </tr>
-            `).join("") || ""}
-          </tbody>
-        </table>
-
-        <!-- Totals -->
-        <div style="text-align: right; margin-top: 30px; background: #f8fafc; padding: 20px; border-radius: 8px; border: 2px solid #e5e7eb;">
-          <div style="margin-bottom: 10px; font-size: 1.1em; color: #000000;">
-            <span style="margin-right: 40px; color: #000000;"><strong>Subtotal:</strong></span>
-            <span style="font-weight: bold; color: #000000;">${data.estimate?.subtotal || "$0.00"}</span>
-          </div>
-          ${discountAmount > 0 ? `
-            <div style="margin-bottom: 10px; font-size: 1.1em; color: #22c55e;">
-              <span style="margin-right: 40px; color: #22c55e;"><strong>Discount:</strong></span>
-              <span style="font-weight: bold; color: #22c55e;">${data.estimate?.discounts || "$0.00"}</span>
+        <div class="client-section">
+            <div class="section-label">Bill To</div>
+            <div class="client-name">${data.client?.name || "Valued Client"}</div>
+            <div class="client-details">
+                ${data.client?.email ? `<span>📧 ${data.client.email}</span>` : ''}
+                ${data.client?.phone ? `<span>📱 ${data.client.phone}</span>` : ''}
+                ${data.client?.address ? `<span>📍 ${data.client.address}</span>` : ''}
             </div>
-          ` : ""}
-          <div style="margin-bottom: 15px; font-size: 1.1em; color: #000000;">
-            <span style="margin-right: 40px; color: #000000;"><strong>Tax (${data.estimate?.tax_rate || 0}%):</strong></span>
-            <span style="font-weight: bold; color: #000000;">${data.estimate?.tax_amount || "$0.00"}</span>
-          </div>
-          <div style="border-top: 2px solid #2563eb; padding-top: 15px; font-size: 1.3em; color: #2563eb;">
-            <span style="margin-right: 40px; color: #2563eb;"><strong>TOTAL:</strong></span>
-            <span style="font-weight: bold; font-size: 1.2em; color: #2563eb;">${data.estimate?.total || "$0.00"}</span>
-          </div>
         </div>
-
+        
+        <!-- Project Description -->
+        ${data.estimate?.project_description ? `
+        <div class="project-section">
+            <div class="section-label">Project Details</div>
+            <div class="project-description">
+                ${data.estimate.project_description.replace(/\n/g, "<br>")}
+            </div>
+        </div>
+        ` : ''}
+        
+        <!-- Materials & Services Table -->
+        <div class="items-section">
+            <div class="section-label">Materials & Services</div>
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th style="width: 40%;">Description</th>
+                        <th style="width: 10%;">Qty</th>
+                        <th style="width: 15%;">Unit</th>
+                        <th style="width: 17%;">Unit Price</th>
+                        <th style="width: 18%;">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${processedItems.map(item => `
+                        <tr>
+                            <td>
+                                <div class="item-name">${item.code || ''}</div>
+                                ${item.description ? `<div class="item-description">${item.description}</div>` : ''}
+                            </td>
+                            <td>${item.qty || ''}</td>
+                            <td>unit</td>
+                            <td>${item.unit_price}</td>
+                            <td>${item.total}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Totals -->
+        <div class="totals-section">
+            <div class="totals-box">
+                <div class="total-row subtotal">
+                    <span>Subtotal:</span>
+                    <span>${subtotal}</span>
+                </div>
+                ${hasDiscount ? `
+                <div class="total-row discount">
+                    <span>Discount:</span>
+                    <span>-${discount}</span>
+                </div>
+                ` : ''}
+                <div class="total-row">
+                    <span>Tax (${taxRate}%):</span>
+                    <span>${taxAmount}</span>
+                </div>
+                <div class="total-row final">
+                    <span>TOTAL:</span>
+                    <span>${total}</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Terms & Conditions -->
+        <div class="terms-section">
+            <div class="terms-title">📋 Terms & Conditions</div>
+            <ul class="terms-list">
+                <li>This estimate is valid for 30 days from the date of issue.</li>
+                <li>A 50% deposit is required to schedule the project.</li>
+                <li>Final payment is due upon project completion.</li>
+                <li>Prices are subject to change based on material availability.</li>
+                <li>Additional work not included in this estimate will be quoted separately.</li>
+            </ul>
+        </div>
+        
         <!-- Footer -->
-        <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #e5e7eb; text-align: center; color: #666; font-size: 0.9em;">
-          <p style="margin: 10px 0;"><strong>This estimate is valid for 30 days from the date shown above.</strong></p>
-          <p style="margin: 10px 0;">Thank you for considering ${data.company?.name || "our company"} for your project!</p>
+        <div class="footer">
+            <div class="footer-message">We appreciate your business!</div>
+            <div class="footer-validity">This estimate expires on ${validUntil}</div>
+            <div class="footer-thanks">Thank you for choosing ${data.company?.name || "our company"} for your project.</div>
         </div>
-      </div>
-    `;
+    </div>
+</body>
+</html>`;
   }
 
   async generatePdfFromHtml(html: string): Promise<Uint8Array> {
@@ -346,10 +748,8 @@ export class PuppeteerPdfService {
         timeout: 30000,
       });
 
-      // Give extra time for CSS to fully render
-      await page.waitForTimeout(2000);
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Ensure fonts are loaded
       await page.evaluateHandle('document.fonts.ready');
 
       const pdfBuffer = await page.pdf({
