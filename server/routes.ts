@@ -6433,6 +6433,286 @@ Output must be between 200-900 characters in English.`;
     }
   });
 
+  // 🔧 HERRAMIENTA DE DIAGNÓSTICO Y REPARACIÓN DE CONTACTOS
+  // Analiza todos los clientes y detecta datos corruptos/mezclados
+  app.get("/api/clients/repair/diagnose", requireAuth, async (req: Request, res: Response) => {
+    try {
+      if (!req.firebaseUser?.uid) {
+        return res.status(401).json({ message: "Usuario no autenticado" });
+      }
+      
+      console.log(`🔧 [CLIENT-REPAIR] Diagnosticando contactos para UID: ${req.firebaseUser.uid}`);
+      
+      const { getFirebaseManager } = await import('./storage-firebase-only');
+      const firebaseManager = getFirebaseManager();
+      
+      const clients = await firebaseManager.getClients(req.firebaseUser.uid);
+      
+      // Patrones para detectar corrupción
+      const phonePattern = /^[\d\s\-\+\(\)\.]{7,}$/;
+      const addressStreetPatterns = /\b(St|Street|Ave|Avenue|Dr|Drive|Rd|Road|Blvd|Boulevard|Ln|Lane|Way|Ct|Court|Pl|Place|Cir|Circle|Hwy|Highway)\b/i;
+      const cityStatePattern = /^[A-Za-z\s]+$/;
+      const zipPattern = /^\d{5}(-\d{4})?$/;
+      const addressWithCityPattern = /^(.+?)((?:[A-Z][a-z]+)+)$/; // Detecta "123 Main DrAntioch"
+      
+      const diagnostics = {
+        totalClients: clients.length,
+        corruptedClients: [] as any[],
+        issues: {
+          addressInPhone: 0,
+          phoneInAddress: 0,
+          cityMergedWithAddress: 0,
+          missingFields: 0,
+          duplicateData: 0
+        }
+      };
+      
+      for (const client of clients) {
+        const clientIssues: string[] = [];
+        const suggestedFixes: any = {};
+        
+        // 1. Detectar si hay una dirección en el campo de teléfono
+        if (client.phone && addressStreetPatterns.test(client.phone)) {
+          clientIssues.push('Dirección detectada en campo teléfono');
+          diagnostics.issues.addressInPhone++;
+          suggestedFixes.movePhoneToAddress = true;
+        }
+        
+        // 2. Detectar si hay un teléfono en el campo de dirección
+        if (client.address && phonePattern.test(client.address.replace(/\s/g, ''))) {
+          clientIssues.push('Teléfono detectado en campo dirección');
+          diagnostics.issues.phoneInAddress++;
+          suggestedFixes.moveAddressToPhone = true;
+        }
+        
+        // 3. Detectar ciudad pegada a la dirección (ej: "101 Ridgerock DrAntioch")
+        if (client.address && !client.city) {
+          const match = client.address.match(addressWithCityPattern);
+          if (match && match[2] && match[2].length > 2) {
+            clientIssues.push(`Ciudad "${match[2]}" posiblemente mezclada con dirección`);
+            diagnostics.issues.cityMergedWithAddress++;
+            suggestedFixes.extractCity = match[2];
+            suggestedFixes.cleanAddress = match[1];
+          }
+        }
+        
+        // 4. Detectar campos vacíos críticos
+        if (!client.name || client.name.trim() === '') {
+          clientIssues.push('Nombre vacío');
+          diagnostics.issues.missingFields++;
+        }
+        
+        // 5. Detectar datos duplicados entre campos
+        if (client.phone && client.address && client.phone === client.address) {
+          clientIssues.push('Teléfono y dirección tienen el mismo valor');
+          diagnostics.issues.duplicateData++;
+        }
+        
+        if (clientIssues.length > 0) {
+          diagnostics.corruptedClients.push({
+            id: client.id,
+            name: client.name,
+            currentData: {
+              phone: client.phone,
+              address: client.address,
+              city: client.city,
+              state: client.state,
+              zipCode: client.zipCode
+            },
+            issues: clientIssues,
+            suggestedFixes
+          });
+        }
+      }
+      
+      console.log(`🔧 [CLIENT-REPAIR] Diagnóstico completado: ${diagnostics.corruptedClients.length} clientes con problemas`);
+      
+      res.json({
+        success: true,
+        diagnostics,
+        message: diagnostics.corruptedClients.length > 0 
+          ? `Se encontraron ${diagnostics.corruptedClients.length} contactos con datos problemáticos`
+          : 'Todos los contactos están correctos'
+      });
+      
+    } catch (error) {
+      console.error("❌ [CLIENT-REPAIR] Error en diagnóstico:", error);
+      res.status(500).json({ message: "Error al diagnosticar contactos" });
+    }
+  });
+
+  // 🔧 REPARACIÓN AUTOMÁTICA DE CONTACTOS CORRUPTOS
+  app.post("/api/clients/repair/auto-fix", requireAuth, async (req: Request, res: Response) => {
+    try {
+      if (!req.firebaseUser?.uid) {
+        return res.status(401).json({ message: "Usuario no autenticado" });
+      }
+      
+      const { dryRun = true } = req.body; // Por defecto solo simula, no aplica cambios
+      
+      console.log(`🔧 [CLIENT-REPAIR] ${dryRun ? 'SIMULANDO' : 'APLICANDO'} reparación para UID: ${req.firebaseUser.uid}`);
+      
+      const { getFirebaseManager } = await import('./storage-firebase-only');
+      const firebaseManager = getFirebaseManager();
+      
+      const clients = await firebaseManager.getClients(req.firebaseUser.uid);
+      
+      // Patrones para detectar y corregir corrupción
+      const phonePattern = /^[\d\s\-\+\(\)\.]{7,}$/;
+      const addressStreetPatterns = /\b(St|Street|Ave|Avenue|Dr|Drive|Rd|Road|Blvd|Boulevard|Ln|Lane|Way|Ct|Court|Pl|Place|Cir|Circle|Hwy|Highway)\b/i;
+      
+      // Patrón mejorado para detectar ciudad pegada: dirección termina en sufijo de calle, seguido de nombre capitalizado
+      const addressWithCityPattern = /^(.+?(?:St|Street|Ave|Avenue|Dr|Drive|Rd|Road|Blvd|Boulevard|Ln|Lane|Way|Ct|Court|Pl|Place|Cir|Circle|Hwy|Highway))[\s,]*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)$/i;
+      
+      const repairs: any[] = [];
+      
+      for (const client of clients) {
+        const fixes: any = {};
+        let needsRepair = false;
+        
+        // 1. Reparar dirección en campo de teléfono
+        if (client.phone && addressStreetPatterns.test(client.phone) && !phonePattern.test(client.phone.replace(/\D/g, ''))) {
+          if (!client.address || client.address.trim() === '') {
+            fixes.address = client.phone;
+            fixes.phone = '';
+            needsRepair = true;
+          }
+        }
+        
+        // 2. Reparar teléfono en campo de dirección
+        if (client.address && phonePattern.test(client.address.replace(/\D/g, '')) && !addressStreetPatterns.test(client.address)) {
+          if (!client.phone || client.phone.trim() === '') {
+            fixes.phone = client.address;
+            fixes.address = '';
+            needsRepair = true;
+          }
+        }
+        
+        // 3. Extraer ciudad pegada a la dirección
+        const currentAddress = fixes.address || client.address;
+        if (currentAddress && (!client.city || client.city.trim() === '')) {
+          const match = currentAddress.match(addressWithCityPattern);
+          if (match && match[2] && match[2].length >= 3) {
+            fixes.address = match[1].trim();
+            fixes.city = match[2].trim();
+            needsRepair = true;
+          }
+        }
+        
+        // 4. Limpiar campos duplicados
+        if (client.phone && client.address && client.phone === client.address) {
+          // Si son iguales, mantener solo donde tiene más sentido
+          if (addressStreetPatterns.test(client.phone)) {
+            fixes.phone = '';
+          } else if (phonePattern.test(client.phone.replace(/\D/g, ''))) {
+            fixes.address = '';
+          }
+          needsRepair = true;
+        }
+        
+        // 5. Limpiar espacios extra y formato
+        if (client.name) {
+          const cleanName = client.name.trim().replace(/\s+/g, ' ');
+          if (cleanName !== client.name) {
+            fixes.name = cleanName;
+            needsRepair = true;
+          }
+        }
+        
+        if (needsRepair) {
+          repairs.push({
+            clientId: client.id,
+            clientName: client.name,
+            before: {
+              phone: client.phone,
+              address: client.address,
+              city: client.city,
+              state: client.state
+            },
+            after: {
+              phone: fixes.phone !== undefined ? fixes.phone : client.phone,
+              address: fixes.address !== undefined ? fixes.address : client.address,
+              city: fixes.city !== undefined ? fixes.city : client.city,
+              state: fixes.state !== undefined ? fixes.state : client.state,
+              name: fixes.name !== undefined ? fixes.name : client.name
+            },
+            changes: Object.keys(fixes)
+          });
+          
+          // Aplicar cambios si no es dry run
+          if (!dryRun && Object.keys(fixes).length > 0) {
+            try {
+              await firebaseManager.updateClient(req.firebaseUser.uid, client.id, fixes);
+              console.log(`✅ [CLIENT-REPAIR] Cliente ${client.id} reparado`);
+            } catch (updateError) {
+              console.error(`❌ [CLIENT-REPAIR] Error reparando cliente ${client.id}:`, updateError);
+            }
+          }
+        }
+      }
+      
+      console.log(`🔧 [CLIENT-REPAIR] ${dryRun ? 'Simulación' : 'Reparación'} completada: ${repairs.length} clientes ${dryRun ? 'identificados' : 'reparados'}`);
+      
+      res.json({
+        success: true,
+        dryRun,
+        totalClients: clients.length,
+        repairsNeeded: repairs.length,
+        repairs,
+        message: dryRun 
+          ? `Simulación completada: ${repairs.length} contactos necesitan reparación. Usa dryRun: false para aplicar cambios.`
+          : `${repairs.length} contactos fueron reparados exitosamente.`
+      });
+      
+    } catch (error) {
+      console.error("❌ [CLIENT-REPAIR] Error en reparación:", error);
+      res.status(500).json({ message: "Error al reparar contactos" });
+    }
+  });
+
+  // 🔧 REPARACIÓN MANUAL DE UN CONTACTO ESPECÍFICO
+  app.post("/api/clients/:id/repair", requireAuth, async (req: Request, res: Response) => {
+    try {
+      if (!req.firebaseUser?.uid) {
+        return res.status(401).json({ message: "Usuario no autenticado" });
+      }
+      
+      const clientId = req.params.id;
+      const { fixes } = req.body; // { phone, address, city, state, zipCode, etc. }
+      
+      if (!fixes || Object.keys(fixes).length === 0) {
+        return res.status(400).json({ message: "No se proporcionaron correcciones" });
+      }
+      
+      console.log(`🔧 [CLIENT-REPAIR] Reparando cliente ${clientId} manualmente`);
+      
+      const { getFirebaseManager } = await import('./storage-firebase-only');
+      const firebaseManager = getFirebaseManager();
+      
+      // Obtener cliente actual
+      const currentClient = await firebaseManager.getClient(req.firebaseUser.uid, clientId);
+      if (!currentClient) {
+        return res.status(404).json({ message: "Cliente no encontrado" });
+      }
+      
+      // Aplicar correcciones
+      const updatedClient = await firebaseManager.updateClient(req.firebaseUser.uid, clientId, fixes);
+      
+      console.log(`✅ [CLIENT-REPAIR] Cliente ${clientId} reparado manualmente`);
+      
+      res.json({
+        success: true,
+        before: currentClient,
+        after: updatedClient,
+        message: "Cliente reparado exitosamente"
+      });
+      
+    } catch (error) {
+      console.error("❌ [CLIENT-REPAIR] Error en reparación manual:", error);
+      res.status(500).json({ message: "Error al reparar contacto" });
+    }
+  });
+
   // Profile endpoint used by frontend
   app.get("/api/profile", async (req: Request, res: Response) => {
     try {
