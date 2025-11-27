@@ -391,9 +391,9 @@ export default function NuevoClientes() {
     setRepairResults(null);
     
     try {
-      const response = await apiRequest('/api/clients/repair/diagnose', {
-        method: 'GET',
-      });
+      // Usar el formato correcto de apiRequest: (method, url, data)
+      const res = await apiRequest('GET', '/api/clients/repair/diagnose');
+      const response = await res.json();
       
       setRepairDiagnostics(response);
       
@@ -424,11 +424,9 @@ export default function NuevoClientes() {
     setIsRepairing(true);
     
     try {
-      const response = await apiRequest('/api/clients/repair/auto-fix', {
-        method: 'POST',
-        body: JSON.stringify({ dryRun }),
-        headers: { 'Content-Type': 'application/json' },
-      });
+      // Usar el formato correcto de apiRequest: (method, url, data)
+      const res = await apiRequest('POST', '/api/clients/repair/auto-fix', { dryRun });
+      const response = await res.json();
       
       setRepairResults(response);
       
