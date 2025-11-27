@@ -218,7 +218,7 @@ export class PuppeteerPdfService {
             background: var(--white);
             color: var(--text-dark);
             line-height: 1.6;
-            font-size: 14px;
+            font-size: 16px;
         }
         
         .container {
@@ -255,32 +255,32 @@ export class PuppeteerPdfService {
         }
         
         .company-name {
-            font-size: 22px;
+            font-size: 28px;
             font-weight: 800;
             color: var(--secondary);
             letter-spacing: -0.5px;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
         }
         
         .company-details {
-            font-size: 14px;
+            font-size: 17px;
             color: var(--text-medium);
-            line-height: 1.6;
+            line-height: 1.7;
         }
         
         .company-details div {
-            margin-bottom: 3px;
+            margin-bottom: 4px;
         }
         
         .license-badge {
             display: inline-block;
             background: var(--primary-light);
             color: var(--primary);
-            padding: 5px 12px;
+            padding: 6px 14px;
             border-radius: 4px;
-            font-size: 12px;
+            font-size: 15px;
             font-weight: 600;
-            margin-top: 8px;
+            margin-top: 10px;
         }
         
         .estimate-badge-section {
@@ -288,20 +288,20 @@ export class PuppeteerPdfService {
         }
         
         .estimate-title {
-            font-size: 24px;
+            font-size: 32px;
             font-weight: 800;
             color: var(--primary);
             letter-spacing: -0.5px;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
         
         .estimate-meta {
-            font-size: 14px;
+            font-size: 17px;
             color: var(--text-medium);
         }
         
         .estimate-meta div {
-            margin-bottom: 5px;
+            margin-bottom: 6px;
         }
         
         .estimate-meta strong {
@@ -310,10 +310,10 @@ export class PuppeteerPdfService {
         }
         
         .estimate-number {
-            font-size: 16px;
+            font-size: 20px;
             font-weight: 700;
             color: var(--primary);
-            margin-bottom: 6px;
+            margin-bottom: 8px;
         }
         
         /* Client Section */
@@ -327,33 +327,33 @@ export class PuppeteerPdfService {
         }
         
         .section-label {
-            font-size: 11px;
+            font-size: 14px;
             font-weight: 700;
             color: var(--primary);
             text-transform: uppercase;
             letter-spacing: 1px;
-            margin-bottom: 12px;
+            margin-bottom: 14px;
         }
         
         .client-name {
-            font-size: 20px;
+            font-size: 24px;
             font-weight: 700;
             color: var(--text-dark);
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
         
         .client-details {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 8px;
-            font-size: 13px;
+            gap: 10px;
+            font-size: 16px;
             color: var(--text-medium);
         }
         
         .client-details span {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
         }
         
         /* Project Description */
@@ -365,8 +365,8 @@ export class PuppeteerPdfService {
             background: var(--bg-light);
             border: 1px solid var(--border);
             border-radius: 8px;
-            padding: 20px;
-            font-size: 14px;
+            padding: 22px;
+            font-size: 16px;
             color: var(--text-medium);
             line-height: 1.8;
         }
@@ -392,10 +392,10 @@ export class PuppeteerPdfService {
         .items-table th {
             color: var(--white);
             font-weight: 600;
-            font-size: 12px;
+            font-size: 15px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            padding: 16px 14px;
+            padding: 18px 16px;
             text-align: left;
         }
         
@@ -410,9 +410,9 @@ export class PuppeteerPdfService {
         }
         
         .items-table td {
-            padding: 14px;
+            padding: 16px;
             border-bottom: 1px solid var(--border);
-            font-size: 13px;
+            font-size: 16px;
             color: var(--text-dark);
         }
         
@@ -430,28 +430,32 @@ export class PuppeteerPdfService {
         
         .item-name {
             font-weight: 600;
+            font-size: 17px;
             color: var(--text-dark);
         }
         
         .item-description {
-            font-size: 12px;
+            font-size: 15px;
             color: var(--text-light);
-            margin-top: 4px;
+            margin-top: 5px;
         }
         
         .items-table td:nth-child(2),
         .items-table td:nth-child(3) {
             text-align: center;
+            font-size: 16px;
         }
         
         .items-table td:nth-child(4),
         .items-table td:nth-child(5) {
             text-align: right;
             font-weight: 500;
+            font-size: 16px;
         }
         
         .items-table td:nth-child(5) {
             font-weight: 700;
+            font-size: 17px;
             color: var(--primary-dark);
         }
         
@@ -463,25 +467,25 @@ export class PuppeteerPdfService {
         }
         
         .totals-box {
-            width: 320px;
+            width: 360px;
             background: var(--bg-light);
             border: 1px solid var(--border);
             border-radius: 8px;
-            padding: 20px;
+            padding: 24px;
         }
         
         .total-row {
             display: flex;
             justify-content: space-between;
-            padding: 10px 0;
-            font-size: 14px;
+            padding: 12px 0;
+            font-size: 17px;
             color: var(--text-medium);
         }
         
         .total-row.subtotal {
             border-bottom: 1px solid var(--border);
-            padding-bottom: 14px;
-            margin-bottom: 10px;
+            padding-bottom: 16px;
+            margin-bottom: 12px;
         }
         
         .total-row.discount {
@@ -492,9 +496,9 @@ export class PuppeteerPdfService {
             background: var(--primary);
             color: var(--white);
             font-weight: 700;
-            font-size: 18px;
-            padding: 16px 20px;
-            margin: 14px -20px -20px -20px;
+            font-size: 22px;
+            padding: 18px 24px;
+            margin: 16px -24px -24px -24px;
             border-radius: 0 0 8px 8px;
         }
         
@@ -507,30 +511,30 @@ export class PuppeteerPdfService {
             background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);
             border: 1px solid #FCD34D;
             border-radius: 8px;
-            padding: 20px;
+            padding: 24px;
             margin-bottom: 30px;
         }
         
         .terms-title {
-            font-size: 14px;
+            font-size: 18px;
             font-weight: 700;
             color: #92400E;
-            margin-bottom: 12px;
+            margin-bottom: 14px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
         }
         
         .terms-list {
-            font-size: 12px;
+            font-size: 15px;
             color: #78350F;
-            line-height: 1.8;
+            line-height: 1.9;
         }
         
         .terms-list li {
-            margin-bottom: 4px;
+            margin-bottom: 6px;
             list-style: none;
-            padding-left: 16px;
+            padding-left: 18px;
             position: relative;
         }
         
@@ -549,20 +553,20 @@ export class PuppeteerPdfService {
         }
         
         .footer-message {
-            font-size: 15px;
+            font-size: 18px;
             font-weight: 600;
             color: var(--text-dark);
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
         
         .footer-validity {
-            font-size: 13px;
+            font-size: 16px;
             color: var(--text-medium);
-            margin-bottom: 12px;
+            margin-bottom: 14px;
         }
         
         .footer-thanks {
-            font-size: 14px;
+            font-size: 17px;
             color: var(--primary);
             font-weight: 500;
         }
