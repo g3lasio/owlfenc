@@ -120,12 +120,13 @@ router.post('/', verifyFirebaseAuth, async (req, res) => {
     const clientData = clientSchema.parse(req.body);
     
     const db = admin.firestore();
+    const now = new Date();
     const newClient = {
       ...clientData,
       userId,
       clientId: `client_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-      createdAt: admin.firestore.Timestamp.now(),
-      updatedAt: admin.firestore.Timestamp.now(),
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
     const docRef = await db.collection('clients').add(newClient);
@@ -133,8 +134,8 @@ router.post('/', verifyFirebaseAuth, async (req, res) => {
     const savedClient = {
       id: docRef.id,
       ...newClient,
-      createdAt: newClient.createdAt.toDate(),
-      updatedAt: newClient.updatedAt.toDate(),
+      createdAt: now,
+      updatedAt: now,
     };
 
     console.log('✅ [FIREBASE-CLIENTS] Cliente creado:', savedClient.id);
@@ -176,7 +177,7 @@ router.patch('/:id', verifyFirebaseAuth, async (req, res) => {
 
     const updatedData = {
       ...updateData,
-      updatedAt: admin.firestore.Timestamp.now(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
     await clientRef.update(updatedData);
@@ -255,8 +256,8 @@ router.post('/import', verifyFirebaseAuth, async (req, res) => {
         ...clientData,
         userId,
         clientId: `client_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-        createdAt: admin.firestore.Timestamp.now(),
-        updatedAt: admin.firestore.Timestamp.now(),
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       };
       
       batch.set(newClientRef, newClient);

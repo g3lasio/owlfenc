@@ -154,8 +154,8 @@ export class FirebaseOnlyStorage implements IFirebaseOnlyStorage {
         source: client.source || '',
         classification: client.classification || '',
         tags: client.tags || [],
-        createdAt: admin.firestore.Timestamp.fromDate(now),
-        updatedAt: admin.firestore.Timestamp.fromDate(now)
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
       };
       
       const clientRef = this.db
@@ -204,7 +204,7 @@ export class FirebaseOnlyStorage implements IFirebaseOnlyStorage {
       
       // Filtrar campos undefined y preparar actualización
       const updateData: Record<string, any> = {
-        updatedAt: admin.firestore.Timestamp.fromDate(new Date())
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
       };
       
       // Solo agregar campos que no sean undefined
@@ -378,8 +378,8 @@ export class FirebaseOnlyStorage implements IFirebaseOnlyStorage {
         city: userData.city,
         state: userData.state,
         zipCode: userData.zipCode,
-        createdAt: admin.firestore.Timestamp.fromDate(now),
-        updatedAt: admin.firestore.Timestamp.fromDate(now)
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
       };
       
       await userRef.set(userDataToSave);
