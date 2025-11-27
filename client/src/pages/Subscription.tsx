@@ -509,23 +509,23 @@ export default function Subscription() {
   const expirationDate = getExpirationDate();
 
   return (
-    <div className="container max-w-6xl px-4 sm:px-6 mx-auto py-6 sm:py-12 overflow-x-hidden">
-      <div className="text-center mb-6 sm:mb-10">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2 sm:mb-3">
+    <div className="container max-w-6xl p-4 mx-auto py-12">
+      <div className="text-center mb-10">
+        <h1 className="text-3xl font-bold tracking-tight mb-3">
           Planes de Suscripción
         </h1>
-        <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto px-2">
+        <p className="text-muted-foreground max-w-2xl mx-auto">
           Elige el plan perfecto para tu negocio. Todos los planes incluyen
           acceso completo a Mervin, tu asistente personal para contratistas.
         </p>
       </div>
 
       {/* Toggle entre facturación mensual y anual */}
-      <div className="flex justify-center mb-6 sm:mb-10">
+      <div className="flex justify-center mb-10">
         <PricingToggle
           isYearly={isYearly}
           onToggle={setIsYearly}
-          className="mb-4 sm:mb-6"
+          className="mb-6"
         />
       </div>
 
@@ -533,14 +533,14 @@ export default function Subscription() {
 
       {/* Mostrar información de la suscripción actual (carga asíncrona) */}
       {isLoadingUserSubscription ? (
-        <div className="bg-muted/50 rounded-lg p-4 sm:p-6 mb-6 sm:mb-10 text-center">
+        <div className="bg-muted/50 rounded-lg p-6 mb-10 text-center">
           <div className="flex items-center justify-center gap-2">
             <Loader2 className="h-4 w-4 animate-spin text-primary" />
-            <p className="text-xs sm:text-sm text-muted-foreground">Cargando información de tu suscripción...</p>
+            <p className="text-sm text-muted-foreground">Cargando información de tu suscripción...</p>
           </div>
         </div>
       ) : userSubscription && (
-        <div className="bg-muted/50 rounded-lg p-4 sm:p-6 mb-6 sm:mb-10 text-center">
+        <div className="bg-muted/50 rounded-lg p-6 mb-10 text-center">
           <h3 className="text-lg font-medium mb-2">
             {activePlanId === null || activePlanId === undefined 
               ? "🎯 Elige tu primer plan" 
@@ -613,7 +613,7 @@ export default function Subscription() {
       )}
 
       {/* Mostrar las tarjetas de planes */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-x-6 lg:gap-y-10">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-10">
         {/* 🎯 FORCED DISPLAY: Always show all active plans */}
         {Array.isArray(plans) ? (
           plans

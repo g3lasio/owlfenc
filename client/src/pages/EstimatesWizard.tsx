@@ -6837,7 +6837,7 @@ This link provides a professional view of your estimate that you can access anyt
   };
 
   return (
-    <div className="min-h-screen bg-black text-white font-quantico overflow-x-hidden">
+    <div className="min-h-screen bg-black text-white font-quantico">
       {/* Cyberpunk Header */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-blue-900/30 via-black/50 to-blue-900/30" />
@@ -6878,8 +6878,8 @@ This link provides a professional view of your estimate that you can access anyt
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pb-6 sm:pb-8">
-        <div className="bg-gray-900 backdrop-blur-sm rounded-lg border border-gray-700 p-4 sm:p-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+        <div className="bg-gray-900 backdrop-blur-sm rounded-lg border border-gray-700 p-6">
           <div className="mb-6">
             <p className="text-cyan-400 text-center">
               {isEditMode
