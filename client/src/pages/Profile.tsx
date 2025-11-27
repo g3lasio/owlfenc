@@ -1207,10 +1207,10 @@ export default function Profile() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-black text-white font-mono">
-      <div className="container mx-auto px-4 py-6">
+    <div className="min-h-screen bg-black text-white font-mono overflow-x-hidden">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 overflow-x-hidden">
         {/* User Profile Banner */}
-        <div className="border border-cyan-900/30 rounded-lg bg-gray-900/50 backdrop-blur-sm p-6 mb-8">
+        <div className="border border-cyan-900/30 rounded-lg bg-gray-900/50 backdrop-blur-sm p-4 sm:p-6 mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
             <div className="flex-shrink-0 relative">
               <input
@@ -1278,10 +1278,10 @@ export default function Profile() {
         </div>
 
         {/* Header with Save Button */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
           <div>
-            <h2 className="text-2xl font-bold text-white font-['Quantico']">Company Profile</h2>
-            <p className="text-gray-400 mt-1">
+            <h2 className="text-xl sm:text-2xl font-bold text-white font-['Quantico']">Company Profile</h2>
+            <p className="text-sm sm:text-base text-gray-400 mt-1">
               Manage your fencing company information
             </p>
           </div>
@@ -1301,32 +1301,34 @@ export default function Profile() {
           </Button>
         </div>
 
-        <Tabs defaultValue="info" className="space-y-8">
-          <div className="border border-gray-700 rounded-lg bg-gray-900/50 p-1">
-            <TabsList className="w-full bg-transparent grid grid-cols-4 gap-1">
+        <Tabs defaultValue="info" className="space-y-6 sm:space-y-8">
+          <div className="border border-gray-700 rounded-lg bg-gray-900/50 p-1 overflow-x-auto">
+            <TabsList className="w-full bg-transparent grid grid-cols-2 sm:grid-cols-4 gap-1">
               <TabsTrigger 
                 value="info" 
-                className="data-[state=active]:bg-cyan-400 data-[state=active]:text-black bg-gray-800 text-white hover:bg-gray-700 border-0 rounded-md transition-all duration-300"
+                className="data-[state=active]:bg-cyan-400 data-[state=active]:text-black bg-gray-800 text-white hover:bg-gray-700 border-0 rounded-md transition-all duration-300 text-xs sm:text-sm px-2 sm:px-4 py-2"
               >
-                General Information
+                <span className="hidden sm:inline">General Information</span>
+                <span className="sm:hidden">General</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="legal" 
-                className="data-[state=active]:bg-cyan-400 data-[state=active]:text-black bg-gray-800 text-white hover:bg-gray-700 border-0 rounded-md transition-all duration-300"
+                className="data-[state=active]:bg-cyan-400 data-[state=active]:text-black bg-gray-800 text-white hover:bg-gray-700 border-0 rounded-md transition-all duration-300 text-xs sm:text-sm px-2 sm:px-4 py-2"
               >
-                Documentation
+                <span className="hidden sm:inline">Documentation</span>
+                <span className="sm:hidden">Docs</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="specialties"
-                className="data-[state=active]:bg-cyan-400 data-[state=active]:text-black bg-gray-800 text-white hover:bg-gray-700 border-0 rounded-md transition-all duration-300"
+                className="data-[state=active]:bg-cyan-400 data-[state=active]:text-black bg-gray-800 text-white hover:bg-gray-700 border-0 rounded-md transition-all duration-300 text-xs sm:text-sm px-2 sm:px-4 py-2"
               >
                 Specialties
               </TabsTrigger>
               <TabsTrigger 
                 value="settings"
-                className="data-[state=active]:bg-cyan-400 data-[state=active]:text-black bg-gray-800 text-white hover:bg-gray-700 border-0 rounded-md transition-all duration-300"
+                className="data-[state=active]:bg-cyan-400 data-[state=active]:text-black bg-gray-800 text-white hover:bg-gray-700 border-0 rounded-md transition-all duration-300 text-xs sm:text-sm px-2 sm:px-4 py-2"
               >
-                User Settings
+                Settings
               </TabsTrigger>
             </TabsList>
           </div>

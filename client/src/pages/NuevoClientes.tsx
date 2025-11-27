@@ -996,11 +996,11 @@ export default function NuevoClientes() {
 
   return (
     <div
-      className=" mb-52 flex-1 p-6 "
+      className="mb-52 flex-1 p-4 sm:p-6 overflow-x-hidden"
       style={{ WebkitOverflowScrolling: "touch", height: "100%" }}
     >
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-        <h1 className="text-2xl font-bold">Clients</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-3 sm:gap-4">
+        <h1 className="text-xl sm:text-2xl font-bold">Clients</h1>
         <div className="flex flex-wrap gap-2">
           {selectedClients.length > 0 && (
             <Button
@@ -1104,24 +1104,24 @@ export default function NuevoClientes() {
 
       {/* Lista de clientes */}
       {filteredClients.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="mx-auto bg-muted rounded-full w-12 h-12 flex items-center justify-center mb-4">
-            <UserPlus className="h-6 w-6 text-muted-foreground" />
+        <div className="text-center py-8 sm:py-12 px-4">
+          <div className="mx-auto bg-muted rounded-full w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center mb-3 sm:mb-4">
+            <UserPlus className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground" />
           </div>
-          <h3 className="text-lg font-medium mb-1">No hay clientes</h3>
-          <p className="text-muted-foreground mb-4">
+          <h3 className="text-base sm:text-lg font-medium mb-1">No hay clientes</h3>
+          <p className="text-sm sm:text-base text-muted-foreground mb-4">
             {searchTerm || selectedTags.length > 0 || activeTab !== "all"
               ? "No se encontraron clientes con los filtros aplicados."
               : "Comienza agregando tu primer cliente o importando contactos."}
           </p>
           {(searchTerm || selectedTags.length > 0 || activeTab !== "all") && (
-            <Button variant="outline" onClick={clearFilters}>
+            <Button variant="outline" size="sm" onClick={clearFilters}>
               Limpiar filtros
             </Button>
           )}
         </div>
       ) : viewMode === "grid" ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {filteredClients.map((client) => (
             <Card key={client.id} className="">
               <CardHeader className="pb-2">
