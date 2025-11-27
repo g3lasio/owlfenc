@@ -167,7 +167,6 @@ export default function ProjectPaymentWorkflow({
   // Payment data state
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>(null);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [visibleProjects, setVisibleProjects] = useState<number>(3);
   const [useExistingProject, setUseExistingProject] = useState<boolean>(true);
   
   const [paymentConfig, setPaymentConfig] = useState({
@@ -569,7 +568,14 @@ export default function ProjectPaymentWorkflow({
 
                 {/* Optional: Link to existing project */}
                 <div className="bg-gray-800 p-4 rounded-lg">
-                  <Label className="text-white text-sm mb-2 block">Link to project (optional)</Label>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-white text-sm">Link to estimate (optional)</Label>
+                    {projects && projects.length > 0 && (
+                      <Badge variant="secondary" className="text-xs bg-gray-700 text-gray-300">
+                        {projects.length} estimates
+                      </Badge>
+                    )}
+                  </div>
                   <Select
                     value={selectedProject?.id?.toString() || ""}
                     onValueChange={(value) => {
@@ -578,16 +584,48 @@ export default function ProjectPaymentWorkflow({
                     }}
                   >
                     <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                      <SelectValue placeholder="Select a project..." />
+                      <SelectValue placeholder="Select an estimate..." />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-800 border-gray-600">
-                      {projects?.slice(0, 10).map((project) => (
-                        <SelectItem key={project.id} value={project.id.toString()}>
-                          {project.clientName} - {project.projectType}
+                    <SelectContent className="bg-gray-800 border-gray-600 max-h-[280px]">
+                      {projects && projects.length > 0 ? (
+                        projects.map((project) => (
+                          <SelectItem 
+                            key={project.id} 
+                            value={project.id.toString()}
+                            className="text-white hover:bg-gray-700 cursor-pointer"
+                          >
+                            {project.clientName} - {project.projectType} ({formatCurrency(project.totalPrice || 0)})
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="no-estimates" disabled>
+                          No estimates found
                         </SelectItem>
-                      ))}
+                      )}
                     </SelectContent>
                   </Select>
+                  {selectedProject && (
+                    <div className="mt-2 p-2 bg-cyan-900/30 border border-cyan-700 rounded text-xs text-gray-300">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="font-medium text-cyan-400">{selectedProject.clientName}</span>
+                          <span className="text-gray-400 ml-2">| {selectedProject.projectType}</span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2 text-gray-400 hover:text-white"
+                          onClick={() => setSelectedProject(null)}
+                        >
+                          Clear
+                        </Button>
+                      </div>
+                      <div className="text-gray-500 mt-1">{selectedProject.address}</div>
+                      <div className="text-cyan-400 font-semibold mt-1">
+                        {formatCurrency(selectedProject.totalPrice || 0)}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <Separator className="bg-gray-700" />
@@ -1040,51 +1078,67 @@ export default function ProjectPaymentWorkflow({
                 {/* Option A: Select Existing Project */}
                 {useExistingProject && (
                   <div className="space-y-4">
-                    <Label className="text-white">Select a Project</Label>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-white">Select an Estimate</Label>
+                      {projects && projects.length > 0 && (
+                        <Badge variant="secondary" className="text-xs bg-gray-700 text-gray-300">
+                          {projects.length} available
+                        </Badge>
+                      )}
+                    </div>
                     {projects && projects.length > 0 ? (
                       <div className="space-y-4">
-                        <div className="grid gap-4">
-                          {projects.slice(0, visibleProjects).map((project) => (
-                            <div
-                              key={project.id}
-                              className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                                selectedProject?.id === project.id
-                                  ? "border-cyan-400 bg-cyan-900/20"
-                                  : "border-gray-700 hover:border-cyan-400"
-                              }`}
-                              onClick={() => handleProjectSelect(project)}
-                              data-testid={`project-item-${project.id}`}
-                            >
-                              <div className="flex justify-between items-start">
-                                <div className="space-y-1">
-                                  <h4 className="font-medium text-white">{project.clientName}</h4>
-                                  <p className="text-sm text-gray-400">{project.projectType}</p>
-                                  <p className="text-xs text-gray-500">{project.address}</p>
-                                </div>
-                                <div className="text-right">
-                                  <p className="font-semibold text-cyan-400">
-                                    {formatCurrency(project.totalPrice || 0)}
-                                  </p>
-                                  <Badge
-                                    variant={project.paymentStatus === "paid" ? "default" : "secondary"}
-                                    className="text-xs mt-1"
-                                  >
-                                    {project.paymentStatus || "pending"}
-                                  </Badge>
-                                </div>
+                        <Select
+                          value={selectedProject?.id?.toString() || ""}
+                          onValueChange={(value) => {
+                            const project = projects.find(p => p.id.toString() === value);
+                            if (project) handleProjectSelect(project);
+                          }}
+                        >
+                          <SelectTrigger className="bg-gray-700 border-gray-600 text-white h-12">
+                            <SelectValue placeholder="Select an estimate from your history..." />
+                          </SelectTrigger>
+                          <SelectContent className="bg-gray-800 border-gray-600 max-h-[320px]">
+                            {projects.map((project) => (
+                              <SelectItem 
+                                key={project.id} 
+                                value={project.id.toString()}
+                                className="text-white hover:bg-gray-700 cursor-pointer py-2"
+                              >
+                                {project.clientName} - {project.projectType} ({formatCurrency(project.totalPrice || 0)})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        
+                        {/* Selected project details card */}
+                        {selectedProject && (
+                          <div className="p-4 border border-cyan-400 bg-cyan-900/20 rounded-lg">
+                            <div className="flex justify-between items-start">
+                              <div className="space-y-1">
+                                <h4 className="font-medium text-white">{selectedProject.clientName}</h4>
+                                <p className="text-sm text-gray-400">{selectedProject.projectType}</p>
+                                <p className="text-xs text-gray-500">{selectedProject.address}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-semibold text-cyan-400 text-lg">
+                                  {formatCurrency(selectedProject.totalPrice || 0)}
+                                </p>
+                                <Badge
+                                  variant={selectedProject.paymentStatus === "paid" ? "default" : "secondary"}
+                                  className="text-xs mt-1"
+                                >
+                                  {selectedProject.paymentStatus || "pending"}
+                                </Badge>
                               </div>
                             </div>
-                          ))}
-                        </div>
-                        {visibleProjects < projects.length && (
-                          <div className="flex justify-center pt-2">
                             <Button
-                              onClick={() => setVisibleProjects(prev => prev + 3)}
-                              variant="outline"
-                              className="bg-gray-800 border-gray-600 text-cyan-400 hover:bg-gray-700 hover:text-cyan-300"
-                              data-testid="button-see-more-projects"
+                              variant="ghost"
+                              size="sm"
+                              className="mt-2 h-7 px-2 text-gray-400 hover:text-white text-xs"
+                              onClick={() => setSelectedProject(null)}
                             >
-                              See more ({projects.length - visibleProjects} remaining)
+                              Change selection
                             </Button>
                           </div>
                         )}
@@ -1092,7 +1146,7 @@ export default function ProjectPaymentWorkflow({
                     ) : (
                       <div className="text-center py-8 bg-gray-800 rounded-lg">
                         <FileText className="h-12 w-12 text-gray-500 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-gray-400 mb-2">No Projects Found</h3>
+                        <h3 className="text-lg font-medium text-gray-400 mb-2">No Estimates Found</h3>
                         <p className="text-gray-500 mb-4">
                           Create a quick invoice instead
                         </p>
