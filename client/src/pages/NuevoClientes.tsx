@@ -682,22 +682,36 @@ export default function NuevoClientes() {
     setShowBatchDeleteDialog(true);
   };
 
-  // Eliminar clientes seleccionados en lote
+  // Eliminar clientes seleccionados en lote - ULTRARRÁPIDO con Firebase Batch Delete
   const deleteSelectedClients = async () => {
     try {
       setIsProcessing(true);
+      const startTime = Date.now();
+      const totalToDelete = selectedClients.length;
+      
+      console.log(`🚀 [BATCH-DELETE] Iniciando eliminación ultrarrápida de ${totalToDelete} contactos...`);
 
-      // Eliminar cada cliente seleccionado
-      for (const clientId of selectedClients) {
-        await deleteClient(clientId);
+      // Usar el endpoint de batch delete para eliminar TODOS de una vez
+      const response = await apiRequest("POST", "/api/clients/batch-delete", {
+        clientIds: selectedClients
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Error en batch delete");
       }
+
+      const result = await response.json();
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+      
+      console.log(`✅ [BATCH-DELETE] ${result.deleted} contactos eliminados en ${elapsed}s`);
 
       // Actualizar lista de clientes
       queryClient.invalidateQueries({ queryKey: ["firebaseClients", userId] });
 
       toast({
-        title: "Eliminación exitosa",
-        description: `Se han eliminado ${selectedClients.length} contactos`,
+        title: "✅ Eliminación ultrarrápida completada",
+        description: `${result.deleted} contactos eliminados en ${elapsed} segundos`,
       });
 
       // Limpiar selección y cerrar diálogo
@@ -705,10 +719,10 @@ export default function NuevoClientes() {
       setSelectAllChecked(false);
       setShowBatchDeleteDialog(false);
     } catch (error) {
-      console.error("Error al eliminar clientes en lote:", error);
+      console.error("❌ [BATCH-DELETE] Error:", error);
       toast({
         title: "Error al eliminar",
-        description: "No se pudieron eliminar algunos contactos",
+        description: error instanceof Error ? error.message : "No se pudieron eliminar los contactos",
         variant: "destructive",
       });
     } finally {
