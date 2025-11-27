@@ -25,26 +25,33 @@ export const isAuthenticated = verifyFirebaseAuth;
 
 // Schema for creating project payment structure
 const createPaymentStructureSchema = z.object({
-  projectId: z.number(),
+  projectId: z.union([z.number(), z.string()]).optional().nullable(),
   totalAmount: z.number().min(1),
-  clientEmail: z.string().email().optional(),
-  clientName: z.string().optional(),
+  clientEmail: z.string().email().optional().nullable().or(z.literal("")),
+  clientName: z.string().optional().nullable(),
 });
 
 // Schema for creating individual payment
+// NOTE: projectId can be a Firebase document ID (string) or a number, or null for quick invoices
 const createPaymentSchema = z.object({
-  projectId: z.number(),
+  projectId: z.union([z.number(), z.string()]).optional().nullable(),
   amount: z.number().min(1),
   type: z.enum(["deposit", "final", "milestone", "additional"]),
-  description: z.string(),
-  clientEmail: z.string().email().optional(),
-  clientName: z.string().optional(),
-  dueDate: z.string().datetime().optional(),
+  description: z.string().optional().default("Payment"),
+  clientEmail: z.string().email().optional().nullable().or(z.literal("")),
+  clientName: z.string().optional().nullable(),
+  clientPhone: z.string().optional().nullable(),
+  dueDate: z.string().optional().nullable(),
+  paymentMethod: z.enum(["terminal", "link", "manual"]).optional().nullable(),
+  manualMethod: z.string().optional().nullable(),
+  referenceNumber: z.string().optional().nullable(),
+  paymentDate: z.string().optional().nullable(),
+  notes: z.string().optional().nullable(),
 });
 
 // Schema for quick payment link
 const quickPaymentSchema = z.object({
-  projectId: z.number(),
+  projectId: z.union([z.number(), z.string()]).optional().nullable(),
   type: z.enum(["deposit", "final"]),
 });
 
@@ -77,8 +84,8 @@ router.post(
           userId,
           validatedData.totalAmount,
           {
-            email: validatedData.clientEmail,
-            name: validatedData.clientName,
+            email: validatedData.clientEmail || undefined,
+            name: validatedData.clientName || undefined,
           },
         );
 
@@ -110,15 +117,23 @@ router.post("/create", isAuthenticated, requireSubscriptionLevel(PermissionLevel
     const userId = await userMappingService.getOrCreateUserIdForFirebaseUid(req.firebaseUser.uid);
     
     const validatedData = createPaymentSchema.parse(req.body);
+    
+    // Convert projectId to number if string, or use 0 for null/undefined (quick invoices)
+    let projectIdNum: number = 0;
+    if (validatedData.projectId !== null && validatedData.projectId !== undefined) {
+      projectIdNum = typeof validatedData.projectId === 'string' 
+        ? parseInt(validatedData.projectId, 10) || 0 
+        : validatedData.projectId;
+    }
 
     const result = await contractorPaymentService.createProjectPayment({
-      projectId: validatedData.projectId,
+      projectId: projectIdNum,
       userId,
       amount: validatedData.amount,
       type: validatedData.type,
-      description: validatedData.description,
-      clientEmail: validatedData.clientEmail,
-      clientName: validatedData.clientName,
+      description: validatedData.description || "Payment",
+      clientEmail: validatedData.clientEmail || undefined,
+      clientName: validatedData.clientName || undefined,
       dueDate: validatedData.dueDate
         ? new Date(validatedData.dueDate)
         : undefined,
@@ -155,15 +170,23 @@ router.post(
       const userId = await userMappingService.getOrCreateUserIdForFirebaseUid(req.firebaseUser.uid);
       
       const validatedData = createPaymentSchema.parse(req.body);
+      
+      // Convert projectId to number if string, or use 0 for null/undefined (quick invoices)
+      let projectIdNum: number = 0;
+      if (validatedData.projectId !== null && validatedData.projectId !== undefined) {
+        projectIdNum = typeof validatedData.projectId === 'string' 
+          ? parseInt(validatedData.projectId, 10) || 0 
+          : validatedData.projectId;
+      }
 
       const result = await contractorPaymentService.createProjectPayment({
-        projectId: validatedData.projectId,
+        projectId: projectIdNum,
         userId,
         amount: validatedData.amount,
         type: validatedData.type,
-        description: validatedData.description,
-        clientEmail: validatedData.clientEmail,
-        clientName: validatedData.clientName,
+        description: validatedData.description || "Payment",
+        clientEmail: validatedData.clientEmail || undefined,
+        clientName: validatedData.clientName || undefined,
         dueDate: validatedData.dueDate
           ? new Date(validatedData.dueDate)
           : undefined,
@@ -269,10 +292,18 @@ router.post(
       const userId = await userMappingService.getOrCreateUserIdForFirebaseUid(req.firebaseUser.uid);
       
       const validatedData = quickPaymentSchema.parse(req.body);
+      
+      // Convert projectId to number if string, or use 0 for null/undefined
+      let projectIdNum: number = 0;
+      if (validatedData.projectId !== null && validatedData.projectId !== undefined) {
+        projectIdNum = typeof validatedData.projectId === 'string' 
+          ? parseInt(validatedData.projectId, 10) || 0 
+          : validatedData.projectId;
+      }
 
       // 🔒 SECURITY: Pass userId for ownership verification
       const result = await contractorPaymentService.createQuickPaymentLink(
-        validatedData.projectId,
+        projectIdNum,
         userId,
         validatedData.type,
       );
