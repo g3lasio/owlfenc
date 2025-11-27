@@ -120,7 +120,8 @@ export function useProfile() {
             specialties: [],
             socialMedia: {},
             documents: {},
-            logo: ""
+            logo: "",
+            profilePhoto: ""
           };
           
           // Guardar el perfil vacío en localStorage con clave específica del usuario

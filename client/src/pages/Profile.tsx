@@ -115,6 +115,7 @@ export default function Profile() {
       socialMedia: {},
       documents: {},
       logo: "",
+      profilePhoto: "",
     },
   );
 
@@ -342,7 +343,7 @@ export default function Profile() {
     if (type === "logo") {
       // Convertir logo a Base64 para almacenamiento en base de datos
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         const base64Result = e.target?.result as string;
 
         const updatedInfo = {
@@ -352,46 +353,44 @@ export default function Profile() {
 
         setCompanyInfo(updatedInfo);
 
-        // Guardar inmediatamente en localStorage y servidor
+        // PERSISTENCE LAYER 1: Guardar inmediatamente en localStorage
         const userId = currentUser?.uid;
         const profileKey = `userProfile_${userId}`;
         localStorage.setItem(profileKey, JSON.stringify(updatedInfo));
+        console.log("💾 [LOGO] Guardado en localStorage");
 
-        // También guardar en servidor inmediatamente con autenticación
-        (async () => {
-          try {
-            const authHeaders = await getAuthHeaders();
-            const response = await fetch("/api/profile", {
-              method: "POST",
-              credentials: "include",
-              headers: { 
-                "Content-Type": "application/json",
-                ...authHeaders
-              },
-              body: JSON.stringify(updatedInfo),
-            });
-            return response;
-          } catch (error) {
-            console.warn("⚠️ Error con autenticación:", error);
-            return fetch("/api/profile", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(updatedInfo),
-            });
-          }
-        })()
-          .then((response) => {
-            if (response.ok) {
-              console.log("✅ Logo guardado en servidor y localStorage");
-            }
-          })
-          .catch((error) => {
-            console.warn("⚠️ Error guardando en servidor:", error);
+        // PERSISTENCE LAYER 2: Guardar en servidor inmediatamente con autenticación
+        try {
+          const authHeaders = await getAuthHeaders();
+          const response = await fetch("/api/profile", {
+            method: "POST",
+            credentials: "include",
+            headers: { 
+              "Content-Type": "application/json",
+              ...authHeaders
+            },
+            body: JSON.stringify(updatedInfo),
           });
+          if (response.ok) {
+            console.log("✅ [LOGO] Guardado en servidor");
+          }
+        } catch (error) {
+          console.warn("⚠️ [LOGO] Error guardando en servidor:", error);
+        }
+
+        // PERSISTENCE LAYER 3: Guardar en Firestore (fuente de verdad)
+        if (updateProfile) {
+          try {
+            await updateProfile(updatedInfo);
+            console.log("💾 [LOGO] Guardado en Firestore");
+          } catch (firebaseError) {
+            console.warn("⚠️ [LOGO] Error guardando en Firestore:", firebaseError);
+          }
+        }
 
         toast({
           title: "Logo guardado",
-          description: `${file.name} convertido a Base64 y guardado correctamente`,
+          description: `${file.name} guardado correctamente`,
         });
       };
 
