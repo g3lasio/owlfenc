@@ -6480,14 +6480,13 @@ Output must be between 200-900 characters in English.`;
         return res.status(400).json({ message: "Se requiere un array de clientes" });
       }
       
-      console.log(`🚀 [FIREBASE-CLIENTS] Batch importing ${clients.length} clients for Firebase UID: ${req.firebaseUser.uid}`);
+      const firebaseUid = req.firebaseUser.uid;
+      console.log(`🚀 [FIREBASE-CLIENTS] Batch importing ${clients.length} clients for Firebase UID: ${firebaseUid}`);
       
-      const { getFirebaseManager } = await import('./storage-firebase-only');
-      const firebaseManager = getFirebaseManager();
       const admin = (await import('firebase-admin')).default;
       const db = admin.firestore();
       
-      // Usar Firebase Batch Write para máxima velocidad (500 operaciones por batch)
+      // ⚠️ IMPORTANTE: Escribir en la estructura correcta: users/{uid}/clients/{docId}
       const BATCH_SIZE = 500;
       const clientIds: string[] = [];
       let totalImported = 0;
@@ -6497,11 +6496,26 @@ Output must be between 200-900 characters in English.`;
         const chunk = clients.slice(i, i + BATCH_SIZE);
         
         for (const clientData of chunk) {
-          const newClientRef = db.collection('clients').doc();
+          // Estructura correcta: users/{uid}/clients/{docId}
+          const newClientRef = db
+            .collection('users')
+            .doc(firebaseUid)
+            .collection('clients')
+            .doc();
+          
           const newClient = {
-            ...clientData,
-            userId: req.firebaseUser.uid,
-            clientId: clientData.clientId || `client_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+            name: clientData.name || '',
+            email: clientData.email || '',
+            phone: clientData.phone || '',
+            mobilePhone: clientData.mobilePhone || '',
+            address: clientData.address || '',
+            city: clientData.city || '',
+            state: clientData.state || '',
+            zipCode: clientData.zipCode || '',
+            notes: clientData.notes || '',
+            source: clientData.source || 'Imported CSV',
+            classification: clientData.classification || 'cliente',
+            tags: clientData.tags || [],
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           };
@@ -6512,10 +6526,10 @@ Output must be between 200-900 characters in English.`;
         
         await batch.commit();
         totalImported += chunk.length;
-        console.log(`📦 [FIREBASE-CLIENTS] Batch ${Math.floor(i/BATCH_SIZE) + 1}: ${chunk.length} clientes importados`);
+        console.log(`📦 [FIREBASE-CLIENTS] Batch ${Math.floor(i/BATCH_SIZE) + 1}: ${chunk.length} clientes importados en users/${firebaseUid}/clients/`);
       }
       
-      console.log(`✅ [FIREBASE-CLIENTS] Batch import completed: ${totalImported} clients imported`);
+      console.log(`✅ [FIREBASE-CLIENTS] Batch import completed: ${totalImported} clients imported to users/${firebaseUid}/clients/`);
       res.json({ 
         success: true, 
         imported: totalImported,
