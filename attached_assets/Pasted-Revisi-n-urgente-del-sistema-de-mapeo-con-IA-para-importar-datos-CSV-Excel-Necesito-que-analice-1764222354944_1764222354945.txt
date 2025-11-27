@@ -1,0 +1,62 @@
+Revisión urgente del sistema de mapeo con IA para importar datos (CSV / Excel)
+
+Necesito que analices y mejores completamente el sistema que usamos para importar y mapear contactos cuando el usuario sube un archivo CSV o Excel.
+La realidad es simple: esos archivos casi nunca vienen perfectos.
+Siempre llegan con datos corruptos, columnas mezcladas, valores faltantes, nombres mal alineados o formatos inconsistentes.
+
+Por eso, quiero que la IA deje de comportarse como un mapeo básico y se convierta en una herramienta verdaderamente inteligente, capaz de:
+
+✔️ Entender datos desordenados
+
+Detectar nombres, direcciones, emails y teléfonos aunque estén en columnas incorrectas, rotas o con encabezados inusuales.
+
+✔️ Reconstruir información dañada
+
+Si hay datos mezclados o incompletos, la IA debe:
+
+Inferir correctamente qué pertenece a qué campo
+
+Separar valores combinados
+
+Identificar errores evidentes
+
+Proponer correcciones antes de guardar en la base de datos
+
+✔️ Auto-mapear de manera avanzada
+
+Nada de un mapeo superficial.
+Quiero un sistema que realmente “piense”:
+
+Detecte patrones
+
+Interprete columnas ambiguas
+
+Reconozca errores comunes
+
+Valide que cada dato esté en el campo correcto
+
+Evite duplicados o corrupción futura
+
+✔️ Demostrar el verdadero poder de la IA
+
+La IA debe manejar estos archivos como lo haría un analista experto, pero más rápido y con menos errores.
+Quiero que este módulo demuestre lo mejor que la tecnología actual puede hacer.
+Un mapeo inteligente, confiable y casi imposible de romper, incluso si el archivo viene hecho un desastre.
+
+🎯 Objetivo final
+
+Crear un sistema de importación que:
+
+Reciba cualquier archivo CSV/Excel (aunque esté mal formateado)
+
+Limpie los datos
+
+Los organice correctamente
+
+Los valide
+
+Y los deje listos para ser guardados sin corrupción
+
+Todo esto sin que el usuario tenga que borrar contactos, recargar listas o sufrir inconsistencias.
+
+Quiero una solución real, robusta y moderna. Si necesitas proponer un nuevo enfoque técnico, hazlo.
