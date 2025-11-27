@@ -277,6 +277,9 @@ function MainAppRouter() {
               <Route path="/profile">
                 {() => <ProtectedRoute component={Profile} />}
               </Route>
+              <Route path="/settings">
+                {() => <ProtectedRoute component={Profile} />}
+              </Route>
               <Route path="/property-verifier">
                 {() => <ProtectedRoute component={PropertyOwnershipVerifier} />}
               </Route>
