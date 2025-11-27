@@ -34,12 +34,9 @@ import {
   RiCheckboxCircleLine,
 } from "react-icons/ri";
 import { useAuth } from "@/hooks/use-auth";
-import BiometricLoginButton from "@/components/auth/BiometricLoginButton";
-import { detectBiometricCapabilities, hasBasicBiometricSupport } from "@/lib/biometric-detection";
 
 import OTPAuth from "@/components/auth/OTPAuth";
 import SessionUnlockPrompt from "@/components/auth/SessionUnlockPrompt";
-import BiometricSetupButton from "@/components/auth/BiometricSetupButton";
 import { sessionUnlockService } from "@/lib/session-unlock-service";
 
 import { useTranslation } from "react-i18next";
@@ -78,12 +75,8 @@ export default function AuthPage() {
     method?: string;
   }>({ canUnlock: false });
   
-  // 🔐 Estados para autenticación biométrica adaptativa
-  const [biometricSupported, setBiometricSupported] = useState(false);
-  const [biometricCapabilities, setBiometricCapabilities] = useState<any>(null);
-  const [showBiometricOption, setShowBiometricOption] = useState(false);
-  
   const cardRef = useRef<HTMLDivElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const successRef = useRef<HTMLDivElement>(null);
   const { t } = useTranslation(); // Obtenemos la función de traducción
   
@@ -95,44 +88,7 @@ export default function AuthPage() {
     }
   }, [currentUser, authLoading, navigate]);
 
-  // 🔐 Detectar capacidades biométricas del dispositivo
-  useEffect(() => {
-    const detectBiometric = async () => {
-      try {
-        console.log('🔐 [BIOMETRIC-DETECTION] Detectando capacidades biométricas del dispositivo...');
-        
-        // Detección rápida para mostrar UI inmediatamente
-        const hasBasicSupport = hasBasicBiometricSupport();
-        setBiometricSupported(hasBasicSupport);
-        
-        if (hasBasicSupport) {
-          console.log('✅ [BIOMETRIC-DETECTION] Soporte básico detectado, obteniendo capacidades detalladas...');
-          
-          // Detección completa en background
-          const capabilities = await detectBiometricCapabilities();
-          setBiometricCapabilities(capabilities);
-          setBiometricSupported(capabilities.supported);
-          setShowBiometricOption(capabilities.supported);
-          
-          console.log('🔍 [BIOMETRIC-DETECTION] Capacidades completas:', capabilities);
-        } else {
-          console.log('❌ [BIOMETRIC-DETECTION] No hay soporte biométrico básico');
-          setShowBiometricOption(false);
-        }
-      } catch (error) {
-        console.error('❌ [BIOMETRIC-DETECTION] Error detectando biometría:', error);
-        setBiometricSupported(false);
-        setShowBiometricOption(false);
-      }
-    };
-
-    // Solo detectar si no hay usuario autenticado
-    if (!currentUser && !authLoading) {
-      detectBiometric();
-    }
-  }, [currentUser, authLoading]);
-
-  // Verificar si hay sesión disponible para desbloqueo biométrico
+  // Verificar si hay sesión disponible para desbloqueo
   useEffect(() => {
     const checkSessionUnlock = async () => {
       try {
@@ -204,25 +160,72 @@ export default function AuthPage() {
     });
   };
 
-  // 🔐 Handler para login biométrico exitoso
-  const handleBiometricLoginSuccess = (authData: any) => {
-    console.log('🎉 [BIOMETRIC-LOGIN] Autenticación biométrica exitosa:', authData);
-    
-    toast({
-      title: "Autenticación biométrica exitosa",
-      description: `¡Bienvenido de vuelta! Autenticado con ${authData.deviceType}`,
-    });
-    
-    showSuccessEffect();
-  };
+  // 📱 Ref para evitar auto-submits repetidos (persiste durante toda la sesión del componente)
+  const hasAutoSubmittedRef = useRef<boolean>(false);
+  const autofillValuesRef = useRef<{email: string, password: string} | null>(null);
 
-  // Handler para errores de login biométrico
-  const handleBiometricLoginError = (error: string) => {
-    console.error('❌ [BIOMETRIC-LOGIN] Error en login biométrico:', error);
+  // 📱 Auto-submit cuando el navegador auto-rellena credenciales con Face ID/Touch ID
+  // Solo se ejecuta UNA VEZ al montar el componente
+  useEffect(() => {
+    let mounted = true;
     
-    // Los errores específicos ya se manejan en BiometricLoginButton
-    // Este handler es para casos adicionales si es necesario
-  };
+    const handleAutofillSubmit = (emailValue: string, passwordValue: string) => {
+      // Guard: Solo auto-submit una vez por montaje del componente
+      if (hasAutoSubmittedRef.current || !mounted) {
+        return;
+      }
+      
+      // Guardar valores detectados
+      const storedValues = autofillValuesRef.current;
+      
+      // Si los valores son los mismos que ya intentamos, no reintentar
+      if (storedValues && storedValues.email === emailValue && storedValues.password === passwordValue) {
+        console.log('🔐 [AUTOFILL] Same credentials, skipping duplicate auto-submit');
+        return;
+      }
+      
+      console.log('🔐 [AUTOFILL] Credenciales detectadas, preparando auto-submit único...');
+      
+      // Actualizar el formulario con los valores auto-rellenados
+      loginForm.setValue('email', emailValue);
+      loginForm.setValue('password', passwordValue);
+      
+      // Marcar que ya se hizo auto-submit y guardar valores
+      hasAutoSubmittedRef.current = true;
+      autofillValuesRef.current = { email: emailValue, password: passwordValue };
+      
+      // Auto-submit después de un breve delay
+      setTimeout(() => {
+        if (mounted && !currentUser) {
+          console.log('🚀 [AUTOFILL] Auto-submitting credentials (one-time only)...');
+          loginForm.handleSubmit(onLoginSubmit)();
+        }
+      }, 300);
+    };
+
+    // Verificar autofill inicial con delay (algunos navegadores rellenan con delay)
+    const initialCheckTimeout = setTimeout(() => {
+      if (!mounted || hasAutoSubmittedRef.current) return;
+      
+      const emailInput = document.getElementById('email') as HTMLInputElement;
+      const passwordInput = document.getElementById('password') as HTMLInputElement;
+      
+      if (emailInput && passwordInput) {
+        const emailValue = emailInput.value;
+        const passwordValue = passwordInput.value;
+        
+        // Solo si ambos campos están llenos (autofill típico)
+        if (emailValue && passwordValue && emailValue.includes('@') && passwordValue.length >= 6) {
+          handleAutofillSubmit(emailValue, passwordValue);
+        }
+      }
+    }, 800);
+
+    return () => {
+      mounted = false;
+      clearTimeout(initialCheckTimeout);
+    };
+  }, []);
 
   // Mostrar efecto de congratulación después de login exitoso con redirección inmediata
   const showSuccessEffect = () => {
@@ -267,7 +270,8 @@ export default function AuthPage() {
           throw new Error("Por favor ingresa tu correo electrónico");
         }
 
-        await sendEmailLoginLink(data.email);
+        const { sendEmailLink } = await import('@/lib/firebase');
+        await sendEmailLink(data.email);
         toast({
           title: "Enlace enviado",
           description:
@@ -430,6 +434,7 @@ export default function AuthPage() {
                     <form
                       onSubmit={loginForm.handleSubmit(onLoginSubmit)}
                       className="space-y-4"
+                      autoComplete="on"
                     >
                       <FormField
                         control={loginForm.control}
@@ -439,10 +444,15 @@ export default function AuthPage() {
                             <FormLabel>{t("auth.email")}</FormLabel>
                             <FormControl>
                               <Input
+                                {...field}
+                                id="email"
+                                type="email"
+                                inputMode="email"
+                                autoComplete="username"
                                 placeholder="tu@email.com"
                                 className="bg-card/50 border-muted-foreground/30 focus-visible:ring-primary"
-                                {...field}
                                 disabled={isLoading}
+                                data-testid="input-email"
                               />
                             </FormControl>
                             <FormMessage />
@@ -467,11 +477,14 @@ export default function AuthPage() {
                             <FormControl>
                               <div className="relative">
                                 <Input
+                                  {...field}
+                                  id="password"
                                   type={showPassword ? "text" : "password"}
+                                  autoComplete="current-password"
                                   placeholder="••••••••"
                                   className="bg-card/50 border-muted-foreground/30 focus-visible:ring-primary pr-10"
-                                  {...field}
                                   disabled={isLoading}
+                                  data-testid="input-password"
                                 />
                                 <button
                                   type="button"
@@ -521,37 +534,28 @@ export default function AuthPage() {
                         {isLoading ? t("auth.login") + "..." : t("auth.login")}
                       </Button>
 
-                      {/* 🔐 OPCIONES ALTERNATIVAS - Biometric y OTP en paralelo */}
+                      {/* Opción alternativa OTP */}
                       <div className="flex items-center gap-3">
                         <Separator className="flex-1 bg-muted-foreground/30" />
                         <span className="text-xs text-muted-foreground">or</span>
                         <Separator className="flex-1 bg-muted-foreground/30" />
                       </div>
 
-                      {/* Container para botones en paralelo */}
-                      <div className="flex gap-3">
-                        {/* Botón biométrico - solo si está disponible */}
-                        {showBiometricOption && (
-                          <BiometricLoginButton
-                            onSuccess={handleBiometricLoginSuccess}
-                            onError={handleBiometricLoginError}
-                            email={loginForm.getValues('email')}
-                            disabled={isLoading}
-                            className="flex-1"
-                          />
-                        )}
-                        
-                        {/* Botón OTP - siempre disponible */}
-                        <button
-                          type="button"
-                          className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-blue-500/10 to-purple-500/10 hover:from-blue-500/20 hover:to-purple-500/20 text-primary text-sm font-medium transition-all duration-300 border border-primary/30 justify-center flex-1"
-                          onClick={() => setLoginMethod("otp")}
-                          title="Login with OTP Code"
-                        >
-                          <RiShieldKeyholeLine className="h-5 w-5" />
-                          <span>OTP Code</span>
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        className="w-full flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-blue-500/10 to-purple-500/10 hover:from-blue-500/20 hover:to-purple-500/20 text-primary text-sm font-medium transition-all duration-300 border border-primary/30 justify-center"
+                        onClick={() => setLoginMethod("otp")}
+                        title="Login with OTP Code"
+                        data-testid="button-otp-login"
+                      >
+                        <RiShieldKeyholeLine className="h-5 w-5" />
+                        <span>Login with OTP Code</span>
+                      </button>
+                      
+                      {/* Mensaje informativo sobre Face ID/Touch ID */}
+                      <p className="text-xs text-center text-muted-foreground/70 mt-2">
+                        After logging in, your device will offer to save your credentials for quick Face ID or Touch ID access next time.
+                      </p>
                     </form>
                   </Form>
                 ) : (
