@@ -55,9 +55,6 @@ import {
   AlertTriangle,
   CheckCircle,
   CircleAlert,
-  Wrench,
-  RefreshCw,
-  AlertCircle,
 } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -171,26 +168,20 @@ export default function NuevoClientes() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [tagInput, setTagInput] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  
-  // Estados para la herramienta de reparación
-  const [showRepairDialog, setShowRepairDialog] = useState(false);
-  const [repairDiagnostics, setRepairDiagnostics] = useState<any>(null);
-  const [repairResults, setRepairResults] = useState<any>(null);
-  const [isRepairing, setIsRepairing] = useState(false);
-  const [isDiagnosing, setIsDiagnosing] = useState(false);
 
-  // Consulta para obtener clientes desde Firebase CON userId correcto
+  // Consulta para obtener clientes desde Firebase
+  // 🧹 Los datos se limpian automáticamente en el backend via AutoClean
   const {
     data: clients = [],
     isLoading,
     isError,
     error,
   } = useQuery({
-    queryKey: ["firebaseClients", userId], // Incluir userId en la key
+    queryKey: ["firebaseClients", userId],
     queryFn: async () => {
       try {
-        console.log("Obteniendo clientes desde Firebase para usuario:", userId);
-        const data = await getClients(userId); // ✅ PASAR userId
+        console.log("Obteniendo clientes desde Firebase (AutoClean activo)...");
+        const data = await getClients();
         console.log("Clientes obtenidos:", data);
         return data;
       } catch (err) {
@@ -198,7 +189,7 @@ export default function NuevoClientes() {
         throw err;
       }
     },
-    enabled: !!userId, // Solo ejecutar si tenemos userId
+    enabled: !!userId,
   });
 
   // Mutation para crear un cliente usando Firebase
@@ -382,80 +373,6 @@ export default function NuevoClientes() {
       month: "short",
       day: "numeric",
     });
-  };
-
-  // 🔧 FUNCIONES DE DIAGNÓSTICO Y REPARACIÓN DE CONTACTOS
-  const handleDiagnoseContacts = async () => {
-    setIsDiagnosing(true);
-    setRepairDiagnostics(null);
-    setRepairResults(null);
-    
-    try {
-      // Usar el formato correcto de apiRequest: (method, url, data)
-      const res = await apiRequest('GET', '/api/clients/repair/diagnose');
-      const response = await res.json();
-      
-      setRepairDiagnostics(response);
-      
-      if (response.diagnostics?.corruptedClients?.length === 0) {
-        toast({
-          title: "Sin problemas detectados",
-          description: "Todos tus contactos tienen datos correctos.",
-        });
-      } else {
-        toast({
-          title: "Diagnóstico completado",
-          description: `Se encontraron ${response.diagnostics?.corruptedClients?.length || 0} contactos con posibles problemas.`,
-        });
-      }
-    } catch (error: any) {
-      console.error("Error en diagnóstico:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No se pudo realizar el diagnóstico: " + (error.message || "Error desconocido"),
-      });
-    } finally {
-      setIsDiagnosing(false);
-    }
-  };
-
-  const handleRepairContacts = async (dryRun: boolean = true) => {
-    setIsRepairing(true);
-    
-    try {
-      // Usar el formato correcto de apiRequest: (method, url, data)
-      const res = await apiRequest('POST', '/api/clients/repair/auto-fix', { dryRun });
-      const response = await res.json();
-      
-      setRepairResults(response);
-      
-      if (!dryRun && response.repairsNeeded > 0) {
-        // Refrescar la lista de clientes después de reparar - usar el queryKey completo con userId
-        queryClient.invalidateQueries({ queryKey: ["firebaseClients", userId] });
-        
-        toast({
-          title: "Reparación completada",
-          description: `${response.repairsNeeded} contactos fueron reparados exitosamente.`,
-        });
-      } else if (dryRun) {
-        toast({
-          title: "Simulación completada",
-          description: response.repairsNeeded > 0 
-            ? `${response.repairsNeeded} contactos necesitan reparación. Haz clic en "Aplicar reparaciones" para corregirlos.`
-            : "No se necesitan reparaciones.",
-        });
-      }
-    } catch (error: any) {
-      console.error("Error en reparación:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No se pudo realizar la reparación: " + (error.message || "Error desconocido"),
-      });
-    } finally {
-      setIsRepairing(false);
-    }
   };
 
   // Manejar envío del formulario de cliente
@@ -1072,19 +989,6 @@ export default function NuevoClientes() {
           <Button variant="outline" onClick={() => setShowImportDialog(true)}>
             <Upload className="w-4 h-4 mr-2" />
             Importar
-          </Button>
-
-          <Button 
-            variant="outline" 
-            onClick={() => {
-              setShowRepairDialog(true);
-              setRepairDiagnostics(null);
-              setRepairResults(null);
-            }}
-            className="text-amber-600 border-amber-300 hover:bg-amber-50"
-          >
-            <Wrench className="w-4 h-4 mr-2" />
-            Reparar Contactos
           </Button>
 
           <Button onClick={openAddForm}>
@@ -2177,215 +2081,6 @@ export default function NuevoClientes() {
         </DialogContent>
       </Dialog>
 
-      {/* 🔧 Diálogo de Reparación de Contactos */}
-      <Dialog open={showRepairDialog} onOpenChange={setShowRepairDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Wrench className="h-5 w-5 text-amber-500" />
-              Herramienta de Reparación de Contactos
-            </DialogTitle>
-            <DialogDescription>
-              Esta herramienta detecta y corrige datos mezclados en tus contactos (direcciones en campos de teléfono, ciudades pegadas a direcciones, etc.)
-            </DialogDescription>
-          </DialogHeader>
-
-          <ScrollArea className="flex-1 pr-4">
-            <div className="space-y-4">
-              {/* Paso 1: Diagnóstico */}
-              <div className="border rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="bg-blue-100 text-blue-700 rounded-full w-6 h-6 flex items-center justify-center text-sm font-medium">1</div>
-                    <h4 className="font-medium">Diagnosticar Contactos</h4>
-                  </div>
-                  <Button 
-                    onClick={handleDiagnoseContacts} 
-                    disabled={isDiagnosing}
-                    variant="outline"
-                    size="sm"
-                  >
-                    {isDiagnosing ? (
-                      <>
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        Analizando...
-                      </>
-                    ) : (
-                      <>
-                        <Search className="h-4 w-4 mr-2" />
-                        Analizar
-                      </>
-                    )}
-                  </Button>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Escanea todos tus contactos para identificar datos mal ubicados o corruptos.
-                </p>
-                
-                {/* Resultados del diagnóstico */}
-                {repairDiagnostics && (
-                  <div className="mt-4 space-y-3">
-                    <div className="flex items-center gap-4 p-3 bg-muted rounded-lg">
-                      <div className="text-center">
-                        <div className="text-2xl font-bold">{repairDiagnostics.diagnostics?.totalClients || 0}</div>
-                        <div className="text-xs text-muted-foreground">Total</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-amber-500">{repairDiagnostics.diagnostics?.corruptedClients?.length || 0}</div>
-                        <div className="text-xs text-muted-foreground">Con problemas</div>
-                      </div>
-                    </div>
-                    
-                    {repairDiagnostics.diagnostics?.corruptedClients?.length > 0 && (
-                      <div className="space-y-2">
-                        <h5 className="text-sm font-medium">Problemas detectados:</h5>
-                        <div className="grid grid-cols-2 gap-2 text-sm">
-                          {repairDiagnostics.diagnostics.issues.addressInPhone > 0 && (
-                            <div className="flex items-center gap-2 text-amber-600">
-                              <AlertCircle className="h-4 w-4" />
-                              {repairDiagnostics.diagnostics.issues.addressInPhone} dirección(es) en campo teléfono
-                            </div>
-                          )}
-                          {repairDiagnostics.diagnostics.issues.phoneInAddress > 0 && (
-                            <div className="flex items-center gap-2 text-amber-600">
-                              <AlertCircle className="h-4 w-4" />
-                              {repairDiagnostics.diagnostics.issues.phoneInAddress} teléfono(s) en campo dirección
-                            </div>
-                          )}
-                          {repairDiagnostics.diagnostics.issues.cityMergedWithAddress > 0 && (
-                            <div className="flex items-center gap-2 text-amber-600">
-                              <AlertCircle className="h-4 w-4" />
-                              {repairDiagnostics.diagnostics.issues.cityMergedWithAddress} ciudad(es) pegada(s) a dirección
-                            </div>
-                          )}
-                          {repairDiagnostics.diagnostics.issues.duplicateData > 0 && (
-                            <div className="flex items-center gap-2 text-amber-600">
-                              <AlertCircle className="h-4 w-4" />
-                              {repairDiagnostics.diagnostics.issues.duplicateData} datos duplicados
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Paso 2: Simulación */}
-              <div className="border rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="bg-amber-100 text-amber-700 rounded-full w-6 h-6 flex items-center justify-center text-sm font-medium">2</div>
-                    <h4 className="font-medium">Simular Reparación</h4>
-                  </div>
-                  <Button 
-                    onClick={() => handleRepairContacts(true)} 
-                    disabled={isRepairing || !repairDiagnostics || repairDiagnostics.diagnostics?.corruptedClients?.length === 0}
-                    variant="outline"
-                    size="sm"
-                  >
-                    {isRepairing ? (
-                      <>
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        Simulando...
-                      </>
-                    ) : (
-                      <>
-                        <Wrench className="h-4 w-4 mr-2" />
-                        Simular
-                      </>
-                    )}
-                  </Button>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Muestra qué cambios se harían sin modificar nada. Revisa antes de aplicar.
-                </p>
-
-                {/* Resultados de la simulación */}
-                {repairResults && repairResults.dryRun && repairResults.repairs?.length > 0 && (
-                  <div className="mt-4">
-                    <h5 className="text-sm font-medium mb-2">Vista previa de cambios ({repairResults.repairs.length}):</h5>
-                    <div className="max-h-48 overflow-y-auto space-y-2">
-                      {repairResults.repairs.slice(0, 10).map((repair: any, index: number) => (
-                        <div key={index} className="text-xs bg-muted p-2 rounded">
-                          <div className="font-medium">{repair.clientName}</div>
-                          <div className="grid grid-cols-2 gap-2 mt-1">
-                            <div className="text-red-600">
-                              <span className="font-medium">Antes:</span><br/>
-                              {repair.before.address && <span>Dir: {repair.before.address}<br/></span>}
-                              {repair.before.phone && <span>Tel: {repair.before.phone}<br/></span>}
-                              {repair.before.city && <span>Ciudad: {repair.before.city}</span>}
-                            </div>
-                            <div className="text-green-600">
-                              <span className="font-medium">Después:</span><br/>
-                              {repair.after.address && <span>Dir: {repair.after.address}<br/></span>}
-                              {repair.after.phone && <span>Tel: {repair.after.phone}<br/></span>}
-                              {repair.after.city && <span>Ciudad: {repair.after.city}</span>}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                      {repairResults.repairs.length > 10 && (
-                        <div className="text-center text-xs text-muted-foreground">
-                          ... y {repairResults.repairs.length - 10} más
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Paso 3: Aplicar */}
-              <div className="border rounded-lg p-4 border-green-200 bg-green-50">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="bg-green-100 text-green-700 rounded-full w-6 h-6 flex items-center justify-center text-sm font-medium">3</div>
-                    <h4 className="font-medium text-green-800">Aplicar Reparaciones</h4>
-                  </div>
-                  <Button 
-                    onClick={() => handleRepairContacts(false)} 
-                    disabled={isRepairing || !repairResults || !repairResults.dryRun || repairResults.repairs?.length === 0}
-                    variant="default"
-                    size="sm"
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    {isRepairing ? (
-                      <>
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        Reparando...
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        Aplicar ({repairResults?.repairs?.length || 0})
-                      </>
-                    )}
-                  </Button>
-                </div>
-                <p className="text-sm text-green-700">
-                  Aplica los cambios de forma permanente a todos los contactos afectados.
-                </p>
-
-                {/* Resultado de la reparación */}
-                {repairResults && !repairResults.dryRun && (
-                  <div className="mt-4 p-3 bg-green-100 rounded-lg">
-                    <div className="flex items-center gap-2 text-green-800">
-                      <CheckCircle className="h-5 w-5" />
-                      <span className="font-medium">¡{repairResults.repairsNeeded} contactos reparados exitosamente!</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </ScrollArea>
-
-          <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setShowRepairDialog(false)}>
-              Cerrar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

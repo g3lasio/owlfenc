@@ -3,6 +3,9 @@
  * Sistema completamente migrado que usa únicamente Firebase
  * Elimina completamente la dependencia de PostgreSQL
  * IMPORTANTE: Usa Firebase Admin SDK para bypasear reglas de Firestore
+ * 
+ * 🧹 AUTO-CLEAN: Integración automática de limpieza de datos
+ * Los contactos se limpian automáticamente al cargar, sin intervención del usuario
  */
 
 import { adminApp } from './firebase-admin';
@@ -14,6 +17,7 @@ import {
   FIREBASE_COLLECTIONS 
 } from '../shared/firebase-schema';
 import FirebaseOnlyStorage from './FirebaseOnlyStorage';
+import { autoCleanService } from './services/autoCleanService';
 
 // Interfaz unificada para operaciones Firebase-only
 export interface IFirebaseOnlyManager {
@@ -85,12 +89,120 @@ class FirebaseOnlyManager implements IFirebaseOnlyManager {
     
     try {
       const clients = await this.storage.getClients(firebaseUid);
-      console.log(`✅ [FIREBASE-MANAGER] ${clients.length} clientes obtenidos exitosamente`);
+      console.log(`✅ [FIREBASE-MANAGER] ${clients.length} clientes obtenidos`);
+      
+      // 🧹 AUTO-CLEAN: Limpieza automática transparente de datos corruptos
+      // El usuario nunca ve este proceso - solo recibe datos limpios
+      if (clients.length > 0) {
+        try {
+          const startTime = Date.now();
+          const cleanResult = await autoCleanService.cleanClientBatch(clients as any);
+          const duration = Date.now() - startTime;
+          
+          if (cleanResult.stats.corrected > 0) {
+            console.log(`🧹 [AUTO-CLEAN] ${cleanResult.stats.corrected}/${clients.length} contactos limpiados en ${duration}ms`);
+            
+            // Guardar correcciones significativas de vuelta a Firebase (async, no bloquea)
+            this.persistCorrections(firebaseUid, cleanResult.cleaned as FirebaseClient[], cleanResult.stats.corrections);
+          }
+          
+          return cleanResult.cleaned as FirebaseClient[];
+        } catch (cleanError) {
+          // Si falla la limpieza, devolver datos originales (graceful degradation)
+          console.warn(`⚠️ [AUTO-CLEAN] Error en limpieza automática, usando datos originales:`, cleanError);
+          return clients;
+        }
+      }
+      
       return clients;
     } catch (error) {
       console.error(`❌ [FIREBASE-MANAGER] Error obteniendo clientes:`, error);
       throw error;
     }
+  }
+
+  // Persistir correcciones de forma asíncrona sin bloquear la respuesta
+  private async persistCorrections(
+    firebaseUid: string, 
+    cleanedClients: FirebaseClient[], 
+    corrections: any[]
+  ): Promise<void> {
+    // Ejecutar en background sin bloquear la respuesta al usuario
+    setImmediate(async () => {
+      try {
+        const significantCorrections = corrections.filter(c => c.confidence >= 0.8);
+        
+        if (significantCorrections.length === 0) return;
+        
+        // Agrupar correcciones por clientId
+        const clientUpdates = new Map<string, Partial<FirebaseClient>>();
+        
+        for (const cleaned of cleanedClients) {
+          if (!cleaned.clientId) continue;
+          
+          // Solo actualizar si hay correcciones para este cliente
+          const clientCorrections = significantCorrections.filter(c => 
+            c.originalValue !== cleaned[c.field.split('→')[0] as keyof FirebaseClient]
+          );
+          
+          if (clientCorrections.length > 0) {
+            clientUpdates.set(cleaned.clientId, {
+              name: cleaned.name,
+              email: cleaned.email,
+              phone: cleaned.phone,
+              address: cleaned.address,
+              city: cleaned.city,
+              state: cleaned.state,
+              zipCode: cleaned.zipCode,
+            });
+          }
+        }
+        
+        if (clientUpdates.size === 0) return;
+        
+        // Procesar TODOS los clientes en lotes de 25 para no sobrecargar Firebase
+        const BATCH_SIZE = 25;
+        const allUpdates = Array.from(clientUpdates.entries());
+        let persistedCount = 0;
+        let failedCount = 0;
+        
+        for (let i = 0; i < allUpdates.length; i += BATCH_SIZE) {
+          const batch = allUpdates.slice(i, i + BATCH_SIZE);
+          
+          // Procesar lote en paralelo
+          const results = await Promise.allSettled(
+            batch.map(([clientId, updates]) => 
+              this.storage.updateClient(firebaseUid, clientId, updates)
+            )
+          );
+          
+          // Contar éxitos y fallos
+          results.forEach((result, idx) => {
+            if (result.status === 'fulfilled') {
+              persistedCount++;
+            } else {
+              failedCount++;
+              console.debug(`[AUTO-CLEAN] Error en ${batch[idx][0]}: ${result.reason}`);
+            }
+          });
+          
+          // Pequeña pausa entre lotes para no saturar Firebase
+          if (i + BATCH_SIZE < allUpdates.length) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+        }
+        
+        if (persistedCount > 0) {
+          console.log(`🧹 [AUTO-CLEAN] ${persistedCount}/${allUpdates.length} correcciones persistidas en Firebase`);
+        }
+        if (failedCount > 0) {
+          console.warn(`⚠️ [AUTO-CLEAN] ${failedCount} correcciones fallaron al persistir`);
+        }
+      } catch (error) {
+        // Silenciar errores de persistencia - la limpieza ya se mostró al usuario
+        console.debug('[AUTO-CLEAN] Error persistiendo correcciones:', error);
+      }
+    });
   }
 
   async getClient(firebaseUid: string, clientId: string): Promise<FirebaseClient | null> {

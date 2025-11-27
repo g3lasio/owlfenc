@@ -63,6 +63,7 @@ This AI-powered platform automates legal document and permit management for cont
 - **Legal Seal Digital Certificate System**: Production-ready PDF-embedded digital certificates with legal compliance, unique folio generation, and a verification URL.
 - **Dual Signature Completion System**: Production-ready distributed completion workflow with atomic job creation, distributed locking, crash recovery, idempotency guarantees, and saga pattern implementation for robust asynchronous processing.
 - **Unified Data Source Architecture**: All project and estimate data now uses a single source of truth (the 'estimates' Firestore collection), removing dual-writes and ensuring consistency.
+- **AutoClean AI Data Pipeline**: Automatic, invisible contact data cleaning system integrated into FirebaseOnlyStorage.getClients(). Uses heuristic detection (phone/email/address patterns, concatenated data splitting) with OpenAI GPT-4o-mini fallback for low-confidence cases. Corrections are persisted asynchronously in batches of 25. No user intervention required - users only see clean data.
 
 ### External Dependencies
 - Firebase (Firestore, Admin SDK)
