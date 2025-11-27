@@ -64,6 +64,14 @@ This AI-powered platform automates legal document and permit management for cont
 - **Dual Signature Completion System**: Production-ready distributed completion workflow with atomic job creation, distributed locking, crash recovery, idempotency guarantees, and saga pattern implementation for robust asynchronous processing.
 - **Unified Data Source Architecture**: All project and estimate data now uses a single source of truth (the 'estimates' Firestore collection), removing dual-writes and ensuring consistency.
 - **AutoClean AI Data Pipeline**: Automatic, invisible contact data cleaning system integrated into FirebaseOnlyStorage.getClients(). Uses heuristic detection (phone/email/address patterns, concatenated data splitting) with OpenAI GPT-4o-mini fallback for low-confidence cases. Corrections are persisted asynchronously in batches of 25. No user intervention required - users only see clean data.
+- **Intelligent Import Pipeline V2**: 5-phase architecture for CSV/Excel import with automatic data corruption handling.
+  - **Phase 0 (Ingestion)**: Smart Excel parsing with multi-sheet detection (selects densest sheet), blank-row filtering, and base64 encoding. CSV handled as plain text.
+  - **Phase 1 (Structural Analysis)**: Header detection, column count validation, data quality metrics.
+  - **Phase 2 (Semantic Mapping)**: Intelligent field mapping using pattern recognition for name/phone/email/address columns.
+  - **Phase 3 (Normalization)**: Integration with AutoClean/NormalizationToolkit for data cleaning.
+  - **Phase 4 (Validation/Dedupe)**: Final validation and duplicate detection.
+  - **Frontend Safety**: FileReader.readAsDataURL for safe base64 encoding, 10MB file size guard, user feedback on errors.
+  - **API Endpoints**: `/api/intelligent-import/v2/process`, `/v2/confirm`, `/v2/analyze-row` with Firebase authentication.
 
 ### External Dependencies
 - Firebase (Firestore, Admin SDK)
