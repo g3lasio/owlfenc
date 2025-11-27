@@ -19,6 +19,19 @@ import {
   RecaptchaVerifier,
   sendEmailVerification,
 } from 'firebase/auth';
+import type { ActionCodeSettings } from 'firebase/auth';
+
+/**
+ * Genera actionCodeSettings dinámicas para verificación de email
+ * Usa la URL actual para asegurar que el link funcione en cualquier entorno
+ */
+const getEmailVerificationSettings = (): ActionCodeSettings => {
+  const baseUrl = window.location.origin;
+  return {
+    url: `${baseUrl}/email-verification-callback?verified=true`,
+    handleCodeInApp: true,
+  };
+};
 
 interface PhoneAuthMFAProps {
   onSuccess?: () => void;
@@ -32,7 +45,7 @@ const PhoneAuthMFA: React.FC<PhoneAuthMFAProps> = ({ onSuccess, onCancel }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<'phone' | 'verify'>('phone');
   const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null);
-  const [emailVerified, setEmailVerified] = useState(true);
+  const [emailVerified, setEmailVerified] = useState(false);
   
   const { toast } = useToast();
 
@@ -48,7 +61,15 @@ const PhoneAuthMFA: React.FC<PhoneAuthMFAProps> = ({ onSuccess, onCancel }) => {
     
     try {
       setIsLoading(true);
-      await sendEmailVerification(auth.currentUser);
+      
+      // Usar actionCodeSettings dinámicas para asegurar que el link funcione correctamente
+      const actionCodeSettings = getEmailVerificationSettings();
+      console.log('📧 [2FA] Sending email verification with settings:', {
+        url: actionCodeSettings.url,
+        handleCodeInApp: actionCodeSettings.handleCodeInApp
+      });
+      
+      await sendEmailVerification(auth.currentUser, actionCodeSettings);
       
       toast({
         title: "Verification Email Sent",
@@ -56,9 +77,20 @@ const PhoneAuthMFA: React.FC<PhoneAuthMFAProps> = ({ onSuccess, onCancel }) => {
       });
     } catch (error: any) {
       console.error('Email verification error:', error);
+      
+      let errorMessage = error.message || "Failed to send verification email. Please try again.";
+      
+      // Handle specific Firebase errors
+      if (error.code === 'auth/too-many-requests') {
+        errorMessage = "Too many requests. Please wait a few minutes before trying again.";
+      } else if (error.code === 'auth/unauthorized-continue-uri') {
+        errorMessage = "Configuration error. Please contact support.";
+        console.error('📧 [2FA] Unauthorized continue URI. Check Firebase authorized domains.');
+      }
+      
       toast({
         title: "Error Sending Email",
-        description: error.message || "Failed to send verification email. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

@@ -37,6 +37,7 @@ import Signup from "@/pages/Signup";
 import RecuperarPassword from "@/pages/RecuperarPassword";
 import ResetPassword from "@/pages/ResetPassword";
 import EmailLinkCallback from "@/pages/EmailLinkCallback";
+import EmailVerificationCallback from "@/pages/EmailVerificationCallback";
 import CyberpunkContractGenerator from "@/pages/CyberpunkContractGenerator";
 import { setupGlobalErrorHandlers } from "@/lib/error-handlers";
 
@@ -240,6 +241,7 @@ function MainAppRouter() {
               <Route path="/forgot-password" component={RecuperarPassword} />
               <Route path="/reset-password" component={ResetPassword} />
               <Route path="/login/email-link-callback" component={EmailLinkCallback} />
+              <Route path="/email-verification-callback" component={EmailVerificationCallback} />
               <Route path="/webauthn-popup" component={WebAuthnPopup} />
               <Route path="/auth-diagnostic" component={AuthDiagnostic} />
               
