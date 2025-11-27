@@ -6757,22 +6757,21 @@ This link provides a professional view of your estimate that you can access anyt
                         <span className="text-sm text-blue-300 font-medium">Auto-guardando...</span>
                       </div>
                     )}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {/* Download PDF Button - Primary Action */}
                       <Button
-                        onClick={handleDirectInvoiceGeneration}
-                        disabled={
-                          !estimate.client || estimate.items.length === 0
-                        }
+                        onClick={handleDownload}
+                        disabled={!estimate.client || estimate.items.length === 0 || (!currentUser?.uid && !profile?.email)}
                         size="sm"
-                        className="border-orange-500/50 text-orange-300 hover:bg-orange-500/10 text-xs"
+                        className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white text-xs shadow-lg shadow-cyan-500/25"
+                        data-testid="button-download-pdf"
                       >
-                        <FileText className="h-3 w-3 mr-1" />
-                        <span className="hidden sm:inline">
-                          Generate as Invoice
-                        </span>
-                        <span className="sm:hidden">Invoice</span>
+                        <Download className="h-3 w-3 mr-1" />
+                        <span className="hidden sm:inline">Download PDF</span>
+                        <span className="sm:hidden">PDF</span>
                       </Button>
 
+                      {/* Share Estimate */}
                       <Button
                         onClick={handleUrlShare}
                         disabled={
@@ -6780,17 +6779,16 @@ This link provides a professional view of your estimate that you can access anyt
                         }
                         size="sm"
                         className="bg-green-600 hover:bg-green-700 text-white text-xs"
+                        data-testid="button-share-estimate"
                       >
                         <Share2 className="h-3 w-3 mr-1" />
-                        <span className="hidden sm:inline">
-                          Share Estimate
-                        </span>
+                        <span className="hidden sm:inline">Share</span>
                         <span className="sm:hidden">Share</span>
                       </Button>
 
+                      {/* Send Email */}
                       <Button
                         onClick={() => {
-                          // If client has no email, show dialog to add one
                           if (
                             !estimate.client?.email ||
                             estimate.client.email.trim() === ""
@@ -6803,10 +6801,27 @@ This link provides a professional view of your estimate that you can access anyt
                         disabled={!estimate.client}
                         size="sm"
                         className="bg-purple-600 hover:bg-purple-700 text-white text-xs"
+                        data-testid="button-send-email"
                       >
                         <Mail className="h-3 w-3 mr-1" />
-                        <span className="hidden sm:inline">Enviar Email</span>
+                        <span className="hidden sm:inline">Email</span>
                         <span className="sm:hidden">Email</span>
+                      </Button>
+
+                      {/* Generate Invoice */}
+                      <Button
+                        onClick={handleDirectInvoiceGeneration}
+                        disabled={
+                          !estimate.client || estimate.items.length === 0
+                        }
+                        size="sm"
+                        variant="outline"
+                        className="border-orange-500/50 text-orange-300 hover:bg-orange-500/10 text-xs"
+                        data-testid="button-generate-invoice"
+                      >
+                        <FileText className="h-3 w-3 mr-1" />
+                        <span className="hidden sm:inline">Invoice</span>
+                        <span className="sm:hidden">Invoice</span>
                       </Button>
                     </div>
                   </CardContent>
@@ -6949,21 +6964,12 @@ This link provides a professional view of your estimate that you can access anyt
             </Button>
 
             <div className="flex flex-col sm:flex-row gap-2 order-1 sm:order-2">
-              {currentStep === STEPS.length - 1 ? (
-                <Button
-                  onClick={handleDownload}
-                  disabled={!estimate.client || estimate.items.length === 0 || (!currentUser?.uid && !profile?.email)}
-                  className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 w-full sm:w-auto shadow-lg shadow-cyan-500/25"
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Finalizar y </span>
-                  Descargar
-                </Button>
-              ) : (
+              {currentStep < STEPS.length - 1 && (
                 <Button
                   onClick={nextStep}
                   disabled={!canProceedToNext()}
                   className="w-full sm:w-auto bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 shadow-lg shadow-cyan-500/25"
+                  data-testid="button-next-step"
                 >
                   Siguiente
                   <ChevronRight className="h-4 w-4 ml-2" />
