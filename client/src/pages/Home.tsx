@@ -29,9 +29,9 @@ export default function Home() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-cyan-900/20 via-slate-900/50 to-slate-900"></div>
       </div>
       
-      <div className="relative z-10 flex flex-col items-center justify-center h-full px-4">
+      <div className="relative z-10 flex flex-col items-center justify-center h-full px-4 py-6 sm:py-8">
       <Link href="/mervin">
-        <button className="relative rounded-full border-none bg-transparent cursor-pointer p-0 w-[160px] h-[160px] sm:w-[200px] sm:h-[200px] flex items-center justify-center mb-16">
+        <button className="relative rounded-full border-none bg-transparent cursor-pointer p-0 w-[200px] h-[200px] flex items-center justify-center">
           
           {/* Resplandor circular futurista */}
           <div style={{
@@ -58,14 +58,16 @@ export default function Home() {
           />
           
           {/* Texto de Mervin AI con efecto de aparición */}
-          <div className="absolute top-full mt-4 left-1/2 -translate-x-1/2 text-lg md:text-xl font-quantico whitespace-nowrap tracking-wider z-10">
-            <div className="relative flex items-center gap-2">
-              <span className="h-2 w-2 bg-cyan-400 rounded-full opacity-70 animate-pulse"></span>
+          <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 text-lg md:text-xl font-quantico whitespace-nowrap tracking-wider z-10">
+            <div className="relative ">
               <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent drop-shadow-md animate-text-reveal inline-block">
                 Mervin AI
               </span>
-              <span className="h-2 w-2 bg-cyan-400 rounded-full opacity-70 animate-pulse" style={{ animationDelay: '0.5s' }}></span>
+              <span className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 animate-line-reveal"></span>
             </div>
+            {/* Marcadores de tecnología futurista */}
+            <span className="absolute -left-4 -bottom-1 h-2 w-2 bg-cyan-400 rounded-full opacity-70 animate-pulse"></span>
+            <span className="absolute -right-4 -bottom-1 h-2 w-2 bg-cyan-400 rounded-full opacity-70 animate-pulse" style={{ animationDelay: '0.5s' }}></span>
           </div>
         </button>
       </Link>
