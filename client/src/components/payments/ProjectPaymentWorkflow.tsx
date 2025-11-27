@@ -207,9 +207,11 @@ export default function ProjectPaymentWorkflow({
 
   const calculateSuggestedAmount = (project: Project, type: string) => {
     const total = project.totalPrice || 0;
-    if (type === "deposit") return total * 0.5;
-    if (type === "final") return total * 0.5;
-    return total;
+    let amount = total;
+    if (type === "deposit") amount = total * 0.5;
+    if (type === "final") amount = total * 0.5;
+    // Round to 2 decimal places to avoid floating point issues
+    return Math.round(amount * 100) / 100;
   };
 
   const handleProjectSelect = (project: Project) => {
@@ -559,8 +561,18 @@ export default function ProjectPaymentWorkflow({
                     <DollarSign className="absolute left-4 top-1/2 transform -translate-y-1/2 h-8 w-8 text-cyan-400" />
                     <Input
                       type="number"
+                      step="0.01"
+                      min="0"
                       value={paymentConfig.amount}
-                      onChange={(e) => setPaymentConfig({ ...paymentConfig, amount: e.target.value })}
+                      onChange={(e) => {
+                        // Limit to 2 decimal places
+                        const value = e.target.value;
+                        const parts = value.split('.');
+                        if (parts[1] && parts[1].length > 2) {
+                          return; // Don't update if more than 2 decimal places
+                        }
+                        setPaymentConfig({ ...paymentConfig, amount: value });
+                      }}
                       className="bg-gray-800 border-gray-600 text-white text-4xl font-bold pl-16 py-8 text-center"
                       placeholder="0.00"
                       autoFocus
@@ -1245,8 +1257,18 @@ export default function ProjectPaymentWorkflow({
                       <Input
                         id="amount"
                         type="number"
+                        step="0.01"
+                        min="0"
                         value={paymentConfig.amount}
-                        onChange={(e) => setPaymentConfig({ ...paymentConfig, amount: e.target.value })}
+                        onChange={(e) => {
+                          // Limit to 2 decimal places
+                          const value = e.target.value;
+                          const parts = value.split('.');
+                          if (parts[1] && parts[1].length > 2) {
+                            return; // Don't update if more than 2 decimal places
+                          }
+                          setPaymentConfig({ ...paymentConfig, amount: value });
+                        }}
                         className="bg-gray-800 border-gray-600 text-white"
                         placeholder="0.00"
                         data-testid="input-amount-guided"
