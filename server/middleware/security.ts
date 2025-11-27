@@ -28,6 +28,17 @@ export const securityHeaders = helmet({
   }
 });
 
+/**
+ * Lista de dominios de producción autorizados para WebAuthn
+ * Estos dominios pueden usar WebAuthn cuando están embebidos
+ */
+const WEBAUTHN_ALLOWED_ORIGINS = [
+  'https://app.owlfenc.com',
+  'https://owlfenc.com',
+  'https://owl-fenc.firebaseapp.com',
+  'https://owl-fenc.web.app'
+];
+
 // Request sanitization middleware
 export const sanitizeRequest = (req: Request, res: Response, next: NextFunction) => {
   // Remove potentially dangerous characters from query params
@@ -46,10 +57,47 @@ export const sanitizeRequest = (req: Request, res: Response, next: NextFunction)
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   
-  // 🔐 WEBAUTHN SUPPORT: Enable WebAuthn API in iframes (Chrome 123+, Safari 18+)
-  // Allows biometric authentication (Face ID, Touch ID, fingerprint) to work in same-origin iframes
-  // Spec-compliant syntax: use parentheses and explicit origins
-  res.setHeader('Permissions-Policy', 'publickey-credentials-get=(self), publickey-credentials-create=(self)');
+  /**
+   * 🔐 WEBAUTHN PERMISSIONS-POLICY CONFIGURATION
+   * 
+   * Para que WebAuthn (Face ID, Touch ID, Windows Hello) funcione en iframes cross-origin,
+   * se requieren DOS condiciones:
+   * 
+   * 1. El servidor del iframe debe enviar este header Permissions-Policy
+   * 2. El iframe padre debe tener el atributo allow="publickey-credentials-get publickey-credentials-create"
+   * 
+   * NOTA: En entornos como Replit preview (cross-origin iframe sin control del padre),
+   * WebAuthn inline NO funcionará. El cliente usa popup fallback automáticamente.
+   * 
+   * En producción (app.owlfenc.com):
+   * - Si es top-level: WebAuthn funciona directamente
+   * - Si está embebido: Requiere configurar el atributo allow en el iframe padre
+   * 
+   * Sintaxis Permissions-Policy:
+   * - (self): Solo el origen actual puede usar WebAuthn
+   * - ("https://domain.com"): Orígenes específicos autorizados
+   * - *: Cualquier origen (NO RECOMENDADO por seguridad)
+   */
+  const currentOrigin = `https://${req.hostname}`;
+  const isProductionOrigin = WEBAUTHN_ALLOWED_ORIGINS.some(origin => 
+    currentOrigin === origin || req.hostname === origin.replace('https://', '')
+  );
+  
+  // En producción, permitir WebAuthn desde el mismo origen
+  // En desarrollo, también permitir self para testing
+  // NO usar * para evitar riesgos de seguridad
+  if (isProductionOrigin) {
+    // Producción: Solo self y dominios de producción específicos
+    res.setHeader('Permissions-Policy', 
+      `publickey-credentials-get=(self "${WEBAUTHN_ALLOWED_ORIGINS.join('" "')}"), ` +
+      `publickey-credentials-create=(self "${WEBAUTHN_ALLOWED_ORIGINS.join('" "')}")`
+    );
+  } else {
+    // Desarrollo/Preview: Solo self (popup se usará automáticamente para cross-origin)
+    res.setHeader('Permissions-Policy', 
+      'publickey-credentials-get=(self), publickey-credentials-create=(self)'
+    );
+  }
   
   next();
 };
