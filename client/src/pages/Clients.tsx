@@ -49,6 +49,9 @@ export default function Clients() {
   const [importType, setImportType] = useState<"csv" | "apple">("csv");
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [appleContactsFile, setAppleContactsFile] = useState<File | null>(null);
+  
+  // Loading states
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const { toast } = useToast();
 
@@ -171,26 +174,40 @@ export default function Clients() {
   const handleDeleteClient = async () => {
     if (!currentClient) return;
 
+    setIsDeleting(true);
+    const clientName = currentClient.name;
+    const clientId = currentClient.id;
+    
+    // Cerrar diálogo inmediatamente para dar feedback visual
+    setShowDeleteDialog(false);
+    setCurrentClient(null);
+
     try {
-      console.log("🔄 [CLIENTES] Eliminando cliente:", currentClient.id);
-      await deleteClient(currentClient.id);
-      console.log("✅ [CLIENTES] Cliente eliminado exitosamente");
+      console.log("🔄 [CLIENTES] Eliminando cliente:", clientId);
       
-      setClients(prev => prev.filter(client => client.id !== currentClient.id));
-      setShowDeleteDialog(false);
-      setCurrentClient(null);
+      // Actualización optimista - eliminar del estado local primero
+      setClients(prev => prev.filter(client => client.id !== clientId));
+      
+      // Luego eliminar del servidor
+      await deleteClient(clientId);
+      console.log("✅ [CLIENTES] Cliente eliminado exitosamente");
       
       toast({
         title: "Cliente eliminado",
-        description: `${currentClient.name} ha sido eliminado.`
+        description: `${clientName} ha sido eliminado.`
       });
     } catch (error) {
       console.error("Error deleting client:", error);
+      // Revertir cambio optimista si falla - recargar clientes
+      const data = await getClients();
+      setClients(data);
       toast({
         variant: "destructive",
         title: "Error",
         description: "No se pudo eliminar el cliente"
       });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
