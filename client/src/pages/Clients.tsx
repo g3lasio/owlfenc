@@ -10,6 +10,7 @@ import {
   createClient,
   updateClient,
   deleteClient,
+  deleteClientsBatch,
   importClientsFromCsvWithAI,
   importClientsFromVcf,
   type Client
@@ -22,7 +23,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { UserPlus, Upload, Search, Filter, Grid, List, Plus } from "lucide-react";
+import { UserPlus, Upload, Search, Filter, Grid, List, Plus, Trash2 } from "lucide-react";
 import { ClientForm, type ClientFormData } from "../components/clients/ClientForm";
 import { ClientCard } from "../components/clients/ClientCard";
 import { ClientDetailModal } from "../components/clients/ClientDetailModal";
@@ -52,6 +53,9 @@ export default function Clients() {
   
   // Loading states
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
+  const [deleteProgress, setDeleteProgress] = useState({ current: 0, total: 0 });
 
   const { toast } = useToast();
 
@@ -208,6 +212,46 @@ export default function Clients() {
       });
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  // Manejar eliminación masiva de todos los clientes
+  const handleDeleteAllClients = async () => {
+    if (clients.length === 0) return;
+    
+    setIsDeletingAll(true);
+    setDeleteProgress({ current: 0, total: clients.length });
+    
+    try {
+      const clientIds = clients.map(c => c.id);
+      console.log(`🗑️ [CLIENTES] Iniciando eliminación masiva de ${clientIds.length} clientes...`);
+      
+      const result = await deleteClientsBatch(clientIds);
+      
+      console.log(`✅ [CLIENTES] Eliminación masiva completada: ${result.deleted}/${result.total}`);
+      
+      // Limpiar estado local
+      setClients([]);
+      setFilteredClients([]);
+      setShowDeleteAllDialog(false);
+      
+      toast({
+        title: "Contactos eliminados",
+        description: `Se eliminaron ${result.deleted} contactos exitosamente.`
+      });
+    } catch (error) {
+      console.error("Error eliminando contactos:", error);
+      // Recargar clientes en caso de error
+      const data = await getClients();
+      setClients(data);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudieron eliminar todos los contactos"
+      });
+    } finally {
+      setIsDeletingAll(false);
+      setDeleteProgress({ current: 0, total: 0 });
     }
   };
 
@@ -369,6 +413,17 @@ export default function Clients() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Clientes</h1>
         <div className="flex items-center gap-2">
+          {clients.length > 0 && (
+            <Button 
+              onClick={() => setShowDeleteAllDialog(true)} 
+              variant="destructive"
+              size="sm"
+              disabled={isDeletingAll}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              {isDeletingAll ? `Eliminando...` : `Eliminar Todos (${clients.length})`}
+            </Button>
+          )}
           <ExportClientsButton clients={filteredClients} />
           <Button onClick={() => setShowImportDialog(true)} variant="outline">
             <Upload className="mr-2 h-4 w-4" />
@@ -529,6 +584,31 @@ export default function Clients() {
             </Button>
             <Button variant="destructive" onClick={handleDeleteClient}>
               Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete ALL Confirmation Dialog */}
+      <Dialog open={showDeleteAllDialog} onOpenChange={setShowDeleteAllDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>⚠️ Eliminar TODOS los Contactos</DialogTitle>
+            <DialogDescription className="space-y-2">
+              <p>¿Estás seguro de que quieres eliminar <strong>{clients.length} contactos</strong>?</p>
+              <p className="text-red-500 font-medium">Esta acción NO se puede deshacer.</p>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteAllDialog(false)} disabled={isDeletingAll}>
+              Cancelar
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDeleteAllClients}
+              disabled={isDeletingAll}
+            >
+              {isDeletingAll ? `Eliminando ${clients.length} contactos...` : `Sí, Eliminar ${clients.length} Contactos`}
             </Button>
           </DialogFooter>
         </DialogContent>

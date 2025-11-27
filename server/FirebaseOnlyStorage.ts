@@ -279,6 +279,45 @@ export class FirebaseOnlyStorage implements IFirebaseOnlyStorage {
   }
 
   /**
+   * 🗑️ ELIMINAR MÚLTIPLES CLIENTES (BATCH DELETE)
+   */
+  async deleteClientsBatch(firebaseUid: string, clientIds: string[]): Promise<{ deleted: number; errors: string[] }> {
+    const BATCH_SIZE = 500; // Firebase limit
+    let totalDeleted = 0;
+    const errors: string[] = [];
+    
+    console.log(`🗑️ [FIREBASE-STORAGE] Eliminando ${clientIds.length} clientes en batch para UID: ${firebaseUid}`);
+    
+    // Process in chunks of 500 (Firebase batch limit)
+    for (let i = 0; i < clientIds.length; i += BATCH_SIZE) {
+      const chunk = clientIds.slice(i, i + BATCH_SIZE);
+      const batch = this.db.batch();
+      
+      for (const clientId of chunk) {
+        const clientRef = this.db
+          .collection(FIREBASE_COLLECTIONS.USERS)
+          .doc(firebaseUid)
+          .collection(FIREBASE_COLLECTIONS.CLIENTS)
+          .doc(clientId);
+        batch.delete(clientRef);
+      }
+      
+      try {
+        await batch.commit();
+        totalDeleted += chunk.length;
+        console.log(`✅ [FIREBASE-STORAGE] Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${chunk.length} clientes eliminados`);
+      } catch (error) {
+        const errorMsg = `Error en batch ${Math.floor(i / BATCH_SIZE) + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+        console.error(`❌ [FIREBASE-STORAGE] ${errorMsg}`);
+        errors.push(errorMsg);
+      }
+    }
+    
+    console.log(`✅ [FIREBASE-STORAGE] Total eliminados: ${totalDeleted}/${clientIds.length}`);
+    return { deleted: totalDeleted, errors };
+  }
+
+  /**
    * 👤 OBTENER DATOS DE USUARIO
    */
   async getUser(firebaseUid: string): Promise<FirebaseUser | null> {

@@ -264,6 +264,20 @@ class FirebaseOnlyManager implements IFirebaseOnlyManager {
     }
   }
 
+  async deleteClientsBatch(firebaseUid: string, clientIds: string[]): Promise<{ deleted: number; errors: string[] }> {
+    this.ensureInitialized();
+    console.log(`🗑️ [FIREBASE-MANAGER] Eliminando ${clientIds.length} clientes en batch para: ${firebaseUid}`);
+    
+    try {
+      const result = await this.storage.deleteClientsBatch(firebaseUid, clientIds);
+      console.log(`✅ [FIREBASE-MANAGER] Batch delete completado: ${result.deleted} eliminados`);
+      return result;
+    } catch (error) {
+      console.error(`❌ [FIREBASE-MANAGER] Error en batch delete:`, error);
+      throw error;
+    }
+  }
+
   // ================================
   // USER OPERATIONS
   // ================================

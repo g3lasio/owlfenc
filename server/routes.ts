@@ -6433,6 +6433,40 @@ Output must be between 200-900 characters in English.`;
     }
   });
 
+  // 🗑️ FIREBASE-ONLY: Eliminar múltiples clientes (BATCH DELETE - ULTRA RÁPIDO)
+  app.post("/api/clients/batch-delete", requireAuth, async (req: Request, res: Response) => {
+    try {
+      if (!req.firebaseUser?.uid) {
+        return res.status(401).json({ message: "Usuario no autenticado" });
+      }
+      
+      const { clientIds } = req.body;
+      
+      if (!Array.isArray(clientIds) || clientIds.length === 0) {
+        return res.status(400).json({ message: "Se requiere un array de IDs de clientes" });
+      }
+      
+      console.log(`🗑️ [FIREBASE-CLIENTS] Batch deleting ${clientIds.length} clients for Firebase UID: ${req.firebaseUser.uid}`);
+      
+      const { getFirebaseManager } = await import('./storage-firebase-only');
+      const firebaseManager = getFirebaseManager();
+      
+      const result = await firebaseManager.deleteClientsBatch(req.firebaseUser.uid, clientIds);
+      
+      console.log(`✅ [FIREBASE-CLIENTS] Batch delete completed: ${result.deleted} clients deleted`);
+      res.json({ 
+        success: true, 
+        deleted: result.deleted,
+        total: clientIds.length,
+        errors: result.errors,
+        message: `${result.deleted} clientes eliminados exitosamente`
+      });
+    } catch (error) {
+      console.error("❌ [FIREBASE-CLIENTS] Error in batch delete:", error);
+      res.status(500).json({ message: "Error al eliminar los clientes" });
+    }
+  });
+
   // 🔧 HERRAMIENTA DE DIAGNÓSTICO Y REPARACIÓN DE CONTACTOS
   // Analiza todos los clientes y detecta datos corruptos/mezclados
   app.get("/api/clients/repair/diagnose", requireAuth, async (req: Request, res: Response) => {

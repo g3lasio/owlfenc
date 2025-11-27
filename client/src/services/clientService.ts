@@ -196,6 +196,25 @@ export async function deleteClient(id: string): Promise<boolean> {
 }
 
 /**
+ * Eliminar múltiples clientes (BATCH DELETE - Ultra rápido)
+ */
+export async function deleteClientsBatch(clientIds: string[]): Promise<{ deleted: number; total: number; errors: string[] }> {
+  try {
+    console.log(`🗑️ [CLIENT-SERVICE] Eliminando ${clientIds.length} clientes en batch...`);
+    const result = await fetchWithAuth('/api/clients/batch-delete', {
+      method: 'POST',
+      body: JSON.stringify({ clientIds }),
+    });
+    
+    console.log(`✅ [CLIENT-SERVICE] Batch delete completado: ${result.deleted}/${result.total}`);
+    return result;
+  } catch (error) {
+    console.error(`❌ [CLIENT-SERVICE] Error en batch delete:`, error);
+    throw error;
+  }
+}
+
+/**
  * Importar múltiples clientes
  */
 export async function importClients(clients: ClientInput[]): Promise<{ success: boolean; imported: number; clientIds: string[] }> {
