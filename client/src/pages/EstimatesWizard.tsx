@@ -27,7 +27,6 @@ import { useToast } from "@/hooks/use-toast";
 import { MervinWorkingEffect } from "@/components/ui/mervin-working-effect";
 import { DeepSearchEffect } from "@/components/ui/deepsearch-effect";
 import { EmailVerification } from "@/components/auth/EmailVerification";
-import { DeepSearchChat } from "@/components/DeepSearchChat";
 // Usar el logo correcto de OWL FENCE
 const mervinLogoUrl =
   "https://ik.imagekit.io/lp5czyx2a/ChatGPT%20Image%20May%2010,%202025,%2005_35_38%20PM.png?updatedAt=1748157114019";
@@ -5844,95 +5843,6 @@ This link provides a professional view of your estimate that you can access anyt
                       </div>
                     </div>
                   ))}
-
-                  {/* CHAT IA REFINEMENT BUTTON - HOLOGRAPHIC COMPACT */}
-                  {estimate.items.length > 0 && (
-                    <div className="relative bg-gradient-to-r from-gray-900/80 via-cyan-900/20 to-gray-900/80 rounded-lg p-2 border border-cyan-400/30 mb-4 backdrop-blur-sm shadow-lg shadow-cyan-500/10 hover:shadow-cyan-500/20 transition-all duration-300">
-                      {/* Holographic border effects */}
-                      <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-transparent via-cyan-400/10 to-transparent animate-pulse"></div>
-                      <div className="absolute top-0 left-4 w-8 h-px bg-cyan-400/50"></div>
-                      <div className="absolute bottom-0 right-4 w-8 h-px bg-cyan-400/50"></div>
-                      
-                      <div className="relative flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="p-1 bg-cyan-400/10 rounded border border-cyan-400/30">
-                            <Brain className="h-3 w-3 text-cyan-400" />
-                          </div>
-                          <div>
-                            <h4 className="text-xs font-medium text-cyan-300 leading-tight">Refinar con IA</h4>
-                            <p className="text-xs text-cyan-400/70 leading-tight">
-                              Ajusta mediante chat inteligente
-                            </p>
-                          </div>
-                        </div>
-                        <DeepSearchChat
-                          initialResult={{
-                            projectType: "Construcción",
-                            projectScope: estimate.projectDetails || "Proyecto de construcción",
-                            materials: estimate.items.map(item => ({
-                              id: item.id,
-                              name: item.name,
-                              description: item.description,
-                              category: item.category || "General",
-                              quantity: item.quantity,
-                              unit: item.unit,
-                              unitPrice: item.price,
-                              totalPrice: item.total,
-                              supplier: "",
-                              specifications: ""
-                            })),
-                            laborCosts: [],
-                            additionalCosts: [],
-                            totalMaterialsCost: estimate.subtotal,
-                            totalLaborCost: 0,
-                            totalAdditionalCost: 0,
-                            grandTotal: estimate.total,
-                            confidence: 0.95,
-                            recommendations: [],
-                            warnings: [],
-                            location: estimate.client?.city + ", " + estimate.client?.state || "General"
-                          }}
-                          projectDescription={estimate.projectDetails || "Proyecto de construcción"}
-                          location={estimate.client?.city + ", " + estimate.client?.state || "General"}
-                          onResultsUpdated={(updatedResult) => {
-                            console.log("🤖 [AI-REFINEMENT] Aplicando cambios del chat IA");
-                            
-                            // Convertir los materiales actualizados de DeepSearch al formato del estimado con validación
-                            const updatedItems = updatedResult.materials.map(material => ({
-                              id: material.id,
-                              materialId: material.id,
-                              name: material.name,
-                              description: material.description,
-                              price: material.unitPrice || 0,
-                              quantity: material.quantity || 0,
-                              unit: material.unit,
-                              total: material.totalPrice || 0,
-                              category: material.category
-                            }));
-
-                            // Actualizar el estimado con los materiales refinados
-                            setEstimate(prev => ({
-                              ...prev,
-                              items: updatedItems
-                            }));
-
-                            toast({
-                              title: "Lista refinada con IA",
-                              description: `${updatedItems.length} materiales actualizados exitosamente`,
-                              duration: 4000
-                            });
-                          }}
-                          onApplyChanges={() => {
-                            toast({
-                              title: "✅ Cambios aplicados",
-                              description: "Los refinamientos del chat han sido aplicados al estimado",
-                              duration: 3000
-                            });
-                          }}
-                        />
-                      </div>
-                    </div>
-                  )}
 
                   <div className="border-t pt-4 space-y-3">
                     {/* Sleek Dark Tax and Discount Controls */}
