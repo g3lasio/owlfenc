@@ -209,7 +209,7 @@ export default function NuevoClientes() {
         title: "Cliente añadido",
         description: "El cliente ha sido añadido correctamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ["firebaseClients"] });
+      queryClient.invalidateQueries({ queryKey: ["firebaseClients", userId] });
       setShowAddClientDialog(false);
       clientForm.reset();
     },
@@ -243,7 +243,7 @@ export default function NuevoClientes() {
         title: "Cliente actualizado",
         description: "El cliente ha sido actualizado correctamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ["firebaseClients"] });
+      queryClient.invalidateQueries({ queryKey: ["firebaseClients", userId] });
       setShowEditClientDialog(false);
       setCurrentClient(null);
     },
@@ -266,7 +266,7 @@ export default function NuevoClientes() {
         title: "Cliente eliminado",
         description: "El cliente ha sido eliminado correctamente.",
       });
-      queryClient.invalidateQueries({ queryKey: ["firebaseClients"] });
+      queryClient.invalidateQueries({ queryKey: ["firebaseClients", userId] });
       setShowDeleteDialog(false);
       setCurrentClient(null);
     },
@@ -433,8 +433,8 @@ export default function NuevoClientes() {
       setRepairResults(response);
       
       if (!dryRun && response.repairsNeeded > 0) {
-        // Refrescar la lista de clientes después de reparar
-        queryClient.invalidateQueries({ queryKey: ["firebaseClients"] });
+        // Refrescar la lista de clientes después de reparar - usar el queryKey completo con userId
+        queryClient.invalidateQueries({ queryKey: ["firebaseClients", userId] });
         
         toast({
           title: "Reparación completada",
@@ -532,7 +532,7 @@ export default function NuevoClientes() {
       console.log("✅ [CLIENTES] Importación CSV inteligente exitosa:", importedClients.length);
       
       // Actualizar lista de clientes
-      queryClient.invalidateQueries({ queryKey: ["firebaseClients"] });
+      queryClient.invalidateQueries({ queryKey: ["firebaseClients", userId] });
 
       toast({
         title: "✨ Importación inteligente completada",
@@ -778,7 +778,7 @@ export default function NuevoClientes() {
       }
 
       // Actualizar lista de clientes
-      queryClient.invalidateQueries({ queryKey: ["firebaseClients"] });
+      queryClient.invalidateQueries({ queryKey: ["firebaseClients", userId] });
 
       toast({
         title: "Eliminación exitosa",
