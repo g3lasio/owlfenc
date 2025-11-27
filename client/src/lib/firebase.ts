@@ -154,47 +154,25 @@ console.log("🔧 [OAUTH-DEBUG] Dominios autorizados:", authorizedDomains);
  * 🔐 FIREBASE AUTH URL CONFIGURATION
  * Generates correct callback URLs for Firebase authentication actions
  * 
- * IMPORTANT: Firebase email verification links MUST use a domain that is
+ * CRITICAL FIX: Firebase email verification links MUST use a domain that is
  * registered in Firebase Console > Authentication > Settings > Authorized domains
  * 
- * For production: Uses app.owlfenc.com (must be in Firebase authorized domains)
- * For development: Uses current origin (domain must be added to Firebase authorized domains)
+ * SOLUTION: ALWAYS use the production domain (app.owlfenc.com) for Firebase auth links
+ * because:
+ * 1. The production domain IS in Firebase authorized domains
+ * 2. Email verification links work regardless of where the app runs - user clicks from email
+ * 3. Dynamic Replit dev domains are NOT in Firebase authorized domains and cause 403 errors
  */
 export const getFirebaseAuthCallbackUrl = (path: string = '/email-verification-callback'): string => {
-  const hostname = window.location.hostname;
-  
-  // Production domains that are verified in Firebase
+  // ALWAYS use production domain for Firebase auth links
+  // This ensures links work from any environment (dev, staging, production)
+  // The user opens these links from their email, not from the running app
   const productionDomain = 'app.owlfenc.com';
-  const firebaseHostingDomain = 'owl-fenc.web.app';
-  
-  // Check if we're on a production domain
-  const isProduction = hostname === productionDomain || 
-                       hostname === 'owlfenc.com' ||
-                       hostname.endsWith('.owlfenc.com');
-  
-  // Check if we're on Firebase hosting
-  const isFirebaseHosting = hostname === firebaseHostingDomain ||
-                            hostname === 'owl-fenc.firebaseapp.com';
-  
-  let baseUrl: string;
-  
-  if (isProduction) {
-    // Use production domain
-    baseUrl = `https://${productionDomain}`;
-    console.log('🔐 [AUTH-URL] Using production domain:', baseUrl);
-  } else if (isFirebaseHosting) {
-    // Use Firebase hosting domain
-    baseUrl = `https://${firebaseHostingDomain}`;
-    console.log('🔐 [AUTH-URL] Using Firebase hosting domain:', baseUrl);
-  } else {
-    // Development environment - use current origin
-    // NOTE: This domain MUST be added to Firebase Console > Authentication > Authorized domains
-    baseUrl = window.location.origin;
-    console.log('🔐 [AUTH-URL] Using development domain:', baseUrl);
-    console.warn('⚠️ [AUTH-URL] Ensure this domain is in Firebase authorized domains:', hostname);
-  }
+  const baseUrl = `https://${productionDomain}`;
   
   const fullUrl = `${baseUrl}${path}`;
+  
+  console.log('🔐 [AUTH-URL] Using authorized production domain for Firebase auth:', baseUrl);
   console.log('🔐 [AUTH-URL] Generated callback URL:', fullUrl);
   
   return fullUrl;
