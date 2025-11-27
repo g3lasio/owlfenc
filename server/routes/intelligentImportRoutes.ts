@@ -1,8 +1,10 @@
 import { Router } from 'express';
 import { intelligentImportService } from '../services/intelligentImportService';
+import { intelligentImportPipeline, type ImportJobResult } from '../services/intelligentImportPipeline';
 import { verifyFirebaseAuth } from '../middleware/firebase-auth';
 import { DatabaseStorage } from '../DatabaseStorage';
 import { userMappingService } from '../services/userMappingService';
+import { getFirebaseManager } from '../storage-firebase-only';
 
 const router = Router();
 
@@ -176,6 +178,202 @@ admin@business.com,"Business Admin Account","Cuenta empresarial","Multiple conta
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Error desconocido'
+    });
+  }
+});
+
+/**
+ * POST /api/intelligent-import/v2/process
+ * Pipeline de importación inteligente multi-fase con limpieza automática
+ * Maneja archivos corruptos, datos concatenados, y campos mezclados
+ */
+router.post('/v2/process', verifyFirebaseAuth, async (req, res) => {
+  try {
+    console.log('🚀 [INTELLIGENT-IMPORT-V2] Iniciando pipeline multi-fase');
+    
+    if (!req.firebaseUser) {
+      return res.status(401).json({
+        success: false,
+        error: 'Usuario no autenticado'
+      });
+    }
+
+    const { csvContent, fileType = 'csv' } = req.body;
+    
+    if (!csvContent) {
+      return res.status(400).json({
+        success: false,
+        error: 'Se requiere el contenido del archivo'
+      });
+    }
+
+    console.log(`🔐 [INTELLIGENT-IMPORT-V2] Usuario: ${req.firebaseUser.uid}`);
+    console.log(`📊 [INTELLIGENT-IMPORT-V2] Tipo: ${fileType}, Tamaño: ${csvContent.length} chars`);
+
+    const firebaseManager = getFirebaseManager();
+    const existingClients = await firebaseManager.getClients(req.firebaseUser.uid);
+    const existingContacts = existingClients.map((c: any) => ({
+      email: c.email,
+      phone: c.phone,
+      name: c.name
+    }));
+
+    const result = await intelligentImportPipeline.processFile(
+      csvContent,
+      fileType as 'csv' | 'excel',
+      existingContacts
+    );
+
+    console.log(`✅ [INTELLIGENT-IMPORT-V2] Resultado:`, {
+      success: result.success,
+      contactsImported: result.stats.validContacts,
+      duplicatesFound: result.stats.duplicatesFound,
+      autoCorrections: result.stats.autoCorrections,
+      issues: result.stats.issuesFound
+    });
+
+    const contactsWithIds = result.normalizedContacts.map(contact => ({
+      ...contact,
+      id: `client_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      userId: req.firebaseUser!.uid,
+    }));
+
+    res.json({
+      success: result.success,
+      jobId: result.jobId,
+      phase: result.phase,
+      contacts: contactsWithIds,
+      structuralAnalysis: result.structuralAnalysis,
+      columnAnalysis: result.columnAnalysis,
+      issues: result.issues,
+      duplicates: result.duplicates,
+      stats: result.stats
+    });
+
+  } catch (error) {
+    console.error('❌ [INTELLIGENT-IMPORT-V2] Error:', error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Error interno del servidor'
+    });
+  }
+});
+
+/**
+ * POST /api/intelligent-import/v2/confirm
+ * Confirma la importación y guarda los contactos en Firebase
+ */
+router.post('/v2/confirm', verifyFirebaseAuth, async (req, res) => {
+  try {
+    console.log('💾 [INTELLIGENT-IMPORT-V2-CONFIRM] Confirmando importación');
+    
+    if (!req.firebaseUser) {
+      return res.status(401).json({
+        success: false,
+        error: 'Usuario no autenticado'
+      });
+    }
+
+    const { contacts, includeDuplicates = false, duplicatesToInclude = [] } = req.body;
+    
+    if (!contacts || !Array.isArray(contacts) || contacts.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'No hay contactos para importar'
+      });
+    }
+
+    let contactsToSave = [...contacts];
+    
+    if (includeDuplicates && duplicatesToInclude.length > 0) {
+      contactsToSave = [...contactsToSave, ...duplicatesToInclude];
+    }
+
+    console.log(`📤 [INTELLIGENT-IMPORT-V2-CONFIRM] Guardando ${contactsToSave.length} contactos`);
+
+    const firebaseManager = getFirebaseManager();
+    let savedCount = 0;
+    const errors: string[] = [];
+
+    for (const contact of contactsToSave) {
+      try {
+        const clientData = {
+          id: contact.id || `client_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+          name: contact.name,
+          email: contact.email || '',
+          phone: contact.phone || '',
+          mobilePhone: contact.mobilePhone || '',
+          address: contact.address || '',
+          city: contact.city || '',
+          state: contact.state || '',
+          zipCode: contact.zipCode || '',
+          notes: contact.notes || '',
+          source: contact.source || 'Pipeline Import V2',
+          classification: contact.classification || 'cliente',
+          createdAt: new Date().toISOString()
+        };
+
+        await firebaseManager.createClient(req.firebaseUser!.uid, clientData);
+        savedCount++;
+      } catch (err) {
+        console.error(`❌ Error saving contact ${contact.name}:`, err);
+        errors.push(`Failed to save: ${contact.name}`);
+      }
+    }
+
+    console.log(`✅ [INTELLIGENT-IMPORT-V2-CONFIRM] ${savedCount}/${contactsToSave.length} contactos guardados`);
+
+    res.json({
+      success: true,
+      savedCount,
+      totalAttempted: contactsToSave.length,
+      errors: errors.length > 0 ? errors : undefined
+    });
+
+  } catch (error) {
+    console.error('❌ [INTELLIGENT-IMPORT-V2-CONFIRM] Error:', error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Error interno del servidor'
+    });
+  }
+});
+
+/**
+ * POST /api/intelligent-import/v2/analyze-row
+ * Analiza una fila corrupta individualmente con IA
+ */
+router.post('/v2/analyze-row', verifyFirebaseAuth, async (req, res) => {
+  try {
+    const { row, headers } = req.body;
+    
+    if (!row || !headers) {
+      return res.status(400).json({
+        success: false,
+        error: 'Se requiere la fila y los headers'
+      });
+    }
+
+    const contact = await intelligentImportPipeline.processCorruptedRow(row, headers);
+    
+    if (contact) {
+      res.json({
+        success: true,
+        contact,
+        method: 'AI-assisted'
+      });
+    } else {
+      res.json({
+        success: false,
+        error: 'No se pudo procesar la fila'
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ [INTELLIGENT-IMPORT-V2-ROW] Error:', error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Error interno'
     });
   }
 });

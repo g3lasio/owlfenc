@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
+import * as XLSX from 'xlsx';
 import { NormalizationToolkit, AutoCleanService } from './autoCleanService';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -156,7 +157,79 @@ export class IntelligentImportPipeline {
       return this.parseCSV(content);
     }
     
-    throw new Error('Excel parsing requires server-side xlsx library');
+    return this.parseExcel(content);
+  }
+
+  private parseExcel(content: string): string[][] {
+    console.log('📊 [PHASE-0] Parsing Excel file...');
+    
+    try {
+      const buffer = Buffer.from(content, 'base64');
+      const workbook = XLSX.read(buffer, { type: 'buffer' });
+      
+      if (workbook.SheetNames.length === 0) {
+        throw new Error('Excel file has no sheets');
+      }
+      
+      let bestSheet: XLSX.WorkSheet | null = null;
+      let bestSheetName = '';
+      let maxDataRows = 0;
+      
+      for (const sheetName of workbook.SheetNames) {
+        const worksheet = workbook.Sheets[sheetName];
+        const testData = XLSX.utils.sheet_to_json<unknown[]>(worksheet, { 
+          header: 1, 
+          defval: '', 
+          blankrows: false 
+        });
+        
+        const nonEmptyRows = testData.filter((row: unknown[]) => 
+          row.some(cell => cell !== null && cell !== undefined && String(cell).trim() !== '')
+        );
+        
+        if (nonEmptyRows.length > maxDataRows) {
+          maxDataRows = nonEmptyRows.length;
+          bestSheet = worksheet;
+          bestSheetName = sheetName;
+        }
+      }
+      
+      if (!bestSheet || maxDataRows === 0) {
+        throw new Error('No sheets with data found in Excel file');
+      }
+      
+      console.log(`📊 [PHASE-0] Using sheet "${bestSheetName}" with ${maxDataRows} data rows`);
+      
+      const jsonData = XLSX.utils.sheet_to_json<unknown[]>(bestSheet, { 
+        header: 1,
+        defval: '',
+        blankrows: false
+      });
+      
+      const rows = jsonData
+        .map(row => 
+          (row as unknown[]).map(cell => 
+            cell === null || cell === undefined ? '' : String(cell).trim()
+          )
+        )
+        .filter(row => row.some(cell => cell !== ''));
+      
+      if (rows.length === 0) {
+        throw new Error('Excel file contains no data rows');
+      }
+      
+      const headerRow = rows[0];
+      const hasValidHeader = headerRow.some(cell => cell.length > 0 && cell.length < 100);
+      if (!hasValidHeader) {
+        console.warn('⚠️ [PHASE-0] First row may not contain valid headers');
+      }
+      
+      console.log(`📊 [PHASE-0] Parsed ${rows.length} rows from Excel (${headerRow.length} columns)`);
+      return rows;
+    } catch (error) {
+      console.error('❌ [PHASE-0] Excel parsing error:', error);
+      throw new Error(`Failed to parse Excel file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   private parseCSV(content: string): string[][] {
