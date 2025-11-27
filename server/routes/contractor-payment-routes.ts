@@ -55,6 +55,20 @@ const quickPaymentSchema = z.object({
   type: z.enum(["deposit", "final"]),
 });
 
+// Schema for manual payment registration (cash, check, zelle, venmo)
+const manualPaymentSchema = z.object({
+  projectId: z.union([z.number(), z.string()]).optional().nullable(),
+  amount: z.number().min(1, "Amount must be at least 1 cent"),
+  type: z.enum(["deposit", "final", "milestone", "additional"]).default("additional"),
+  description: z.string().optional().default("Manual Payment"),
+  clientEmail: z.string().email().optional().nullable().or(z.literal("")),
+  clientName: z.string().optional().nullable(),
+  manualMethod: z.enum(["cash", "check", "zelle", "venmo", "other"]),
+  referenceNumber: z.string().optional().nullable(),
+  paymentDate: z.string().optional().nullable(),
+  notes: z.string().optional().nullable(),
+});
+
 /**
  * Create automatic payment structure for a project (50/50 split)
  */
@@ -200,6 +214,79 @@ router.post(
       console.error("Error creating payment:", error);
       res.status(500).json({
         message: "Error creating payment",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  },
+);
+
+/**
+ * Register a manual payment (cash, check, zelle, venmo)
+ * This endpoint does NOT create Stripe session - just records the payment as completed
+ */
+router.post(
+  "/payments/manual",
+  isAuthenticated,
+  requireSubscriptionLevel(PermissionLevel.BASIC),
+  async (req: Request, res: Response) => {
+    try {
+      if (!req.firebaseUser) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+      
+      // Convert Firebase UID to database user ID
+      const { userMappingService } = await import('../services/userMappingService');
+      const userId = await userMappingService.getOrCreateUserIdForFirebaseUid(req.firebaseUser.uid);
+      
+      // Validate input using Zod schema
+      const validatedData = manualPaymentSchema.parse(req.body);
+      
+      // Convert projectId to number if string
+      let projectIdNum: number | null = null;
+      if (validatedData.projectId !== null && validatedData.projectId !== undefined) {
+        projectIdNum = typeof validatedData.projectId === 'string' 
+          ? parseInt(validatedData.projectId, 10) || null 
+          : validatedData.projectId;
+      }
+
+      const result = await contractorPaymentService.registerManualPayment({
+        projectId: projectIdNum,
+        userId,
+        amount: Math.round(validatedData.amount), // Ensure cents
+        type: validatedData.type,
+        description: validatedData.description || `${validatedData.manualMethod.toUpperCase()} Payment`,
+        clientEmail: validatedData.clientEmail || undefined,
+        clientName: validatedData.clientName || undefined,
+        manualMethod: validatedData.manualMethod,
+        referenceNumber: validatedData.referenceNumber || undefined,
+        paymentDate: validatedData.paymentDate ? new Date(validatedData.paymentDate) : new Date(),
+        notes: validatedData.notes || undefined,
+      });
+
+      console.log(`✅ [MANUAL-PAYMENT-ROUTE] Registered ${validatedData.manualMethod} payment:`, result);
+
+      res.json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      console.error("Error registering manual payment:", error);
+      
+      // Return Zod validation errors with clear message
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          success: false,
+          message: "Validation error",
+          errors: error.errors.map(e => ({
+            field: e.path.join('.'),
+            message: e.message
+          })),
+        });
+      }
+      
+      res.status(500).json({
+        success: false,
+        message: "Error registering manual payment",
         error: error instanceof Error ? error.message : "Unknown error",
       });
     }

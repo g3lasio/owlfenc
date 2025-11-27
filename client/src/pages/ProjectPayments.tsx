@@ -361,12 +361,20 @@ const ProjectPayments: React.FC = () => {
   const needsStripeAttention = stripeAccountStatus?.needsOnboarding || false;
   const canUsePaymentWorkflow = canUsePaymentTracking && hasStripeAccount && isStripeAccountActive;
 
-  // Create payment mutation
+  // Create payment mutation - routes to correct endpoint based on payment method
   const createPaymentMutation = useMutation({
     mutationFn: async (paymentData: any) => {
+      // Determine the correct endpoint based on payment method
+      const isManualPayment = paymentData.paymentMethod === "manual";
+      const endpoint = isManualPayment 
+        ? "/api/contractor-payments/payments/manual" 
+        : "/api/contractor-payments/create";
+      
+      console.log(`💳 [PAYMENT-MUTATION] Using endpoint: ${endpoint} for method: ${paymentData.paymentMethod}`);
+      
       const response = await apiRequest(
         "POST",
-        "/api/contractor-payments/create",
+        endpoint,
         paymentData,
       );
       if (!response.ok) {

@@ -548,6 +548,74 @@ export class ContractorPaymentService {
       clientName: project.clientName || undefined,
     });
   }
+
+  /**
+   * Register a manual payment (cash, check, zelle, venmo, etc.)
+   * This does NOT create a Stripe session - just records the payment as completed
+   */
+  async registerManualPayment(request: {
+    projectId: number | null;
+    userId: number;
+    amount: number;
+    type: 'deposit' | 'final' | 'milestone' | 'additional';
+    description: string;
+    clientEmail?: string;
+    clientName?: string;
+    manualMethod: 'cash' | 'check' | 'zelle' | 'venmo' | 'other';
+    referenceNumber?: string;
+    paymentDate?: Date;
+    notes?: string;
+  }): Promise<{ paymentId: number; invoiceNumber: string; status: string }> {
+    console.log(`📝 [MANUAL-PAYMENT] Registering ${request.manualMethod} payment for user ${request.userId}`);
+
+    // For manual payments with a project, verify ownership
+    if (request.projectId && request.projectId > 0) {
+      const project = await storage.getProject(request.projectId);
+      if (!project) {
+        throw new Error('Project not found');
+      }
+      if (project.userId !== request.userId) {
+        console.error(`🚨 [SECURITY-VIOLATION] User ${request.userId} attempted to record payment for project ${request.projectId} owned by user ${project.userId}`);
+        throw new Error('Unauthorized: You do not have permission to record payments for this project');
+      }
+    }
+
+    // Generate invoice number
+    const invoiceNumber = await this.generateInvoiceNumber(request.userId);
+
+    // Create payment record with SUCCEEDED status (already paid)
+    // Note: Store payment method in notes since paymentMethod column doesn't exist
+    const methodNote = `[${request.manualMethod.toUpperCase()}]${request.referenceNumber ? ` Ref: ${request.referenceNumber}` : ''}${request.notes ? ` - ${request.notes}` : ''}`;
+    
+    const paymentData: InsertProjectPayment = {
+      projectId: request.projectId && request.projectId > 0 ? request.projectId : 0,
+      userId: request.userId,
+      amount: request.amount,
+      type: request.type,
+      status: 'succeeded', // Manual payments are already completed
+      description: request.description,
+      clientEmail: request.clientEmail || undefined,
+      clientName: request.clientName || undefined,
+      invoiceNumber,
+      notes: methodNote,
+      paidDate: request.paymentDate || new Date(),
+    };
+
+    const payment = await storage.createProjectPayment(paymentData);
+
+    console.log(`✅ [MANUAL-PAYMENT] Recorded ${request.manualMethod} payment #${payment.id} - $${(request.amount / 100).toFixed(2)}`);
+
+    // Update project payment status if linked to a project
+    if (request.projectId && request.projectId > 0) {
+      await this.updateProjectPaymentStatus(request.projectId);
+    }
+
+    return {
+      paymentId: payment.id,
+      invoiceNumber,
+      status: 'succeeded',
+    };
+  }
 }
 
 export const contractorPaymentService = new ContractorPaymentService();

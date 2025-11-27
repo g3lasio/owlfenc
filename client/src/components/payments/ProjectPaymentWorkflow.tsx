@@ -267,10 +267,13 @@ export default function ProjectPaymentWorkflow({
       return;
     }
 
+    // Map "custom" type to "additional" for backend compatibility
+    const paymentType = paymentConfig.type === "custom" ? "additional" : paymentConfig.type;
+    
     const paymentData = {
       projectId: selectedProject?.id || null,
       amount: parseFloat(paymentConfig.amount) * 100, // Convert to cents
-      type: paymentConfig.type,
+      type: paymentType,
       description: paymentConfig.description,
       clientEmail: paymentConfig.clientEmail,
       clientName: paymentConfig.clientName,
