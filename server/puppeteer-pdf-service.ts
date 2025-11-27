@@ -227,52 +227,58 @@ export class PuppeteerPdfService {
             padding: 40px;
         }
         
-        /* Header Section */
+        /* Header Section - Three Column Layout */
         .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
             padding-bottom: 30px;
             border-bottom: 2px solid var(--primary);
             margin-bottom: 35px;
+            gap: 20px;
         }
         
         .company-section {
-            flex: 1;
+            text-align: left;
+        }
+        
+        .logo-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         
         .company-logo {
-            max-width: 140px;
-            max-height: 70px;
-            margin-bottom: 12px;
+            max-width: 160px;
+            max-height: 100px;
             object-fit: contain;
         }
         
         .company-name {
-            font-size: 26px;
+            font-size: 22px;
             font-weight: 800;
             color: var(--secondary);
             letter-spacing: -0.5px;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
         
         .company-details {
-            font-size: 13px;
+            font-size: 14px;
             color: var(--text-medium);
-            line-height: 1.7;
+            line-height: 1.6;
         }
         
         .company-details div {
-            margin-bottom: 2px;
+            margin-bottom: 3px;
         }
         
         .license-badge {
             display: inline-block;
             background: var(--primary-light);
             color: var(--primary);
-            padding: 4px 10px;
+            padding: 5px 12px;
             border-radius: 4px;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 600;
             margin-top: 8px;
         }
@@ -282,20 +288,20 @@ export class PuppeteerPdfService {
         }
         
         .estimate-title {
-            font-size: 32px;
+            font-size: 24px;
             font-weight: 800;
             color: var(--primary);
-            letter-spacing: -1px;
+            letter-spacing: -0.5px;
             margin-bottom: 10px;
         }
         
         .estimate-meta {
-            font-size: 13px;
+            font-size: 14px;
             color: var(--text-medium);
         }
         
         .estimate-meta div {
-            margin-bottom: 4px;
+            margin-bottom: 5px;
         }
         
         .estimate-meta strong {
@@ -304,9 +310,10 @@ export class PuppeteerPdfService {
         }
         
         .estimate-number {
-            font-size: 15px;
+            font-size: 16px;
             font-weight: 700;
             color: var(--primary);
+            margin-bottom: 6px;
         }
         
         /* Client Section */
@@ -585,13 +592,10 @@ export class PuppeteerPdfService {
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
+        <!-- Header - Three Column Layout: Company | Logo | Estimate Info -->
         <div class="header">
+            <!-- Left: Company Information -->
             <div class="company-section">
-                ${data.company?.logo ? 
-                    `<img src="${data.company.logo}" alt="Company Logo" class="company-logo" />` : 
-                    ''
-                }
                 <div class="company-name">${data.company?.name || "Your Company"}</div>
                 <div class="company-details">
                     ${data.company?.address ? `<div>${data.company.address}</div>` : ''}
@@ -601,6 +605,15 @@ export class PuppeteerPdfService {
                 ${data.company?.license ? `<span class="license-badge">License: ${data.company.license}</span>` : ''}
             </div>
             
+            <!-- Center: Logo -->
+            <div class="logo-section">
+                ${data.company?.logo ? 
+                    `<img src="${data.company.logo}" alt="Company Logo" class="company-logo" />` : 
+                    ''
+                }
+            </div>
+            
+            <!-- Right: Estimate Information -->
             <div class="estimate-badge-section">
                 <div class="estimate-title">PROFESSIONAL ESTIMATE</div>
                 <div class="estimate-meta">
