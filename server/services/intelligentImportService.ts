@@ -20,12 +20,14 @@ interface MappedClient {
   name: string;
   email?: string;
   phone?: string;
+  mobilePhone?: string;
   address?: string;
   city?: string;
   state?: string;
   zipCode?: string;
   notes?: string;
   source?: string;
+  classification?: string;
   tags?: string[];
   [key: string]: any; // Add index signature to allow dynamic field assignment
 }
@@ -104,13 +106,15 @@ ${sampleRows.slice(0, 3).map((row, i) =>
 CAMPOS OBJETIVO DISPONIBLES:
 - name (obligatorio): Nombre completo del cliente
 - email: Dirección de correo electrónico
-- phone: Número de teléfono
+- phone: Número de teléfono fijo/principal
+- mobilePhone: Número de teléfono móvil/celular
 - address: Dirección física completa
 - city: Ciudad
 - state: Estado/Provincia
 - zipCode: Código postal
 - notes: Notas adicionales
 - source: Fuente del contacto
+- classification: Clasificación del contacto (cliente, proveedor, empleado, subcontratista, prospecto)
 - tags: Etiquetas/categorías (array)
 
 INSTRUCCIONES:
@@ -212,13 +216,23 @@ Ejemplo de respuesta:
         mapping.email = { columns: [index], combineMethod: 'use_first' };
       }
       
-      // Detectar teléfono
-      else if (lowerHeader.includes('phone') || lowerHeader.includes('tel') || lowerHeader.includes('móvil') || lowerHeader.includes('celular')) {
-        mapping.phone = { columns: [index], combineMethod: 'use_first' };
+      // Detectar teléfono móvil (primero para priorizar detección específica)
+      else if (lowerHeader.includes('mobile') || lowerHeader.includes('móvil') || lowerHeader.includes('celular') || lowerHeader.includes('cell')) {
+        mapping.mobilePhone = { columns: [index], combineMethod: 'use_first' };
+      }
+      
+      // Detectar teléfono fijo
+      else if (lowerHeader.includes('phone') || lowerHeader.includes('tel') || lowerHeader.includes('fono')) {
+        // Si ya tenemos teléfono mapeado, este va a mobilePhone
+        if (mapping.phone) {
+          mapping.mobilePhone = { columns: [index], combineMethod: 'use_first' };
+        } else {
+          mapping.phone = { columns: [index], combineMethod: 'use_first' };
+        }
       }
       
       // Detectar dirección
-      else if (lowerHeader.includes('address') || lowerHeader.includes('dirección') || lowerHeader.includes('calle')) {
+      else if (lowerHeader.includes('address') || lowerHeader.includes('dirección') || lowerHeader.includes('direccion') || lowerHeader.includes('calle')) {
         mapping.address = { columns: [index], combineMethod: 'use_first' };
       }
       
@@ -236,7 +250,23 @@ Ejemplo de respuesta:
       else if (lowerHeader.includes('zip') || lowerHeader.includes('postal') || lowerHeader.includes('cp')) {
         mapping.zipCode = { columns: [index], combineMethod: 'use_first' };
       }
+      
+      // Detectar notas
+      else if (lowerHeader.includes('note') || lowerHeader.includes('nota') || lowerHeader.includes('comment') || lowerHeader.includes('comentario')) {
+        mapping.notes = { columns: [index], combineMethod: 'use_first' };
+      }
+      
+      // Detectar clasificación
+      else if (lowerHeader.includes('classification') || lowerHeader.includes('clasificacion') || lowerHeader.includes('tipo') || lowerHeader.includes('type')) {
+        mapping.classification = { columns: [index], combineMethod: 'use_first' };
+      }
     });
+
+    // Agregar valores por defecto
+    mapping.source = { value: 'csv_import' };
+    if (!mapping.classification) {
+      mapping.classification = { value: 'cliente' };
+    }
 
     return {
       detectedFormat: 'Basic CSV',
@@ -298,10 +328,23 @@ Ejemplo de respuesta:
         client.name = availableFields ? (client[availableFields as keyof MappedClient] as string) : `Cliente ${Date.now()}`;
       }
       
-      // Limpiar campos vacíos
+      // Aplicar valores por defecto para campos obligatorios si no existen
+      if (!client.source) {
+        client.source = 'Intelligent CSV Import';
+      }
+      if (!client.classification) {
+        client.classification = 'cliente';
+      }
+      if (!client.tags) {
+        client.tags = ['importado'];
+      }
+      
+      // Limpiar campos vacíos (excepto campos con valores por defecto)
       Object.keys(client).forEach(key => {
-        if (typeof client[key] === 'string' && (client[key] as string).trim() === '') {
-          delete client[key];
+        if (key !== 'source' && key !== 'classification' && key !== 'tags') {
+          if (typeof client[key] === 'string' && (client[key] as string).trim() === '') {
+            delete client[key];
+          }
         }
       });
       

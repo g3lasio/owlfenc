@@ -11,16 +11,20 @@ import { z } from 'zod';
 // ================================
 
 export const FirebaseClientSchema = z.object({
-  id: z.number().optional(), // ID numérico para compatibilidad con sistemas legacy
+  id: z.string().optional(), // ID del documento en Firestore
   clientId: z.string(), // ID único tipo "client_1234567890_123"
   name: z.string().min(1, 'El nombre es requerido'),
-  email: z.string().email('Email inválido').optional().or(z.literal('')),
-  phone: z.string().optional().or(z.literal('')),
-  address: z.string().optional().or(z.literal('')),
-  city: z.string().optional().or(z.literal('')),
-  state: z.string().optional().or(z.literal('')),
-  zipCode: z.string().optional().or(z.literal('')),
-  notes: z.string().optional().or(z.literal('')),
+  email: z.string().email('Email inválido').optional().or(z.literal('')).nullable(),
+  phone: z.string().optional().or(z.literal('')).nullable(),
+  mobilePhone: z.string().optional().or(z.literal('')).nullable(), // Teléfono móvil
+  address: z.string().optional().or(z.literal('')).nullable(),
+  city: z.string().optional().or(z.literal('')).nullable(),
+  state: z.string().optional().or(z.literal('')).nullable(),
+  zipCode: z.string().optional().or(z.literal('')).nullable(),
+  notes: z.string().optional().or(z.literal('')).nullable(),
+  source: z.string().optional().or(z.literal('')).nullable(), // Origen del cliente (Referido, Web, etc.)
+  classification: z.string().optional().or(z.literal('')).nullable(), // Clasificación (cliente, proveedor, etc.)
+  tags: z.array(z.string()).optional().nullable(), // Etiquetas del cliente
   createdAt: z.date(),
   updatedAt: z.date(),
 });

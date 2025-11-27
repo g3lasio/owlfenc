@@ -6140,11 +6140,15 @@ Output must be between 200-900 characters in English.`;
         name: req.body.name || '',
         email: req.body.email || '',
         phone: req.body.phone || '',
+        mobilePhone: req.body.mobilePhone || '',
         address: req.body.address || '',
         city: req.body.city || '',
         state: req.body.state || '',
         zipCode: req.body.zipCode || '',
-        notes: req.body.notes || ''
+        notes: req.body.notes || '',
+        source: req.body.source || '',
+        classification: req.body.classification || 'cliente',
+        tags: Array.isArray(req.body.tags) ? req.body.tags : []
       };
 
       const newClient = await firebaseManager.createClient(req.firebaseUser.uid, clientData);
@@ -6170,22 +6174,68 @@ Output must be between 200-900 characters in English.`;
       
       const { csvData } = req.body;
 
+      // Parser robusto de CSV que maneja comillas y comas dentro de campos
+      function parseCSVLine(line: string): string[] {
+        const result: string[] = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            result.push(current.trim());
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        
+        result.push(current.trim());
+        return result.map(field => field.replace(/^"(.*)"$/, '$1')); // Remover comillas exteriores
+      }
+
       // Procesar el CSV y crear los clientes
-      const rows = csvData.split("\n").slice(1); // Ignorar encabezados
+      const lines = csvData.split("\n");
+      const headers = parseCSVLine(lines[0]).map((h: string) => h.toLowerCase().trim());
+      const dataRows = lines.slice(1).filter((line: string) => line.trim().length > 0);
       const clients = [];
 
-      for (const row of rows) {
-        const [name, email, phone, address] = row.split(",");
+      // Detectar índices de columnas basándose en los headers
+      const findColumnIndex = (keywords: string[]) => {
+        return headers.findIndex((h: string) => keywords.some(k => h.includes(k)));
+      };
+
+      const nameIdx = findColumnIndex(['name', 'nombre', 'cliente']);
+      const emailIdx = findColumnIndex(['email', 'correo', 'mail']);
+      const phoneIdx = findColumnIndex(['phone', 'tel', 'fono']);
+      const mobileIdx = findColumnIndex(['mobile', 'movil', 'celular', 'cell']);
+      const addressIdx = findColumnIndex(['address', 'direccion', 'dir', 'calle']);
+      const cityIdx = findColumnIndex(['city', 'ciudad']);
+      const stateIdx = findColumnIndex(['state', 'estado', 'provincia']);
+      const zipIdx = findColumnIndex(['zip', 'postal', 'cp']);
+      const notesIdx = findColumnIndex(['note', 'nota', 'comment', 'comentario']);
+
+      for (const row of dataRows) {
+        const fields = parseCSVLine(row);
+        const name = nameIdx >= 0 ? fields[nameIdx]?.trim() : fields[0]?.trim();
+        
         if (name) {
           const clientData = {
-            name: name.trim(),
-            email: email?.trim() || '',
-            phone: phone?.trim() || '',
-            address: address?.trim() || '',
-            city: '',
-            state: '',
-            zipCode: '',
-            notes: ''
+            name: name,
+            email: emailIdx >= 0 ? fields[emailIdx]?.trim() || '' : (fields[1]?.trim() || ''),
+            phone: phoneIdx >= 0 ? fields[phoneIdx]?.trim() || '' : (fields[2]?.trim() || ''),
+            mobilePhone: mobileIdx >= 0 ? fields[mobileIdx]?.trim() || '' : '',
+            address: addressIdx >= 0 ? fields[addressIdx]?.trim() || '' : (fields[3]?.trim() || ''),
+            city: cityIdx >= 0 ? fields[cityIdx]?.trim() || '' : '',
+            state: stateIdx >= 0 ? fields[stateIdx]?.trim() || '' : '',
+            zipCode: zipIdx >= 0 ? fields[zipIdx]?.trim() || '' : '',
+            notes: notesIdx >= 0 ? fields[notesIdx]?.trim() || '' : '',
+            source: 'csv_import',
+            classification: 'cliente',
+            tags: ['importado']
           };
 
           const newClient = await firebaseManager.createClient(req.firebaseUser.uid, clientData);
@@ -6221,8 +6271,8 @@ Output must be between 200-900 characters in English.`;
       // Procesar datos vCard (formato .vcf de contactos de Apple)
       const vCards = vcfData
         .split("END:VCARD")
-        .filter((card) => card.trim().length > 0)
-        .map((card) => card + "END:VCARD");
+        .filter((card: string) => card.trim().length > 0)
+        .map((card: string) => card + "END:VCARD");
 
       const clients = [];
 
@@ -6231,34 +6281,50 @@ Output must be between 200-900 characters in English.`;
           // Extraer datos básicos del vCard
           const nameMatch = vCard.match(/FN:(.*?)(?:\r\n|\n)/);
           const emailMatch = vCard.match(/EMAIL.*?:(.*?)(?:\r\n|\n)/);
-          const phoneMatch = vCard.match(/TEL.*?:(.*?)(?:\r\n|\n)/);
+          
+          // Detectar teléfono fijo y móvil separadamente
+          const mobilePhoneMatch = vCard.match(/TEL[^:]*(?:CELL|MOBILE)[^:]*:(.*?)(?:\r\n|\n)/i);
+          const phoneMatch = vCard.match(/TEL[^:]*(?:HOME|WORK|VOICE)[^:]*:(.*?)(?:\r\n|\n)/i);
+          const fallbackPhoneMatch = vCard.match(/TEL[^:]*:(.*?)(?:\r\n|\n)/);
+          
           const addressMatch = vCard.match(/ADR.*?:(.*?)(?:\r\n|\n)/);
 
           const name = nameMatch ? nameMatch[1].trim() : null;
 
           if (name) {
             const email = emailMatch ? emailMatch[1].trim() : '';
-            const phone = phoneMatch ? phoneMatch[1].trim() : '';
+            const mobilePhone = mobilePhoneMatch ? mobilePhoneMatch[1].trim() : '';
+            const phone = phoneMatch ? phoneMatch[1].trim() : (fallbackPhoneMatch && !mobilePhoneMatch ? fallbackPhoneMatch[1].trim() : '');
+            
             let address = '';
+            let city = '';
+            let state = '';
+            let zipCode = '';
 
             if (addressMatch) {
               const addressParts = addressMatch[1].split(";");
-              // Formato típico: ;;calle;ciudad;estado;código postal;país
-              address = addressParts
-                .slice(2)
-                .filter((part) => part.trim())
-                .join(", ");
+              // Formato típico vCard ADR: ;;calle;ciudad;estado;código postal;país
+              if (addressParts.length >= 3) {
+                address = addressParts[2]?.trim() || '';
+                city = addressParts[3]?.trim() || '';
+                state = addressParts[4]?.trim() || '';
+                zipCode = addressParts[5]?.trim() || '';
+              }
             }
 
             const clientData = {
               name,
               email,
               phone,
+              mobilePhone,
               address,
-              city: '',
-              state: '',
-              zipCode: '',
-              notes: ''
+              city,
+              state,
+              zipCode,
+              notes: '',
+              source: 'apple_contacts',
+              classification: 'cliente',
+              tags: ['apple_import']
             };
 
             const newClient = await firebaseManager.createClient(req.firebaseUser.uid, clientData);
