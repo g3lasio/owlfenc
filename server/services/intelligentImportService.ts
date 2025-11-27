@@ -91,6 +91,7 @@ export class IntelligentImportService {
 
   /**
    * Usa IA para analizar y mapear las columnas del CSV
+   * ENHANCED: Detecta y fusiona direcciones fragmentadas de QuickBooks y otros sistemas
    */
   private async generateMappingWithAI(headers: string[], sampleRows: string[][]): Promise<any> {
     const prompt = `Eres un experto en mapeo de datos de contactos. Analiza estos encabezados de CSV y las filas de ejemplo para crear un mapeo inteligente a los campos estándar de clientes.
@@ -108,7 +109,7 @@ CAMPOS OBJETIVO DISPONIBLES:
 - email: Dirección de correo electrónico
 - phone: Número de teléfono fijo/principal
 - mobilePhone: Número de teléfono móvil/celular
-- address: Dirección física completa
+- address: Dirección física (calle y número)
 - city: Ciudad
 - state: Estado/Provincia
 - zipCode: Código postal
@@ -117,15 +118,29 @@ CAMPOS OBJETIVO DISPONIBLES:
 - classification: Clasificación del contacto (cliente, proveedor, empleado, subcontratista, prospecto)
 - tags: Etiquetas/categorías (array)
 
+🚨 IMPORTANTE - DIRECCIONES FRAGMENTADAS (QuickBooks, Excel, etc.):
+Muchos sistemas exportan direcciones fragmentadas en MÚLTIPLES columnas separadas:
+- "Street Address" / "Billing Street" / "Address" / "Direccion" → address
+- "City" / "Billing City" / "Ciudad" → city  
+- "State" / "Billing State" / "Estado" / "Province" → state
+- "Zip" / "Zip Code" / "Postal Code" / "Billing Zip" / "CP" → zipCode
+
+Cuando detectes DIRECCIONES FRAGMENTADAS:
+1. Mapea CADA columna a su campo correspondiente (address, city, state, zipCode)
+2. El sistema automáticamente fusionará estos campos en una dirección completa
+3. Esto es CRÍTICO para archivos de QuickBooks, Outlook, Google Contacts, etc.
+
 INSTRUCCIONES:
 1. Analiza cada columna del CSV y determina qué campo objetivo mapea mejor
 2. Si hay múltiples columnas para un mismo campo (ej: First Name, Last Name), combínalas apropiadamente
-3. Ignora columnas que no se mapean a ningún campo objetivo
-4. Detecta el formato/fuente probable del CSV (ej: "Google Contacts", "Outlook", "Custom", etc.)
+3. DETECTA direcciones fragmentadas - mapea street/city/state/zip a sus campos correspondientes
+4. Ignora columnas que no se mapean a ningún campo objetivo
+5. Detecta el formato/fuente probable del CSV (ej: "QuickBooks", "Google Contacts", "Outlook", "Custom", etc.)
 
 Responde ÚNICAMENTE en formato JSON válido:
 {
   "detectedFormat": "nombre_del_formato_detectado",
+  "hasFragmentedAddress": true/false,
   "mapping": {
     "name": {
       "columns": [indices_de_columnas_que_forman_el_nombre],
@@ -134,23 +149,29 @@ Responde ÚNICAMENTE en formato JSON válido:
     },
     "email": { "columns": [indice], "combineMethod": "use_first" },
     "phone": { "columns": [indice], "combineMethod": "use_first" },
-    "address": { "columns": [indices], "combineMethod": "concatenate", "separator": ", " },
-    "city": { "columns": [indice], "combineMethod": "use_first" },
-    "state": { "columns": [indice], "combineMethod": "use_first" },
-    "zipCode": { "columns": [indice], "combineMethod": "use_first" },
+    "mobilePhone": { "columns": [indice], "combineMethod": "use_first" },
+    "address": { "columns": [indice_de_calle], "combineMethod": "use_first" },
+    "city": { "columns": [indice_de_ciudad], "combineMethod": "use_first" },
+    "state": { "columns": [indice_de_estado], "combineMethod": "use_first" },
+    "zipCode": { "columns": [indice_de_codigo_postal], "combineMethod": "use_first" },
     "notes": { "columns": [indices], "combineMethod": "concatenate", "separator": " | " },
     "source": { "value": "Imported CSV" },
     "tags": { "columns": [indices], "combineMethod": "split", "separator": "," }
   }
 }
 
-Ejemplo de respuesta:
+Ejemplo de respuesta para QuickBooks con direcciones fragmentadas:
 {
-  "detectedFormat": "Google Contacts",
+  "detectedFormat": "QuickBooks",
+  "hasFragmentedAddress": true,
   "mapping": {
     "name": { "columns": [0, 1], "combineMethod": "concatenate", "separator": " " },
     "email": { "columns": [2], "combineMethod": "use_first" },
-    "phone": { "columns": [3], "combineMethod": "use_first" }
+    "phone": { "columns": [3], "combineMethod": "use_first" },
+    "address": { "columns": [4], "combineMethod": "use_first" },
+    "city": { "columns": [5], "combineMethod": "use_first" },
+    "state": { "columns": [6], "combineMethod": "use_first" },
+    "zipCode": { "columns": [7], "combineMethod": "use_first" }
   }
 }`;
 
@@ -193,15 +214,19 @@ Ejemplo de respuesta:
 
   /**
    * Mapeo básico de fallback cuando la IA falla
+   * ENHANCED: Detecta direcciones fragmentadas de QuickBooks/Excel
    */
   private generateBasicMapping(headers: string[]): any {
     const mapping: any = {};
+    let hasFragmentedAddress = false;
     
     headers.forEach((header, index) => {
-      const lowerHeader = header.toLowerCase();
+      const lowerHeader = header.toLowerCase().trim();
       
-      // Detectar nombre
-      if (lowerHeader.includes('name') || lowerHeader.includes('nombre')) {
+      // Detectar nombre (First Name, Last Name, Full Name, Customer Name, etc.)
+      if (lowerHeader.includes('name') || lowerHeader.includes('nombre') || 
+          lowerHeader === 'customer' || lowerHeader === 'cliente' ||
+          lowerHeader.includes('first') || lowerHeader.includes('last')) {
         if (!mapping.name) {
           mapping.name = { columns: [index], combineMethod: 'use_first' };
         } else {
@@ -212,7 +237,7 @@ Ejemplo de respuesta:
       }
       
       // Detectar email
-      else if (lowerHeader.includes('email') || lowerHeader.includes('correo') || lowerHeader.includes('mail')) {
+      else if (lowerHeader.includes('email') || lowerHeader.includes('correo') || lowerHeader.includes('mail') || lowerHeader === 'e-mail') {
         mapping.email = { columns: [index], combineMethod: 'use_first' };
       }
       
@@ -231,33 +256,46 @@ Ejemplo de respuesta:
         }
       }
       
-      // Detectar dirección
-      else if (lowerHeader.includes('address') || lowerHeader.includes('dirección') || lowerHeader.includes('direccion') || lowerHeader.includes('calle')) {
+      // 🏠 DETECCIÓN DE DIRECCIONES FRAGMENTADAS (QuickBooks, Excel, etc.)
+      // Street Address, Billing Address, Shipping Address, Address Line 1, etc.
+      else if (lowerHeader.includes('street') || 
+               lowerHeader.includes('address line') || 
+               lowerHeader.includes('billing address') ||
+               lowerHeader.includes('shipping address') ||
+               (lowerHeader.includes('address') && !lowerHeader.includes('city') && !lowerHeader.includes('email'))) {
         mapping.address = { columns: [index], combineMethod: 'use_first' };
       }
       
-      // Detectar ciudad
-      else if (lowerHeader.includes('city') || lowerHeader.includes('ciudad')) {
+      // Detectar ciudad (City, Billing City, etc.)
+      else if (lowerHeader.includes('city') || lowerHeader.includes('ciudad') || 
+               lowerHeader === 'billing city' || lowerHeader === 'shipping city') {
         mapping.city = { columns: [index], combineMethod: 'use_first' };
+        hasFragmentedAddress = true;
       }
       
-      // Detectar estado
-      else if (lowerHeader.includes('state') || lowerHeader.includes('estado') || lowerHeader.includes('provincia')) {
+      // Detectar estado (State, Province, Billing State, etc.)
+      else if (lowerHeader.includes('state') || lowerHeader.includes('estado') || 
+               lowerHeader.includes('provincia') || lowerHeader.includes('province') ||
+               lowerHeader === 'billing state' || lowerHeader === 'shipping state') {
         mapping.state = { columns: [index], combineMethod: 'use_first' };
+        hasFragmentedAddress = true;
       }
       
-      // Detectar código postal
-      else if (lowerHeader.includes('zip') || lowerHeader.includes('postal') || lowerHeader.includes('cp')) {
+      // Detectar código postal (Zip, Zip Code, Postal Code, CP, etc.)
+      else if (lowerHeader.includes('zip') || lowerHeader.includes('postal') || 
+               lowerHeader.includes('cp') || lowerHeader === 'postcode' ||
+               lowerHeader === 'billing zip' || lowerHeader === 'shipping zip') {
         mapping.zipCode = { columns: [index], combineMethod: 'use_first' };
+        hasFragmentedAddress = true;
       }
       
       // Detectar notas
-      else if (lowerHeader.includes('note') || lowerHeader.includes('nota') || lowerHeader.includes('comment') || lowerHeader.includes('comentario')) {
+      else if (lowerHeader.includes('note') || lowerHeader.includes('nota') || lowerHeader.includes('comment') || lowerHeader.includes('comentario') || lowerHeader.includes('memo')) {
         mapping.notes = { columns: [index], combineMethod: 'use_first' };
       }
       
       // Detectar clasificación
-      else if (lowerHeader.includes('classification') || lowerHeader.includes('clasificacion') || lowerHeader.includes('tipo') || lowerHeader.includes('type')) {
+      else if (lowerHeader.includes('classification') || lowerHeader.includes('clasificacion') || lowerHeader.includes('tipo') || lowerHeader.includes('type') || lowerHeader.includes('category')) {
         mapping.classification = { columns: [index], combineMethod: 'use_first' };
       }
     });
@@ -268,17 +306,99 @@ Ejemplo de respuesta:
       mapping.classification = { value: 'cliente' };
     }
 
+    // Detectar formato basándose en patrones de encabezados
+    let detectedFormat = 'Basic CSV';
+    const headerStr = headers.join(' ').toLowerCase();
+    if (headerStr.includes('billing') || headerStr.includes('quickbooks') || headerStr.includes('qb')) {
+      detectedFormat = 'QuickBooks Export';
+    } else if (headerStr.includes('google') || headerStr.includes('gmail')) {
+      detectedFormat = 'Google Contacts';
+    } else if (headerStr.includes('outlook') || headerStr.includes('microsoft')) {
+      detectedFormat = 'Outlook/Microsoft';
+    }
+
+    console.log(`📋 [BASIC-MAPPING] Formato detectado: ${detectedFormat}, Direcciones fragmentadas: ${hasFragmentedAddress}`);
+
     return {
-      detectedFormat: 'Basic CSV',
+      detectedFormat,
+      hasFragmentedAddress,
       mapping
     };
   }
 
   /**
+   * 🏠 FUSIÓN INTELIGENTE DE DIRECCIONES FRAGMENTADAS
+   * Combina address, city, state, zipCode en una dirección completa formateada
+   * Formato: "123 Main St, Berkeley, CA 94704"
+   */
+  private fuseFragmentedAddress(client: MappedClient): void {
+    const parts: string[] = [];
+    
+    // Street address
+    if (client.address && client.address.trim()) {
+      parts.push(client.address.trim());
+    }
+    
+    // City
+    if (client.city && client.city.trim()) {
+      parts.push(client.city.trim());
+    }
+    
+    // State + ZipCode (formato americano: "CA 94704")
+    const stateZip: string[] = [];
+    if (client.state && client.state.trim()) {
+      stateZip.push(client.state.trim().toUpperCase());
+    }
+    if (client.zipCode && client.zipCode.trim()) {
+      stateZip.push(client.zipCode.trim());
+    }
+    if (stateZip.length > 0) {
+      parts.push(stateZip.join(' '));
+    }
+    
+    // Si tenemos múltiples partes, es una dirección fragmentada
+    if (parts.length >= 2) {
+      // Crear la dirección fusionada
+      const fullAddress = parts.join(', ');
+      
+      // Guardar la dirección completa en el campo address
+      // Los campos individuales se mantienen para búsquedas
+      client.address = fullAddress;
+      
+      console.log(`🏠 [ADDRESS-FUSION] Dirección fragmentada fusionada: "${fullAddress}"`);
+    }
+  }
+  
+  /**
+   * Detecta si hay columnas de dirección fragmentadas basándose en el mapeo
+   */
+  private hasFragmentedAddressColumns(mapping: any): boolean {
+    const addressFields = ['address', 'city', 'state', 'zipCode'];
+    let foundFields = 0;
+    
+    for (const field of addressFields) {
+      if (mapping[field] && mapping[field].columns && mapping[field].columns.length > 0) {
+        foundFields++;
+      }
+    }
+    
+    // Si tiene 2 o más campos de dirección separados, es fragmentada
+    return foundFields >= 2;
+  }
+
+  /**
    * Aplica el mapeo generado por IA a los datos
+   * ENHANCED: Fusiona automáticamente direcciones fragmentadas de QuickBooks/Excel
    */
   private applyMapping(headers: string[], dataRows: string[][], mappingInstructions: any): MappedClient[] {
-    const { mapping } = mappingInstructions;
+    const { mapping, hasFragmentedAddress } = mappingInstructions;
+    
+    // Detectar si hay direcciones fragmentadas
+    const isFragmented = hasFragmentedAddress || this.hasFragmentedAddressColumns(mapping);
+    
+    if (isFragmented) {
+      console.log('🏠 [INTELLIGENT-IMPORT] Direcciones fragmentadas detectadas - activando fusión automática');
+    }
     
     return dataRows.map(row => {
       const client: MappedClient = { name: '' };
@@ -320,6 +440,12 @@ Ejemplo de respuesta:
           }
         }
       });
+      
+      // 🏠 FUSIÓN DE DIRECCIONES FRAGMENTADAS
+      // Si detectamos columnas separadas de address/city/state/zip, las fusionamos
+      if (isFragmented) {
+        this.fuseFragmentedAddress(client);
+      }
       
       // Asegurar que el nombre no esté vacío
       if (!client.name || client.name.trim() === '') {
