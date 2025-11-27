@@ -5,6 +5,7 @@ import { verifyFirebaseAuth } from '../middleware/firebase-auth';
 import { DatabaseStorage } from '../DatabaseStorage';
 import { userMappingService } from '../services/userMappingService';
 import { getFirebaseManager } from '../storage-firebase-only';
+import { NormalizationToolkit } from '../services/autoCleanService';
 
 const router = Router();
 
@@ -57,8 +58,113 @@ router.post('/csv', verifyFirebaseAuth, async (req, res) => {
       detectedFormat: result.detectedFormat
     });
 
-    // Agregar userId a cada cliente mapeado
-    const clientsWithUserId = result.mappedClients.map(client => ({
+    // Aplicar limpieza automática de datos a cada cliente
+    console.log('🧹 [INTELLIGENT-IMPORT-API] Aplicando limpieza automática de datos...');
+    const cleanedClients = result.mappedClients.map(client => {
+      const cleaned = { ...client };
+      
+      // Normalizar teléfono
+      if (cleaned.phone) {
+        cleaned.phone = NormalizationToolkit.normalizePhone(cleaned.phone);
+      }
+      if (cleaned.mobilePhone) {
+        cleaned.mobilePhone = NormalizationToolkit.normalizePhone(cleaned.mobilePhone);
+      }
+      
+      // Normalizar email (eliminar errores tipográficos comunes)
+      if (cleaned.email) {
+        cleaned.email = NormalizationToolkit.normalizeEmail(cleaned.email);
+        // Corregir errores comunes en dominios
+        cleaned.email = cleaned.email
+          .replace(/\.comn$/, '.com')
+          .replace(/\.cpm$/, '.com')
+          .replace(/\.ocm$/, '.com')
+          .replace(/@gmial\./, '@gmail.')
+          .replace(/@gmal\./, '@gmail.')
+          .replace(/@yaho\./, '@yahoo.')
+          .replace(/@hotmal\./, '@hotmail.');
+      }
+      
+      // Normalizar estado (CA, ca, California -> CA)
+      if (cleaned.state) {
+        const stateCheck = NormalizationToolkit.isState(cleaned.state);
+        if (stateCheck.isState) {
+          cleaned.state = stateCheck.normalized;
+        }
+      }
+      
+      // Detectar y separar datos concatenados en address
+      if (cleaned.address && !cleaned.city) {
+        const concatCheck = NormalizationToolkit.detectConcatenatedData(cleaned.address);
+        if (concatCheck.isConcatenated && concatCheck.suggestedSplit) {
+          if (concatCheck.suggestedSplit.address) {
+            cleaned.address = concatCheck.suggestedSplit.address;
+          }
+          if (concatCheck.suggestedSplit.city) {
+            cleaned.city = concatCheck.suggestedSplit.city;
+          }
+          if (concatCheck.suggestedSplit.state) {
+            cleaned.state = concatCheck.suggestedSplit.state;
+          }
+          if (concatCheck.suggestedSplit.zip) {
+            cleaned.zipCode = concatCheck.suggestedSplit.zip;
+          }
+        }
+      }
+      
+      // Detectar y separar datos concatenados en city (como "229 Jordan St\nVallejo CA 94591")
+      if (cleaned.city && cleaned.city.includes('\n')) {
+        const lines = cleaned.city.split('\n').map(l => l.trim()).filter(Boolean);
+        if (lines.length >= 2) {
+          cleaned.address = lines[0];
+          const secondLine = lines[1];
+          const cityStateZipMatch = secondLine.match(/^([A-Za-z\s]+)\s+([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/);
+          if (cityStateZipMatch) {
+            cleaned.city = cityStateZipMatch[1].trim();
+            cleaned.state = cityStateZipMatch[2];
+            cleaned.zipCode = cityStateZipMatch[3];
+          } else {
+            cleaned.city = secondLine;
+          }
+        }
+      }
+      
+      // Corregir errores tipográficos comunes en ciudades de California
+      if (cleaned.city) {
+        const cityCorrections: Record<string, string> = {
+          'barkeley': 'Berkeley',
+          'berkley': 'Berkeley',
+          'oackland': 'Oakland',
+          'oakalnd': 'Oakland',
+          'san fracisco': 'San Francisco',
+          'san fransico': 'San Francisco',
+          'sacremento': 'Sacramento',
+          'los angelas': 'Los Angeles',
+          'los angles': 'Los Angeles',
+        };
+        const lowerCity = cleaned.city.toLowerCase().trim();
+        if (cityCorrections[lowerCity]) {
+          cleaned.city = cityCorrections[lowerCity];
+        }
+      }
+      
+      // Limpiar nombre (remover caracteres extra, normalizar formato)
+      if (cleaned.name) {
+        cleaned.name = cleaned.name
+          .replace(/\s+/g, ' ')
+          .trim()
+          .split(' ')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+          .join(' ');
+      }
+      
+      return cleaned;
+    });
+
+    console.log('✅ [INTELLIGENT-IMPORT-API] Limpieza completada para', cleanedClients.length, 'clientes');
+
+    // Agregar userId a cada cliente limpio
+    const clientsWithUserId = cleanedClients.map(client => ({
       ...client,
       userId,
       source: result.detectedFormat || 'Intelligent CSV Import',
