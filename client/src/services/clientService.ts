@@ -442,14 +442,29 @@ export const importClientsFromCsvWithAI = async (csvContent: string): Promise<Cl
       throw new Error(result.error || 'Error en el procesamiento de IA');
     }
 
-    console.log('✅ [CLIENT-SERVICE] IA procesó correctamente:', result.mappedClients.length, 'clientes');
+    console.log('✅ [CLIENT-SERVICE] IA procesó correctamente:', result.mappedClients.length, 'clientes únicos');
     console.log('📊 [CLIENT-SERVICE] Formato detectado:', result.detectedFormat);
+    
+    // Mostrar información de duplicados rechazados
+    if (result.duplicatesRejected > 0) {
+      console.log(`🚫 [CLIENT-SERVICE] ${result.duplicatesRejected} duplicados rechazados automáticamente`);
+      console.log('📋 [CLIENT-SERVICE] Detalles de duplicados:', result.duplicateDetails);
+    }
+    console.log(`📊 [CLIENT-SERVICE] Total procesado: ${result.originalCount}, Únicos: ${result.finalCount}`);
 
-    // Ahora importar los clientes mapeados por IA
+    // Ahora importar los clientes mapeados por IA (solo los únicos)
     if (result.mappedClients && result.mappedClients.length > 0) {
       await importClients(result.mappedClients);
       console.log('✅ [CLIENT-SERVICE] Clientes guardados exitosamente en Firebase');
     }
+    
+    // Guardar info de duplicados para el caller (accesible vía window)
+    (window as any).__lastImportResult = {
+      imported: result.finalCount || result.mappedClients.length,
+      duplicatesRejected: result.duplicatesRejected || 0,
+      duplicateDetails: result.duplicateDetails || [],
+      originalCount: result.originalCount || result.mappedClients.length
+    };
     
     // Recargar clientes para obtener los datos completos con IDs del backend
     return await getClients();

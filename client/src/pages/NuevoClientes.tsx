@@ -446,13 +446,25 @@ export default function NuevoClientes() {
       const importedClients = await importClientsFromCsvWithAI(csvContent);
       console.log("✅ [CLIENTES] Importación CSV inteligente exitosa:", importedClients.length);
       
+      // Obtener info de duplicados rechazados
+      const importResult = (window as any).__lastImportResult || {};
+      const { imported = 0, duplicatesRejected = 0, originalCount = 0 } = importResult;
+      
       // Actualizar lista de clientes
       queryClient.invalidateQueries({ queryKey: ["firebaseClients", userId] });
 
-      toast({
-        title: "✨ Importación inteligente completada",
-        description: `Se importaron ${importedClients.length} clientes usando IA con mapeo inteligente.`,
-      });
+      // Mensaje dinámico según si hubo duplicados
+      if (duplicatesRejected > 0) {
+        toast({
+          title: "✨ Importación inteligente completada",
+          description: `Se importaron ${imported} clientes nuevos. ${duplicatesRejected} duplicados rechazados automáticamente (de ${originalCount} total).`,
+        });
+      } else {
+        toast({
+          title: "✨ Importación inteligente completada",
+          description: `Se importaron ${imported || importedClients.length} clientes usando IA con mapeo inteligente.`,
+        });
+      }
 
       setShowImportDialog(false);
       setCsvFile(null);

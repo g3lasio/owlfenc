@@ -163,8 +163,86 @@ router.post('/csv', verifyFirebaseAuth, async (req, res) => {
 
     console.log('✅ [INTELLIGENT-IMPORT-API] Limpieza completada para', cleanedClients.length, 'clientes');
 
-    // Agregar userId a cada cliente limpio
-    const clientsWithUserId = cleanedClients.map(client => ({
+    // Obtener clientes existentes para detectar duplicados
+    console.log('🔍 [INTELLIGENT-IMPORT-API] Verificando duplicados...');
+    const firebaseManager = getFirebaseManager();
+    const existingClients = await firebaseManager.getClients(req.firebaseUser.uid);
+    
+    // Crear sets de identificadores existentes para búsqueda rápida
+    const existingEmails = new Set(
+      existingClients
+        .filter(c => c.email)
+        .map(c => c.email!.toLowerCase().trim())
+    );
+    const existingPhones = new Set(
+      existingClients
+        .filter(c => c.phone)
+        .map(c => c.phone!.replace(/\D/g, '')) // Solo dígitos para comparación
+    );
+    const existingNames = new Set(
+      existingClients
+        .filter(c => c.name)
+        .map(c => c.name.toLowerCase().trim())
+    );
+    
+    // Filtrar duplicados
+    const duplicates: any[] = [];
+    const uniqueClients = cleanedClients.filter(client => {
+      const isDuplicate = 
+        // Duplicado por email (el más confiable)
+        (client.email && existingEmails.has(client.email.toLowerCase().trim())) ||
+        // Duplicado por teléfono
+        (client.phone && existingPhones.has(client.phone.replace(/\D/g, ''))) ||
+        // Duplicado por nombre exacto (menos confiable, pero útil)
+        (client.name && existingNames.has(client.name.toLowerCase().trim()));
+      
+      if (isDuplicate) {
+        duplicates.push({
+          name: client.name,
+          email: client.email,
+          phone: client.phone,
+          reason: client.email && existingEmails.has(client.email.toLowerCase().trim()) 
+            ? 'Email duplicado' 
+            : client.phone && existingPhones.has(client.phone.replace(/\D/g, ''))
+              ? 'Teléfono duplicado'
+              : 'Nombre duplicado'
+        });
+        return false;
+      }
+      return true;
+    });
+    
+    // También detectar duplicados dentro del mismo archivo
+    const seenInFile = new Set<string>();
+    const internalDuplicates: any[] = [];
+    const finalClients = uniqueClients.filter(client => {
+      const emailKey = client.email ? client.email.toLowerCase().trim() : null;
+      const phoneKey = client.phone ? client.phone.replace(/\D/g, '') : null;
+      const nameKey = client.name ? client.name.toLowerCase().trim() : null;
+      
+      // Crear una key única combinando email o teléfono (los más confiables)
+      const uniqueKey = emailKey || phoneKey || nameKey;
+      
+      if (uniqueKey && seenInFile.has(uniqueKey)) {
+        internalDuplicates.push({
+          name: client.name,
+          email: client.email,
+          phone: client.phone,
+          reason: 'Duplicado en el archivo'
+        });
+        return false;
+      }
+      
+      if (uniqueKey) seenInFile.add(uniqueKey);
+      return true;
+    });
+
+    const totalDuplicates = duplicates.length + internalDuplicates.length;
+    console.log(`🚫 [INTELLIGENT-IMPORT-API] ${duplicates.length} duplicados con BD existente, ${internalDuplicates.length} duplicados internos`);
+    console.log(`✅ [INTELLIGENT-IMPORT-API] ${finalClients.length} clientes únicos para importar`);
+
+    // Agregar userId a cada cliente único
+    const clientsWithUserId = finalClients.map(client => ({
       ...client,
       userId,
       source: result.detectedFormat || 'Intelligent CSV Import',
@@ -173,7 +251,11 @@ router.post('/csv', verifyFirebaseAuth, async (req, res) => {
 
     res.json({
       ...result,
-      mappedClients: clientsWithUserId
+      mappedClients: clientsWithUserId,
+      duplicatesRejected: totalDuplicates,
+      duplicateDetails: [...duplicates, ...internalDuplicates].slice(0, 10), // Solo primeros 10 para no sobrecargar
+      originalCount: cleanedClients.length,
+      finalCount: finalClients.length
     });
 
   } catch (error) {
