@@ -23,18 +23,18 @@ if (!admin.apps.length) {
 // Esquemas de validación para clientes Firebase
 const clientSchema = z.object({
   name: z.string().min(1, 'El nombre es requerido'),
-  email: z.string().email('Email inválido').optional().or(z.literal('')),
-  phone: z.string().optional(),
-  mobilePhone: z.string().optional(),
-  address: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  zipCode: z.string().optional(),
-  notes: z.string().optional(),
-  source: z.string().optional(),
-  classification: z.string().optional(),
-  tags: z.array(z.string()).optional(),
-});
+  email: z.string().email('Email inválido').optional().or(z.literal('')).nullable(),
+  phone: z.string().optional().nullable(),
+  mobilePhone: z.string().optional().nullable(),
+  address: z.string().optional().nullable(),
+  city: z.string().optional().nullable(),
+  state: z.string().optional().nullable(),
+  zipCode: z.string().optional().nullable(),
+  notes: z.string().optional().nullable(),
+  source: z.string().optional().nullable(),
+  classification: z.string().optional().nullable(),
+  tags: z.array(z.string()).optional().nullable(),
+}).passthrough(); // Permitir campos adicionales como userId, clientId de la IA
 
 const updateClientSchema = clientSchema.partial();
 const importClientsSchema = z.object({
