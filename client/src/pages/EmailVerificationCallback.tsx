@@ -3,8 +3,8 @@ import { useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { auth } from "@/lib/firebase";
-import { applyActionCode, reload, isSignInWithEmailLink, signInWithEmailLink } from "firebase/auth";
+import { auth, getFirebaseActionCodeSettings } from "@/lib/firebase";
+import { applyActionCode, reload, isSignInWithEmailLink, signInWithEmailLink, sendEmailVerification } from "firebase/auth";
 import { CheckCircle, XCircle, Loader2, Mail, ShieldCheck } from "lucide-react";
 
 export default function EmailVerificationCallback() {
@@ -155,12 +155,9 @@ export default function EmailVerificationCallback() {
     }
 
     try {
-      const { sendEmailVerification } = await import('firebase/auth');
-      
-      const actionCodeSettings = {
-        url: `${window.location.origin}/email-verification-callback?verified=true`,
-        handleCodeInApp: true,
-      };
+      // Use centralized Firebase auth URL configuration to ensure correct domain
+      const actionCodeSettings = getFirebaseActionCodeSettings('/email-verification-callback?verified=true');
+      console.log('📧 [RESEND] Sending verification email with settings:', actionCodeSettings);
       
       await sendEmailVerification(auth.currentUser, actionCodeSettings);
       

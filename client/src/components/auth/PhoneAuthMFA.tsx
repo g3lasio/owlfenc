@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Phone, MessageSquare, ShieldCheck, Mail, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { auth } from '@/lib/firebase';
+import { auth, getFirebaseActionCodeSettings } from '@/lib/firebase';
 import {
   multiFactor,
   PhoneAuthProvider,
@@ -19,19 +19,6 @@ import {
   RecaptchaVerifier,
   sendEmailVerification,
 } from 'firebase/auth';
-import type { ActionCodeSettings } from 'firebase/auth';
-
-/**
- * Genera actionCodeSettings dinámicas para verificación de email
- * Usa la URL actual para asegurar que el link funcione en cualquier entorno
- */
-const getEmailVerificationSettings = (): ActionCodeSettings => {
-  const baseUrl = window.location.origin;
-  return {
-    url: `${baseUrl}/email-verification-callback?verified=true`,
-    handleCodeInApp: true,
-  };
-};
 
 interface PhoneAuthMFAProps {
   onSuccess?: () => void;
@@ -62,8 +49,8 @@ const PhoneAuthMFA: React.FC<PhoneAuthMFAProps> = ({ onSuccess, onCancel }) => {
     try {
       setIsLoading(true);
       
-      // Usar actionCodeSettings dinámicas para asegurar que el link funcione correctamente
-      const actionCodeSettings = getEmailVerificationSettings();
+      // Use centralized Firebase auth URL configuration to ensure correct domain
+      const actionCodeSettings = getFirebaseActionCodeSettings('/email-verification-callback?verified=true');
       console.log('📧 [2FA] Sending email verification with settings:', {
         url: actionCodeSettings.url,
         handleCodeInApp: actionCodeSettings.handleCodeInApp

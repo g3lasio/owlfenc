@@ -66,7 +66,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import PhoneAuthMFA from "@/components/auth/PhoneAuthMFA";
-import { multiFactor } from "firebase/auth";
+import { multiFactor, EmailAuthProvider, reauthenticateWithCredential, signOut } from "firebase/auth";
 import { auth, uploadFile } from "@/lib/firebase";
 import {
   Alert,
@@ -794,7 +794,21 @@ export default function Profile() {
       return;
     }
 
-    if (!currentUser) {
+    // Password strength validation
+    const hasUpperCase = /[A-Z]/.test(newPassword);
+    const hasLowerCase = /[a-z]/.test(newPassword);
+    const hasNumber = /[0-9]/.test(newPassword);
+    
+    if (!hasUpperCase || !hasLowerCase || !hasNumber) {
+      toast({
+        title: "Weak Password",
+        description: "Password must contain at least one uppercase letter, one lowercase letter, and one number",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!currentUser || !currentUser.email) {
       toast({
         title: "Error",
         description: "You must be logged in to change your password",
@@ -806,29 +820,159 @@ export default function Profile() {
     setIsChangingPassword(true);
     
     try {
-      // Session cookie se envía automáticamente
+      console.log('🔐 [PASSWORD-CHANGE] Starting password change with re-authentication...');
+      
+      // STEP 1: Re-authenticate user with current password (MANDATORY for security)
+      const credential = EmailAuthProvider.credential(currentUser.email, currentPassword);
+      
+      try {
+        await reauthenticateWithCredential(auth.currentUser!, credential);
+        console.log('✅ [PASSWORD-CHANGE] Re-authentication successful');
+      } catch (reauthError: any) {
+        console.error('❌ [PASSWORD-CHANGE] Re-authentication failed:', reauthError);
+        
+        if (reauthError.code === 'auth/wrong-password' || reauthError.code === 'auth/invalid-credential') {
+          toast({
+            title: "Incorrect Password",
+            description: "Your current password is incorrect. Please try again.",
+            variant: "destructive",
+          });
+        } else if (reauthError.code === 'auth/too-many-requests') {
+          toast({
+            title: "Too Many Attempts",
+            description: "Account temporarily locked due to too many failed attempts. Please try again later.",
+            variant: "destructive",
+          });
+        } else if (reauthError.code === 'auth/user-mismatch') {
+          toast({
+            title: "Authentication Error",
+            description: "Session mismatch. Please sign out and sign in again.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Authentication Failed",
+            description: "Could not verify your current password. Please try again.",
+            variant: "destructive",
+          });
+        }
+        return;
+      }
+      
+      // STEP 2: Call server to update password via Admin SDK (for audit logging and token revocation)
+      // After successful client-side re-auth, the server can safely update the password
+      let authHeaders: Record<string, string> = {};
+      try {
+        authHeaders = await getAuthHeaders();
+      } catch (headerError) {
+        console.warn('⚠️ [PASSWORD-CHANGE] Failed to get auth headers, refreshing token...', headerError);
+        // Try to get a fresh token after successful re-auth
+        if (!auth.currentUser) {
+          toast({
+            title: "Session Error",
+            description: "No active session found. Please sign in again.",
+            variant: "destructive",
+          });
+          return;
+        }
+        try {
+          const freshToken = await auth.currentUser.getIdToken(true); // Force refresh
+          if (freshToken) {
+            authHeaders = { 'Authorization': `Bearer ${freshToken}` };
+            console.log('✅ [PASSWORD-CHANGE] Fresh token obtained');
+          } else {
+            throw new Error('Token refresh returned empty');
+          }
+        } catch (tokenError) {
+          console.error('❌ [PASSWORD-CHANGE] Failed to refresh token:', tokenError);
+          toast({
+            title: "Session Error",
+            description: "Could not verify your session. Please sign out and sign in again.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+      
       const response = await fetch('/api/auth/update-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-uid': currentUser.uid
+          ...authHeaders
         },
-        credentials: 'include', // Enviar cookie de sesión automáticamente
+        credentials: 'include',
         body: JSON.stringify({ 
           newPassword,
-          currentPassword // Optional for backend logging
+          currentPasswordVerified: true // Flag indicating client-side re-auth was successful
         })
       });
 
       const data = await response.json();
 
       if (!response.ok) {
+        // Handle specific backend error codes
+        if (data.code === 'WEAK_PASSWORD') {
+          throw new Error('Password is too weak. Use uppercase, lowercase, and numbers.');
+        } else if (data.code === 'AUTH_REQUIRED') {
+          throw new Error('Session expired. Please sign in again.');
+        } else if (data.code === 'USER_NOT_FOUND') {
+          throw new Error('Account not found. Please contact support.');
+        }
         throw new Error(data.error || `Server error: ${response.status}`);
+      }
+      
+      console.log('✅ [PASSWORD-CHANGE] Password updated via server with audit logging');
+
+      // CRITICAL: If tokens were revoked, force sign out to honor revocation
+      if (data.tokensRevoked) {
+        console.log('🔒 [PASSWORD-CHANGE] Tokens revoked, initiating secure sign out...');
+        
+        toast({
+          title: "Password Updated Successfully",
+          description: "For security, you will be signed out. Please sign in with your new password.",
+        });
+
+        setIsPasswordDialogOpen(false);
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+        
+        // Perform secure sign out sequence after brief delay for toast visibility
+        const performSecureSignOut = async () => {
+          try {
+            // Step 1: Sign out from Firebase client FIRST (must complete before next steps)
+            console.log('🔒 [PASSWORD-CHANGE] Step 1: Signing out from Firebase...');
+            await signOut(auth);
+            console.log('✅ [PASSWORD-CHANGE] Firebase sign out complete');
+            
+            // Step 2: Clear server session cookies AFTER Firebase sign out completes
+            console.log('🔒 [PASSWORD-CHANGE] Step 2: Clearing server session cookies...');
+            await fetch('/api/sessionLogout', {
+              method: 'POST',
+              credentials: 'include'
+            }).catch(err => console.warn('⚠️ Session logout error:', err));
+            console.log('✅ [PASSWORD-CHANGE] Session cookies cleared');
+            
+            // Step 3: Force navigation to login page with clean state
+            console.log('🔒 [PASSWORD-CHANGE] Step 3: Redirecting to login...');
+            window.location.assign('/login?passwordChanged=true');
+            
+          } catch (signOutError) {
+            console.error('❌ [PASSWORD-CHANGE] Secure sign out error:', signOutError);
+            // Force navigation anyway to ensure user is logged out
+            window.location.assign('/login');
+          }
+        };
+        
+        // Execute after brief delay for toast visibility
+        setTimeout(performSecureSignOut, 1500);
+        
+        return;
       }
 
       toast({
         title: "Password Updated",
-        description: data.message || "Your password has been changed successfully. Please sign in again.",
+        description: "Your password has been changed successfully.",
       });
 
       setIsPasswordDialogOpen(false);
@@ -836,16 +980,21 @@ export default function Profile() {
       setNewPassword("");
       setConfirmPassword("");
       
-      // Optional: Sign out user to force re-authentication
-      // await auth.signOut();
-      
     } catch (error: any) {
+      console.error('❌ [PASSWORD-CHANGE] Error:', error);
+      
       let errorMessage = "Failed to change password. Please try again.";
       
-      if (error.message?.includes('WEAK_PASSWORD')) {
-        errorMessage = "Password is too weak. Please use a stronger password.";
+      if (error.code === 'auth/weak-password' || error.message?.includes('WEAK_PASSWORD')) {
+        errorMessage = "Password is too weak. Please use a stronger password with at least 6 characters.";
+      } else if (error.code === 'auth/requires-recent-login') {
+        errorMessage = "Your session has expired. Please sign out, sign in again, and try changing your password.";
+      } else if (error.code === 'auth/network-request-failed') {
+        errorMessage = "Network error. Please check your internet connection and try again.";
       } else if (error.message?.includes('AUTH_REQUIRED') || error.message?.includes('401')) {
         errorMessage = "Authentication required. Please sign in again.";
+      } else if (error.message) {
+        errorMessage = error.message;
       }
       
       toast({
