@@ -3,18 +3,21 @@ import { storage } from '../storage';
 import type { ProjectPayment, InsertProjectPayment } from '@shared/schema';
 import { createStripeClient } from '../config/stripe';
 import { stripeHealthService } from './stripeHealthService';
+import { db } from '../firebase-admin';
 
 // Initialize Stripe with centralized configuration
 const stripe = createStripeClient();
 
 export interface CreateProjectPaymentRequest {
-  projectId: number;
+  firebaseProjectId: string | null; // Firebase estimate ID (source of truth)
   userId: number;
   amount: number; // in cents
   type: 'deposit' | 'final' | 'milestone' | 'additional';
   description: string;
   clientEmail?: string;
   clientName?: string;
+  clientPhone?: string;
+  address?: string;
   dueDate?: Date;
 }
 
@@ -28,23 +31,15 @@ export class ContractorPaymentService {
   /**
    * Creates automatic payment structure when project is created
    * This follows the contractor workflow: 50% deposit + 50% final payment
+   * Uses Firebase projectId (string) as source of truth
    */
-  async createProjectPaymentStructure(projectId: number, userId: number, totalAmount: number, clientInfo: { email?: string; name?: string }) {
-    // 🔒 SECURITY: Verify project ownership before creating payment structure
-    const project = await storage.getProject(projectId);
-    if (!project) {
-      throw new Error('Project not found');
-    }
-    if (project.userId !== userId) {
-      throw new Error('Unauthorized: You do not have permission to create payments for this project');
-    }
-
+  async createProjectPaymentStructure(firebaseProjectId: string, userId: number, totalAmount: number, clientInfo: { email?: string; name?: string }) {
     const depositAmount = Math.round(totalAmount * 0.5);
     const finalAmount = totalAmount - depositAmount;
 
     // Create deposit payment
     const depositPayment = await this.createProjectPayment({
-      projectId,
+      firebaseProjectId,
       userId,
       amount: depositAmount,
       type: 'deposit',
@@ -56,7 +51,7 @@ export class ContractorPaymentService {
 
     // Create final payment
     const finalPayment = await this.createProjectPayment({
-      projectId,
+      firebaseProjectId,
       userId,
       amount: finalAmount,
       type: 'final',
@@ -76,27 +71,58 @@ export class ContractorPaymentService {
   /**
    * Creates a payment record and Stripe payment link using Stripe Connect
    * Payments go directly to the contractor's connected Stripe account
+   * Now uses Firebase "estimates" collection as the single source of truth for projects
    */
   async createProjectPayment(request: CreateProjectPaymentRequest): Promise<PaymentLinkResponse> {
     // 🔒 CRITICAL GUARDRAIL: Verify platform Stripe account can process payments
     await stripeHealthService.assertCanProcessPayments();
 
-    // Get project details
-    const project = await storage.getProject(request.projectId);
-    if (!project) {
-      throw new Error('Project not found');
-    }
-
-    // 🔒 SECURITY: Verify project ownership - CRITICAL for payment data integrity
-    if (project.userId !== request.userId) {
-      console.error(`🚨 [SECURITY-VIOLATION] User ${request.userId} attempted to create payment for project ${request.projectId} owned by user ${project.userId}`);
-      throw new Error('Unauthorized: You do not have permission to create payments for this project');
-    }
-
-    // Get user to retrieve their Stripe Connect account
+    // Get user first (needed for ownership verification and Stripe Connect)
     const user = await storage.getUser(request.userId);
     if (!user) {
       throw new Error('User not found');
+    }
+
+    // Get project details from Firebase (single source of truth)
+    let projectData: { clientEmail?: string; clientName?: string; address?: string; userId?: string } = {};
+    
+    if (request.firebaseProjectId) {
+      console.log(`📋 [PAYMENT] Looking up Firebase project: ${request.firebaseProjectId}`);
+      const docRef = db.collection('estimates').doc(request.firebaseProjectId);
+      const docSnap = await docRef.get();
+      
+      if (!docSnap.exists) {
+        // 🔒 SECURITY: Firebase project must exist when ID is provided
+        console.error(`🚨 [SECURITY] Firebase project not found: ${request.firebaseProjectId}`);
+        throw new Error('Project not found');
+      }
+      
+      const data = docSnap.data();
+      projectData = {
+        clientEmail: data?.clientInformation?.email || data?.clientEmail,
+        clientName: data?.clientInformation?.name || data?.clientName,
+        address: data?.projectDetails?.address || data?.address,
+        userId: data?.userId,
+      };
+      
+      // 🔒 SECURITY: Hard authorization check - require both userId fields to be present
+      if (!user.firebaseUid) {
+        console.error(`🚨 [SECURITY] User ${request.userId} has no firebaseUid, cannot verify ownership`);
+        throw new Error('Access denied: User authentication incomplete');
+      }
+      
+      if (!projectData.userId) {
+        console.error(`🚨 [SECURITY] Firebase project ${request.firebaseProjectId} has no userId, cannot verify ownership`);
+        throw new Error('Access denied: Project ownership cannot be verified');
+      }
+      
+      // Verify ownership: Firebase stores the Firebase UID as userId
+      if (projectData.userId !== user.firebaseUid) {
+        console.error(`🚨 [SECURITY] Ownership mismatch: Firebase project ${request.firebaseProjectId} belongs to ${projectData.userId}, request from ${user.firebaseUid}`);
+        throw new Error('Access denied: You do not own this project');
+      }
+      
+      console.log(`✅ [PAYMENT] Found Firebase project: ${request.firebaseProjectId}, ownership verified`);
     }
 
     // Check if user has a Stripe Connect account
@@ -118,16 +144,22 @@ export class ContractorPaymentService {
     // Generate invoice number
     const invoiceNumber = await this.generateInvoiceNumber(request.userId);
 
+    // Resolve client info: request data takes priority, then Firebase data
+    const resolvedClientEmail = request.clientEmail || projectData.clientEmail;
+    const resolvedClientName = request.clientName || projectData.clientName;
+    const resolvedAddress = request.address || projectData.address || 'Project';
+
     // Create payment record in database
     const paymentData: InsertProjectPayment = {
-      projectId: request.projectId,
+      projectId: 0, // Using 0 for Firebase-based projects
+      firebaseProjectId: request.firebaseProjectId || undefined,
       userId: request.userId,
       amount: request.amount,
       type: request.type,
       status: 'pending',
       description: request.description,
-      clientEmail: request.clientEmail || project.clientEmail,
-      clientName: request.clientName || project.clientName,
+      clientEmail: resolvedClientEmail,
+      clientName: resolvedClientName,
       invoiceNumber,
       dueDate: request.dueDate,
     };
@@ -152,7 +184,7 @@ export class ContractorPaymentService {
               currency: 'usd',
               product_data: {
                 name: request.description,
-                description: `Invoice #${invoiceNumber} - ${project.address}`,
+                description: `Invoice #${invoiceNumber} - ${resolvedAddress}`,
               },
               unit_amount: request.amount,
             },
@@ -164,13 +196,13 @@ export class ContractorPaymentService {
         cancel_url: `${baseUrl}/project-payments`,
         metadata: {
           paymentId: payment.id.toString(),
-          projectId: request.projectId.toString(),
+          firebaseProjectId: request.firebaseProjectId || '',
           userId: request.userId.toString(),
           type: request.type,
           invoiceNumber,
           platformUserId: request.userId.toString(),
         },
-        customer_email: request.clientEmail || project.clientEmail || undefined,
+        customer_email: resolvedClientEmail || undefined,
       }, {
         // Create the session directly on the connected account
         // This ensures all funds go directly to the contractor
@@ -490,62 +522,37 @@ export class ContractorPaymentService {
 
   /**
    * Creates a one-click payment link for specific project phase
-   * NOTE: This method needs userId parameter for security verification
+   * Uses Firebase projectId (string) as source of truth
    */
-  async createQuickPaymentLink(projectId: number, userId: number, type: 'deposit' | 'final'): Promise<PaymentLinkResponse> {
-    const project = await storage.getProject(projectId);
-    if (!project) {
-      throw new Error('Project not found');
+  async createQuickPaymentLink(firebaseProjectId: string, userId: number, type: 'deposit' | 'final', totalAmount: number): Promise<PaymentLinkResponse> {
+    // Get project from Firebase
+    let projectData: { clientEmail?: string; clientName?: string; address?: string } = {};
+    
+    const docRef = db.collection('estimates').doc(firebaseProjectId);
+    const docSnap = await docRef.get();
+    
+    if (docSnap.exists) {
+      const data = docSnap.data();
+      projectData = {
+        clientEmail: data?.clientInformation?.email || data?.clientEmail,
+        clientName: data?.clientInformation?.name || data?.clientName,
+        address: data?.projectDetails?.address || data?.address || 'Project',
+      };
     }
 
-    // 🔒 SECURITY: Verify project ownership
-    if (project.userId !== userId) {
-      throw new Error('Unauthorized: You do not have permission to create payments for this project');
-    }
+    // Calculate amount based on type
+    const amount = Math.round(totalAmount * 0.5);
 
-    const payments = await storage.getProjectPaymentsByProjectId(projectId);
-    const existingPayment = payments.find(p => p.type === type);
-
-    if (existingPayment) {
-      // 🔒 SECURITY: Auto-remediate legacy payments with incorrect ownership
-      if (existingPayment.userId !== userId) {
-        console.warn(`🔄 [PAYMENT-REMEDIATION] Found legacy payment ${existingPayment.id} with mismatched ownership (payment.userId: ${existingPayment.userId}, actual owner: ${userId}). Auto-remediating...`);
-        
-        // Delete orphaned payment
-        try {
-          await storage.deleteProjectPayment(existingPayment.id);
-          console.log(`✅ [PAYMENT-REMEDIATION] Deleted orphaned payment ${existingPayment.id}`);
-        } catch (error: any) {
-          console.error(`⚠️ [PAYMENT-REMEDIATION] Failed to delete orphaned payment ${existingPayment.id}:`, error.message);
-        }
-        
-        // Fall through to create new payment for correct owner below
-      } else if (existingPayment.status === 'succeeded') {
-        throw new Error(`${type} payment already completed`);
-      } else if (existingPayment.checkoutUrl) {
-        // Return existing payment link (ownership verified)
-        return {
-          paymentId: existingPayment.id,
-          paymentLinkUrl: existingPayment.checkoutUrl,
-          invoiceNumber: existingPayment.invoiceNumber || '',
-        };
-      }
-    }
-
-    // Create new payment using AUTHENTICATED userId (not project.userId)
-    const amount = type === 'deposit' 
-      ? Math.round((project.totalPrice || 0) * 0.5)
-      : Math.round((project.totalPrice || 0) * 0.5);
-
-    // 🔒 SECURITY: Always use authenticated userId to prevent cross-tenant payment creation
+    // Create payment using authenticated userId
     return this.createProjectPayment({
-      projectId,
-      userId, // Use authenticated userId parameter, NOT project.userId
+      firebaseProjectId,
+      userId,
       amount,
       type,
-      description: `${type === 'deposit' ? 'Project Deposit' : 'Final Payment'} - ${project.address}`,
-      clientEmail: project.clientEmail || undefined,
-      clientName: project.clientName || undefined,
+      description: `${type === 'deposit' ? 'Project Deposit' : 'Final Payment'} - ${projectData.address}`,
+      clientEmail: projectData.clientEmail || undefined,
+      clientName: projectData.clientName || undefined,
+      address: projectData.address,
     });
   }
 
@@ -554,7 +561,7 @@ export class ContractorPaymentService {
    * This does NOT create a Stripe session - just records the payment as completed
    */
   async registerManualPayment(request: {
-    projectId: number | null;
+    firebaseProjectId: string | null;
     userId: number;
     amount: number;
     type: 'deposit' | 'final' | 'milestone' | 'additional';
@@ -568,34 +575,73 @@ export class ContractorPaymentService {
   }): Promise<{ paymentId: number; invoiceNumber: string; status: string }> {
     console.log(`📝 [MANUAL-PAYMENT] Registering ${request.manualMethod} payment for user ${request.userId}`);
 
-    // For manual payments with a project, verify ownership
-    if (request.projectId && request.projectId > 0) {
-      const project = await storage.getProject(request.projectId);
-      if (!project) {
+    // Get user for ownership verification
+    const user = await storage.getUser(request.userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // For manual payments with a Firebase project, fetch project data and verify ownership
+    let projectData: { clientEmail?: string; clientName?: string; userId?: string } = {};
+    if (request.firebaseProjectId) {
+      console.log(`📋 [MANUAL-PAYMENT] Looking up Firebase project: ${request.firebaseProjectId}`);
+      const docRef = db.collection('estimates').doc(request.firebaseProjectId);
+      const docSnap = await docRef.get();
+      
+      if (!docSnap.exists) {
+        // 🔒 SECURITY: Firebase project must exist when ID is provided
+        console.error(`🚨 [SECURITY] Firebase project not found for manual payment: ${request.firebaseProjectId}`);
         throw new Error('Project not found');
       }
-      if (project.userId !== request.userId) {
-        console.error(`🚨 [SECURITY-VIOLATION] User ${request.userId} attempted to record payment for project ${request.projectId} owned by user ${project.userId}`);
-        throw new Error('Unauthorized: You do not have permission to record payments for this project');
+      
+      const data = docSnap.data();
+      projectData = {
+        clientEmail: data?.clientInformation?.email || data?.clientEmail,
+        clientName: data?.clientInformation?.name || data?.clientName,
+        userId: data?.userId,
+      };
+      
+      // 🔒 SECURITY: Hard authorization check - require both userId fields to be present
+      if (!user.firebaseUid) {
+        console.error(`🚨 [SECURITY] User ${request.userId} has no firebaseUid for manual payment`);
+        throw new Error('Access denied: User authentication incomplete');
       }
+      
+      if (!projectData.userId) {
+        console.error(`🚨 [SECURITY] Firebase project ${request.firebaseProjectId} has no userId for manual payment`);
+        throw new Error('Access denied: Project ownership cannot be verified');
+      }
+      
+      // Verify ownership
+      if (projectData.userId !== user.firebaseUid) {
+        console.error(`🚨 [SECURITY] Manual payment ownership mismatch: Firebase project ${request.firebaseProjectId} belongs to ${projectData.userId}, request from ${user.firebaseUid}`);
+        throw new Error('Access denied: You do not own this project');
+      }
+      
+      console.log(`✅ [MANUAL-PAYMENT] Found Firebase project: ${request.firebaseProjectId}, ownership verified`);
     }
 
     // Generate invoice number
     const invoiceNumber = await this.generateInvoiceNumber(request.userId);
+
+    // Resolve client info
+    const resolvedClientEmail = request.clientEmail || projectData.clientEmail;
+    const resolvedClientName = request.clientName || projectData.clientName;
 
     // Create payment record with SUCCEEDED status (already paid)
     // Note: Store payment method in notes since paymentMethod column doesn't exist
     const methodNote = `[${request.manualMethod.toUpperCase()}]${request.referenceNumber ? ` Ref: ${request.referenceNumber}` : ''}${request.notes ? ` - ${request.notes}` : ''}`;
     
     const paymentData: InsertProjectPayment = {
-      projectId: request.projectId && request.projectId > 0 ? request.projectId : 0,
+      projectId: 0, // Using 0 for Firebase-based projects
+      firebaseProjectId: request.firebaseProjectId || undefined,
       userId: request.userId,
       amount: request.amount,
       type: request.type,
       status: 'succeeded', // Manual payments are already completed
       description: request.description,
-      clientEmail: request.clientEmail || undefined,
-      clientName: request.clientName || undefined,
+      clientEmail: resolvedClientEmail || undefined,
+      clientName: resolvedClientName || undefined,
       invoiceNumber,
       notes: methodNote,
       paidDate: request.paymentDate || new Date(),
@@ -605,10 +651,8 @@ export class ContractorPaymentService {
 
     console.log(`✅ [MANUAL-PAYMENT] Recorded ${request.manualMethod} payment #${payment.id} - $${(request.amount / 100).toFixed(2)}`);
 
-    // Update project payment status if linked to a project
-    if (request.projectId && request.projectId > 0) {
-      await this.updateProjectPaymentStatus(request.projectId);
-    }
+    // Note: Project payment status updates not needed for Firebase-based projects
+    // Firebase estimates are the source of truth and don't need PostgreSQL sync
 
     return {
       paymentId: payment.id,

@@ -220,6 +220,7 @@ export const paymentHistory = pgTable('payment_history', {
 export const projectPayments = pgTable('project_payments', {
   id: serial('id').primaryKey(),
   projectId: integer('project_id').notNull(),
+  firebaseProjectId: text('firebase_project_id'), // Firebase estimate ID (source of truth)
   userId: integer('user_id').notNull(),
   amount: integer('amount').notNull(), // Amount in cents
   type: varchar('type', { length: 50 }).notNull(), // 'deposit', 'final', 'partial'

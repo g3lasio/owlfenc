@@ -7,6 +7,21 @@ import Stripe from "stripe";
 
 const router = Router();
 
+// 🔒 Security helper: Map error messages to appropriate HTTP status codes
+function getErrorStatusCode(errorMessage: string): number {
+  const message = errorMessage.toLowerCase();
+  if (message.includes('access denied') || message.includes('do not own')) {
+    return 403; // Forbidden
+  }
+  if (message.includes('not found')) {
+    return 404; // Not Found
+  }
+  if (message.includes('authentication')) {
+    return 401; // Unauthorized
+  }
+  return 500; // Default to internal server error
+}
+
 // Use Firebase Authentication instead of JWT
 import { verifyFirebaseAuth } from "../middleware/firebase-auth";
 import { requireSubscriptionLevel, PermissionLevel } from "../middleware/subscription-auth";
@@ -32,7 +47,7 @@ const createPaymentStructureSchema = z.object({
 });
 
 // Schema for creating individual payment
-// NOTE: projectId can be a Firebase document ID (string) or a number, or null for quick invoices
+// NOTE: projectId is a Firebase document ID (string) or null for quick invoices
 const createPaymentSchema = z.object({
   projectId: z.union([z.number(), z.string()]).optional().nullable(),
   amount: z.number().min(1),
@@ -41,6 +56,7 @@ const createPaymentSchema = z.object({
   clientEmail: z.string().email().optional().nullable().or(z.literal("")),
   clientName: z.string().optional().nullable(),
   clientPhone: z.string().optional().nullable(),
+  address: z.string().optional().nullable(), // Project address from Firebase
   dueDate: z.string().optional().nullable(),
   paymentMethod: z.enum(["terminal", "link", "manual"]).optional().nullable(),
   manualMethod: z.string().optional().nullable(),
@@ -53,6 +69,7 @@ const createPaymentSchema = z.object({
 const quickPaymentSchema = z.object({
   projectId: z.union([z.number(), z.string()]).optional().nullable(),
   type: z.enum(["deposit", "final"]),
+  totalAmount: z.number().min(1).optional(), // Total project amount in cents
 });
 
 // Schema for manual payment registration (cash, check, zelle, venmo)
@@ -86,15 +103,16 @@ router.post(
       const { userMappingService } = await import('../services/userMappingService');
       const userId = await userMappingService.getOrCreateUserIdForFirebaseUid(req.firebaseUser.uid);
       
-      const projectId = parseInt(req.params.projectId);
+      // projectId is a Firebase document ID (string)
+      const firebaseProjectId = req.params.projectId;
       const validatedData = createPaymentStructureSchema.parse({
         ...req.body,
-        projectId,
+        projectId: firebaseProjectId,
       });
 
       const result =
         await contractorPaymentService.createProjectPaymentStructure(
-          projectId,
+          firebaseProjectId,
           userId,
           validatedData.totalAmount,
           {
@@ -109,9 +127,11 @@ router.post(
       });
     } catch (error) {
       console.error("Error creating payment structure:", error);
-      res.status(500).json({
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      const statusCode = getErrorStatusCode(errorMessage);
+      res.status(statusCode).json({
         message: "Error creating payment structure",
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: errorMessage,
       });
     }
   },
@@ -119,6 +139,7 @@ router.post(
 
 /**
  * Create individual payment and payment link
+ * Uses Firebase projectId (string) as source of truth for project data
  */
 router.post("/create", isAuthenticated, requireSubscriptionLevel(PermissionLevel.BASIC), async (req: Request, res: Response) => {
   try {
@@ -132,22 +153,18 @@ router.post("/create", isAuthenticated, requireSubscriptionLevel(PermissionLevel
     
     const validatedData = createPaymentSchema.parse(req.body);
     
-    // Convert projectId to number if string, or use 0 for null/undefined (quick invoices)
-    let projectIdNum: number = 0;
-    if (validatedData.projectId !== null && validatedData.projectId !== undefined) {
-      projectIdNum = typeof validatedData.projectId === 'string' 
-        ? parseInt(validatedData.projectId, 10) || 0 
-        : validatedData.projectId;
-    }
+    // projectId from frontend is a Firebase document ID (string) or null for quick invoices
+    const firebaseProjectId = validatedData.projectId ? String(validatedData.projectId) : null;
 
     const result = await contractorPaymentService.createProjectPayment({
-      projectId: projectIdNum,
+      firebaseProjectId,
       userId,
       amount: validatedData.amount,
       type: validatedData.type,
       description: validatedData.description || "Payment",
       clientEmail: validatedData.clientEmail || undefined,
       clientName: validatedData.clientName || undefined,
+      address: validatedData.address || undefined,
       dueDate: validatedData.dueDate
         ? new Date(validatedData.dueDate)
         : undefined,
@@ -159,15 +176,18 @@ router.post("/create", isAuthenticated, requireSubscriptionLevel(PermissionLevel
     });
   } catch (error) {
     console.error("Error creating payment:", error);
-    res.status(500).json({
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const statusCode = getErrorStatusCode(errorMessage);
+    res.status(statusCode).json({
       message: "Error creating payment",
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: errorMessage,
     });
   }
 });
 
 /**
  * Create individual payment and payment link
+ * Uses Firebase projectId (string) as source of truth for project data
  */
 router.post(
   "/payments",
@@ -185,22 +205,18 @@ router.post(
       
       const validatedData = createPaymentSchema.parse(req.body);
       
-      // Convert projectId to number if string, or use 0 for null/undefined (quick invoices)
-      let projectIdNum: number = 0;
-      if (validatedData.projectId !== null && validatedData.projectId !== undefined) {
-        projectIdNum = typeof validatedData.projectId === 'string' 
-          ? parseInt(validatedData.projectId, 10) || 0 
-          : validatedData.projectId;
-      }
+      // projectId from frontend is a Firebase document ID (string) or null for quick invoices
+      const firebaseProjectId = validatedData.projectId ? String(validatedData.projectId) : null;
 
       const result = await contractorPaymentService.createProjectPayment({
-        projectId: projectIdNum,
+        firebaseProjectId,
         userId,
         amount: validatedData.amount,
         type: validatedData.type,
         description: validatedData.description || "Payment",
         clientEmail: validatedData.clientEmail || undefined,
         clientName: validatedData.clientName || undefined,
+        address: validatedData.address || undefined,
         dueDate: validatedData.dueDate
           ? new Date(validatedData.dueDate)
           : undefined,
@@ -223,6 +239,7 @@ router.post(
 /**
  * Register a manual payment (cash, check, zelle, venmo)
  * This endpoint does NOT create Stripe session - just records the payment as completed
+ * Uses Firebase projectId (string) as source of truth for project data
  */
 router.post(
   "/payments/manual",
@@ -241,16 +258,11 @@ router.post(
       // Validate input using Zod schema
       const validatedData = manualPaymentSchema.parse(req.body);
       
-      // Convert projectId to number if string
-      let projectIdNum: number | null = null;
-      if (validatedData.projectId !== null && validatedData.projectId !== undefined) {
-        projectIdNum = typeof validatedData.projectId === 'string' 
-          ? parseInt(validatedData.projectId, 10) || null 
-          : validatedData.projectId;
-      }
+      // projectId from frontend is a Firebase document ID (string) or null
+      const firebaseProjectId = validatedData.projectId ? String(validatedData.projectId) : null;
 
       const result = await contractorPaymentService.registerManualPayment({
-        projectId: projectIdNum,
+        firebaseProjectId,
         userId,
         amount: Math.round(validatedData.amount), // Ensure cents
         type: validatedData.type,
@@ -284,10 +296,12 @@ router.post(
         });
       }
       
-      res.status(500).json({
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      const statusCode = getErrorStatusCode(errorMessage);
+      res.status(statusCode).json({
         success: false,
         message: "Error registering manual payment",
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: errorMessage,
       });
     }
   },
@@ -363,6 +377,7 @@ router.post(
 
 /**
  * Create quick payment link for deposit or final payment
+ * Uses Firebase projectId (string) as source of truth
  */
 router.post(
   "/payments/quick-link",
@@ -380,19 +395,16 @@ router.post(
       
       const validatedData = quickPaymentSchema.parse(req.body);
       
-      // Convert projectId to number if string, or use 0 for null/undefined
-      let projectIdNum: number = 0;
-      if (validatedData.projectId !== null && validatedData.projectId !== undefined) {
-        projectIdNum = typeof validatedData.projectId === 'string' 
-          ? parseInt(validatedData.projectId, 10) || 0 
-          : validatedData.projectId;
-      }
+      // projectId from frontend is a Firebase document ID (string)
+      const firebaseProjectId = validatedData.projectId ? String(validatedData.projectId) : '';
+      const totalAmount = validatedData.totalAmount || 0;
 
       // 🔒 SECURITY: Pass userId for ownership verification
       const result = await contractorPaymentService.createQuickPaymentLink(
-        projectIdNum,
+        firebaseProjectId,
         userId,
         validatedData.type,
+        totalAmount,
       );
 
       res.json({
@@ -401,9 +413,11 @@ router.post(
       });
     } catch (error) {
       console.error("Error creating quick payment link:", error);
-      res.status(500).json({
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      const statusCode = getErrorStatusCode(errorMessage);
+      res.status(statusCode).json({
         message: "Error creating quick payment link",
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: errorMessage,
       });
     }
   },
@@ -1118,9 +1132,11 @@ router.post("/create", isAuthenticated, async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Error creating payment:", error);
-    res.status(500).json({
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const statusCode = getErrorStatusCode(errorMessage);
+    res.status(statusCode).json({
       message: "Error creating payment",
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: errorMessage,
     });
   }
 });
