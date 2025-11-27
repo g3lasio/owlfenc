@@ -6467,6 +6467,67 @@ Output must be between 200-900 characters in English.`;
     }
   });
 
+  // 🚀 FIREBASE-ONLY: Importar múltiples clientes (BATCH IMPORT - ULTRA RÁPIDO)
+  app.post("/api/clients/import", requireAuth, async (req: Request, res: Response) => {
+    try {
+      if (!req.firebaseUser?.uid) {
+        return res.status(401).json({ message: "Usuario no autenticado" });
+      }
+      
+      const { clients } = req.body;
+      
+      if (!Array.isArray(clients) || clients.length === 0) {
+        return res.status(400).json({ message: "Se requiere un array de clientes" });
+      }
+      
+      console.log(`🚀 [FIREBASE-CLIENTS] Batch importing ${clients.length} clients for Firebase UID: ${req.firebaseUser.uid}`);
+      
+      const { getFirebaseManager } = await import('./storage-firebase-only');
+      const firebaseManager = getFirebaseManager();
+      const admin = (await import('firebase-admin')).default;
+      const db = admin.firestore();
+      
+      // Usar Firebase Batch Write para máxima velocidad (500 operaciones por batch)
+      const BATCH_SIZE = 500;
+      const clientIds: string[] = [];
+      let totalImported = 0;
+      
+      for (let i = 0; i < clients.length; i += BATCH_SIZE) {
+        const batch = db.batch();
+        const chunk = clients.slice(i, i + BATCH_SIZE);
+        
+        for (const clientData of chunk) {
+          const newClientRef = db.collection('clients').doc();
+          const newClient = {
+            ...clientData,
+            userId: req.firebaseUser.uid,
+            clientId: clientData.clientId || `client_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          };
+          
+          batch.set(newClientRef, newClient);
+          clientIds.push(newClientRef.id);
+        }
+        
+        await batch.commit();
+        totalImported += chunk.length;
+        console.log(`📦 [FIREBASE-CLIENTS] Batch ${Math.floor(i/BATCH_SIZE) + 1}: ${chunk.length} clientes importados`);
+      }
+      
+      console.log(`✅ [FIREBASE-CLIENTS] Batch import completed: ${totalImported} clients imported`);
+      res.json({ 
+        success: true, 
+        imported: totalImported,
+        clientIds,
+        message: `${totalImported} clientes importados exitosamente`
+      });
+    } catch (error) {
+      console.error("❌ [FIREBASE-CLIENTS] Error in batch import:", error);
+      res.status(500).json({ message: "Error al importar los clientes", error: String(error) });
+    }
+  });
+
   // 🔧 HERRAMIENTA DE DIAGNÓSTICO Y REPARACIÓN DE CONTACTOS
   // Analiza todos los clientes y detecta datos corruptos/mezclados
   app.get("/api/clients/repair/diagnose", requireAuth, async (req: Request, res: Response) => {
