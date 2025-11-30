@@ -1,20 +1,11 @@
-import { useState, useMemo } from 'react';
-import { X, Search, Plus, Filter } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { X, Search, Plus, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Badge } from '@/components/ui/badge';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { ConversationItem } from './ConversationItem';
 import type { ConversationListItem } from '@/../../shared/schema';
-import { formatDistanceToNow, isToday, isYesterday, isThisWeek, isThisMonth } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { isToday, isYesterday, isThisWeek, isThisMonth } from 'date-fns';
 
 interface ConversationHistoryProps {
   isOpen: boolean;
@@ -40,23 +31,34 @@ export function ConversationHistory({
   isLoading,
 }: ConversationHistoryProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [shouldRender, setShouldRender] = useState(false);
 
-  // Filter and group conversations
+  useEffect(() => {
+    if (isOpen) {
+      setShouldRender(true);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setIsAnimating(true);
+        });
+      });
+    } else {
+      setIsAnimating(false);
+      const timer = setTimeout(() => {
+        setShouldRender(false);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
+
   const { filteredConversations, groupedConversations } = useMemo(() => {
-    // Filter by search query and category
     let filtered = conversations.filter((conv) => {
       const matchesSearch =
         conv.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         conv.preview?.toLowerCase().includes(searchQuery.toLowerCase());
-
-      const matchesCategory =
-        categoryFilter === 'all' || conv.category === categoryFilter;
-
-      return matchesSearch && matchesCategory;
+      return matchesSearch;
     });
 
-    // Group by time periods
     const groups = {
       pinned: [] as ConversationListItem[],
       today: [] as ConversationListItem[],
@@ -86,16 +88,20 @@ export function ConversationHistory({
       filteredConversations: filtered,
       groupedConversations: groups,
     };
-  }, [conversations, searchQuery, categoryFilter]);
+  }, [conversations, searchQuery]);
 
   const renderGroup = (title: string, items: ConversationListItem[]) => {
     if (items.length === 0) return null;
 
     return (
-      <div className="mb-6" key={title}>
-        <h3 className="text-xs font-semibold text-gray-400 mb-2 px-2 uppercase tracking-wider">
-          {title}
-        </h3>
+      <div className="mb-5" key={title}>
+        <div className="flex items-center gap-2 mb-2 px-1">
+          <div className="h-px flex-1 bg-gradient-to-r from-gray-800 to-transparent" />
+          <span className="text-[11px] font-medium text-gray-500 uppercase tracking-widest">
+            {title}
+          </span>
+          <div className="h-px flex-1 bg-gradient-to-l from-gray-800 to-transparent" />
+        </div>
         <div className="space-y-1">
           {items.map((conversation) => (
             <ConversationItem
@@ -114,42 +120,57 @@ export function ConversationHistory({
     );
   };
 
-  if (!isOpen) return null;
+  if (!shouldRender) return null;
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop con animación */}
       <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
+        className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 ease-out ${
+          isAnimating ? 'opacity-100' : 'opacity-0'
+        }`}
         onClick={onClose}
       />
 
-      {/* Sidebar */}
-      <div className="fixed top-0 right-0 h-full w-full sm:w-96 bg-black border-l border-cyan-900/30 shadow-2xl z-50 flex flex-col">
-        {/* Header */}
-        <div className="p-4 border-b border-cyan-900/30 flex items-center justify-between bg-gradient-to-r from-black to-cyan-950/20">
-          <div>
-            <h2 className="text-lg font-bold text-cyan-400">Historial</h2>
-            <p className="text-xs text-gray-400">
-              {filteredConversations.length} conversaciones
-            </p>
+      {/* Sidebar con animación de deslizamiento */}
+      <div
+        className={`fixed top-0 right-0 h-full w-full sm:w-[380px] bg-gradient-to-b from-gray-950 to-black z-50 flex flex-col shadow-2xl transition-transform duration-300 ease-out ${
+          isAnimating ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        {/* Borde decorativo izquierdo */}
+        <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-cyan-500/40 via-purple-500/20 to-transparent" />
+
+        {/* Header minimalista */}
+        <div className="relative px-5 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 flex items-center justify-center">
+              <MessageSquare className="w-4 h-4 text-cyan-400" />
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-white">Historial</h2>
+              <p className="text-[11px] text-gray-500">
+                {filteredConversations.length} conversaciones
+              </p>
+            </div>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
+          <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white"
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/5 transition-all duration-200"
             data-testid="button-close-history"
           >
-            <X className="w-5 h-5" />
-          </Button>
+            <X className="w-4 h-4" />
+          </button>
         </div>
 
-        {/* New Conversation Button */}
-        <div className="p-4 border-b border-cyan-900/30">
+        {/* Separador sutil */}
+        <div className="mx-5 h-px bg-gradient-to-r from-transparent via-gray-800 to-transparent" />
+
+        {/* Botón Nueva Conversación */}
+        <div className="px-5 py-4">
           <Button
             onClick={onNewConversation}
-            className="w-full bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 text-white font-semibold"
+            className="w-full h-10 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-medium rounded-xl shadow-lg shadow-cyan-500/20 transition-all duration-200 hover:shadow-cyan-500/30 hover:scale-[1.02] active:scale-[0.98]"
             data-testid="button-new-conversation"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -157,84 +178,73 @@ export function ConversationHistory({
           </Button>
         </div>
 
-        {/* Search and Filters */}
-        <div className="p-4 space-y-3 border-b border-cyan-900/30">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        {/* Buscador limpio */}
+        <div className="px-5 pb-4">
+          <div className="relative group">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 group-focus-within:text-cyan-400 transition-colors duration-200" />
             <Input
-              placeholder="Buscar conversaciones..."
+              placeholder="Buscar..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-gray-900/50 border-cyan-900/30 text-white placeholder:text-gray-500"
+              className="pl-10 h-10 bg-white/5 border-0 text-white placeholder:text-gray-600 rounded-xl focus:ring-1 focus:ring-cyan-500/50 focus:bg-white/10 transition-all duration-200"
               data-testid="input-search-conversations"
             />
-          </div>
-
-          {/* Category Filter */}
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-gray-400" />
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="flex-1 bg-gray-900/50 border-cyan-900/30 text-white" data-testid="select-category-filter">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas</SelectItem>
-                <SelectItem value="estimate">Estimados</SelectItem>
-                <SelectItem value="contract">Contratos</SelectItem>
-                <SelectItem value="permit">Permisos</SelectItem>
-                <SelectItem value="property">Propiedades</SelectItem>
-                <SelectItem value="general">General</SelectItem>
-              </SelectContent>
-            </Select>
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-gray-700 hover:bg-gray-600 flex items-center justify-center transition-colors"
+              >
+                <X className="w-3 h-3 text-gray-400" />
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Conversations List */}
-        <ScrollArea className="flex-1">
-          <div className="p-4">
+        {/* Separador */}
+        <div className="mx-5 h-px bg-gradient-to-r from-transparent via-gray-800/50 to-transparent" />
+
+        {/* Lista de conversaciones */}
+        <ScrollArea className="flex-1 px-3">
+          <div className="py-4">
             {isLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="text-center space-y-2">
-                  <div className="animate-spin w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full mx-auto" />
-                  <p className="text-sm text-gray-400">Cargando conversaciones...</p>
-                </div>
+              <div className="flex flex-col items-center justify-center py-16">
+                <div className="w-10 h-10 rounded-full border-2 border-cyan-500/30 border-t-cyan-500 animate-spin mb-4" />
+                <p className="text-sm text-gray-500">Cargando...</p>
               </div>
             ) : filteredConversations.length === 0 ? (
-              <div className="text-center py-12 text-gray-400">
-                <p className="text-sm">
-                  {searchQuery || categoryFilter !== 'all'
+              <div className="flex flex-col items-center justify-center py-16 px-4">
+                <div className="w-16 h-16 rounded-2xl bg-gray-900 flex items-center justify-center mb-4">
+                  <MessageSquare className="w-7 h-7 text-gray-700" />
+                </div>
+                <p className="text-sm text-gray-500 text-center">
+                  {searchQuery
                     ? 'No se encontraron conversaciones'
                     : 'No tienes conversaciones guardadas'}
                 </p>
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="mt-3 text-xs text-cyan-500 hover:text-cyan-400 transition-colors"
+                  >
+                    Limpiar búsqueda
+                  </button>
+                )}
               </div>
             ) : (
               <>
                 {renderGroup('📌 Fijadas', groupedConversations.pinned)}
                 {renderGroup('Hoy', groupedConversations.today)}
                 {renderGroup('Ayer', groupedConversations.yesterday)}
-                {renderGroup('Esta Semana', groupedConversations.thisWeek)}
-                {renderGroup('Este Mes', groupedConversations.thisMonth)}
-                {renderGroup('Más Antiguas', groupedConversations.older)}
+                {renderGroup('Esta semana', groupedConversations.thisWeek)}
+                {renderGroup('Este mes', groupedConversations.thisMonth)}
+                {renderGroup('Anteriores', groupedConversations.older)}
               </>
             )}
           </div>
         </ScrollArea>
 
-        {/* Footer Stats */}
-        <div className="p-3 border-t border-cyan-900/30 bg-gray-950/50">
-          <div className="flex items-center justify-between text-xs text-gray-500">
-            <span>Total: {conversations.length}</span>
-            <div className="flex gap-2">
-              <Badge variant="outline" className="text-xs border-cyan-700/30 text-cyan-400">
-                {conversations.filter((c) => c.category === 'estimate').length} Estimados
-              </Badge>
-              <Badge variant="outline" className="text-xs border-purple-700/30 text-purple-400">
-                {conversations.filter((c) => c.category === 'contract').length} Contratos
-              </Badge>
-            </div>
-          </div>
-        </div>
+        {/* Gradiente inferior decorativo */}
+        <div className="h-8 bg-gradient-to-t from-black to-transparent pointer-events-none" />
       </div>
     </>
   );
