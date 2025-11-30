@@ -52,6 +52,8 @@ export interface UseMervinAgentReturn {
   clearMessages: () => void;
   startNewConversation: () => void;
   loadConversation: (conversationId: string) => void;
+  hydrateMessagesFromHistory: (historyMessages: MervinMessage[]) => void;
+  loadConversationFromHistory: (conversationId: string, historyMessages: MervinMessage[]) => Promise<void>;
   isHealthy: boolean;
   systemStatus: any;
   persistenceState: PersistenceState;
@@ -355,11 +357,41 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
   }, []);
 
   /**
-   * Cargar conversación existente
+   * Cargar conversación existente (solo actualiza el persistence controller)
    */
   const loadConversation = useCallback((conversationId: string) => {
     persistenceRef.current?.loadConversation(conversationId);
     console.log(`📂 [MERVIN-AGENT] Loaded conversation: ${conversationId}`);
+  }, []);
+
+  /**
+   * Hidratar mensajes desde una conversación cargada del historial
+   * Esto permite restaurar los mensajes en la UI cuando se selecciona una conversación anterior
+   */
+  const hydrateMessagesFromHistory = useCallback((historyMessages: MervinMessage[]) => {
+    console.log(`💧 [MERVIN-AGENT] Hydrating ${historyMessages.length} messages from history`);
+    setMessages(historyMessages);
+    setStreamingUpdates([]);
+  }, []);
+
+  /**
+   * Cargar conversación desde historial de forma completa y sincrónica
+   * Esta es la forma recomendada de cargar conversaciones del historial
+   * ya que maneja correctamente la hidratación y evita race conditions
+   */
+  const loadConversationFromHistory = useCallback(async (
+    conversationId: string, 
+    historyMessages: MervinMessage[]
+  ): Promise<void> => {
+    console.log(`📂 [MERVIN-AGENT] Loading conversation ${conversationId} with ${historyMessages.length} messages`);
+    
+    // 1. Primero resetear el estado
+    setStreamingUpdates([]);
+    
+    // 2. Hidratar los mensajes directamente
+    setMessages(historyMessages);
+    
+    console.log(`✅ [MERVIN-AGENT] Conversation ${conversationId} loaded successfully`);
   }, []);
 
   return {
@@ -370,6 +402,8 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
     clearMessages,
     startNewConversation,
     loadConversation,
+    hydrateMessagesFromHistory,
+    loadConversationFromHistory,
     isHealthy,
     systemStatus,
     persistenceState,

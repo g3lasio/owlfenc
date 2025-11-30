@@ -109,6 +109,10 @@ export function MervinExperience({ mode, onMinimize, isMinimized = false, onClos
   const conversationManager = useConversationManager({
     userId: currentUser?.uid || null,
   });
+  
+  // Estado para trackear si estamos esperando cargar una conversación del historial
+  const [pendingConversationLoad, setPendingConversationLoad] = useState<string | null>(null);
+  
 
   // Mode restrictions
   const isFreeUser = userPlan?.id === 4 || userPlan?.id === 5 || 
@@ -131,7 +135,7 @@ export function MervinExperience({ mode, onMinimize, isMinimized = false, onClos
       // No mostrar toast - es redundante y molesto al cargar la página
     }
   }, [userPlan, isFreeUser, selectedModel]);
-
+  
   // Initialize Mervin V2 Agent
   const mervinAgent = useMervinAgent({
     userId: currentUser?.uid || 'guest',
@@ -178,6 +182,44 @@ export function MervinExperience({ mode, onMinimize, isMinimized = false, onClos
       }
     }
   });
+
+  // Efecto para cargar mensajes cuando la conversación se carga del historial
+  // ARQUITECTURA SIMPLIFICADA: Usamos mervinAgent.messages como única fuente de verdad
+  useEffect(() => {
+    // Solo procesar si estamos esperando cargar una conversación específica
+    if (!pendingConversationLoad) return;
+    
+    // Si aún está cargando, esperar
+    if (conversationManager.isLoadingConversation) return;
+    
+    // Si la conversación cargó y coincide con la que esperábamos
+    if (conversationManager.activeConversation && 
+        conversationManager.activeConversationId === pendingConversationLoad) {
+      
+      const conv = conversationManager.activeConversation;
+      
+      console.log(`📂 [HISTORY] Loading conversation ${conv.conversationId} with ${conv.messages.length} messages`);
+      
+      // Mapear mensajes al formato del agente (ÚNICA FUENTE DE VERDAD)
+      const agentMessages = conv.messages.map((msg, index) => ({
+        id: msg.id || `hydrated-${index}-${Date.now()}`,
+        role: msg.sender === 'user' ? 'user' as const : 'assistant' as const,
+        content: msg.text,
+        timestamp: msg.timestamp instanceof Date ? msg.timestamp : new Date(msg.timestamp),
+      }));
+      
+      // Usar el nuevo método del hook que maneja todo correctamente
+      mervinAgent.loadConversationFromHistory(conv.conversationId, agentMessages);
+      
+      setSelectedModel('agent');
+      setCurrentAIModel(conv.aiModel === 'claude' ? 'Claude Sonnet 4' : 'ChatGPT-4o');
+      
+      // Limpiar el estado de carga pendiente
+      setPendingConversationLoad(null);
+      
+      console.log(`✅ [HISTORY] Loaded ${agentMessages.length} messages successfully`);
+    }
+  }, [pendingConversationLoad, conversationManager.activeConversation, conversationManager.activeConversationId, conversationManager.isLoadingConversation]);
 
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
@@ -363,27 +405,22 @@ export function MervinExperience({ mode, onMinimize, isMinimized = false, onClos
   };
   
   const handleSelectConversation = async (conversationId: string) => {
+    console.log(`📂 [HISTORY] User selected conversation: ${conversationId}`);
+    
+    // Limpiar mensajes actuales mientras cargamos
+    setMessages([]);
+    
+    // Marcar que estamos esperando cargar esta conversación
+    setPendingConversationLoad(conversationId);
+    
+    // Notificar a los sistemas de la nueva conversación
     mervinAgent.loadConversation(conversationId);
     conversationManager.loadConversation(conversationId);
+    
+    // Cerrar el sidebar del historial
     setIsHistorySidebarOpen(false);
     
-    setTimeout(() => {
-      if (conversationManager.activeConversation) {
-        const conv = conversationManager.activeConversation;
-        
-        const mervinMessages: Message[] = conv.messages.map(msg => ({
-          id: msg.id,
-          content: msg.text,
-          sender: msg.sender === 'user' ? 'user' : 'assistant',
-          timestamp: msg.timestamp,
-          state: msg.state as MessageState | undefined,
-        }));
-        
-        setMessages(mervinMessages);
-        setSelectedModel('agent');
-        setCurrentAIModel(conv.aiModel === 'claude' ? 'Claude Sonnet 4' : 'ChatGPT-4o');
-      }
-    }, 300);
+    // El useEffect de arriba se encargará de cargar los mensajes cuando los datos estén listos
   };
   
   const handleDeleteConversation = async (conversationId: string) => {
