@@ -193,6 +193,7 @@ export function ConversationHistory({
               <button
                 onClick={() => setSearchQuery('')}
                 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-gray-700 hover:bg-gray-600 flex items-center justify-center transition-colors"
+                data-testid="button-clear-search"
               >
                 <X className="w-3 h-3 text-gray-400" />
               </button>
