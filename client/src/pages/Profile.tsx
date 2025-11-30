@@ -128,9 +128,6 @@ export default function Profile() {
   >(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
-  
-  // CRITICAL: Lock to prevent useEffect from overwriting images during save operations
-  const imageSavingLockRef = useRef(false);
 
   // ===== USER SETTINGS STATES =====
   // Types for settings
@@ -199,35 +196,16 @@ export default function Profile() {
     }
   });
 
+  // Sync profile data from React Query to local state
+  // This should only update local state when profile data changes from external sources
   useEffect(() => {
     if (profile) {
-      // CRITICAL: Skip sync if we're currently saving images to prevent overwriting
-      if (imageSavingLockRef.current) {
-        console.log("🔒 [PROFILE-SYNC] Skipping sync - image save in progress");
-        return;
-      }
+      console.log("🔄 [PROFILE-SYNC-V2] Syncing from React Query cache");
+      console.log("   📸 profilePhoto:", profile.profilePhoto ? "exists" : "empty");
+      console.log("   🖼️ logo:", profile.logo ? "exists" : "empty");
       
-      setCompanyInfo((prev) => {
-        // CRITICAL: Preserve existing profilePhoto and logo if they exist locally
-        // and the incoming profile doesn't have them (prevents race condition reset)
-        const preservedProfilePhoto = (prev.profilePhoto && !profile.profilePhoto) 
-          ? prev.profilePhoto 
-          : profile.profilePhoto || prev.profilePhoto;
-        const preservedLogo = (prev.logo && !profile.logo) 
-          ? prev.logo 
-          : profile.logo || prev.logo;
-        
-        console.log("🔄 [PROFILE-SYNC] Merging profile data");
-        console.log("   📸 profilePhoto: prev=", prev.profilePhoto ? "exists" : "empty", "incoming=", profile.profilePhoto ? "exists" : "empty");
-        console.log("   🖼️ logo: prev=", prev.logo ? "exists" : "empty", "incoming=", profile.logo ? "exists" : "empty");
-        
-        return {
-          ...prev,
-          ...profile,
-          profilePhoto: preservedProfilePhoto,
-          logo: preservedLogo,
-        };
-      });
+      // Simply use the profile from React Query as the source of truth
+      setCompanyInfo(profile);
     }
   }, [profile]);
 
@@ -239,12 +217,6 @@ export default function Profile() {
   }, [profile, isLoadingProfile]);
 
   const loadCompanyProfile = async () => {
-    // CRITICAL: Skip load if we're currently saving images to prevent overwriting
-    if (imageSavingLockRef.current) {
-      console.log("🔒 [PROFILE-LOAD] Skipping load - image save in progress");
-      return;
-    }
-    
     try {
       console.log("🔄 Cargando perfil de empresa...");
 
@@ -262,12 +234,7 @@ export default function Profile() {
           userId,
         );
         const parsedProfile = JSON.parse(localProfile);
-        // Preserve existing images when loading from localStorage
-        setCompanyInfo((prev) => ({
-          ...parsedProfile,
-          profilePhoto: parsedProfile.profilePhoto || prev.profilePhoto,
-          logo: parsedProfile.logo || prev.logo,
-        }));
+        setCompanyInfo(parsedProfile);
         return;
       } else {
         console.log("📦 No hay perfil guardado para usuario:", userId);
@@ -284,12 +251,7 @@ export default function Profile() {
       }
 
       const data = await response.json();
-      // Preserve existing images when loading from API
-      setCompanyInfo((prev) => ({
-        ...data,
-        profilePhoto: data.profilePhoto || prev.profilePhoto,
-        logo: data.logo || prev.logo,
-      }));
+      setCompanyInfo(data);
     } catch (error) {
       console.error("Error loading profile:", error);
 
@@ -383,89 +345,66 @@ export default function Profile() {
     }
 
     if (type === "logo") {
-      // CRITICAL: Lock to prevent useEffect from overwriting during save
-      imageSavingLockRef.current = true;
-      console.log("🔒 [LOGO] Lock activado - sincronización pausada");
-      
-      // Helper to safely release lock
-      const releaseLock = () => {
-        imageSavingLockRef.current = false;
-        console.log("🔓 [LOGO] Lock liberado - sincronización reanudada");
-      };
-      
-      // Convertir logo a Base64 para almacenamiento en base de datos
+      // NEW APPROACH: Use React Query optimistic updates as single source of truth
       const reader = new FileReader();
       reader.onload = async (e) => {
         try {
           const base64Result = e.target?.result as string;
+          console.log("🖼️ [LOGO-V2] Converting to base64...");
 
-          const updatedInfo = {
+          // STEP 1: Optimistic update - immediately update React Query cache
+          const queryKey = ["userProfile", currentUser?.uid];
+          const previousProfile = queryClient.getQueryData<CompanyInfoType>(queryKey);
+          
+          const updatedProfile = {
             ...companyInfo,
+            ...previousProfile,
             logo: base64Result,
           };
-
-          setCompanyInfo(updatedInfo);
-
-          // PERSISTENCE LAYER 1: Guardar inmediatamente en localStorage
-          const userId = currentUser?.uid;
-          const profileKey = `userProfile_${userId}`;
-          localStorage.setItem(profileKey, JSON.stringify(updatedInfo));
-          console.log("💾 [LOGO] Guardado en localStorage");
-
-          // PERSISTENCE LAYER 2: Guardar en servidor inmediatamente con autenticación
-          try {
-            const authHeaders = await getAuthHeaders();
-            const response = await fetch("/api/profile", {
-              method: "POST",
-              credentials: "include",
-              headers: { 
-                "Content-Type": "application/json",
-                ...authHeaders
-              },
-              body: JSON.stringify(updatedInfo),
-            });
-            if (response.ok) {
-              console.log("✅ [LOGO] Guardado en servidor");
-            }
-          } catch (error) {
-            console.warn("⚠️ [LOGO] Error guardando en servidor:", error);
-          }
-
-          // PERSISTENCE LAYER 3: Guardar en Firestore (fuente de verdad)
-          if (updateProfile) {
-            try {
-              await updateProfile(updatedInfo);
-              console.log("💾 [LOGO] Guardado en Firestore");
-              
-              // Invalidate React Query cache AFTER Firestore confirms the save
-              queryClient.invalidateQueries({ queryKey: ["userProfile", currentUser?.uid] });
-              console.log("🔄 [LOGO] Cache de React Query invalidado");
-            } catch (firebaseError) {
-              console.warn("⚠️ [LOGO] Error guardando en Firestore:", firebaseError);
-            }
-          }
-
-          toast({
-            title: "Logo guardado",
-            description: `${file.name} guardado correctamente`,
-          });
           
-          // Release lock after a delay to allow refetch with new data
-          setTimeout(releaseLock, 2000);
+          // Set cache immediately (optimistic)
+          queryClient.setQueryData(queryKey, updatedProfile);
+          console.log("⚡ [LOGO-V2] React Query cache updated optimistically");
+          
+          // Also update local state for immediate UI feedback
+          setCompanyInfo(updatedProfile);
+
+          // STEP 2: Persist to Firestore via the hook (single source of truth)
+          try {
+            console.log("🔥 [LOGO-V2] Saving to Firestore via updateProfile hook...");
+            await updateProfile(updatedProfile);
+            console.log("✅ [LOGO-V2] Firestore save confirmed!");
+            
+            toast({
+              title: "Logo guardado",
+              description: `${file.name} guardado correctamente`,
+            });
+          } catch (firestoreError) {
+            console.error("❌ [LOGO-V2] Firestore save failed:", firestoreError);
+            
+            // Rollback optimistic update on failure
+            if (previousProfile) {
+              queryClient.setQueryData(queryKey, previousProfile);
+              setCompanyInfo(previousProfile);
+            }
+            
+            toast({
+              title: "Error",
+              description: "No se pudo guardar el logo. Inténtalo de nuevo.",
+              variant: "destructive",
+            });
+          }
         } catch (error) {
-          console.error("❌ [LOGO] Error procesando logo:", error);
+          console.error("❌ [LOGO-V2] Error:", error);
           toast({
             title: "Error",
-            description: "No se pudo procesar el logo. Inténtalo de nuevo.",
+            description: "No se pudo procesar el logo.",
             variant: "destructive",
           });
-          // CRITICAL: Always release lock on error to prevent deadlock
-          releaseLock();
         }
       };
 
       reader.onerror = () => {
-        releaseLock();
         toast({
           title: "Error",
           description: "No se pudo procesar la imagen",
@@ -578,10 +517,10 @@ export default function Profile() {
   };
 
   // ===== PROFILE PHOTO UPLOAD HANDLER =====
+  // NEW APPROACH: Use React Query optimistic updates as single source of truth
   const handleProfilePhotoUpload = async (file: File) => {
     if (!file) return;
 
-    // Validar que el usuario esté autenticado
     if (!currentUser?.uid) {
       toast({
         title: "Autenticación requerida",
@@ -591,7 +530,6 @@ export default function Profile() {
       return;
     }
 
-    // Validar tamaño del archivo (máximo 2MB para base64)
     if (file.size > 2 * 1024 * 1024) {
       toast({
         title: "Archivo muy grande",
@@ -601,7 +539,6 @@ export default function Profile() {
       return;
     }
 
-    // Validar tipo de archivo
     if (!file.type.startsWith('image/')) {
       toast({
         title: "Formato inválido",
@@ -612,111 +549,68 @@ export default function Profile() {
     }
 
     setUploadingPhoto(true);
-    // CRITICAL: Lock to prevent useEffect from overwriting during save
-    imageSavingLockRef.current = true;
-    console.log("🔒 [PROFILE-PHOTO] Lock activado - sincronización pausada");
-    
-    // Helper to safely release lock
-    const releaseLock = () => {
-      imageSavingLockRef.current = false;
-      console.log("🔓 [PROFILE-PHOTO] Lock liberado - sincronización reanudada");
-    };
     
     try {
-      console.log("📸 [PROFILE-PHOTO] Procesando foto de perfil...");
+      console.log("📸 [PROFILE-PHOTO-V2] Converting to base64...");
       
-      // Convertir la imagen a base64 para almacenarla directamente
       const base64Photo = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = (e) => {
-          const result = e.target?.result as string;
-          resolve(result);
-        };
-        reader.onerror = () => {
-          reject(new Error("Error leyendo el archivo"));
-        };
+        reader.onload = (e) => resolve(e.target?.result as string);
+        reader.onerror = () => reject(new Error("Error reading file"));
         reader.readAsDataURL(file);
       });
 
-      console.log("✅ [PROFILE-PHOTO] Foto procesada exitosamente");
+      console.log("✅ [PROFILE-PHOTO-V2] Base64 conversion complete");
       
-      // Actualizar el estado con la imagen en base64
-      const updatedInfo = {
+      // STEP 1: Optimistic update - immediately update React Query cache
+      const queryKey = ["userProfile", currentUser.uid];
+      const previousProfile = queryClient.getQueryData<CompanyInfoType>(queryKey);
+      
+      const updatedProfile = {
         ...companyInfo,
+        ...previousProfile,
         profilePhoto: base64Photo,
       };
       
-      setCompanyInfo(updatedInfo);
-
-      // PERSISTENCE LAYER 1: Guardar inmediatamente en localStorage
-      const userId = currentUser?.uid;
-      const profileKey = `userProfile_${userId}`;
-      localStorage.setItem(profileKey, JSON.stringify(updatedInfo));
-      console.log("💾 [PROFILE-PHOTO] Foto guardada en localStorage");
-
-      // PERSISTENCE LAYER 2: Guardar en servidor inmediatamente con autenticación
-      try {
-        const authHeaders = await getAuthHeaders();
-        const response = await fetch("/api/profile", {
-          method: "POST",
-          credentials: "include",
-          headers: { 
-            "Content-Type": "application/json",
-            ...authHeaders
-          },
-          body: JSON.stringify(updatedInfo),
-        });
-        
-        if (response.ok) {
-          console.log("✅ [PROFILE-PHOTO] Foto guardada en servidor");
-        } else {
-          console.warn("⚠️ [PROFILE-PHOTO] Respuesta no-ok del servidor:", response.status);
-        }
-      } catch (error) {
-        console.warn("⚠️ [PROFILE-PHOTO] Error con autenticación, intentando sin headers:", error);
-        try {
-          await fetch("/api/profile", {
-            method: "POST",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(updatedInfo),
-          });
-          console.log("✅ [PROFILE-PHOTO] Foto guardada en servidor (fallback)");
-        } catch (fallbackError) {
-          console.warn("⚠️ [PROFILE-PHOTO] Error guardando en servidor:", fallbackError);
-        }
-      }
-
-      // PERSISTENCE LAYER 3: Guardar en Firestore (fuente de verdad para sync entre dispositivos)
-      if (updateProfile) {
-        try {
-          await updateProfile(updatedInfo);
-          console.log("💾 [PROFILE-PHOTO] Foto guardada en Firestore");
-          
-          // Invalidate React Query cache AFTER Firestore confirms the save
-          queryClient.invalidateQueries({ queryKey: ["userProfile", currentUser?.uid] });
-          console.log("🔄 [PROFILE-PHOTO] Cache de React Query invalidado");
-        } catch (firebaseError) {
-          console.warn("⚠️ [PROFILE-PHOTO] Error guardando en Firestore:", firebaseError);
-        }
-      }
-
-      toast({
-        title: "Foto actualizada",
-        description: "Tu foto de perfil se ha guardado correctamente y es persistente.",
-      });
+      // Set cache immediately (optimistic)
+      queryClient.setQueryData(queryKey, updatedProfile);
+      console.log("⚡ [PROFILE-PHOTO-V2] React Query cache updated optimistically");
       
-      // Release lock after a delay to allow refetch with new data
-      setTimeout(releaseLock, 2000);
+      // Also update local state for immediate UI feedback
+      setCompanyInfo(updatedProfile);
+      
+      // STEP 2: Persist to Firestore via the hook (single source of truth)
+      try {
+        console.log("🔥 [PROFILE-PHOTO-V2] Saving to Firestore via updateProfile hook...");
+        await updateProfile(updatedProfile);
+        console.log("✅ [PROFILE-PHOTO-V2] Firestore save confirmed!");
+        
+        toast({
+          title: "Foto actualizada",
+          description: "Tu foto de perfil se ha guardado correctamente.",
+        });
+      } catch (firestoreError) {
+        console.error("❌ [PROFILE-PHOTO-V2] Firestore save failed:", firestoreError);
+        
+        // Rollback optimistic update on failure
+        if (previousProfile) {
+          queryClient.setQueryData(queryKey, previousProfile);
+          setCompanyInfo(previousProfile);
+        }
+        
+        toast({
+          title: "Error",
+          description: "No se pudo guardar la foto. Inténtalo de nuevo.",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
-      console.error("❌ [PROFILE-PHOTO] Error procesando foto:", error);
+      console.error("❌ [PROFILE-PHOTO-V2] Error:", error);
       toast({
         title: "Error",
-        description: "No se pudo procesar la foto de perfil. Inténtalo de nuevo.",
+        description: "No se pudo procesar la foto de perfil.",
         variant: "destructive",
       });
-      // CRITICAL: Always release lock on error to prevent deadlock
-      releaseLock();
     } finally {
       setUploadingPhoto(false);
     }
