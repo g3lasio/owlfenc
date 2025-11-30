@@ -340,17 +340,10 @@ function Projects() {
         
         if (allProjects.length === 0) {
           console.log("📭 [DASHBOARD] Dashboard vacío - No hay estimados");
-          // No mostrar toast en carga vacía, solo en errores
         } else {
           console.log(`✅ [DASHBOARD] Dashboard cargado exitosamente con ${allProjects.length} proyectos`);
-          // ✅ FIXED: Solo mostrar toast en la primera carga exitosa usando ref
-          if (!hasLoadedOnce.current && !isBackgroundRefresh) {
-            toast({
-              title: "📊 Dashboard Cargado",
-              description: `${allProjects.length} proyecto${allProjects.length !== 1 ? 's' : ''} sincronizado${allProjects.length !== 1 ? 's' : ''} desde estimates.`,
-            });
-            hasLoadedOnce.current = true;
-          }
+          // No mostrar toast - la carga exitosa se refleja en la UI sin necesidad de notificación
+          hasLoadedOnce.current = true;
         }
 
         // ✅ Canonicalize all project progress states to ensure timeline compatibility

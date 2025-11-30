@@ -123,16 +123,14 @@ export function MervinExperience({ mode, onMinimize, isMinimized = false, onClos
   
   const [selectedModel, setSelectedModel] = useState<"legacy" | "agent">(getInitialModel());
   
+  // Cambiar a legacy silenciosamente si el usuario es free (sin toast invasivo)
   useEffect(() => {
-    if (isFreeUser && selectedModel === "agent") {
+    // Solo cambiar si userPlan está cargado Y es un usuario free
+    if (userPlan && isFreeUser && selectedModel === "agent") {
       setSelectedModel("legacy");
-      toast({
-        title: "Legacy Mode Activado",
-        description: "Tu plan actual solo tiene acceso a Chat Mode. Actualiza a Mero Patrón o Master Contractor para usar Agent Mode.",
-        variant: "default"
-      });
+      // No mostrar toast - es redundante y molesto al cargar la página
     }
-  }, [isFreeUser, selectedModel, toast]);
+  }, [userPlan, isFreeUser, selectedModel]);
 
   // Initialize Mervin V2 Agent
   const mervinAgent = useMervinAgent({
@@ -415,21 +413,14 @@ export function MervinExperience({ mode, onMinimize, isMinimized = false, onClos
     try {
       await navigator.clipboard.writeText(content);
       setCopiedMessageId(messageId);
-      
-      toast({
-        title: "✓ Copiado",
-        description: "Mensaje copiado al portapapeles",
-      });
+      // No mostrar toast - el icono de check ya da feedback visual
       
       setTimeout(() => {
         setCopiedMessageId(null);
       }, 2000);
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'No se pudo copiar el mensaje',
-        variant: 'destructive',
-      });
+      console.error('Error copying message:', error);
+      // Solo log, no toast para errores menores
     }
   };
 
@@ -463,11 +454,7 @@ export function MervinExperience({ mode, onMinimize, isMinimized = false, onClos
     }
 
     setAttachedFiles(prev => [...prev, ...newFiles]);
-    
-    toast({
-      title: '✓ Archivos adjuntados',
-      description: `${newFiles.length} archivo(s) listo(s) para enviar`,
-    });
+    // No mostrar toast - los archivos se muestran visualmente en la UI
 
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
