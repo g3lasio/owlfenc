@@ -128,6 +128,9 @@ export default function Profile() {
   >(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  
+  // CRITICAL: Lock to prevent useEffect from overwriting images during save operations
+  const imageSavingLockRef = useRef(false);
 
   // ===== USER SETTINGS STATES =====
   // Types for settings
@@ -198,10 +201,33 @@ export default function Profile() {
 
   useEffect(() => {
     if (profile) {
-      setCompanyInfo((prev) => ({
-        ...prev,
-        ...profile,
-      }));
+      // CRITICAL: Skip sync if we're currently saving images to prevent overwriting
+      if (imageSavingLockRef.current) {
+        console.log("🔒 [PROFILE-SYNC] Skipping sync - image save in progress");
+        return;
+      }
+      
+      setCompanyInfo((prev) => {
+        // CRITICAL: Preserve existing profilePhoto and logo if they exist locally
+        // and the incoming profile doesn't have them (prevents race condition reset)
+        const preservedProfilePhoto = (prev.profilePhoto && !profile.profilePhoto) 
+          ? prev.profilePhoto 
+          : profile.profilePhoto || prev.profilePhoto;
+        const preservedLogo = (prev.logo && !profile.logo) 
+          ? prev.logo 
+          : profile.logo || prev.logo;
+        
+        console.log("🔄 [PROFILE-SYNC] Merging profile data");
+        console.log("   📸 profilePhoto: prev=", prev.profilePhoto ? "exists" : "empty", "incoming=", profile.profilePhoto ? "exists" : "empty");
+        console.log("   🖼️ logo: prev=", prev.logo ? "exists" : "empty", "incoming=", profile.logo ? "exists" : "empty");
+        
+        return {
+          ...prev,
+          ...profile,
+          profilePhoto: preservedProfilePhoto,
+          logo: preservedLogo,
+        };
+      });
     }
   }, [profile]);
 
@@ -213,6 +239,12 @@ export default function Profile() {
   }, [profile, isLoadingProfile]);
 
   const loadCompanyProfile = async () => {
+    // CRITICAL: Skip load if we're currently saving images to prevent overwriting
+    if (imageSavingLockRef.current) {
+      console.log("🔒 [PROFILE-LOAD] Skipping load - image save in progress");
+      return;
+    }
+    
     try {
       console.log("🔄 Cargando perfil de empresa...");
 
@@ -230,7 +262,12 @@ export default function Profile() {
           userId,
         );
         const parsedProfile = JSON.parse(localProfile);
-        setCompanyInfo(parsedProfile);
+        // Preserve existing images when loading from localStorage
+        setCompanyInfo((prev) => ({
+          ...parsedProfile,
+          profilePhoto: parsedProfile.profilePhoto || prev.profilePhoto,
+          logo: parsedProfile.logo || prev.logo,
+        }));
         return;
       } else {
         console.log("📦 No hay perfil guardado para usuario:", userId);
@@ -247,7 +284,12 @@ export default function Profile() {
       }
 
       const data = await response.json();
-      setCompanyInfo(data);
+      // Preserve existing images when loading from API
+      setCompanyInfo((prev) => ({
+        ...data,
+        profilePhoto: data.profilePhoto || prev.profilePhoto,
+        logo: data.logo || prev.logo,
+      }));
     } catch (error) {
       console.error("Error loading profile:", error);
 
@@ -341,60 +383,89 @@ export default function Profile() {
     }
 
     if (type === "logo") {
+      // CRITICAL: Lock to prevent useEffect from overwriting during save
+      imageSavingLockRef.current = true;
+      console.log("🔒 [LOGO] Lock activado - sincronización pausada");
+      
+      // Helper to safely release lock
+      const releaseLock = () => {
+        imageSavingLockRef.current = false;
+        console.log("🔓 [LOGO] Lock liberado - sincronización reanudada");
+      };
+      
       // Convertir logo a Base64 para almacenamiento en base de datos
       const reader = new FileReader();
       reader.onload = async (e) => {
-        const base64Result = e.target?.result as string;
-
-        const updatedInfo = {
-          ...companyInfo,
-          logo: base64Result,
-        };
-
-        setCompanyInfo(updatedInfo);
-
-        // PERSISTENCE LAYER 1: Guardar inmediatamente en localStorage
-        const userId = currentUser?.uid;
-        const profileKey = `userProfile_${userId}`;
-        localStorage.setItem(profileKey, JSON.stringify(updatedInfo));
-        console.log("💾 [LOGO] Guardado en localStorage");
-
-        // PERSISTENCE LAYER 2: Guardar en servidor inmediatamente con autenticación
         try {
-          const authHeaders = await getAuthHeaders();
-          const response = await fetch("/api/profile", {
-            method: "POST",
-            credentials: "include",
-            headers: { 
-              "Content-Type": "application/json",
-              ...authHeaders
-            },
-            body: JSON.stringify(updatedInfo),
-          });
-          if (response.ok) {
-            console.log("✅ [LOGO] Guardado en servidor");
-          }
-        } catch (error) {
-          console.warn("⚠️ [LOGO] Error guardando en servidor:", error);
-        }
+          const base64Result = e.target?.result as string;
 
-        // PERSISTENCE LAYER 3: Guardar en Firestore (fuente de verdad)
-        if (updateProfile) {
+          const updatedInfo = {
+            ...companyInfo,
+            logo: base64Result,
+          };
+
+          setCompanyInfo(updatedInfo);
+
+          // PERSISTENCE LAYER 1: Guardar inmediatamente en localStorage
+          const userId = currentUser?.uid;
+          const profileKey = `userProfile_${userId}`;
+          localStorage.setItem(profileKey, JSON.stringify(updatedInfo));
+          console.log("💾 [LOGO] Guardado en localStorage");
+
+          // PERSISTENCE LAYER 2: Guardar en servidor inmediatamente con autenticación
           try {
-            await updateProfile(updatedInfo);
-            console.log("💾 [LOGO] Guardado en Firestore");
-          } catch (firebaseError) {
-            console.warn("⚠️ [LOGO] Error guardando en Firestore:", firebaseError);
+            const authHeaders = await getAuthHeaders();
+            const response = await fetch("/api/profile", {
+              method: "POST",
+              credentials: "include",
+              headers: { 
+                "Content-Type": "application/json",
+                ...authHeaders
+              },
+              body: JSON.stringify(updatedInfo),
+            });
+            if (response.ok) {
+              console.log("✅ [LOGO] Guardado en servidor");
+            }
+          } catch (error) {
+            console.warn("⚠️ [LOGO] Error guardando en servidor:", error);
           }
-        }
 
-        toast({
-          title: "Logo guardado",
-          description: `${file.name} guardado correctamente`,
-        });
+          // PERSISTENCE LAYER 3: Guardar en Firestore (fuente de verdad)
+          if (updateProfile) {
+            try {
+              await updateProfile(updatedInfo);
+              console.log("💾 [LOGO] Guardado en Firestore");
+              
+              // Invalidate React Query cache AFTER Firestore confirms the save
+              queryClient.invalidateQueries({ queryKey: ["userProfile", currentUser?.uid] });
+              console.log("🔄 [LOGO] Cache de React Query invalidado");
+            } catch (firebaseError) {
+              console.warn("⚠️ [LOGO] Error guardando en Firestore:", firebaseError);
+            }
+          }
+
+          toast({
+            title: "Logo guardado",
+            description: `${file.name} guardado correctamente`,
+          });
+          
+          // Release lock after a delay to allow refetch with new data
+          setTimeout(releaseLock, 2000);
+        } catch (error) {
+          console.error("❌ [LOGO] Error procesando logo:", error);
+          toast({
+            title: "Error",
+            description: "No se pudo procesar el logo. Inténtalo de nuevo.",
+            variant: "destructive",
+          });
+          // CRITICAL: Always release lock on error to prevent deadlock
+          releaseLock();
+        }
       };
 
       reader.onerror = () => {
+        releaseLock();
         toast({
           title: "Error",
           description: "No se pudo procesar la imagen",
@@ -541,6 +612,16 @@ export default function Profile() {
     }
 
     setUploadingPhoto(true);
+    // CRITICAL: Lock to prevent useEffect from overwriting during save
+    imageSavingLockRef.current = true;
+    console.log("🔒 [PROFILE-PHOTO] Lock activado - sincronización pausada");
+    
+    // Helper to safely release lock
+    const releaseLock = () => {
+      imageSavingLockRef.current = false;
+      console.log("🔓 [PROFILE-PHOTO] Lock liberado - sincronización reanudada");
+    };
+    
     try {
       console.log("📸 [PROFILE-PHOTO] Procesando foto de perfil...");
       
@@ -611,6 +692,10 @@ export default function Profile() {
         try {
           await updateProfile(updatedInfo);
           console.log("💾 [PROFILE-PHOTO] Foto guardada en Firestore");
+          
+          // Invalidate React Query cache AFTER Firestore confirms the save
+          queryClient.invalidateQueries({ queryKey: ["userProfile", currentUser?.uid] });
+          console.log("🔄 [PROFILE-PHOTO] Cache de React Query invalidado");
         } catch (firebaseError) {
           console.warn("⚠️ [PROFILE-PHOTO] Error guardando en Firestore:", firebaseError);
         }
@@ -620,6 +705,9 @@ export default function Profile() {
         title: "Foto actualizada",
         description: "Tu foto de perfil se ha guardado correctamente y es persistente.",
       });
+      
+      // Release lock after a delay to allow refetch with new data
+      setTimeout(releaseLock, 2000);
     } catch (error) {
       console.error("❌ [PROFILE-PHOTO] Error procesando foto:", error);
       toast({
@@ -627,6 +715,8 @@ export default function Profile() {
         description: "No se pudo procesar la foto de perfil. Inténtalo de nuevo.",
         variant: "destructive",
       });
+      // CRITICAL: Always release lock on error to prevent deadlock
+      releaseLock();
     } finally {
       setUploadingPhoto(false);
     }
