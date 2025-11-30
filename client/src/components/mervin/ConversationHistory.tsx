@@ -204,9 +204,10 @@ export function ConversationHistory({
         {/* Separador */}
         <div className="mx-5 h-px bg-gradient-to-r from-transparent via-gray-800/50 to-transparent" />
 
-        {/* Lista de conversaciones */}
-        <ScrollArea className="flex-1 px-3">
-          <div className="py-4">
+        {/* Lista de conversaciones con scroll */}
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <ScrollArea className="h-full">
+            <div className="py-4 px-3">
             {isLoading ? (
               <div className="flex flex-col items-center justify-center py-16">
                 <div className="w-10 h-10 rounded-full border-2 border-cyan-500/30 border-t-cyan-500 animate-spin mb-4" />
@@ -241,8 +242,9 @@ export function ConversationHistory({
                 {renderGroup('Anteriores', groupedConversations.older)}
               </>
             )}
-          </div>
-        </ScrollArea>
+            </div>
+          </ScrollArea>
+        </div>
 
         {/* Gradiente inferior decorativo */}
         <div className="h-8 bg-gradient-to-t from-black to-transparent pointer-events-none" />
