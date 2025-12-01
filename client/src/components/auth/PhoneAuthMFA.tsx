@@ -22,6 +22,8 @@ import {
   EmailAuthProvider,
   GoogleAuthProvider,
   reauthenticateWithPopup,
+  reauthenticateWithRedirect,
+  getRedirectResult,
 } from 'firebase/auth';
 
 interface PhoneAuthMFAProps {
@@ -39,6 +41,7 @@ const PhoneAuthMFA: React.FC<PhoneAuthMFAProps> = ({ onSuccess, onCancel }) => {
   const [emailVerified, setEmailVerified] = useState(false);
   const [reauthPassword, setReauthPassword] = useState('');
   const [authProvider, setAuthProvider] = useState<'password' | 'google' | 'other'>('password');
+  const [googleVerifyFailed, setGoogleVerifyFailed] = useState(false);
   
   const { toast } = useToast();
 
@@ -57,7 +60,33 @@ const PhoneAuthMFA: React.FC<PhoneAuthMFAProps> = ({ onSuccess, onCancel }) => {
         setAuthProvider('other');
       }
     }
-  }, []);
+    
+    // Check for redirect result (Google re-auth redirect flow)
+    const checkRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+          console.log('✅ [MFA] Google re-authentication successful via redirect');
+          toast({
+            title: "Re-authenticated Successfully",
+            description: "You can now continue with 2FA setup.",
+          });
+          setStep('phone');
+        }
+      } catch (error: any) {
+        console.error('Redirect result error:', error);
+        if (error.code && error.code !== 'auth/popup-closed-by-user') {
+          toast({
+            title: "Re-authentication Failed",
+            description: "Please try again.",
+            variant: "destructive",
+          });
+        }
+      }
+    };
+    
+    checkRedirectResult();
+  }, [toast]);
 
   const handleSendEmailVerification = async () => {
     if (!auth.currentUser) return;
@@ -135,7 +164,25 @@ const PhoneAuthMFA: React.FC<PhoneAuthMFAProps> = ({ onSuccess, onCancel }) => {
         
       } else if (authProvider === 'google') {
         const provider = new GoogleAuthProvider();
-        await reauthenticateWithPopup(auth.currentUser, provider);
+        try {
+          await reauthenticateWithPopup(auth.currentUser, provider);
+        } catch (popupError: any) {
+          console.error('Popup re-authentication failed:', popupError);
+          
+          // If popup fails with internal-error or popup-blocked, try redirect
+          if (popupError.code === 'auth/internal-error' || 
+              popupError.code === 'auth/popup-blocked' ||
+              popupError.code === 'auth/cancelled-popup-request') {
+            console.log('🔄 [MFA] Falling back to redirect flow for Google re-auth');
+            toast({
+              title: "Redirecting to Google",
+              description: "You will be redirected to verify your Google account.",
+            });
+            await reauthenticateWithRedirect(auth.currentUser!, provider);
+            return; // Redirect will navigate away
+          }
+          throw popupError; // Re-throw other errors
+        }
       } else {
         toast({
           title: "Unsupported Auth Method",
@@ -158,6 +205,8 @@ const PhoneAuthMFA: React.FC<PhoneAuthMFAProps> = ({ onSuccess, onCancel }) => {
       console.error('Re-authentication error:', error);
       
       let errorMessage = "Re-authentication failed. Please try again.";
+      let shouldShowError = true;
+      
       if (error.code === 'auth/wrong-password') {
         errorMessage = "Incorrect password. Please try again.";
       } else if (error.code === 'auth/invalid-credential') {
@@ -166,13 +215,24 @@ const PhoneAuthMFA: React.FC<PhoneAuthMFAProps> = ({ onSuccess, onCancel }) => {
         errorMessage = "Sign-in popup was closed. Please try again.";
       } else if (error.code === 'auth/too-many-requests') {
         errorMessage = "Too many attempts. Please wait a moment before trying again.";
+      } else if (error.code === 'auth/internal-error') {
+        // This error with Google often means popup issues or domain not authorized
+        errorMessage = "Google verification failed. Please sign out and sign back in to continue.";
+        console.error('📛 [MFA] auth/internal-error - possible causes: popup blocked, domain not authorized, or OAuth misconfiguration');
+        setGoogleVerifyFailed(true);
+      } else if (error.code === 'auth/network-request-failed') {
+        errorMessage = "Network error. Please check your connection and try again.";
+      } else if (error.code === 'auth/user-mismatch') {
+        errorMessage = "The Google account doesn't match your current session. Please use the same account.";
       }
       
-      toast({
-        title: "Re-authentication Failed",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      if (shouldShowError) {
+        toast({
+          title: "Re-authentication Failed",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -574,26 +634,63 @@ const PhoneAuthMFA: React.FC<PhoneAuthMFAProps> = ({ onSuccess, onCancel }) => {
           </form>
         ) : authProvider === 'google' ? (
           <div className="space-y-4">
-            <p className="text-sm text-gray-400 text-center">
-              Click below to verify with your Google account.
-            </p>
-            <Button
-              onClick={handleReauthentication}
-              disabled={isLoading}
-              className="w-full"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Verifying...
-                </>
-              ) : (
-                <>
-                  <ShieldCheck className="mr-2 h-4 w-4" />
-                  Verify with Google
-                </>
-              )}
-            </Button>
+            {googleVerifyFailed ? (
+              <>
+                <Alert className="border-yellow-600 bg-yellow-900/20">
+                  <AlertCircle className="h-4 w-4 text-yellow-400" />
+                  <AlertTitle className="text-yellow-400">Google Verification Unavailable</AlertTitle>
+                  <AlertDescription className="text-gray-300">
+                    Google verification is having issues in this environment. To continue with 2FA setup:
+                    <ol className="list-decimal list-inside mt-2 space-y-1 text-sm">
+                      <li>Sign out of your account</li>
+                      <li>Sign back in with Google</li>
+                      <li>Return to Profile and enable 2FA</li>
+                    </ol>
+                  </AlertDescription>
+                </Alert>
+                <Button
+                  onClick={() => {
+                    auth.signOut();
+                    window.location.href = '/auth';
+                  }}
+                  className="w-full bg-red-600 hover:bg-red-700"
+                >
+                  Sign Out & Re-login
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setGoogleVerifyFailed(false);
+                  }}
+                  className="w-full bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
+                >
+                  Try Again
+                </Button>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-gray-400 text-center">
+                  Click below to verify with your Google account.
+                </p>
+                <Button
+                  onClick={handleReauthentication}
+                  disabled={isLoading}
+                  className="w-full"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck className="mr-2 h-4 w-4" />
+                      Verify with Google
+                    </>
+                  )}
+                </Button>
+              </>
+            )}
           </div>
         ) : (
           <Alert variant="destructive">
