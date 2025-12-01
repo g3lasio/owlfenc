@@ -186,9 +186,13 @@ export const getFirebaseAuthCallbackUrl = (path: string = '/email-verification-c
 export const getFirebaseActionCodeSettings = (callbackPath: string = '/email-verification-callback') => {
   const callbackUrl = getFirebaseAuthCallbackUrl(callbackPath);
   
+  // CRITICAL FIX: Use handleCodeInApp: false for web apps
+  // When false, Firebase handles verification automatically and redirects to continueUrl
+  // When true, requires Firebase Hosting/Dynamic Links configured (not available here)
+  // Setting to false ensures the email verification link works reliably
   return {
     url: callbackUrl,
-    handleCodeInApp: true,
+    handleCodeInApp: false,
   };
 };
 

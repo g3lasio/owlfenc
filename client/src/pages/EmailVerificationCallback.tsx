@@ -57,6 +57,19 @@ export default function EmailVerificationCallback() {
           return;
         }
 
+        // Handle other Firebase action modes first (password reset, etc.)
+        const otherModes = ['resetPassword', 'recoverEmail', 'revertSecondFactorAddition'];
+        if (mode && otherModes.includes(mode)) {
+          console.log(`📧 [EMAIL-VERIFY] Redirecting to appropriate handler for mode: ${mode}`);
+          if (mode === 'resetPassword') {
+            navigate(`/reset-password?oobCode=${oobCode}`);
+          } else {
+            setError(`This action type (${mode}) is not supported here.`);
+          }
+          return;
+        }
+
+        // Case 1: We have an oobCode - apply it to verify email
         if (mode === 'verifyEmail' && oobCode) {
           setVerificationMode('email');
           
@@ -80,36 +93,30 @@ export default function EmailVerificationCallback() {
           return;
         }
 
-        if (verified === 'true') {
-          if (auth.currentUser) {
-            await reload(auth.currentUser);
-            
-            if (auth.currentUser.emailVerified) {
-              setSuccess(true);
-              toast({
-                title: "Email Already Verified",
-                description: "Your email is verified. You can now enable 2FA.",
-              });
-              setTimeout(() => {
-                navigate("/profile?tab=settings");
-              }, 2000);
-              return;
-            }
+        // Case 2: Firebase already verified the email and redirected here (handleCodeInApp: false)
+        // Check if the current user's email is already verified
+        if (auth.currentUser) {
+          console.log('📧 [EMAIL-VERIFY] Checking current user verification status...');
+          await reload(auth.currentUser);
+          
+          if (auth.currentUser.emailVerified) {
+            console.log('📧 [EMAIL-VERIFY] Email is already verified!');
+            setVerificationMode('email');
+            setSuccess(true);
+            toast({
+              title: "Email Verified Successfully",
+              description: "Your email is verified. You can now enable 2FA.",
+            });
+            setTimeout(() => {
+              navigate("/profile?tab=settings&emailVerified=true");
+            }, 2000);
+            return;
           }
         }
 
-        const otherModes = ['resetPassword', 'recoverEmail', 'revertSecondFactorAddition'];
-        if (mode && otherModes.includes(mode)) {
-          console.log(`📧 [EMAIL-VERIFY] Redirecting to appropriate handler for mode: ${mode}`);
-          if (mode === 'resetPassword') {
-            navigate(`/reset-password?oobCode=${oobCode}`);
-          } else {
-            setError(`This action type (${mode}) is not supported here.`);
-          }
-          return;
-        }
-
-        setError("Invalid verification link. The link may have expired or already been used.");
+        // Case 3: User arrived here but email is not verified - show error with resend option
+        console.log('📧 [EMAIL-VERIFY] No valid verification found, showing error');
+        setError("Your email could not be verified. The link may have expired or already been used. Please request a new verification email.");
         
       } catch (err: any) {
         console.error("📧 [EMAIL-VERIFY] Error processing verification:", err);
