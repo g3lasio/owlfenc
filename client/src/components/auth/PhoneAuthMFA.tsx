@@ -18,6 +18,10 @@ import {
   PhoneMultiFactorGenerator,
   RecaptchaVerifier,
   sendEmailVerification,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
+  GoogleAuthProvider,
+  reauthenticateWithPopup,
 } from 'firebase/auth';
 
 interface PhoneAuthMFAProps {
@@ -30,16 +34,28 @@ const PhoneAuthMFA: React.FC<PhoneAuthMFAProps> = ({ onSuccess, onCancel }) => {
   const [verificationCode, setVerificationCode] = useState('');
   const [verificationId, setVerificationId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = useState<'phone' | 'verify'>('phone');
+  const [step, setStep] = useState<'phone' | 'verify' | 'reauth'>('phone');
   const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null);
   const [emailVerified, setEmailVerified] = useState(false);
+  const [reauthPassword, setReauthPassword] = useState('');
+  const [authProvider, setAuthProvider] = useState<'password' | 'google' | 'other'>('password');
   
   const { toast } = useToast();
 
-  // Check email verification status on mount
+  // Check email verification status and auth provider on mount
   React.useEffect(() => {
     if (auth.currentUser) {
       setEmailVerified(auth.currentUser.emailVerified);
+      
+      // Detect auth provider
+      const providers = auth.currentUser.providerData;
+      if (providers.some(p => p.providerId === 'google.com')) {
+        setAuthProvider('google');
+      } else if (providers.some(p => p.providerId === 'password')) {
+        setAuthProvider('password');
+      } else {
+        setAuthProvider('other');
+      }
     }
   }, []);
 
@@ -77,6 +93,83 @@ const PhoneAuthMFA: React.FC<PhoneAuthMFAProps> = ({ onSuccess, onCancel }) => {
       
       toast({
         title: "Error Sending Email",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle re-authentication for recent login requirement
+  const handleReauthentication = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!auth.currentUser) {
+      toast({
+        title: "Session Expired",
+        description: "Please sign in again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      
+      if (authProvider === 'password') {
+        if (!reauthPassword.trim()) {
+          toast({
+            title: "Password Required",
+            description: "Please enter your password to continue.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        const credential = EmailAuthProvider.credential(
+          auth.currentUser.email!,
+          reauthPassword
+        );
+        await reauthenticateWithCredential(auth.currentUser, credential);
+        
+      } else if (authProvider === 'google') {
+        const provider = new GoogleAuthProvider();
+        await reauthenticateWithPopup(auth.currentUser, provider);
+      } else {
+        toast({
+          title: "Unsupported Auth Method",
+          description: "Please sign out and sign back in to continue.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      toast({
+        title: "Re-authenticated Successfully",
+        description: "You can now continue with 2FA setup.",
+      });
+      
+      // Clear password and go back to phone step
+      setReauthPassword('');
+      setStep('phone');
+      
+    } catch (error: any) {
+      console.error('Re-authentication error:', error);
+      
+      let errorMessage = "Re-authentication failed. Please try again.";
+      if (error.code === 'auth/wrong-password') {
+        errorMessage = "Incorrect password. Please try again.";
+      } else if (error.code === 'auth/invalid-credential') {
+        errorMessage = "Invalid credentials. Please try again.";
+      } else if (error.code === 'auth/popup-closed-by-user') {
+        errorMessage = "Sign-in popup was closed. Please try again.";
+      } else if (error.code === 'auth/too-many-requests') {
+        errorMessage = "Too many attempts. Please wait a moment before trying again.";
+      }
+      
+      toast({
+        title: "Re-authentication Failed",
         description: errorMessage,
         variant: "destructive",
       });
@@ -206,8 +299,13 @@ const PhoneAuthMFA: React.FC<PhoneAuthMFAProps> = ({ onSuccess, onCancel }) => {
       } else if (error.code === 'auth/quota-exceeded') {
         errorMessage = "SMS quota exceeded. Please try again later.";
       } else if (error.code === 'auth/requires-recent-login') {
-        errorTitle = "Re-authentication Required";
-        errorMessage = "For security, please sign out and sign back in before enabling 2FA.";
+        // Show re-authentication step instead of just an error message
+        setStep('reauth');
+        toast({
+          title: "Security Verification Required",
+          description: "Please verify your identity to continue with 2FA setup.",
+        });
+        return;
       }
       
       toast({
@@ -417,6 +515,106 @@ const PhoneAuthMFA: React.FC<PhoneAuthMFAProps> = ({ onSuccess, onCancel }) => {
           <p>🔒 Code expires in 5 minutes</p>
           <p>Check that you entered the correct phone number</p>
         </div>
+      </div>
+    );
+  }
+
+  // Re-authentication step
+  if (step === 'reauth') {
+    return (
+      <div className="space-y-4">
+        <div className="text-center">
+          <div className="mx-auto w-12 h-12 bg-yellow-500/20 border border-yellow-500/30 rounded-full flex items-center justify-center mb-4">
+            <ShieldCheck className="w-6 h-6 text-yellow-400" />
+          </div>
+          <h3 className="text-lg font-medium text-cyan-400">Security Verification</h3>
+          <p className="text-sm text-gray-400 mt-2">
+            For your security, please verify your identity before enabling Two-Factor Authentication.
+          </p>
+        </div>
+
+        {authProvider === 'password' ? (
+          <form onSubmit={handleReauthentication} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="reauth-password" className="text-gray-300">
+                Enter your password
+              </Label>
+              <Input
+                id="reauth-password"
+                type="password"
+                placeholder="Your current password"
+                value={reauthPassword}
+                onChange={(e) => setReauthPassword(e.target.value)}
+                required
+                disabled={isLoading}
+                className="w-full bg-gray-800 border-gray-600 text-white"
+              />
+              <p className="text-xs text-gray-500">
+                Account: {auth.currentUser?.email}
+              </p>
+            </div>
+
+            <Button
+              type="submit"
+              disabled={isLoading || !reauthPassword.trim()}
+              className="w-full"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Verifying...
+                </>
+              ) : (
+                <>
+                  <ShieldCheck className="mr-2 h-4 w-4" />
+                  Verify Identity
+                </>
+              )}
+            </Button>
+          </form>
+        ) : authProvider === 'google' ? (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-400 text-center">
+              Click below to verify with your Google account.
+            </p>
+            <Button
+              onClick={handleReauthentication}
+              disabled={isLoading}
+              className="w-full"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Verifying...
+                </>
+              ) : (
+                <>
+                  <ShieldCheck className="mr-2 h-4 w-4" />
+                  Verify with Google
+                </>
+              )}
+            </Button>
+          </div>
+        ) : (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Action Required</AlertTitle>
+            <AlertDescription>
+              Please sign out and sign back in to continue with 2FA setup.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <Button
+          variant="ghost"
+          onClick={() => {
+            setStep('phone');
+            setReauthPassword('');
+          }}
+          className="w-full text-gray-400 hover:text-white"
+        >
+          Cancel
+        </Button>
       </div>
     );
   }
