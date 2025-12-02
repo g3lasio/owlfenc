@@ -1,0 +1,71 @@
+Quiero que implementes dos mejoras específicas en el modal de Historial de Estimados (Estimate Wizard):
+
+1. Barra de búsqueda de estimados
+
+Objetivo:
+Permitir encontrar un estimado rápido por ID o nombre del cliente.
+
+Requerimientos:
+
+Agregar un search input en la parte superior del modal de History.
+
+El placeholder puede ser algo como:
+Buscar estimado por cliente o ID…
+
+Mientras el usuario escribe:
+
+Filtrar en tiempo real la lista de estimados.
+
+Debe buscar por:
+
+ID del estimado (ej. EST-1748...)
+
+Nombre del cliente (ej. Turner Group Construction, Sharron Bryant).
+
+No recargar la página; todo debe ser filtrado en el frontend usando la data ya cargada.
+
+Mantener el estilo futurista / neón coherente con el resto de la UI (bordes cian suaves, fondo oscuro, tipografía consistente).
+
+2. Acciones rápidas con iconos limpios
+
+Objetivo:
+Mantener la lista visualmente limpia, pero con acciones rápidas por cada estimado.
+
+Requerimientos:
+
+En cada item del historial, mantener un área de acciones a la derecha.
+
+En lugar de mostrar muchos iconos todo el tiempo, el diseño debe:
+
+Mostrar los iconos solo al hacer hover sobre el card
+(o en mobile, al tocar el card / icono de “más”).
+
+Acciones mínimas recomendadas:
+
+Ver / editar estimado
+
+Descargar PDF
+
+Copiar URL / compartir
+
+Asegúrate de:
+
+Mantener los iconos alineados, del mismo tamaño, con buen espaciado.
+
+Usar un efecto hover suave (glow o ligero cambio de fondo) para dar sensación de UI futurista.
+
+No romper la lógica actual de clic en el item (si abre el estimado, respétalo y ajusta el comportamiento de iconos para que no interfiera).
+
+🎯 Resultado esperado
+
+El usuario puede buscar y encontrar un estimado en segundos usando el buscador.
+
+La lista se ve más limpia:
+
+sin iconos saturando la interfaz,
+
+pero con acciones rápidas accesibles al pasar el mouse.
+
+Todo debe mantener el estilo actual: oscuro, futurista, elegante y funcional, sin tocar la lógica principal del Estimate Wizard.
+
+Pídele que implemente esto sin romper nada de lo ya funcional.
