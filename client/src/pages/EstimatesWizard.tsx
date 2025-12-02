@@ -7541,100 +7541,87 @@ This link provides a professional view of your estimate that you can access anyt
         </DialogContent>
       </Dialog>
 
-      {/* Dialog del Historial de Estimados - Estilo Legal Defense */}
+      {/* Dialog del Historial de Estimados - Estilo EXACTO Legal Defense */}
       <Dialog open={showEstimatesHistory} onOpenChange={(open) => {
         setShowEstimatesHistory(open);
         if (!open) setHistorySearchQuery("");
       }}>
-        <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col bg-gray-900 border-gray-700">
-          <DialogHeader className="pb-4 border-b border-gray-700">
-            <DialogTitle className="text-xl font-semibold text-white flex items-center gap-2">
-              <FileText className="w-5 h-5" />
-              Historial de Estimados
-            </DialogTitle>
-            <DialogDescription className="text-gray-400">
-              Gestiona y revisa tus estimados guardados
-            </DialogDescription>
-          </DialogHeader>
-          
-          {/* Barra de búsqueda */}
-          <div className="py-3 border-b border-gray-700">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                type="text"
-                placeholder="Buscar por cliente o número de estimado..."
-                value={historySearchQuery}
-                onChange={(e) => setHistorySearchQuery(e.target.value)}
-                className="pl-10 pr-10 bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
-                data-testid="input-search-estimates"
-              />
-              {historySearchQuery && (
-                <button
-                  onClick={() => setHistorySearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col p-0 bg-transparent border-0">
+          {/* Estructura EXACTA de Legal Defense */}
+          <div className="estimates-cyber-panel p-6 overflow-y-auto max-h-[85vh]">
+            <h3 className="text-xl font-bold text-cyan-400 mb-6 flex items-center">
+              <FileText className="w-5 h-5 mr-2" />
+              ESTIMADOS GUARDADOS
+            </h3>
+            
+            {/* Barra de búsqueda */}
+            <div className="mb-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-cyan-400" />
+                <Input
+                  type="text"
+                  placeholder="Buscar por cliente o número..."
+                  value={historySearchQuery}
+                  onChange={(e) => setHistorySearchQuery(e.target.value)}
+                  className="pl-10 pr-10 bg-gray-900/50 border border-cyan-500/30 text-cyan-100 placeholder:text-cyan-700/50 focus:border-cyan-400"
+                  data-testid="input-search-estimates"
+                />
+                {historySearchQuery && (
+                  <button
+                    onClick={() => setHistorySearchQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-cyan-600 hover:text-cyan-400"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-
-          {/* Lista de estimados */}
-          <div className="flex-1 overflow-y-auto py-4">
+            
             {isLoadingEstimates ? (
               <div className="flex items-center justify-center py-12">
-                <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
-                <span className="ml-3 text-gray-400">Cargando estimados...</span>
+                <RefreshCw className="h-6 w-6 animate-spin text-cyan-400" />
+                <span className="ml-3 text-cyan-300/70">Cargando estimados...</span>
               </div>
             ) : savedEstimates.length === 0 ? (
               <div className="text-center py-12">
-                <FileText className="h-12 w-12 mx-auto mb-3 text-gray-600" />
-                <p className="text-gray-400 mb-1">No tienes estimados guardados</p>
-                <p className="text-sm text-gray-500">Crea tu primer estimado para verlo aquí</p>
+                <FileText className="h-12 w-12 mx-auto mb-3 text-cyan-400/30" />
+                <p className="text-cyan-300/70 mb-1">No tienes estimados guardados</p>
+                <p className="text-sm text-cyan-500/50">Crea tu primer estimado para verlo aquí</p>
               </div>
             ) : filteredEstimates.length === 0 ? (
               <div className="text-center py-12">
-                <Search className="h-10 w-10 mx-auto mb-3 text-gray-600" />
-                <p className="text-gray-400 mb-1">No se encontraron resultados</p>
-                <p className="text-sm text-gray-500">Intenta con otro término de búsqueda</p>
+                <Search className="h-10 w-10 mx-auto mb-3 text-cyan-400/30" />
+                <p className="text-cyan-300/70 mb-1">No se encontraron resultados</p>
+                <p className="text-sm text-cyan-500/50">Intenta con otro término de búsqueda</p>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="grid gap-4">
                 {filteredEstimates.map((est) => (
-                  <div 
-                    key={est.id} 
-                    className="p-4 bg-gray-800 border border-gray-700 rounded-lg hover:border-gray-600 transition-colors group"
-                  >
+                  <div key={est.id} className="estimates-contract-card">
                     <div className="flex items-center justify-between">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3 mb-2">
-                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-                            est.status === 'approved' 
-                              ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
-                              : est.status === 'sent' 
-                              ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 
-                              : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <div className={`estimates-status-badge ${
+                            est.status === 'approved' ? 'estimates-status-completed' :
+                            est.status === 'sent' ? 'estimates-status-sent' :
+                            'estimates-status-draft'
                           }`}>
-                            {est.status === 'approved' && <CheckCircle className="w-3 h-3" />}
-                            {est.status === 'sent' && <Send className="w-3 h-3" />}
-                            {est.status === 'draft' && <FileText className="w-3 h-3" />}
-                            {est.status === 'approved' ? 'Aprobado' : est.status === 'sent' ? 'Enviado' : 'Borrador'}
-                          </span>
-                          <span className="font-medium text-white truncate">{est.estimateNumber}</span>
+                            {est.status === 'approved' && <CheckCircle className="w-4 h-4" />}
+                            {est.status === 'sent' && <Send className="w-4 h-4" />}
+                            {est.status === 'draft' && <FileText className="w-4 h-4" />}
+                            {est.status === 'approved' ? 'APROBADO' : est.status === 'sent' ? 'ENVIADO' : 'BORRADOR'}
+                          </div>
+                          <h4 className="text-cyan-400 font-semibold">{est.estimateNumber}</h4>
                         </div>
                         
-                        <div className="text-sm text-gray-400 space-y-0.5">
-                          <div>Cliente: <span className="text-gray-300">{est.clientName}</span></div>
-                          <div className="flex items-center gap-4">
-                            <span className="text-green-400 font-semibold">${est.total.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
-                            <span className="text-gray-500">{new Date(est.estimateDate).toLocaleDateString()}</span>
-                          </div>
+                        <div className="text-cyan-300/70 text-sm space-y-1">
+                          <div>Cliente: {est.clientName}</div>
+                          <div>Total: ${est.total.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+                          <div>Creado: {new Date(est.estimateDate).toLocaleDateString()}</div>
                         </div>
                       </div>
                       
-                      {/* Botones de acción */}
-                      <div className="flex gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                      <div className="flex space-x-2">
                         <Button
                           variant="outline"
                           size="sm"
@@ -7642,8 +7629,7 @@ This link provides a professional view of your estimate that you can access anyt
                             setShowEstimatesHistory(false);
                             handleEditEstimate(est.id);
                           }}
-                          className="h-8 w-8 p-0 bg-gray-700 border-gray-600 hover:bg-gray-600"
-                          title="Ver/Editar"
+                          className="estimates-cyber-button-sm"
                           data-testid={`button-edit-estimate-${est.id}`}
                         >
                           <Eye className="w-4 h-4" />
@@ -7708,8 +7694,7 @@ This link provides a professional view of your estimate that you can access anyt
                               toast({ title: "Error", description: "No se pudo generar el PDF.", variant: "destructive" });
                             }
                           }}
-                          className="h-8 w-8 p-0 bg-gray-700 border-gray-600 hover:bg-gray-600"
-                          title="Descargar PDF"
+                          className="estimates-cyber-button-sm"
                           data-testid={`button-download-pdf-${est.id}`}
                         >
                           <Download className="w-4 h-4" />
@@ -7722,8 +7707,7 @@ This link provides a professional view of your estimate that you can access anyt
                             navigator.clipboard.writeText(`${window.location.origin}/estimate/${est.id}`);
                             toast({ title: "Link copiado", description: "URL copiada al portapapeles" });
                           }}
-                          className="h-8 w-8 p-0 bg-gray-700 border-gray-600 hover:bg-gray-600"
-                          title="Copiar URL"
+                          className="estimates-cyber-button-sm"
                           data-testid={`button-copy-url-${est.id}`}
                         >
                           <Copy className="w-4 h-4" />
@@ -7734,51 +7718,144 @@ This link provides a professional view of your estimate that you can access anyt
                 ))}
               </div>
             )}
+            
+            {/* Botones de acción al final */}
+            <div className="flex justify-between mt-6 pt-4 border-t border-cyan-500/20">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowEstimatesHistory(false);
+                  setHistorySearchQuery("");
+                }}
+                className="estimates-cyber-button-sm px-4"
+                data-testid="button-close-history"
+              >
+                <X className="w-4 h-4 mr-2" />
+                Cerrar
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowEstimatesHistory(false);
+                  setHistorySearchQuery("");
+                  setIsEditMode(false);
+                  setEditingEstimateId(null);
+                  setCurrentStep(0);
+                  setEstimate({
+                    client: null,
+                    items: [],
+                    projectDetails: "",
+                    subtotal: 0,
+                    tax: 0,
+                    total: 0,
+                    taxRate: 10,
+                    discountType: "percentage",
+                    discountValue: 0,
+                    discountAmount: 0,
+                    discountName: "",
+                    attachments: [],
+                  });
+                  window.history.replaceState({}, document.title, window.location.pathname);
+                }}
+                className="estimates-cyber-button-primary px-4"
+                data-testid="button-new-estimate"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Nuevo Estimado
+              </Button>
+            </div>
           </div>
 
-          {/* Footer con acciones */}
-          <DialogFooter className="pt-4 border-t border-gray-700 gap-3">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowEstimatesHistory(false);
-                setHistorySearchQuery("");
-              }}
-              className="bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700"
-              data-testid="button-close-history"
-            >
-              Cerrar
-            </Button>
-            <Button
-              onClick={() => {
-                setShowEstimatesHistory(false);
-                setHistorySearchQuery("");
-                setIsEditMode(false);
-                setEditingEstimateId(null);
-                setCurrentStep(0);
-                setEstimate({
-                  client: null,
-                  items: [],
-                  projectDetails: "",
-                  subtotal: 0,
-                  tax: 0,
-                  total: 0,
-                  taxRate: 10,
-                  discountType: "percentage",
-                  discountValue: 0,
-                  discountAmount: 0,
-                  discountName: "",
-                  attachments: [],
-                });
-                window.history.replaceState({}, document.title, window.location.pathname);
-              }}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-              data-testid="button-new-estimate"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Nuevo Estimado
-            </Button>
-          </DialogFooter>
+          {/* Estilos CSS EXACTOS de Legal Defense */}
+          <style>{`
+            .estimates-cyber-panel {
+              background: rgba(0, 20, 40, 0.8);
+              border: 1px solid rgba(0, 255, 255, 0.3);
+              border-radius: 0;
+              position: relative;
+              backdrop-filter: blur(10px);
+            }
+            
+            .estimates-cyber-panel::before {
+              content: '';
+              position: absolute;
+              top: 0;
+              left: 0;
+              right: 0;
+              bottom: 0;
+              background: linear-gradient(45deg, transparent 49%, rgba(0, 255, 255, 0.1) 50%, transparent 51%);
+              pointer-events: none;
+            }
+            
+            .estimates-contract-card {
+              background: rgba(0, 30, 60, 0.4);
+              border: 1px solid rgba(0, 255, 255, 0.2);
+              border-radius: 8px;
+              padding: 1.5rem;
+              transition: all 0.3s ease;
+              position: relative;
+            }
+            
+            .estimates-contract-card:hover {
+              border-color: rgba(0, 255, 255, 0.5);
+              box-shadow: 0 4px 20px rgba(0, 255, 255, 0.1);
+              transform: translateY(-2px);
+            }
+            
+            .estimates-status-badge {
+              display: inline-flex;
+              align-items: center;
+              gap: 0.5rem;
+              padding: 0.25rem 0.75rem;
+              border-radius: 12px;
+              font-size: 0.75rem;
+              font-weight: bold;
+              border: 1px solid;
+            }
+            
+            .estimates-status-completed {
+              background: rgba(16, 185, 129, 0.2);
+              color: #10b981;
+              border-color: #10b981;
+            }
+            
+            .estimates-status-sent {
+              background: rgba(59, 130, 246, 0.2);
+              color: #3b82f6;
+              border-color: #3b82f6;
+            }
+            
+            .estimates-status-draft {
+              background: rgba(245, 158, 11, 0.2);
+              color: #f59e0b;
+              border-color: #f59e0b;
+            }
+            
+            .estimates-cyber-button-sm {
+              background: rgba(0, 255, 255, 0.1) !important;
+              border: 1px solid rgba(0, 255, 255, 0.3) !important;
+              color: #00ffff !important;
+              padding: 0.5rem;
+            }
+            
+            .estimates-cyber-button-sm:hover {
+              background: rgba(0, 255, 255, 0.2) !important;
+              box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+            }
+            
+            .estimates-cyber-button-primary {
+              background: linear-gradient(135deg, rgba(0, 255, 255, 0.2), rgba(0, 150, 255, 0.2)) !important;
+              border: 1px solid #00ffff !important;
+              color: #00ffff !important;
+              font-weight: bold;
+              transition: all 0.3s ease;
+            }
+            
+            .estimates-cyber-button-primary:hover {
+              background: linear-gradient(135deg, rgba(0, 255, 255, 0.3), rgba(0, 150, 255, 0.3)) !important;
+              box-shadow: 0 0 30px rgba(0, 255, 255, 0.4);
+              transform: translateY(-2px);
+            }
+          `}</style>
         </DialogContent>
       </Dialog>
 
