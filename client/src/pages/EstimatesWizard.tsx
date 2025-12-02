@@ -7541,466 +7541,246 @@ This link provides a professional view of your estimate that you can access anyt
         </DialogContent>
       </Dialog>
 
-      {/* Panel Inline del Historial de Estimados - Estilo Legal Defense (cyber-panel) */}
-      {showEstimatesHistory && (
-        <div className="fixed inset-0 z-50 bg-black overflow-y-auto">
-          <div className="min-h-screen p-4 md:p-6">
-            <div className="max-w-5xl mx-auto space-y-6">
-              
-              {/* Header cyber-panel */}
-              <div className="cyber-panel p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 rounded-full bg-cyan-500/20 border border-cyan-400/30 flex items-center justify-center">
-                      <FileText className="w-6 h-6 text-cyan-400" />
-                    </div>
-                    <div>
-                      <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
-                        HISTORIAL DE ESTIMADOS
-                      </h1>
-                      <p className="text-cyan-300/70 text-sm mt-1">
-                        Gestiona y revisa todos tus estimados guardados
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <Button 
-                    variant="outline" 
-                    onClick={() => {
-                      setShowEstimatesHistory(false);
-                      setHistorySearchQuery("");
-                    }}
-                    className="border-cyan-400/50 text-cyan-400 hover:bg-cyan-400/10"
-                    data-testid="button-close-history-x"
-                  >
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    VOLVER AL WIZARD
-                  </Button>
-                </div>
-              </div>
-
-              {/* Stats cards */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="cyber-stat-card">
-                  <div className="stat-icon bg-cyan-500/20">
-                    <FileText className="w-6 h-6 text-cyan-400" />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-cyan-400">{savedEstimates.length}</div>
-                    <div className="text-cyan-300/70 text-sm">TOTAL</div>
-                  </div>
-                </div>
-                
-                <div className="cyber-stat-card">
-                  <div className="stat-icon bg-green-500/20">
-                    <CheckCircle className="w-6 h-6 text-green-400" />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-green-400">
-                      {savedEstimates.filter(e => e.status === 'approved').length}
-                    </div>
-                    <div className="text-cyan-300/70 text-sm">APROBADOS</div>
-                  </div>
-                </div>
-                
-                <div className="cyber-stat-card">
-                  <div className="stat-icon bg-blue-500/20">
-                    <Send className="w-6 h-6 text-blue-400" />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-blue-400">
-                      {savedEstimates.filter(e => e.status === 'sent').length}
-                    </div>
-                    <div className="text-cyan-300/70 text-sm">ENVIADOS</div>
-                  </div>
-                </div>
-                
-                <div className="cyber-stat-card">
-                  <div className="stat-icon bg-yellow-500/20">
-                    <Clock className="w-6 h-6 text-yellow-400" />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-yellow-400">
-                      {savedEstimates.filter(e => e.status === 'draft').length}
-                    </div>
-                    <div className="text-cyan-300/70 text-sm">BORRADORES</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Botón crear nuevo */}
-              <div className="cyber-panel p-6 text-center">
-                <div className="mb-4">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-cyan-500/20 border border-cyan-400/30 mb-4">
-                    <Plus className="w-8 h-8 text-cyan-400" />
-                  </div>
-                  <h3 className="text-xl font-bold text-cyan-400 mb-2">
-                    Crear Nuevo Estimado
-                  </h3>
-                  <p className="text-cyan-300/70 mb-6">
-                    Genera un estimado profesional para tu cliente
-                  </p>
-                </div>
-                
-                <Button 
-                  onClick={() => {
-                    setShowEstimatesHistory(false);
-                    setHistorySearchQuery("");
-                    setIsEditMode(false);
-                    setEditingEstimateId(null);
-                    setCurrentStep(0);
-                    setEstimate({
-                      client: null,
-                      items: [],
-                      projectDetails: "",
-                      subtotal: 0,
-                      tax: 0,
-                      total: 0,
-                      taxRate: 10,
-                      discountType: "percentage",
-                      discountValue: 0,
-                      discountAmount: 0,
-                      discountName: "",
-                      attachments: [],
-                    });
-                    window.history.replaceState({}, document.title, window.location.pathname);
-                  }}
-                  className="cyber-button-primary px-8 py-3 text-lg"
-                  data-testid="button-new-estimate"
+      {/* Dialog del Historial de Estimados - Estilo Legal Defense */}
+      <Dialog open={showEstimatesHistory} onOpenChange={(open) => {
+        setShowEstimatesHistory(open);
+        if (!open) setHistorySearchQuery("");
+      }}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col bg-gray-900 border-gray-700">
+          <DialogHeader className="pb-4 border-b border-gray-700">
+            <DialogTitle className="text-xl font-semibold text-white flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              Historial de Estimados
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Gestiona y revisa tus estimados guardados
+            </DialogDescription>
+          </DialogHeader>
+          
+          {/* Barra de búsqueda */}
+          <div className="py-3 border-b border-gray-700">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Buscar por cliente o número de estimado..."
+                value={historySearchQuery}
+                onChange={(e) => setHistorySearchQuery(e.target.value)}
+                className="pl-10 pr-10 bg-gray-800 border-gray-600 text-white placeholder:text-gray-500"
+                data-testid="input-search-estimates"
+              />
+              {historySearchQuery && (
+                <button
+                  onClick={() => setHistorySearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
                 >
-                  <Sparkles className="w-5 h-5 mr-2" />
-                  INICIAR NUEVO ESTIMADO
-                </Button>
-              </div>
-
-              {/* Lista de estimados */}
-              {savedEstimates.length > 0 && (
-                <div className="cyber-panel p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-xl font-bold text-cyan-400 flex items-center">
-                      <Shield className="w-5 h-5 mr-2" />
-                      ESTIMADOS GUARDADOS
-                    </h3>
-                    
-                    {/* Barra de búsqueda */}
-                    <div className="relative w-64">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-cyan-400" />
-                      <Input
-                        type="text"
-                        placeholder="Buscar..."
-                        value={historySearchQuery}
-                        onChange={(e) => setHistorySearchQuery(e.target.value)}
-                        className="pl-10 pr-10 h-9 text-sm bg-gray-900/50 border border-cyan-500/30 text-cyan-100 placeholder:text-cyan-700/50 focus:border-cyan-400"
-                        data-testid="input-search-estimates"
-                      />
-                      {historySearchQuery && (
-                        <button
-                          onClick={() => setHistorySearchQuery("")}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-cyan-600 hover:text-cyan-400"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {isLoadingEstimates ? (
-                    <div className="flex items-center justify-center py-12">
-                      <RefreshCw className="h-8 w-8 animate-spin text-cyan-400" />
-                      <span className="ml-3 text-cyan-300/70">Cargando estimados...</span>
-                    </div>
-                  ) : filteredEstimates.length === 0 ? (
-                    <div className="text-center py-12">
-                      <Search className="h-10 w-10 mx-auto mb-3 text-cyan-400/40" />
-                      <p className="text-cyan-300/70 mb-1">No se encontraron estimados</p>
-                      <p className="text-sm text-cyan-500/50">Intenta con otro término de búsqueda</p>
-                    </div>
-                  ) : (
-                    <div className="grid gap-4">
-                      {filteredEstimates.map((est) => (
-                        <div key={est.id} className="contract-card group">
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center space-x-3 mb-2">
-                                <div className={`status-badge ${
-                                  est.status === 'approved' ? 'status-completed' :
-                                  est.status === 'sent' ? 'status-sent' :
-                                  'status-draft'
-                                }`}>
-                                  {est.status === 'approved' && <CheckCircle className="w-4 h-4" />}
-                                  {est.status === 'sent' && <Send className="w-4 h-4" />}
-                                  {est.status === 'draft' && <FileText className="w-4 h-4" />}
-                                  {est.status === 'approved' ? 'APROBADO' : est.status === 'sent' ? 'ENVIADO' : 'BORRADOR'}
-                                </div>
-                                <h4 className="text-cyan-400 font-semibold truncate">{est.estimateNumber}</h4>
-                              </div>
-                              
-                              <div className="text-cyan-300/70 text-sm space-y-1">
-                                <div>Cliente: {est.clientName}</div>
-                                <div className="flex items-center gap-4">
-                                  <span className="text-green-400 font-bold">${est.total.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
-                                  <span>Creado: {new Date(est.estimateDate).toLocaleDateString()}</span>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            {/* Botones de acción */}
-                            <div className="flex space-x-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  setShowEstimatesHistory(false);
-                                  handleEditEstimate(est.id);
-                                }}
-                                className="cyber-button-sm"
-                                title="Ver/Editar"
-                                data-testid={`button-edit-estimate-${est.id}`}
-                              >
-                                <Eye className="w-4 h-4" />
-                              </Button>
-                              
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={async () => {
-                                  try {
-                                    if (!profile?.company) {
-                                      toast({
-                                        title: "❌ Perfil Incompleto",
-                                        description: "Debes completar el nombre de tu empresa antes de generar PDFs.",
-                                        variant: "destructive",
-                                      });
-                                      return;
-                                    }
-
-                                    const isPremiumUser = userSubscription?.plan?.id !== 1;
-                                    const payload = {
-                                      user: currentUser?.uid
-                                        ? [{ uid: currentUser.uid, email: currentUser.email, displayName: currentUser.displayName }]
-                                        : [{ uid: "anonymous-pdf-user", email: profile?.email || "contractor@example.com", displayName: profile?.company || "Anonymous User" }],
-                                      client: { name: est.clientName || "", email: est.clientEmail || "", phone: "", address: "" },
-                                      items: est.items || [],
-                                      projectTotalCosts: {
-                                        subtotal: Number(Number(est.subtotal || 0).toFixed(2)) || 0,
-                                        discount: Number(Number(est.discountAmount || 0).toFixed(2)) || 0,
-                                        taxRate: Number(Number((est.taxRate || 0).toFixed(2))) || 0,
-                                        tax: Number(Number((est.tax || 0).toFixed(2))) || 0,
-                                        total: Number(Number((est.total || 0).toFixed(2))) || 0,
-                                      },
-                                      originalData: { projectDescription: est.title || est.rawData?.projectDescription || "" },
-                                      contractor: {
-                                        name: profile?.company || "Professional Contractor",
-                                        company: profile?.company || "Construction Company",
-                                        address: profile?.address || "",
-                                        phone: profile?.phone || "",
-                                        email: profile?.email || currentUser?.email || "",
-                                        website: profile?.website || "",
-                                        logo: profile?.logo || "",
-                                        license: profile?.license || "",
-                                      },
-                                      isMembership: isPremiumUser,
-                                      templateMode: isPremiumUser ? "premium" : "basic",
-                                    };
-
-                                    const response = await axios.post("/api/estimate-puppeteer-pdf", payload, { responseType: "blob" });
-                                    const pdfBlob = new Blob([response.data], { type: "application/pdf" });
-                                    const clientName = est.clientName?.replace(/[^a-zA-Z0-9]/g, "_") || "client";
-                                    const timestamp = new Date().toISOString().slice(0, 10);
-                                    await shareOrDownloadPdf(pdfBlob, `estimate-${clientName}-${timestamp}.pdf`, {
-                                      title: `Estimate for ${est.clientName || "Client"}`,
-                                      text: `Professional estimate from ${profile?.company || "your contractor"}`,
-                                      clientName: est.clientName,
-                                      estimateNumber: `EST-${timestamp}`,
-                                    });
-                                    toast({ title: "✅ PDF Generated", description: "PDF downloaded successfully" });
-                                  } catch (error) {
-                                    console.error("PDF generation error:", error);
-                                    toast({ title: "❌ Error", description: "Could not generate PDF.", variant: "destructive" });
-                                  }
-                                }}
-                                className="cyber-button-sm"
-                                title="Descargar PDF"
-                                data-testid={`button-download-pdf-${est.id}`}
-                              >
-                                <Download className="w-4 h-4" />
-                              </Button>
-                              
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  navigator.clipboard.writeText(`${window.location.origin}/estimate/${est.id}`);
-                                  toast({ title: "✅ Link copiado", description: "URL copiada al portapapeles" });
-                                }}
-                                className="cyber-button-sm"
-                                title="Copiar URL"
-                                data-testid={`button-copy-url-${est.id}`}
-                              >
-                                <Copy className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              {savedEstimates.length === 0 && !isLoadingEstimates && (
-                <div className="cyber-panel p-12 text-center">
-                  <FileText className="h-16 w-16 mx-auto mb-4 text-cyan-400/30" />
-                  <p className="text-lg text-cyan-300/70 mb-2">No tienes estimados guardados</p>
-                  <p className="text-sm text-cyan-500/50">Crea tu primer estimado usando el botón de arriba</p>
-                </div>
+                  <X className="h-4 w-4" />
+                </button>
               )}
             </div>
           </div>
 
-          {/* Estilos CSS idénticos a Legal Defense */}
-          <style>{`
-            .cyber-panel {
-              background: rgba(0, 20, 40, 0.8);
-              border: 1px solid rgba(0, 255, 255, 0.3);
-              border-radius: 0;
-              position: relative;
-              backdrop-filter: blur(10px);
-            }
-            
-            .cyber-panel::before {
-              content: '';
-              position: absolute;
-              top: 0;
-              left: 0;
-              right: 0;
-              bottom: 0;
-              background: linear-gradient(45deg, transparent 49%, rgba(0, 255, 255, 0.1) 50%, transparent 51%);
-              pointer-events: none;
-            }
-            
-            .cyber-panel::after {
-              content: '';
-              position: absolute;
-              top: -2px;
-              left: -2px;
-              right: -2px;
-              bottom: -2px;
-              background: linear-gradient(45deg, #00ffff, transparent, #00ffff);
-              border-radius: inherit;
-              z-index: -1;
-              opacity: 0.3;
-            }
-            
-            .cyber-stat-card {
-              background: rgba(0, 20, 40, 0.6);
-              border: 1px solid rgba(0, 255, 255, 0.3);
-              padding: 1.5rem;
-              display: flex;
-              align-items: center;
-              gap: 1rem;
-              position: relative;
-              overflow: hidden;
-            }
-            
-            .cyber-stat-card::before {
-              content: '';
-              position: absolute;
-              top: 0;
-              left: -100%;
-              width: 100%;
-              height: 100%;
-              background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.1), transparent);
-              animation: shimmer 3s infinite;
-            }
-            
-            @keyframes shimmer {
-              0% { left: -100%; }
-              100% { left: 100%; }
-            }
-            
-            .stat-icon {
-              width: 48px;
-              height: 48px;
-              border-radius: 8px;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              border: 1px solid rgba(0, 255, 255, 0.3);
-            }
-            
-            .cyber-button-primary {
-              background: linear-gradient(135deg, rgba(0, 255, 255, 0.2), rgba(0, 150, 255, 0.2));
-              border: 1px solid #00ffff;
-              color: #00ffff;
-              font-weight: bold;
-              transition: all 0.3s ease;
-            }
-            
-            .cyber-button-primary:hover {
-              background: linear-gradient(135deg, rgba(0, 255, 255, 0.3), rgba(0, 150, 255, 0.3));
-              box-shadow: 0 0 30px rgba(0, 255, 255, 0.4);
-              transform: translateY(-2px);
-            }
-            
-            .cyber-button-sm {
-              background: rgba(0, 255, 255, 0.1) !important;
-              border: 1px solid rgba(0, 255, 255, 0.3) !important;
-              color: #00ffff !important;
-              padding: 0.5rem;
-            }
-            
-            .cyber-button-sm:hover {
-              background: rgba(0, 255, 255, 0.2) !important;
-              box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
-            }
-            
-            .contract-card {
-              background: rgba(0, 30, 60, 0.4);
-              border: 1px solid rgba(0, 255, 255, 0.2);
-              border-radius: 8px;
-              padding: 1.5rem;
-              transition: all 0.3s ease;
-              position: relative;
-            }
-            
-            .contract-card:hover {
-              border-color: rgba(0, 255, 255, 0.5);
-              box-shadow: 0 4px 20px rgba(0, 255, 255, 0.1);
-              transform: translateY(-2px);
-            }
-            
-            .status-badge {
-              display: inline-flex;
-              align-items: center;
-              gap: 0.5rem;
-              padding: 0.25rem 0.75rem;
-              border-radius: 12px;
-              font-size: 0.75rem;
-              font-weight: bold;
-              border: 1px solid;
-            }
-            
-            .status-completed {
-              background: rgba(16, 185, 129, 0.2);
-              color: #10b981;
-              border-color: #10b981;
-            }
-            
-            .status-sent {
-              background: rgba(59, 130, 246, 0.2);
-              color: #3b82f6;
-              border-color: #3b82f6;
-            }
-            
-            .status-draft {
-              background: rgba(245, 158, 11, 0.2);
-              color: #f59e0b;
-              border-color: #f59e0b;
-            }
-          `}</style>
-        </div>
-      )}
+          {/* Lista de estimados */}
+          <div className="flex-1 overflow-y-auto py-4">
+            {isLoadingEstimates ? (
+              <div className="flex items-center justify-center py-12">
+                <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
+                <span className="ml-3 text-gray-400">Cargando estimados...</span>
+              </div>
+            ) : savedEstimates.length === 0 ? (
+              <div className="text-center py-12">
+                <FileText className="h-12 w-12 mx-auto mb-3 text-gray-600" />
+                <p className="text-gray-400 mb-1">No tienes estimados guardados</p>
+                <p className="text-sm text-gray-500">Crea tu primer estimado para verlo aquí</p>
+              </div>
+            ) : filteredEstimates.length === 0 ? (
+              <div className="text-center py-12">
+                <Search className="h-10 w-10 mx-auto mb-3 text-gray-600" />
+                <p className="text-gray-400 mb-1">No se encontraron resultados</p>
+                <p className="text-sm text-gray-500">Intenta con otro término de búsqueda</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filteredEstimates.map((est) => (
+                  <div 
+                    key={est.id} 
+                    className="p-4 bg-gray-800 border border-gray-700 rounded-lg hover:border-gray-600 transition-colors group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-2">
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+                            est.status === 'approved' 
+                              ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
+                              : est.status === 'sent' 
+                              ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 
+                              : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                          }`}>
+                            {est.status === 'approved' && <CheckCircle className="w-3 h-3" />}
+                            {est.status === 'sent' && <Send className="w-3 h-3" />}
+                            {est.status === 'draft' && <FileText className="w-3 h-3" />}
+                            {est.status === 'approved' ? 'Aprobado' : est.status === 'sent' ? 'Enviado' : 'Borrador'}
+                          </span>
+                          <span className="font-medium text-white truncate">{est.estimateNumber}</span>
+                        </div>
+                        
+                        <div className="text-sm text-gray-400 space-y-0.5">
+                          <div>Cliente: <span className="text-gray-300">{est.clientName}</span></div>
+                          <div className="flex items-center gap-4">
+                            <span className="text-green-400 font-semibold">${est.total.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                            <span className="text-gray-500">{new Date(est.estimateDate).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Botones de acción */}
+                      <div className="flex gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setShowEstimatesHistory(false);
+                            handleEditEstimate(est.id);
+                          }}
+                          className="h-8 w-8 p-0 bg-gray-700 border-gray-600 hover:bg-gray-600"
+                          title="Ver/Editar"
+                          data-testid={`button-edit-estimate-${est.id}`}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            try {
+                              if (!profile?.company) {
+                                toast({
+                                  title: "Perfil Incompleto",
+                                  description: "Debes completar el nombre de tu empresa antes de generar PDFs.",
+                                  variant: "destructive",
+                                });
+                                return;
+                              }
+
+                              const isPremiumUser = userSubscription?.plan?.id !== 1;
+                              const payload = {
+                                user: currentUser?.uid
+                                  ? [{ uid: currentUser.uid, email: currentUser.email, displayName: currentUser.displayName }]
+                                  : [{ uid: "anonymous-pdf-user", email: profile?.email || "contractor@example.com", displayName: profile?.company || "Anonymous User" }],
+                                client: { name: est.clientName || "", email: est.clientEmail || "", phone: "", address: "" },
+                                items: est.items || [],
+                                projectTotalCosts: {
+                                  subtotal: Number(Number(est.subtotal || 0).toFixed(2)) || 0,
+                                  discount: Number(Number(est.discountAmount || 0).toFixed(2)) || 0,
+                                  taxRate: Number(Number((est.taxRate || 0).toFixed(2))) || 0,
+                                  tax: Number(Number((est.tax || 0).toFixed(2))) || 0,
+                                  total: Number(Number((est.total || 0).toFixed(2))) || 0,
+                                },
+                                originalData: { projectDescription: est.title || est.rawData?.projectDescription || "" },
+                                contractor: {
+                                  name: profile?.company || "Professional Contractor",
+                                  company: profile?.company || "Construction Company",
+                                  address: profile?.address || "",
+                                  phone: profile?.phone || "",
+                                  email: profile?.email || currentUser?.email || "",
+                                  website: profile?.website || "",
+                                  logo: profile?.logo || "",
+                                  license: profile?.license || "",
+                                },
+                                isMembership: isPremiumUser,
+                                templateMode: isPremiumUser ? "premium" : "basic",
+                              };
+
+                              const response = await axios.post("/api/estimate-puppeteer-pdf", payload, { responseType: "blob" });
+                              const pdfBlob = new Blob([response.data], { type: "application/pdf" });
+                              const clientName = est.clientName?.replace(/[^a-zA-Z0-9]/g, "_") || "client";
+                              const timestamp = new Date().toISOString().slice(0, 10);
+                              await shareOrDownloadPdf(pdfBlob, `estimate-${clientName}-${timestamp}.pdf`, {
+                                title: `Estimate for ${est.clientName || "Client"}`,
+                                text: `Professional estimate from ${profile?.company || "your contractor"}`,
+                                clientName: est.clientName,
+                                estimateNumber: `EST-${timestamp}`,
+                              });
+                              toast({ title: "PDF Generado", description: "PDF descargado exitosamente" });
+                            } catch (error) {
+                              console.error("PDF generation error:", error);
+                              toast({ title: "Error", description: "No se pudo generar el PDF.", variant: "destructive" });
+                            }
+                          }}
+                          className="h-8 w-8 p-0 bg-gray-700 border-gray-600 hover:bg-gray-600"
+                          title="Descargar PDF"
+                          data-testid={`button-download-pdf-${est.id}`}
+                        >
+                          <Download className="w-4 h-4" />
+                        </Button>
+                        
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            navigator.clipboard.writeText(`${window.location.origin}/estimate/${est.id}`);
+                            toast({ title: "Link copiado", description: "URL copiada al portapapeles" });
+                          }}
+                          className="h-8 w-8 p-0 bg-gray-700 border-gray-600 hover:bg-gray-600"
+                          title="Copiar URL"
+                          data-testid={`button-copy-url-${est.id}`}
+                        >
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Footer con acciones */}
+          <DialogFooter className="pt-4 border-t border-gray-700 gap-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowEstimatesHistory(false);
+                setHistorySearchQuery("");
+              }}
+              className="bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700"
+              data-testid="button-close-history"
+            >
+              Cerrar
+            </Button>
+            <Button
+              onClick={() => {
+                setShowEstimatesHistory(false);
+                setHistorySearchQuery("");
+                setIsEditMode(false);
+                setEditingEstimateId(null);
+                setCurrentStep(0);
+                setEstimate({
+                  client: null,
+                  items: [],
+                  projectDetails: "",
+                  subtotal: 0,
+                  tax: 0,
+                  total: 0,
+                  taxRate: 10,
+                  discountType: "percentage",
+                  discountValue: 0,
+                  discountAmount: 0,
+                  discountName: "",
+                  attachments: [],
+                });
+                window.history.replaceState({}, document.title, window.location.pathname);
+              }}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              data-testid="button-new-estimate"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Nuevo Estimado
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Complete PDF Preview Dialog */}
 
