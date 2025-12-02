@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
 import { usePermissions } from "@/contexts/PermissionContext";
@@ -362,6 +362,18 @@ export default function EstimatesWizardFixed() {
   const [showEstimatesHistory, setShowEstimatesHistory] = useState(false);
   const [savedEstimates, setSavedEstimates] = useState<any[]>([]);
   const [isLoadingEstimates, setIsLoadingEstimates] = useState(false);
+  const [historySearchQuery, setHistorySearchQuery] = useState("");
+  
+  // Filtered estimates for search
+  const filteredEstimates = useMemo(() => {
+    if (!historySearchQuery.trim()) return savedEstimates;
+    const query = historySearchQuery.toLowerCase().trim();
+    return savedEstimates.filter((estimate) => {
+      const matchesId = estimate.estimateNumber?.toLowerCase().includes(query);
+      const matchesClient = estimate.clientName?.toLowerCase().includes(query);
+      return matchesId || matchesClient;
+    });
+  }, [savedEstimates, historySearchQuery]);
   const [showCompanyEditDialog, setShowCompanyEditDialog] = useState(false);
   
   // Holographic Share Modal states
@@ -7529,78 +7541,121 @@ This link provides a professional view of your estimate that you can access anyt
       {/* Modal del Historial de Estimados */}
       <Dialog
         open={showEstimatesHistory}
-        onOpenChange={setShowEstimatesHistory}
+        onOpenChange={(open) => {
+          setShowEstimatesHistory(open);
+          if (!open) setHistorySearchQuery("");
+        }}
       >
-        <DialogContent className="p-2 md:p-3 md:m-0 md:max-w-3xl w-[96vw] max-h-[80vh] overflow-hidden flex flex-col">
+        <DialogContent className="p-2 md:p-3 md:m-0 md:max-w-3xl w-[96vw] max-h-[80vh] overflow-hidden flex flex-col bg-gray-900/95 backdrop-blur-sm border border-cyan-500/30 text-white">
           <DialogHeader className="pb-1 shrink-0">
-            <DialogTitle className="flex items-center gap-1.5 text-base">
-              <FileText className="h-3.5 w-3.5" />
+            <DialogTitle className="flex items-center gap-1.5 text-base bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+              <FileText className="h-3.5 w-3.5 text-cyan-400" />
               Estimados
             </DialogTitle>
-            <DialogDescription className="text-xs text-gray-500">
+            <DialogDescription className="text-xs text-cyan-400/70">
               Historial guardado
             </DialogDescription>
           </DialogHeader>
 
+          {/* Barra de búsqueda futurista */}
+          <div className="relative mb-2 shrink-0">
+            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-transparent to-blue-500/10 rounded-lg pointer-events-none"></div>
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-cyan-400" />
+              <Input
+                type="text"
+                placeholder="Buscar estimado por cliente o ID..."
+                value={historySearchQuery}
+                onChange={(e) => setHistorySearchQuery(e.target.value)}
+                className="pl-8 pr-3 py-1.5 h-8 text-xs bg-gray-800/50 border border-cyan-500/30 rounded-lg text-white placeholder:text-gray-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50 transition-all"
+                data-testid="input-search-estimates"
+              />
+              {historySearchQuery && (
+                <button
+                  onClick={() => setHistorySearchQuery("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-cyan-400 transition-colors"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+            {/* Efecto de esquinas */}
+            <div className="absolute top-0 left-0 w-2 h-2 border-l border-t border-cyan-400/50"></div>
+            <div className="absolute top-0 right-0 w-2 h-2 border-r border-t border-cyan-400/50"></div>
+            <div className="absolute bottom-0 left-0 w-2 h-2 border-l border-b border-cyan-400/50"></div>
+            <div className="absolute bottom-0 right-0 w-2 h-2 border-r border-b border-cyan-400/50"></div>
+          </div>
+
           <div className="flex-1 overflow-hidden">
             {isLoadingEstimates ? (
               <div className="flex items-center justify-center py-4">
-                <RefreshCw className="h-3.5 w-3.5 animate-spin mr-1.5" />
-                <span className="text-xs">Cargando...</span>
+                <RefreshCw className="h-3.5 w-3.5 animate-spin mr-1.5 text-cyan-400" />
+                <span className="text-xs text-gray-300">Cargando...</span>
               </div>
-            ) : savedEstimates.length === 0 ? (
+            ) : savedEstimates.length === 0 && !historySearchQuery.trim() ? (
               <div className="text-center py-4">
-                <FileText className="h-6 w-6 mx-auto mb-1.5 text-gray-400" />
-                <p className="text-xs font-medium text-gray-900">Sin estimados</p>
+                <FileText className="h-6 w-6 mx-auto mb-1.5 text-cyan-400/50" />
+                <p className="text-xs font-medium text-gray-300">Sin estimados</p>
                 <p className="text-xs text-gray-500">Crea tu primero</p>
               </div>
+            ) : filteredEstimates.length === 0 ? (
+              <div className="text-center py-4">
+                <Search className="h-5 w-5 mx-auto mb-1.5 text-cyan-400/40" />
+                <p className="text-xs text-gray-400">No se encontraron estimados</p>
+                <p className="text-xs text-gray-500">Intenta con otro término</p>
+              </div>
             ) : (
-              <div className="h-full overflow-y-auto pr-0.5">
+              <div className="h-full overflow-y-auto pr-0.5 scrollbar-thin scrollbar-thumb-cyan-500/30 scrollbar-track-transparent">
                 <div className="space-y-1">
-                  {savedEstimates.map((estimate) => (
+                  {filteredEstimates.map((estimate) => (
                     <div
                       key={estimate.id}
-                      className="border rounded p-1.5 hover:bg-gray-50/40 transition-colors"
+                      className="group border border-cyan-500/20 rounded-lg p-1.5 bg-gray-800/30 hover:bg-cyan-500/10 hover:border-cyan-400/40 transition-all duration-200 cursor-pointer"
+                      onClick={() => {
+                        setShowEstimatesHistory(false);
+                        handleEditEstimate(estimate.id);
+                      }}
                     >
                       <div className="flex items-center justify-between gap-1.5">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 mb-0.5">
-                            <h3 className="font-medium text-xs truncate leading-4">
+                            <h3 className="font-medium text-xs truncate leading-4 text-cyan-300">
                               {estimate.estimateNumber}
                             </h3>
                             <span
                               className={`px-1 py-0.5 rounded text-xs font-medium shrink-0 leading-3 ${
                                 estimate.status === "draft"
-                                  ? "bg-yellow-100 text-yellow-700"
+                                  ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
                                   : estimate.status === "sent"
-                                    ? "bg-blue-100 text-blue-700"
+                                    ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
                                     : estimate.status === "approved"
-                                      ? "bg-green-100 text-green-700"
-                                      : "bg-gray-100 text-gray-700"
+                                      ? "bg-green-500/20 text-green-400 border border-green-500/30"
+                                      : "bg-gray-500/20 text-gray-400 border border-gray-500/30"
                               }`}
                             >
                               {estimate.status === "draft" ? "D" : estimate.status === "sent" ? "S" : estimate.status === "approved" ? "✓" : "?"}
                             </span>
                           </div>
-                          <div className="flex items-center justify-between text-xs text-gray-600 leading-3">
+                          <div className="flex items-center justify-between text-xs text-gray-400 leading-3">
                             <div className="truncate pr-1">
                               {estimate.clientName}
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
-                              <span className="font-medium text-green-600">${estimate.total.toFixed(0)}</span>
-                              <span className="text-gray-400">
+                              <span className="font-medium text-green-400">${estimate.total.toFixed(0)}</span>
+                              <span className="text-gray-500">
                                 {new Date(estimate.estimateDate).toLocaleDateString("es-ES", { day: '2-digit', month: '2-digit' })}
                               </span>
                             </div>
                           </div>
                         </div>
-                        <div className="flex gap-0.5 shrink-0">
+                        {/* Acciones rápidas - Visibles siempre en móvil, en hover para desktop */}
+                        <div className="flex gap-0.5 shrink-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200" onClick={(e) => e.stopPropagation()}>
                           <Button
-                            variant="outline"
+                            variant="ghost"
                             size="sm"
-                            onClick={async () => {
+                            onClick={async (e) => {
+                              e.stopPropagation();
                               try {
-                                // Validar que el perfil del contractor esté completo
                                 if (!profile?.company) {
                                   toast({
                                     title: "❌ Perfil Incompleto",
@@ -7611,7 +7666,6 @@ This link provides a professional view of your estimate that you can access anyt
                                   return;
                                 }
 
-                                // Auto-detect template based on subscription
                                 const isPremiumUser = userSubscription?.plan?.id !== 1;
                                 console.log("🎨 AUTO TEMPLATE DETECTION:", {
                                   planId: userSubscription?.plan?.id,
@@ -7619,7 +7673,6 @@ This link provides a professional view of your estimate that you can access anyt
                                   willUsePremiumTemplate: isPremiumUser
                                 });
 
-                                // Create payload in the exact format expected by Puppeteer service
                                 const payload = {
                                   user: currentUser?.uid
                                     ? [
@@ -7653,7 +7706,6 @@ This link provides a professional view of your estimate that you can access anyt
                                   originalData: {
                                     projectDescription: estimate.title || estimate.rawData?.projectDescription || estimate.rawData?.projectDetails?.name || estimate.rawData?.projectName || estimate.rawData?.scope || estimate.rawData?.notes || "",
                                   },
-                                  // Add contractor data from profile
                                   contractor: {
                                     name: profile?.company || profile?.ownerName || "Professional Contractor",
                                     company: profile?.company || "Construction Company",
@@ -7665,30 +7717,26 @@ This link provides a professional view of your estimate that you can access anyt
                                     license: profile?.license || "",
                                   },
                                   isMembership: userSubscription?.plan?.id === 1 ? false : true,
-                                  templateMode: isPremiumUser ? "premium" : "basic", // Auto-detection
+                                  templateMode: isPremiumUser ? "premium" : "basic",
                                 };
 
                                 console.log("📤 Sending payload to PDF service:", payload);
 
-                                // Use new Puppeteer PDF service (local, no external dependency)
                                 const response = await axios.post(
                                   "/api/estimate-puppeteer-pdf",
                                   payload,
                                   {
-                                    responseType: "blob", // Important for PDF download
+                                    responseType: "blob",
                                   },
                                 );
 
-                                // Create blob for sharing/downloading
                                 const pdfBlob = new Blob([response.data], { type: "application/pdf" });
 
-                                // Generate filename with client name and timestamp
                                 const clientName =
                                   estimate.clientName?.replace(/[^a-zA-Z0-9]/g, "_") || "client";
-                                const timestamp = new Date().toISOString().slice(0, 10); // YYYY-MM-DD format
+                                const timestamp = new Date().toISOString().slice(0, 10);
                                 const filename = `estimate-${clientName}-${timestamp}.pdf`;
 
-                                // Use mobile sharing utility for smart download/share behavior
                                 await shareOrDownloadPdf(pdfBlob, filename, {
                                   title: `Estimate for ${estimate.clientName || "Client"}`,
                                   text: `Professional estimate from ${profile?.company || "your contractor"}`,
@@ -7709,22 +7757,43 @@ This link provides a professional view of your estimate that you can access anyt
                                 });
                               }
                             }}
-                            className="h-6 w-6 p-1"
+                            className="h-6 w-6 p-1 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/20 hover:shadow-[0_0_8px_rgba(34,211,238,0.3)] transition-all"
                             title="Descargar PDF"
+                            data-testid={`button-download-pdf-${estimate.id}`}
                           >
-                            <Download className="h-2.5 w-2.5" />
+                            <Download className="h-3 w-3" />
                           </Button>
                           <Button
-                            variant="outline"
+                            variant="ghost"
                             size="sm"
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const shareUrl = `${window.location.origin}/estimate/${estimate.id}`;
+                              navigator.clipboard.writeText(shareUrl);
+                              toast({
+                                title: "✅ Link copiado",
+                                description: "URL del estimado copiada al portapapeles",
+                              });
+                            }}
+                            className="h-6 w-6 p-1 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/20 hover:shadow-[0_0_8px_rgba(34,211,238,0.3)] transition-all"
+                            title="Copiar URL"
+                            data-testid={`button-copy-url-${estimate.id}`}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setShowEstimatesHistory(false);
                               handleEditEstimate(estimate.id);
                             }}
-                            className="h-6 w-6 p-1"
+                            className="h-6 w-6 p-1 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/20 hover:shadow-[0_0_8px_rgba(34,211,238,0.3)] transition-all"
                             title="Editar estimado"
+                            data-testid={`button-edit-estimate-${estimate.id}`}
                           >
-                            <Edit className="h-2.5 w-2.5" />
+                            <Edit className="h-3 w-3" />
                           </Button>
                         </div>
                       </div>
@@ -7735,18 +7804,23 @@ This link provides a professional view of your estimate that you can access anyt
             )}
           </div>
 
-          <DialogFooter className="pt-2 shrink-0 border-t">
+          <DialogFooter className="pt-2 shrink-0 border-t border-cyan-500/20">
             <div className="flex gap-1.5 w-full">
               <Button
                 variant="outline"
-                onClick={() => setShowEstimatesHistory(false)}
-                className="flex-1 sm:flex-none h-8 text-xs"
+                onClick={() => {
+                  setShowEstimatesHistory(false);
+                  setHistorySearchQuery("");
+                }}
+                className="flex-1 sm:flex-none h-8 text-xs bg-transparent border-gray-600 text-gray-300 hover:bg-gray-800/50 hover:border-cyan-500/50 hover:text-cyan-400 transition-all"
+                data-testid="button-close-history"
               >
                 Cerrar
               </Button>
               <Button
                 onClick={() => {
                   setShowEstimatesHistory(false);
+                  setHistorySearchQuery("");
                   setIsEditMode(false);
                   setEditingEstimateId(null);
                   setCurrentStep(0);
@@ -7766,7 +7840,8 @@ This link provides a professional view of your estimate that you can access anyt
                   });
                   window.history.replaceState({}, document.title, window.location.pathname);
                 }}
-                className="flex-1 sm:flex-none h-8 text-xs"
+                className="flex-1 sm:flex-none h-8 text-xs bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white border-0 shadow-[0_0_10px_rgba(34,211,238,0.3)] hover:shadow-[0_0_15px_rgba(34,211,238,0.5)] transition-all"
+                data-testid="button-new-estimate"
               >
                 <Plus className="h-3 w-3 mr-1" />
                 <span className="hidden sm:inline">Nuevo</span>
