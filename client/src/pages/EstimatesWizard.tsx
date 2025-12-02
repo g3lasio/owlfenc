@@ -7538,120 +7538,129 @@ This link provides a professional view of your estimate that you can access anyt
         </DialogContent>
       </Dialog>
 
-      {/* Modal del Historial de Estimados */}
-      <Dialog
-        open={showEstimatesHistory}
-        onOpenChange={(open) => {
-          setShowEstimatesHistory(open);
-          if (!open) setHistorySearchQuery("");
-        }}
-      >
-        <DialogContent className="p-2 md:p-3 md:m-0 md:max-w-3xl w-[96vw] max-h-[80vh] overflow-hidden flex flex-col bg-gray-900/95 backdrop-blur-sm border border-cyan-500/30 text-white">
-          <DialogHeader className="pb-1 shrink-0">
-            <DialogTitle className="flex items-center gap-1.5 text-base bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-              <FileText className="h-3.5 w-3.5 text-cyan-400" />
-              Estimados
-            </DialogTitle>
-            <DialogDescription className="text-xs text-cyan-400/70">
-              Historial guardado
-            </DialogDescription>
-          </DialogHeader>
-
-          {/* Barra de búsqueda futurista */}
-          <div className="relative mb-2 shrink-0">
-            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-transparent to-blue-500/10 rounded-lg pointer-events-none"></div>
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-cyan-400" />
-              <Input
-                type="text"
-                placeholder="Buscar estimado por cliente o ID..."
-                value={historySearchQuery}
-                onChange={(e) => setHistorySearchQuery(e.target.value)}
-                className="pl-8 pr-3 py-1.5 h-8 text-xs bg-gray-800/50 border border-cyan-500/30 rounded-lg text-white placeholder:text-gray-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50 transition-all"
-                data-testid="input-search-estimates"
-              />
-              {historySearchQuery && (
+      {/* Panel Cyberpunk del Historial de Estimados - Estilo Legal Defense */}
+      {showEstimatesHistory && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            onClick={() => {
+              setShowEstimatesHistory(false);
+              setHistorySearchQuery("");
+            }}
+          />
+          
+          {/* Cyber Panel */}
+          <div className="estimates-history-cyber-panel relative w-full max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
+            {/* Header con efecto neón */}
+            <div className="p-4 border-b border-cyan-500/30">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-xl font-bold text-cyan-400 flex items-center">
+                  <FileText className="w-5 h-5 mr-2" />
+                  HISTORIAL DE ESTIMADOS
+                </h3>
                 <button
-                  onClick={() => setHistorySearchQuery("")}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-cyan-400 transition-colors"
+                  onClick={() => {
+                    setShowEstimatesHistory(false);
+                    setHistorySearchQuery("");
+                  }}
+                  className="p-1.5 text-cyan-400/70 hover:text-cyan-400 hover:bg-cyan-500/20 rounded transition-all"
+                  data-testid="button-close-history-x"
                 >
-                  <X className="h-3 w-3" />
+                  <X className="w-5 h-5" />
                 </button>
-              )}
+              </div>
+              
+              {/* Barra de búsqueda futurista */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-cyan-400" />
+                <Input
+                  type="text"
+                  placeholder="Buscar por cliente o ID de estimado..."
+                  value={historySearchQuery}
+                  onChange={(e) => setHistorySearchQuery(e.target.value)}
+                  className="pl-10 pr-10 py-2 h-10 text-sm bg-gray-900/50 border border-cyan-500/30 text-cyan-100 placeholder:text-cyan-700/50 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50 transition-all"
+                  data-testid="input-search-estimates"
+                />
+                {historySearchQuery && (
+                  <button
+                    onClick={() => setHistorySearchQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-cyan-600 hover:text-cyan-400 transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
             </div>
-            {/* Efecto de esquinas */}
-            <div className="absolute top-0 left-0 w-2 h-2 border-l border-t border-cyan-400/50"></div>
-            <div className="absolute top-0 right-0 w-2 h-2 border-r border-t border-cyan-400/50"></div>
-            <div className="absolute bottom-0 left-0 w-2 h-2 border-l border-b border-cyan-400/50"></div>
-            <div className="absolute bottom-0 right-0 w-2 h-2 border-r border-b border-cyan-400/50"></div>
-          </div>
 
-          <div className="flex-1 overflow-hidden">
-            {isLoadingEstimates ? (
-              <div className="flex items-center justify-center py-4">
-                <RefreshCw className="h-3.5 w-3.5 animate-spin mr-1.5 text-cyan-400" />
-                <span className="text-xs text-gray-300">Cargando...</span>
-              </div>
-            ) : savedEstimates.length === 0 && !historySearchQuery.trim() ? (
-              <div className="text-center py-4">
-                <FileText className="h-6 w-6 mx-auto mb-1.5 text-cyan-400/50" />
-                <p className="text-xs font-medium text-gray-300">Sin estimados</p>
-                <p className="text-xs text-gray-500">Crea tu primero</p>
-              </div>
-            ) : filteredEstimates.length === 0 ? (
-              <div className="text-center py-4">
-                <Search className="h-5 w-5 mx-auto mb-1.5 text-cyan-400/40" />
-                <p className="text-xs text-gray-400">No se encontraron estimados</p>
-                <p className="text-xs text-gray-500">Intenta con otro término</p>
-              </div>
-            ) : (
-              <div className="h-full overflow-y-auto pr-0.5 scrollbar-thin scrollbar-thumb-cyan-500/30 scrollbar-track-transparent">
-                <div className="space-y-1">
-                  {filteredEstimates.map((estimate) => (
+            {/* Contenido scrolleable */}
+            <div className="flex-1 overflow-y-auto p-4">
+              {isLoadingEstimates ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-3 text-cyan-400" />
+                    <span className="text-cyan-300/70">Cargando estimados...</span>
+                  </div>
+                </div>
+              ) : savedEstimates.length === 0 && !historySearchQuery.trim() ? (
+                <div className="text-center py-12">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-cyan-500/10 border border-cyan-400/30 mb-4">
+                    <FileText className="h-8 w-8 text-cyan-400/50" />
+                  </div>
+                  <p className="text-lg font-medium text-cyan-300 mb-1">Sin estimados guardados</p>
+                  <p className="text-sm text-cyan-500/70">Crea tu primer estimado para verlo aquí</p>
+                </div>
+              ) : filteredEstimates.length === 0 ? (
+                <div className="text-center py-12">
+                  <Search className="h-10 w-10 mx-auto mb-3 text-cyan-400/40" />
+                  <p className="text-cyan-300/70 mb-1">No se encontraron estimados</p>
+                  <p className="text-sm text-cyan-500/50">Intenta con otro término de búsqueda</p>
+                </div>
+              ) : (
+                <div className="grid gap-3">
+                  {filteredEstimates.map((est) => (
                     <div
-                      key={estimate.id}
-                      className="group border border-cyan-500/20 rounded-lg p-1.5 bg-gray-800/30 hover:bg-cyan-500/10 hover:border-cyan-400/40 transition-all duration-200 cursor-pointer"
+                      key={est.id}
+                      className="estimate-history-card group"
                       onClick={() => {
                         setShowEstimatesHistory(false);
-                        handleEditEstimate(estimate.id);
+                        handleEditEstimate(est.id);
                       }}
                     >
-                      <div className="flex items-center justify-between gap-1.5">
+                      <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5 mb-0.5">
-                            <h3 className="font-medium text-xs truncate leading-4 text-cyan-300">
-                              {estimate.estimateNumber}
-                            </h3>
-                            <span
-                              className={`px-1 py-0.5 rounded text-xs font-medium shrink-0 leading-3 ${
-                                estimate.status === "draft"
-                                  ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
-                                  : estimate.status === "sent"
-                                    ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
-                                    : estimate.status === "approved"
-                                      ? "bg-green-500/20 text-green-400 border border-green-500/30"
-                                      : "bg-gray-500/20 text-gray-400 border border-gray-500/30"
-                              }`}
-                            >
-                              {estimate.status === "draft" ? "D" : estimate.status === "sent" ? "S" : estimate.status === "approved" ? "✓" : "?"}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between text-xs text-gray-400 leading-3">
-                            <div className="truncate pr-1">
-                              {estimate.clientName}
+                          <div className="flex items-center space-x-3 mb-2">
+                            <div className={`estimate-status-badge ${
+                              est.status === 'approved' ? 'status-approved' :
+                              est.status === 'sent' ? 'status-sent' :
+                              'status-draft'
+                            }`}>
+                              {est.status === 'approved' && <CheckCircle className="w-3.5 h-3.5" />}
+                              {est.status === 'sent' && <Send className="w-3.5 h-3.5" />}
+                              {est.status === 'draft' && <FileText className="w-3.5 h-3.5" />}
+                              {est.status === 'approved' ? 'APROBADO' : est.status === 'sent' ? 'ENVIADO' : 'BORRADOR'}
                             </div>
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              <span className="font-medium text-green-400">${estimate.total.toFixed(0)}</span>
-                              <span className="text-gray-500">
-                                {new Date(estimate.estimateDate).toLocaleDateString("es-ES", { day: '2-digit', month: '2-digit' })}
-                              </span>
+                            <h4 className="text-cyan-400 font-semibold truncate">{est.estimateNumber}</h4>
+                          </div>
+                          
+                          <div className="text-cyan-300/70 text-sm space-y-0.5">
+                            <div className="flex items-center gap-2">
+                              <span className="text-cyan-500">Cliente:</span>
+                              <span className="truncate">{est.clientName}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4">
+                                <span className="text-green-400 font-bold">${est.total.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                                <span className="text-cyan-600">{new Date(est.estimateDate).toLocaleDateString()}</span>
+                              </div>
                             </div>
                           </div>
                         </div>
-                        {/* Acciones rápidas - Visibles siempre en móvil, en hover para desktop */}
-                        <div className="flex gap-0.5 shrink-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200" onClick={(e) => e.stopPropagation()}>
+                        
+                        {/* Botones de acción */}
+                        <div className="flex space-x-1.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
                           <Button
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
                             onClick={async (e) => {
                               e.stopPropagation();
@@ -7690,21 +7699,21 @@ This link provides a professional view of your estimate that you can access anyt
                                         },
                                       ],
                                   client: {
-                                    name: estimate.clientName || "",
-                                    email: estimate.clientEmail || "",
+                                    name: est.clientName || "",
+                                    email: est.clientEmail || "",
                                     phone: "",
                                     address: "",
                                   },
-                                  items: estimate.items || [],
+                                  items: est.items || [],
                                   projectTotalCosts: {
-                                    subtotal: Number(Number(estimate.subtotal || 0).toFixed(2)) || 0,
-                                    discount: Number(Number(estimate.discountAmount || 0).toFixed(2)) || 0,
-                                    taxRate: Number(Number((estimate.taxRate || 0).toFixed(2))) || 0,
-                                    tax: Number(Number((estimate.tax || 0).toFixed(2))) || 0,
-                                    total: Number(Number((estimate.total || 0).toFixed(2))) || 0,
+                                    subtotal: Number(Number(est.subtotal || 0).toFixed(2)) || 0,
+                                    discount: Number(Number(est.discountAmount || 0).toFixed(2)) || 0,
+                                    taxRate: Number(Number((est.taxRate || 0).toFixed(2))) || 0,
+                                    tax: Number(Number((est.tax || 0).toFixed(2))) || 0,
+                                    total: Number(Number((est.total || 0).toFixed(2))) || 0,
                                   },
                                   originalData: {
-                                    projectDescription: estimate.title || estimate.rawData?.projectDescription || estimate.rawData?.projectDetails?.name || estimate.rawData?.projectName || estimate.rawData?.scope || estimate.rawData?.notes || "",
+                                    projectDescription: est.title || est.rawData?.projectDescription || est.rawData?.projectDetails?.name || est.rawData?.projectName || est.rawData?.scope || est.rawData?.notes || "",
                                   },
                                   contractor: {
                                     name: profile?.company || profile?.ownerName || "Professional Contractor",
@@ -7733,14 +7742,14 @@ This link provides a professional view of your estimate that you can access anyt
                                 const pdfBlob = new Blob([response.data], { type: "application/pdf" });
 
                                 const clientName =
-                                  estimate.clientName?.replace(/[^a-zA-Z0-9]/g, "_") || "client";
+                                  est.clientName?.replace(/[^a-zA-Z0-9]/g, "_") || "client";
                                 const timestamp = new Date().toISOString().slice(0, 10);
                                 const filename = `estimate-${clientName}-${timestamp}.pdf`;
 
                                 await shareOrDownloadPdf(pdfBlob, filename, {
-                                  title: `Estimate for ${estimate.clientName || "Client"}`,
+                                  title: `Estimate for ${est.clientName || "Client"}`,
                                   text: `Professional estimate from ${profile?.company || "your contractor"}`,
-                                  clientName: estimate.clientName,
+                                  clientName: est.clientName,
                                   estimateNumber: `EST-${timestamp}`,
                                 });
 
@@ -7757,62 +7766,63 @@ This link provides a professional view of your estimate that you can access anyt
                                 });
                               }
                             }}
-                            className="h-6 w-6 p-1 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/20 hover:shadow-[0_0_8px_rgba(34,211,238,0.3)] transition-all"
+                            className="cyber-button-sm p-2"
                             title="Descargar PDF"
-                            data-testid={`button-download-pdf-${estimate.id}`}
+                            data-testid={`button-download-pdf-${est.id}`}
                           >
-                            <Download className="h-3 w-3" />
+                            <Download className="w-4 h-4" />
                           </Button>
+                          
                           <Button
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
-                              const shareUrl = `${window.location.origin}/estimate/${estimate.id}`;
+                              const shareUrl = `${window.location.origin}/estimate/${est.id}`;
                               navigator.clipboard.writeText(shareUrl);
                               toast({
                                 title: "✅ Link copiado",
                                 description: "URL del estimado copiada al portapapeles",
                               });
                             }}
-                            className="h-6 w-6 p-1 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/20 hover:shadow-[0_0_8px_rgba(34,211,238,0.3)] transition-all"
+                            className="cyber-button-sm p-2"
                             title="Copiar URL"
-                            data-testid={`button-copy-url-${estimate.id}`}
+                            data-testid={`button-copy-url-${est.id}`}
                           >
-                            <Copy className="h-3 w-3" />
+                            <Copy className="w-4 h-4" />
                           </Button>
+                          
                           <Button
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
                               setShowEstimatesHistory(false);
-                              handleEditEstimate(estimate.id);
+                              handleEditEstimate(est.id);
                             }}
-                            className="h-6 w-6 p-1 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/20 hover:shadow-[0_0_8px_rgba(34,211,238,0.3)] transition-all"
+                            className="cyber-button-sm p-2"
                             title="Editar estimado"
-                            data-testid={`button-edit-estimate-${estimate.id}`}
+                            data-testid={`button-edit-estimate-${est.id}`}
                           >
-                            <Edit className="h-3 w-3" />
+                            <Eye className="w-4 h-4" />
                           </Button>
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
 
-          <DialogFooter className="pt-2 shrink-0 border-t border-cyan-500/20">
-            <div className="flex gap-1.5 w-full">
+            {/* Footer con acciones */}
+            <div className="p-4 border-t border-cyan-500/30 flex gap-3">
               <Button
                 variant="outline"
                 onClick={() => {
                   setShowEstimatesHistory(false);
                   setHistorySearchQuery("");
                 }}
-                className="flex-1 sm:flex-none h-8 text-xs bg-transparent border-gray-600 text-gray-300 hover:bg-gray-800/50 hover:border-cyan-500/50 hover:text-cyan-400 transition-all"
+                className="flex-1 bg-transparent border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10 hover:border-cyan-400 transition-all"
                 data-testid="button-close-history"
               >
                 Cerrar
@@ -7840,17 +7850,107 @@ This link provides a professional view of your estimate that you can access anyt
                   });
                   window.history.replaceState({}, document.title, window.location.pathname);
                 }}
-                className="flex-1 sm:flex-none h-8 text-xs bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white border-0 shadow-[0_0_10px_rgba(34,211,238,0.3)] hover:shadow-[0_0_15px_rgba(34,211,238,0.5)] transition-all"
+                className="flex-1 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white border-0 shadow-[0_0_15px_rgba(0,255,255,0.3)] hover:shadow-[0_0_25px_rgba(0,255,255,0.5)] transition-all"
                 data-testid="button-new-estimate"
               >
-                <Plus className="h-3 w-3 mr-1" />
-                <span className="hidden sm:inline">Nuevo</span>
-                <span className="sm:hidden">+</span>
+                <Plus className="w-4 h-4 mr-2" />
+                Nuevo Estimado
               </Button>
             </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+
+          {/* Estilos CSS para el panel cyberpunk */}
+          <style>{`
+            .estimates-history-cyber-panel {
+              background: rgba(0, 20, 40, 0.95);
+              border: 1px solid rgba(0, 255, 255, 0.3);
+              border-radius: 4px;
+              position: relative;
+              backdrop-filter: blur(10px);
+            }
+            
+            .estimates-history-cyber-panel::before {
+              content: '';
+              position: absolute;
+              top: 0;
+              left: 0;
+              right: 0;
+              bottom: 0;
+              background: linear-gradient(45deg, transparent 49%, rgba(0, 255, 255, 0.05) 50%, transparent 51%);
+              pointer-events: none;
+              border-radius: inherit;
+            }
+            
+            .estimates-history-cyber-panel::after {
+              content: '';
+              position: absolute;
+              top: -2px;
+              left: -2px;
+              right: -2px;
+              bottom: -2px;
+              background: linear-gradient(45deg, #00ffff, transparent, #00ffff);
+              border-radius: inherit;
+              z-index: -1;
+              opacity: 0.2;
+            }
+            
+            .estimate-history-card {
+              background: rgba(0, 30, 60, 0.5);
+              border: 1px solid rgba(0, 255, 255, 0.2);
+              border-radius: 8px;
+              padding: 1rem;
+              transition: all 0.3s ease;
+              cursor: pointer;
+            }
+            
+            .estimate-history-card:hover {
+              border-color: rgba(0, 255, 255, 0.5);
+              box-shadow: 0 4px 20px rgba(0, 255, 255, 0.15);
+              transform: translateY(-2px);
+            }
+            
+            .estimate-status-badge {
+              display: inline-flex;
+              align-items: center;
+              gap: 0.35rem;
+              padding: 0.2rem 0.6rem;
+              border-radius: 10px;
+              font-size: 0.7rem;
+              font-weight: bold;
+              border: 1px solid;
+            }
+            
+            .status-approved {
+              background: rgba(16, 185, 129, 0.2);
+              color: #10b981;
+              border-color: #10b981;
+            }
+            
+            .status-sent {
+              background: rgba(59, 130, 246, 0.2);
+              color: #3b82f6;
+              border-color: #3b82f6;
+            }
+            
+            .status-draft {
+              background: rgba(245, 158, 11, 0.2);
+              color: #f59e0b;
+              border-color: #f59e0b;
+            }
+            
+            .cyber-button-sm {
+              background: rgba(0, 255, 255, 0.1) !important;
+              border: 1px solid rgba(0, 255, 255, 0.3) !important;
+              color: #00ffff !important;
+            }
+            
+            .cyber-button-sm:hover {
+              background: rgba(0, 255, 255, 0.2) !important;
+              box-shadow: 0 0 12px rgba(0, 255, 255, 0.4);
+            }
+          `}</style>
+        </div>
+      )}
 
       {/* Complete PDF Preview Dialog */}
 
