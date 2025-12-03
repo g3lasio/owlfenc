@@ -150,11 +150,13 @@ export class ContractorPaymentService {
     const resolvedAddress = request.address || projectData.address || 'Project';
 
     // Create payment record in database
+    // CRITICAL: Convert amount to integer to prevent PostgreSQL type errors
+    // Float precision issues (e.g., 965329.9999999999) cause "invalid input syntax for type integer"
     const paymentData: InsertProjectPayment = {
       projectId: 0, // Using 0 for Firebase-based projects
       firebaseProjectId: request.firebaseProjectId || undefined,
       userId: request.userId,
-      amount: request.amount,
+      amount: Math.round(request.amount), // Ensure integer for PostgreSQL
       type: request.type,
       status: 'pending',
       description: request.description,
@@ -632,11 +634,13 @@ export class ContractorPaymentService {
     // Note: Store payment method in notes since paymentMethod column doesn't exist
     const methodNote = `[${request.manualMethod.toUpperCase()}]${request.referenceNumber ? ` Ref: ${request.referenceNumber}` : ''}${request.notes ? ` - ${request.notes}` : ''}`;
     
+    // CRITICAL: Convert amount to integer to prevent PostgreSQL type errors
+    // Float precision issues (e.g., 965329.9999999999) cause "invalid input syntax for type integer"
     const paymentData: InsertProjectPayment = {
       projectId: 0, // Using 0 for Firebase-based projects
       firebaseProjectId: request.firebaseProjectId || undefined,
       userId: request.userId,
-      amount: request.amount,
+      amount: Math.round(request.amount), // Ensure integer for PostgreSQL
       type: request.type,
       status: 'succeeded', // Manual payments are already completed
       description: request.description,
