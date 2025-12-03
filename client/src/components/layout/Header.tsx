@@ -51,11 +51,11 @@ export default function Header() {
               style={{ filter: 'brightness(1.1) contrast(1.1)' }}
               onError={(e) => {
                 console.log("Error cargando logo en Header, usando fallback");
-                e.currentTarget.src = "/White-logo-no-background-new.png";
-                // Si aún hay error, entonces usar el texto alternativo
-                e.currentTarget.onerror = () => {
-                  e.currentTarget.classList.add('hidden');
-                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                const imgElement = e.currentTarget;
+                imgElement.src = "/White-logo-no-background-new.png";
+                imgElement.onerror = () => {
+                  imgElement.classList.add('hidden');
+                  imgElement.nextElementSibling?.classList.remove('hidden');
                 };
               }}
             />
