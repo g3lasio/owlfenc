@@ -21,7 +21,7 @@ const OWL_FENC_BRANDING = {
   supportEmail: 'support@owlfenc.com',
   appUrl: 'https://owl-fenc-ai-platform.replit.app',
   companyName: 'Owl Fenc',
-  tagline: 'Tu Partner Inteligente en Construcción de Cercas'
+  tagline: 'Tu Partner Inteligente para Contratistas'
 };
 
 interface EmailResult {
@@ -157,7 +157,7 @@ export class SubscriptionEmailService {
             
             <p style="margin: 0 0 20px; color: #4a5568; font-size: 16px; line-height: 1.6;">
               Gracias por unirte a <strong>Owl Fenc</strong>, la plataforma inteligente diseñada 
-              exclusivamente para contratistas de cercas como tú.
+              exclusivamente para contratistas profesionales como tú.
             </p>
             
             <div style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border-radius: 12px; padding: 25px; margin: 25px 0; border-left: 4px solid ${OWL_FENC_BRANDING.successColor};">
