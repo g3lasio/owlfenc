@@ -6943,114 +6943,115 @@ This link provides a professional view of your estimate that you can access anyt
                 <p className="text-sm text-cyan-500/50">Intenta con otro término de búsqueda</p>
               </div>
             ) : (
-              <div className="grid gap-3">
+              <div className="grid gap-2">
                 {filteredEstimates.map((est) => (
                   <div key={est.id} className="estimate-card-compact">
-                    <div className="flex items-center gap-4">
-                      <div className={`estimate-status-dot ${
+                    <div className="flex items-start sm:items-center gap-3">
+                      <div className={`estimate-status-dot mt-1.5 sm:mt-0 ${
                         est.status === 'approved' ? 'dot-approved' :
                         est.status === 'sent' ? 'dot-sent' : 'dot-draft'
                       }`} title={est.status === 'approved' ? 'Aprobado' : est.status === 'sent' ? 'Enviado' : 'Borrador'} />
                       
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-white font-semibold text-base truncate">{est.clientName || 'Sin nombre'}</h4>
-                        <div className="flex items-center gap-3 text-[11px] text-cyan-500/60 mt-0.5">
-                          <span className="font-mono">{est.estimateNumber}</span>
-                          <span className="text-cyan-500/30">•</span>
-                          <span className="font-medium text-cyan-400/80">${est.total.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
-                          <span className="text-cyan-500/30">•</span>
-                          <span>{new Date(est.estimateDate).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: '2-digit' })}</span>
+                      <div className="flex-1 min-w-0 overflow-hidden">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-3">
+                          <h4 className="text-white font-semibold text-sm sm:text-base truncate max-w-[180px] sm:max-w-none">{est.clientName || 'Sin nombre'}</h4>
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            <button
+                              onClick={() => {
+                                setShowEstimatesHistory(false);
+                                handleEditEstimate(est.id);
+                              }}
+                              className="estimate-action-btn"
+                              data-testid={`button-edit-estimate-${est.id}`}
+                              title="Ver/Editar"
+                            >
+                              <Eye className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                            </button>
+                            
+                            <button
+                              onClick={async () => {
+                                try {
+                                  if (!profile?.company) {
+                                    toast({
+                                      title: "Perfil Incompleto",
+                                      description: "Debes completar el nombre de tu empresa antes de generar PDFs.",
+                                      variant: "destructive",
+                                    });
+                                    return;
+                                  }
+
+                                  const isPremiumUser = userSubscription?.plan?.id !== 1;
+                                  const payload = {
+                                    user: currentUser?.uid
+                                      ? [{ uid: currentUser.uid, email: currentUser.email, displayName: currentUser.displayName }]
+                                      : [{ uid: "anonymous-pdf-user", email: profile?.email || "contractor@example.com", displayName: profile?.company || "Anonymous User" }],
+                                    client: { name: est.clientName || "", email: est.clientEmail || "", phone: "", address: "" },
+                                    items: est.items || [],
+                                    projectTotalCosts: {
+                                      subtotal: Number(Number(est.subtotal || 0).toFixed(2)) || 0,
+                                      discount: Number(Number(est.discountAmount || 0).toFixed(2)) || 0,
+                                      taxRate: Number(Number((est.taxRate || 0).toFixed(2))) || 0,
+                                      tax: Number(Number((est.tax || 0).toFixed(2))) || 0,
+                                      total: Number(Number((est.total || 0).toFixed(2))) || 0,
+                                    },
+                                    originalData: { projectDescription: est.title || est.rawData?.projectDescription || "" },
+                                    contractor: {
+                                      name: profile?.company || "Professional Contractor",
+                                      company: profile?.company || "Construction Company",
+                                      address: profile?.address || "",
+                                      phone: profile?.phone || "",
+                                      email: profile?.email || currentUser?.email || "",
+                                      website: profile?.website || "",
+                                      logo: profile?.logo || "",
+                                      license: profile?.license || "",
+                                    },
+                                    isMembership: isPremiumUser,
+                                    templateMode: isPremiumUser ? "premium" : "basic",
+                                  };
+
+                                  const response = await axios.post("/api/estimate-puppeteer-pdf", payload, { responseType: "blob" });
+                                  const pdfBlob = new Blob([response.data], { type: "application/pdf" });
+                                  const clientName = est.clientName?.replace(/[^a-zA-Z0-9]/g, "_") || "client";
+                                  const timestamp = new Date().toISOString().slice(0, 10);
+                                  await shareOrDownloadPdf(pdfBlob, `estimate-${clientName}-${timestamp}.pdf`, {
+                                    title: `Estimate for ${est.clientName || "Client"}`,
+                                    text: `Professional estimate from ${profile?.company || "your contractor"}`,
+                                    clientName: est.clientName,
+                                    estimateNumber: `EST-${timestamp}`,
+                                  });
+                                  toast({ title: "PDF Generado", description: "PDF descargado exitosamente" });
+                                } catch (error) {
+                                  console.error("PDF generation error:", error);
+                                  toast({ title: "Error", description: "No se pudo generar el PDF.", variant: "destructive" });
+                                }
+                              }}
+                              className="estimate-action-btn"
+                              data-testid={`button-download-pdf-${est.id}`}
+                              title="Descargar PDF"
+                            >
+                              <Download className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                            </button>
+                            
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(`${window.location.origin}/estimate/${est.id}`);
+                                toast({ title: "Link copiado", description: "URL copiada al portapapeles" });
+                              }}
+                              className="estimate-action-btn"
+                              data-testid={`button-copy-url-${est.id}`}
+                              title="Copiar enlace"
+                            >
+                              <Copy className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => {
-                            setShowEstimatesHistory(false);
-                            handleEditEstimate(est.id);
-                          }}
-                          className="estimate-action-btn"
-                          data-testid={`button-edit-estimate-${est.id}`}
-                          title="Ver/Editar"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                        </button>
-                        
-                        <button
-                          onClick={async () => {
-                            try {
-                              if (!profile?.company) {
-                                toast({
-                                  title: "Perfil Incompleto",
-                                  description: "Debes completar el nombre de tu empresa antes de generar PDFs.",
-                                  variant: "destructive",
-                                });
-                                return;
-                              }
-
-                              const isPremiumUser = userSubscription?.plan?.id !== 1;
-                              const payload = {
-                                user: currentUser?.uid
-                                  ? [{ uid: currentUser.uid, email: currentUser.email, displayName: currentUser.displayName }]
-                                  : [{ uid: "anonymous-pdf-user", email: profile?.email || "contractor@example.com", displayName: profile?.company || "Anonymous User" }],
-                                client: { name: est.clientName || "", email: est.clientEmail || "", phone: "", address: "" },
-                                items: est.items || [],
-                                projectTotalCosts: {
-                                  subtotal: Number(Number(est.subtotal || 0).toFixed(2)) || 0,
-                                  discount: Number(Number(est.discountAmount || 0).toFixed(2)) || 0,
-                                  taxRate: Number(Number((est.taxRate || 0).toFixed(2))) || 0,
-                                  tax: Number(Number((est.tax || 0).toFixed(2))) || 0,
-                                  total: Number(Number((est.total || 0).toFixed(2))) || 0,
-                                },
-                                originalData: { projectDescription: est.title || est.rawData?.projectDescription || "" },
-                                contractor: {
-                                  name: profile?.company || "Professional Contractor",
-                                  company: profile?.company || "Construction Company",
-                                  address: profile?.address || "",
-                                  phone: profile?.phone || "",
-                                  email: profile?.email || currentUser?.email || "",
-                                  website: profile?.website || "",
-                                  logo: profile?.logo || "",
-                                  license: profile?.license || "",
-                                },
-                                isMembership: isPremiumUser,
-                                templateMode: isPremiumUser ? "premium" : "basic",
-                              };
-
-                              const response = await axios.post("/api/estimate-puppeteer-pdf", payload, { responseType: "blob" });
-                              const pdfBlob = new Blob([response.data], { type: "application/pdf" });
-                              const clientName = est.clientName?.replace(/[^a-zA-Z0-9]/g, "_") || "client";
-                              const timestamp = new Date().toISOString().slice(0, 10);
-                              await shareOrDownloadPdf(pdfBlob, `estimate-${clientName}-${timestamp}.pdf`, {
-                                title: `Estimate for ${est.clientName || "Client"}`,
-                                text: `Professional estimate from ${profile?.company || "your contractor"}`,
-                                clientName: est.clientName,
-                                estimateNumber: `EST-${timestamp}`,
-                              });
-                              toast({ title: "PDF Generado", description: "PDF descargado exitosamente" });
-                            } catch (error) {
-                              console.error("PDF generation error:", error);
-                              toast({ title: "Error", description: "No se pudo generar el PDF.", variant: "destructive" });
-                            }
-                          }}
-                          className="estimate-action-btn"
-                          data-testid={`button-download-pdf-${est.id}`}
-                          title="Descargar PDF"
-                        >
-                          <Download className="w-3.5 h-3.5" />
-                        </button>
-                        
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(`${window.location.origin}/estimate/${est.id}`);
-                            toast({ title: "Link copiado", description: "URL copiada al portapapeles" });
-                          }}
-                          className="estimate-action-btn"
-                          data-testid={`button-copy-url-${est.id}`}
-                          title="Copiar enlace"
-                        >
-                          <Copy className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] sm:text-[11px] text-cyan-500/60 mt-0.5">
+                          <span className="font-mono truncate max-w-[100px] sm:max-w-none">{est.estimateNumber}</span>
+                          <span className="text-cyan-500/30 hidden sm:inline">•</span>
+                          <span className="font-medium text-cyan-400/80">${est.total.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                          <span className="text-cyan-500/30 hidden sm:inline">•</span>
+                          <span>{new Date(est.estimateDate).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -7300,23 +7301,37 @@ This link provides a professional view of your estimate that you can access anyt
         .estimate-card-compact {
           background: rgba(0, 20, 40, 0.6);
           border: 1px solid rgba(0, 255, 255, 0.15);
-          border-radius: 8px;
-          padding: 0.875rem 1rem;
+          border-radius: 6px;
+          padding: 0.625rem 0.75rem;
           transition: all 0.2s ease;
+        }
+        
+        @media (min-width: 640px) {
+          .estimate-card-compact {
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+          }
         }
         
         .estimate-card-compact:hover {
           background: rgba(0, 30, 60, 0.7);
           border-color: rgba(0, 255, 255, 0.35);
-          box-shadow: 0 2px 12px rgba(0, 255, 255, 0.08);
         }
         
         .estimate-status-dot {
-          width: 8px;
-          height: 8px;
+          width: 6px;
+          height: 6px;
           border-radius: 50%;
           flex-shrink: 0;
-          box-shadow: 0 0 6px currentColor;
+          box-shadow: 0 0 4px currentColor;
+        }
+        
+        @media (min-width: 640px) {
+          .estimate-status-dot {
+            width: 8px;
+            height: 8px;
+            box-shadow: 0 0 6px currentColor;
+          }
         }
         
         .dot-approved {
@@ -7338,9 +7353,9 @@ This link provides a professional view of your estimate that you can access anyt
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 28px;
-          height: 28px;
-          border-radius: 6px;
+          width: 24px;
+          height: 24px;
+          border-radius: 4px;
           background: rgba(0, 255, 255, 0.08);
           border: 1px solid rgba(0, 255, 255, 0.2);
           color: rgba(0, 255, 255, 0.7);
@@ -7348,11 +7363,18 @@ This link provides a professional view of your estimate that you can access anyt
           cursor: pointer;
         }
         
+        @media (min-width: 640px) {
+          .estimate-action-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+          }
+        }
+        
         .estimate-action-btn:hover {
           background: rgba(0, 255, 255, 0.15);
           border-color: rgba(0, 255, 255, 0.4);
           color: #00ffff;
-          box-shadow: 0 0 8px rgba(0, 255, 255, 0.2);
         }
       `}</style>
 
