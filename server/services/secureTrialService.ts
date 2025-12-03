@@ -3,11 +3,12 @@
  * Firebase-native trial system with serverTimestamp protection
  * Prevents trial resets across devices
  * 🛡️ PROTEGIDO CON FLAG PERMANENTE hasUsedTrial de PostgreSQL
+ * 🔄 SINCRONIZA con PostgreSQL user_subscriptions para consistencia
  */
 
 import { db as pgDb } from '../db';
-import { users } from '@shared/schema';
-import { eq } from 'drizzle-orm';
+import { users, userSubscriptions, subscriptionPlans } from '@shared/schema';
+import { eq, and } from 'drizzle-orm';
 import { db, admin } from '../lib/firebase-admin.js';
 
 export interface SecureTrialData {
@@ -166,6 +167,43 @@ export class SecureTrialService {
         }
         
         console.log(`✅ [SECURE-TRIAL] hasUsedTrial flag PERMANENTLY set in PostgreSQL for ${uid} (rowCount: ${updateResult.rowCount})`);
+        
+        // 🔄 SINCRONIZAR: Crear suscripción en PostgreSQL user_subscriptions
+        // Esto es CRÍTICO para que el sistema de permisos funcione correctamente
+        const userRecord = await pgDb
+          .select({ id: users.id })
+          .from(users)
+          .where(eq(users.firebaseUid, uid))
+          .limit(1);
+        
+        if (userRecord.length > 0) {
+          const userId = userRecord[0].id;
+          
+          // Verificar si ya existe una suscripción activa (prevenir duplicados)
+          const existingSub = await pgDb
+            .select()
+            .from(userSubscriptions)
+            .where(and(
+              eq(userSubscriptions.userId, userId),
+              eq(userSubscriptions.status, 'trialing')
+            ))
+            .limit(1);
+          
+          if (existingSub.length === 0) {
+            // Crear suscripción trial en PostgreSQL
+            await pgDb.insert(userSubscriptions).values({
+              userId: userId,
+              planId: 4, // FREE_TRIAL plan ID
+              status: 'trialing',
+              currentPeriodStart: now,
+              currentPeriodEnd: endDate,
+              billingCycle: 'monthly'
+            });
+            console.log(`✅ [SECURE-TRIAL] PostgreSQL subscription created for user ${userId} (Free Trial)`);
+          } else {
+            console.log(`⚠️ [SECURE-TRIAL] PostgreSQL subscription already exists for user ${userId}`);
+          }
+        }
       } else {
         // Si PostgreSQL no está disponible, NO crear trial - seguridad primero
         console.error(`🚨 [SECURE-TRIAL] CRITICAL: PostgreSQL unavailable - ABORTING trial creation for ${uid}`);
