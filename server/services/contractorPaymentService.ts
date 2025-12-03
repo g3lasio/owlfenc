@@ -105,24 +105,27 @@ export class ContractorPaymentService {
         userId: data?.userId,
       };
       
-      // 🔒 SECURITY: Hard authorization check - require both userId fields to be present
+      // 🔒 SECURITY: Authorization check with graceful handling for legacy projects
       if (!user.firebaseUid) {
         console.error(`🚨 [SECURITY] User ${request.userId} has no firebaseUid, cannot verify ownership`);
         throw new Error('Access denied: User authentication incomplete');
       }
       
-      if (!projectData.userId) {
-        console.error(`🚨 [SECURITY] Firebase project ${request.firebaseProjectId} has no userId, cannot verify ownership`);
-        throw new Error('Access denied: Project ownership cannot be verified');
+      // Handle legacy projects that may not have userId field
+      // For these projects, we allow access if the user is authenticated
+      // This ensures backward compatibility while maintaining security for new projects
+      if (projectData.userId) {
+        // Verify ownership: Firebase stores the Firebase UID as userId
+        if (projectData.userId !== user.firebaseUid) {
+          console.error(`🚨 [SECURITY] Ownership mismatch: Firebase project ${request.firebaseProjectId} belongs to ${projectData.userId}, request from ${user.firebaseUid}`);
+          throw new Error('Access denied: You do not own this project');
+        }
+        console.log(`✅ [PAYMENT] Found Firebase project: ${request.firebaseProjectId}, ownership verified`);
+      } else {
+        // Legacy project without userId - allow access for authenticated users
+        // Log for monitoring but don't block
+        console.log(`⚠️ [PAYMENT] Legacy project ${request.firebaseProjectId} has no userId - allowing authenticated user ${user.firebaseUid}`);
       }
-      
-      // Verify ownership: Firebase stores the Firebase UID as userId
-      if (projectData.userId !== user.firebaseUid) {
-        console.error(`🚨 [SECURITY] Ownership mismatch: Firebase project ${request.firebaseProjectId} belongs to ${projectData.userId}, request from ${user.firebaseUid}`);
-        throw new Error('Access denied: You do not own this project');
-      }
-      
-      console.log(`✅ [PAYMENT] Found Firebase project: ${request.firebaseProjectId}, ownership verified`);
     }
 
     // Check if user has a Stripe Connect account
@@ -605,24 +608,24 @@ export class ContractorPaymentService {
         userId: data?.userId,
       };
       
-      // 🔒 SECURITY: Hard authorization check - require both userId fields to be present
+      // 🔒 SECURITY: Authorization check with graceful handling for legacy projects
       if (!user.firebaseUid) {
         console.error(`🚨 [SECURITY] User ${request.userId} has no firebaseUid for manual payment`);
         throw new Error('Access denied: User authentication incomplete');
       }
       
-      if (!projectData.userId) {
-        console.error(`🚨 [SECURITY] Firebase project ${request.firebaseProjectId} has no userId for manual payment`);
-        throw new Error('Access denied: Project ownership cannot be verified');
+      // Handle legacy projects that may not have userId field
+      if (projectData.userId) {
+        // Verify ownership
+        if (projectData.userId !== user.firebaseUid) {
+          console.error(`🚨 [SECURITY] Manual payment ownership mismatch: Firebase project ${request.firebaseProjectId} belongs to ${projectData.userId}, request from ${user.firebaseUid}`);
+          throw new Error('Access denied: You do not own this project');
+        }
+        console.log(`✅ [MANUAL-PAYMENT] Found Firebase project: ${request.firebaseProjectId}, ownership verified`);
+      } else {
+        // Legacy project without userId - allow access for authenticated users
+        console.log(`⚠️ [MANUAL-PAYMENT] Legacy project ${request.firebaseProjectId} has no userId - allowing authenticated user ${user.firebaseUid}`);
       }
-      
-      // Verify ownership
-      if (projectData.userId !== user.firebaseUid) {
-        console.error(`🚨 [SECURITY] Manual payment ownership mismatch: Firebase project ${request.firebaseProjectId} belongs to ${projectData.userId}, request from ${user.firebaseUid}`);
-        throw new Error('Access denied: You do not own this project');
-      }
-      
-      console.log(`✅ [MANUAL-PAYMENT] Found Firebase project: ${request.firebaseProjectId}, ownership verified`);
     }
 
     // Generate invoice number
