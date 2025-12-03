@@ -77,21 +77,32 @@ export default function Subscription() {
         throw new Error("Debes iniciar sesión para continuar");
       }
 
-      // Obtener token de Firebase
+      // 🔐 IMPROVED: Obtener token fresco de Firebase primero, localStorage como backup
       let token: string | null = null;
-      const directToken = localStorage.getItem('firebase_id_token');
-      if (directToken) {
-        token = directToken;
-      } else {
+      
+      // 1. Intentar obtener token fresco del currentUser (más confiable)
+      try {
+        token = await currentUser.getIdToken(true); // force refresh
+        console.log('✅ [SUBSCRIPTION] Token obtenido del currentUser');
+        // Actualizar localStorage con el token fresco
+        localStorage.setItem('firebase_id_token', token);
+      } catch (freshTokenError) {
+        console.warn('⚠️ [SUBSCRIPTION] No se pudo obtener token fresco, intentando con cache');
         try {
           token = await currentUser.getIdToken(false);
-        } catch (tokenError) {
-          token = await currentUser.getIdToken(true);
+          console.log('✅ [SUBSCRIPTION] Token obtenido del cache de currentUser');
+        } catch (cacheError) {
+          // 2. Fallback a localStorage solo si currentUser falla
+          const storedToken = localStorage.getItem('firebase_id_token');
+          if (storedToken) {
+            token = storedToken;
+            console.log('✅ [SUBSCRIPTION] Token obtenido de localStorage');
+          }
         }
       }
 
       if (!token) {
-        throw new Error("No se pudo obtener token de autenticación");
+        throw new Error("No se pudo obtener token de autenticación. Por favor inicia sesión de nuevo.");
       }
 
       // Si es Free Trial, usar el endpoint de activación de trial
