@@ -226,31 +226,30 @@ export default function Subscription() {
         JSON.stringify(params),
       );
 
-      // Obtener token de Firebase - primero intentar desde localStorage (REST API directa)
+      // 🔐 IMPROVED: Obtener token fresco de Firebase SDK primero, localStorage como backup
       let token: string | null = null;
       
-      // Intento 1: Token directo desde localStorage (para REST API login)
-      const directToken = localStorage.getItem('firebase_id_token');
-      if (directToken) {
-        console.log("✅ [SUBSCRIPTION] Token obtenido desde localStorage (REST API)");
-        token = directToken;
-      }
-      
-      // Intento 2: Token desde Firebase SDK (solo si no hay token directo)
-      if (!token) {
+      // Intento 1: Token fresco desde Firebase SDK (más confiable, evita tokens expirados)
+      try {
+        console.log("🔐 [SUBSCRIPTION-CHECKOUT] Obteniendo token fresco de Firebase SDK...");
+        token = await currentUser.getIdToken(true); // force refresh
+        console.log("✅ [SUBSCRIPTION-CHECKOUT] Token fresco obtenido desde SDK");
+        // Actualizar localStorage con el token fresco
+        localStorage.setItem('firebase_id_token', token);
+      } catch (freshTokenError) {
+        console.warn("⚠️ [SUBSCRIPTION-CHECKOUT] No se pudo obtener token fresco:", freshTokenError);
+        // Intento 2: Token desde cache de SDK
         try {
-          console.log("🔐 [SUBSCRIPTION] Obteniendo token de Firebase SDK...");
+          console.log("🔄 [SUBSCRIPTION-CHECKOUT] Intentando token desde cache de SDK...");
           token = await currentUser.getIdToken(false);
-          console.log("✅ [SUBSCRIPTION] Token obtenido desde SDK exitosamente");
-        } catch (tokenError) {
-          console.error("❌ [SUBSCRIPTION] Error obteniendo token desde SDK:", tokenError);
-          // Intentar con force refresh
-          try {
-            console.log("🔄 [SUBSCRIPTION] Reintentando con force refresh...");
-            token = await currentUser.getIdToken(true);
-            console.log("✅ [SUBSCRIPTION] Token obtenido con force refresh");
-          } catch (retryError) {
-            console.error("❌ [SUBSCRIPTION] Error en segundo intento:", retryError);
+          console.log("✅ [SUBSCRIPTION-CHECKOUT] Token obtenido desde cache de SDK");
+        } catch (cacheError) {
+          console.error("❌ [SUBSCRIPTION-CHECKOUT] Error obteniendo token de cache:", cacheError);
+          // Intento 3: Fallback a localStorage solo si SDK falla completamente
+          const storedToken = localStorage.getItem('firebase_id_token');
+          if (storedToken) {
+            console.log("⚠️ [SUBSCRIPTION-CHECKOUT] Usando token de localStorage como último recurso");
+            token = storedToken;
           }
         }
       }
@@ -334,31 +333,30 @@ export default function Subscription() {
 
       console.log("Enviando solicitud para crear portal de cliente");
 
-      // Obtener token de Firebase - primero intentar desde localStorage (REST API directa)
+      // 🔐 IMPROVED: Obtener token fresco de Firebase SDK primero, localStorage como backup
       let token: string | null = null;
       
-      // Intento 1: Token directo desde localStorage (para REST API login)
-      const directToken = localStorage.getItem('firebase_id_token');
-      if (directToken) {
-        console.log("✅ [SUBSCRIPTION] Token obtenido desde localStorage (REST API)");
-        token = directToken;
-      }
-      
-      // Intento 2: Token desde Firebase SDK (solo si no hay token directo)
-      if (!token) {
+      // Intento 1: Token fresco desde Firebase SDK (más confiable, evita tokens expirados)
+      try {
+        console.log("🔐 [SUBSCRIPTION-PORTAL] Obteniendo token fresco de Firebase SDK...");
+        token = await currentUser.getIdToken(true); // force refresh
+        console.log("✅ [SUBSCRIPTION-PORTAL] Token fresco obtenido desde SDK");
+        // Actualizar localStorage con el token fresco
+        localStorage.setItem('firebase_id_token', token);
+      } catch (freshTokenError) {
+        console.warn("⚠️ [SUBSCRIPTION-PORTAL] No se pudo obtener token fresco:", freshTokenError);
+        // Intento 2: Token desde cache de SDK
         try {
-          console.log("🔐 [SUBSCRIPTION] Obteniendo token de Firebase SDK...");
+          console.log("🔄 [SUBSCRIPTION-PORTAL] Intentando token desde cache de SDK...");
           token = await currentUser.getIdToken(false);
-          console.log("✅ [SUBSCRIPTION] Token obtenido desde SDK exitosamente");
-        } catch (tokenError) {
-          console.error("❌ [SUBSCRIPTION] Error obteniendo token desde SDK:", tokenError);
-          // Intentar con force refresh
-          try {
-            console.log("🔄 [SUBSCRIPTION] Reintentando con force refresh...");
-            token = await currentUser.getIdToken(true);
-            console.log("✅ [SUBSCRIPTION] Token obtenido con force refresh");
-          } catch (retryError) {
-            console.error("❌ [SUBSCRIPTION] Error en segundo intento:", retryError);
+          console.log("✅ [SUBSCRIPTION-PORTAL] Token obtenido desde cache de SDK");
+        } catch (cacheError) {
+          console.error("❌ [SUBSCRIPTION-PORTAL] Error obteniendo token de cache:", cacheError);
+          // Intento 3: Fallback a localStorage solo si SDK falla completamente
+          const storedToken = localStorage.getItem('firebase_id_token');
+          if (storedToken) {
+            console.log("⚠️ [SUBSCRIPTION-PORTAL] Usando token de localStorage como último recurso");
+            token = storedToken;
           }
         }
       }

@@ -615,16 +615,19 @@ export default function AuthPage() {
                       } catch (error: any) {
                         console.error('❌ Error with OTP authentication:', error);
                         
-                        // NO usar fallback con tokens falsos - mostrar error al usuario
+                        // 🔐 CRITICAL: Limpiar TODOS los tokens parciales o viejos para evitar estados inconsistentes
+                        localStorage.removeItem('firebase_id_token');
+                        localStorage.removeItem('firebase_user_id');
+                        localStorage.removeItem('firebase_user_email');
+                        localStorage.removeItem('otp-auth-success');
+                        localStorage.removeItem('otp-fallback-auth');
+                        
+                        // Mostrar error descriptivo al usuario
                         toast({
                           title: "Error de autenticación",
                           description: error.message || "No se pudo completar la autenticación. Por favor intenta de nuevo.",
                           variant: "destructive",
                         });
-                        
-                        // Limpiar cualquier estado parcial
-                        localStorage.removeItem('otp-auth-success');
-                        localStorage.removeItem('otp-fallback-auth');
                       }
                     }}
                     onBack={() => setLoginMethod("email")}
