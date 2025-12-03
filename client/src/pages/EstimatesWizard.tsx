@@ -6894,106 +6894,418 @@ This link provides a professional view of your estimate that you can access anyt
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        <div className="bg-gray-900 backdrop-blur-sm rounded-lg border border-gray-700 p-6">
-          <div className="mb-6">
-            <p className="text-cyan-400 text-center">
-              {isEditMode
-                ? "Edita tu estimado existente y guarda los cambios"
-                : "Sigue los pasos para crear un estimado profesional para tu cliente"}
-            </p>
-          </div>
-
-          {/* Progress Steps */}
-          <div className="mb-8">
-            <div className="flex items-center justify-center">
-              <div className="flex items-center w-full max-w-2xl">
-                {STEPS.map((step, index) => {
-                  const Icon = step.icon;
-                  const isActive = index === currentStep;
-                  const isCompleted = index < currentStep;
-
-                  return (
-                    <div key={step.id} className="flex items-center flex-1">
-                      <div className="flex flex-col items-center w-full">
-                        <div
-                          className={`flex items-center justify-center w-12 h-12 rounded-full border-2 mb-2 transition-all duration-300 ${
-                            isActive
-                              ? "border-cyan-400 bg-cyan-400 text-black shadow-lg shadow-cyan-500/25 scale-110"
-                              : isCompleted
-                                ? "border-cyan-400 bg-cyan-400 text-black shadow-md shadow-cyan-500/20"
-                                : "border-gray-500 bg-gray-900 text-gray-300"
-                          }`}
-                        >
-                          {isCompleted ? (
-                            <Check className="h-6 w-6" />
-                          ) : (
-                            (() => {
-                              const IconComponent = step.icon;
-                              return <IconComponent className="h-6 w-6" />;
-                            })()
-                          )}
+        {/* HISTORIAL INLINE - Estructura EXACTA de Legal Defense */}
+        {showEstimatesHistory ? (
+          <div className="cyber-panel p-6">
+            <h3 className="text-xl font-bold text-cyan-400 mb-6 flex items-center">
+              <Clock className="w-5 h-5 mr-2" />
+              ESTIMADOS GUARDADOS
+            </h3>
+            
+            {/* Barra de búsqueda */}
+            <div className="mb-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-cyan-400" />
+                <Input
+                  type="text"
+                  placeholder="Buscar por cliente o número..."
+                  value={historySearchQuery}
+                  onChange={(e) => setHistorySearchQuery(e.target.value)}
+                  className="pl-10 pr-10 bg-gray-900/50 border border-cyan-500/30 text-cyan-100 placeholder:text-cyan-700/50 focus:border-cyan-400"
+                  data-testid="input-search-estimates"
+                />
+                {historySearchQuery && (
+                  <button
+                    onClick={() => setHistorySearchQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-cyan-600 hover:text-cyan-400"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+            
+            {isLoadingEstimates ? (
+              <div className="flex items-center justify-center py-12">
+                <RefreshCw className="h-6 w-6 animate-spin text-cyan-400" />
+                <span className="ml-3 text-cyan-300/70">Cargando estimados...</span>
+              </div>
+            ) : savedEstimates.length === 0 ? (
+              <div className="text-center py-12">
+                <FileText className="h-12 w-12 mx-auto mb-3 text-cyan-400/30" />
+                <p className="text-cyan-300/70 mb-1">No tienes estimados guardados</p>
+                <p className="text-sm text-cyan-500/50">Crea tu primer estimado para verlo aquí</p>
+              </div>
+            ) : filteredEstimates.length === 0 ? (
+              <div className="text-center py-12">
+                <Search className="h-10 w-10 mx-auto mb-3 text-cyan-400/30" />
+                <p className="text-cyan-300/70 mb-1">No se encontraron resultados</p>
+                <p className="text-sm text-cyan-500/50">Intenta con otro término de búsqueda</p>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {filteredEstimates.map((est) => (
+                  <div key={est.id} className="contract-card">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <div className={`status-badge ${
+                            est.status === 'approved' ? 'status-completed' :
+                            est.status === 'sent' ? 'status-sent' :
+                            'status-draft'
+                          }`}>
+                            {est.status === 'approved' && <CheckCircle className="w-4 h-4" />}
+                            {est.status === 'sent' && <Send className="w-4 h-4" />}
+                            {est.status === 'draft' && <FileText className="w-4 h-4" />}
+                            {est.status === 'approved' ? 'APROBADO' : est.status === 'sent' ? 'ENVIADO' : 'BORRADOR'}
+                          </div>
+                          <h4 className="text-cyan-400 font-semibold">{est.estimateNumber}</h4>
                         </div>
-                        <span
-                          className={`text-sm font-medium text-center transition-colors duration-300 ${
-                            isActive
-                              ? "text-cyan-400 font-semibold"
-                              : isCompleted
-                                ? "text-cyan-300"
-                                : "text-blue-300"
-                          }`}
-                        >
-                          {step.title}
-                        </span>
+                        
+                        <div className="text-cyan-300/70 text-sm space-y-1">
+                          <div>Cliente: {est.clientName}</div>
+                          <div>Total: ${est.total.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+                          <div>Creado: {new Date(est.estimateDate).toLocaleDateString()}</div>
+                        </div>
                       </div>
-                      {index < STEPS.length - 1 && (
-                        <div className="flex-1 flex items-center px-4">
-                          <div
-                            className={`w-full h-1 rounded-full transition-all duration-500 ${
-                              isCompleted
-                                ? "bg-gradient-to-r from-cyan-400 to-blue-400"
-                                : "bg-blue-900/30"
-                            }`}
-                          />
-                        </div>
-                      )}
+                      
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setShowEstimatesHistory(false);
+                            handleEditEstimate(est.id);
+                          }}
+                          className="cyber-button-sm"
+                          data-testid={`button-edit-estimate-${est.id}`}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            try {
+                              if (!profile?.company) {
+                                toast({
+                                  title: "Perfil Incompleto",
+                                  description: "Debes completar el nombre de tu empresa antes de generar PDFs.",
+                                  variant: "destructive",
+                                });
+                                return;
+                              }
+
+                              const isPremiumUser = userSubscription?.plan?.id !== 1;
+                              const payload = {
+                                user: currentUser?.uid
+                                  ? [{ uid: currentUser.uid, email: currentUser.email, displayName: currentUser.displayName }]
+                                  : [{ uid: "anonymous-pdf-user", email: profile?.email || "contractor@example.com", displayName: profile?.company || "Anonymous User" }],
+                                client: { name: est.clientName || "", email: est.clientEmail || "", phone: "", address: "" },
+                                items: est.items || [],
+                                projectTotalCosts: {
+                                  subtotal: Number(Number(est.subtotal || 0).toFixed(2)) || 0,
+                                  discount: Number(Number(est.discountAmount || 0).toFixed(2)) || 0,
+                                  taxRate: Number(Number((est.taxRate || 0).toFixed(2))) || 0,
+                                  tax: Number(Number((est.tax || 0).toFixed(2))) || 0,
+                                  total: Number(Number((est.total || 0).toFixed(2))) || 0,
+                                },
+                                originalData: { projectDescription: est.title || est.rawData?.projectDescription || "" },
+                                contractor: {
+                                  name: profile?.company || "Professional Contractor",
+                                  company: profile?.company || "Construction Company",
+                                  address: profile?.address || "",
+                                  phone: profile?.phone || "",
+                                  email: profile?.email || currentUser?.email || "",
+                                  website: profile?.website || "",
+                                  logo: profile?.logo || "",
+                                  license: profile?.license || "",
+                                },
+                                isMembership: isPremiumUser,
+                                templateMode: isPremiumUser ? "premium" : "basic",
+                              };
+
+                              const response = await axios.post("/api/estimate-puppeteer-pdf", payload, { responseType: "blob" });
+                              const pdfBlob = new Blob([response.data], { type: "application/pdf" });
+                              const clientName = est.clientName?.replace(/[^a-zA-Z0-9]/g, "_") || "client";
+                              const timestamp = new Date().toISOString().slice(0, 10);
+                              await shareOrDownloadPdf(pdfBlob, `estimate-${clientName}-${timestamp}.pdf`, {
+                                title: `Estimate for ${est.clientName || "Client"}`,
+                                text: `Professional estimate from ${profile?.company || "your contractor"}`,
+                                clientName: est.clientName,
+                                estimateNumber: `EST-${timestamp}`,
+                              });
+                              toast({ title: "PDF Generado", description: "PDF descargado exitosamente" });
+                            } catch (error) {
+                              console.error("PDF generation error:", error);
+                              toast({ title: "Error", description: "No se pudo generar el PDF.", variant: "destructive" });
+                            }
+                          }}
+                          className="cyber-button-sm"
+                          data-testid={`button-download-pdf-${est.id}`}
+                        >
+                          <Download className="w-4 h-4" />
+                        </Button>
+                        
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            navigator.clipboard.writeText(`${window.location.origin}/estimate/${est.id}`);
+                            toast({ title: "Link copiado", description: "URL copiada al portapapeles" });
+                          }}
+                          className="cyber-button-sm"
+                          data-testid={`button-copy-url-${est.id}`}
+                        >
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {/* Botones de acción */}
+            <div className="flex justify-between mt-6 pt-4 border-t border-cyan-500/20">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowEstimatesHistory(false);
+                  setHistorySearchQuery("");
+                }}
+                className="cyber-button-sm px-4"
+                data-testid="button-close-history"
+              >
+                <ChevronLeft className="w-4 h-4 mr-2" />
+                Volver
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowEstimatesHistory(false);
+                  setHistorySearchQuery("");
+                  setIsEditMode(false);
+                  setEditingEstimateId(null);
+                  setCurrentStep(0);
+                  setEstimate({
+                    client: null,
+                    items: [],
+                    projectDetails: "",
+                    subtotal: 0,
+                    tax: 0,
+                    total: 0,
+                    taxRate: 10,
+                    discountType: "percentage",
+                    discountValue: 0,
+                    discountAmount: 0,
+                    discountName: "",
+                    attachments: [],
+                  });
+                  window.history.replaceState({}, document.title, window.location.pathname);
+                }}
+                className="cyber-button-primary px-4"
+                data-testid="button-new-estimate"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Nuevo Estimado
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-gray-900 backdrop-blur-sm rounded-lg border border-gray-700 p-6">
+            <div className="mb-6">
+              <p className="text-cyan-400 text-center">
+                {isEditMode
+                  ? "Edita tu estimado existente y guarda los cambios"
+                  : "Sigue los pasos para crear un estimado profesional para tu cliente"}
+              </p>
+            </div>
+
+            {/* Progress Steps */}
+            <div className="mb-8">
+              <div className="flex items-center justify-center">
+                <div className="flex items-center w-full max-w-2xl">
+                  {STEPS.map((step, index) => {
+                    const Icon = step.icon;
+                    const isActive = index === currentStep;
+                    const isCompleted = index < currentStep;
+
+                    return (
+                      <div key={step.id} className="flex items-center flex-1">
+                        <div className="flex flex-col items-center w-full">
+                          <div
+                            className={`flex items-center justify-center w-12 h-12 rounded-full border-2 mb-2 transition-all duration-300 ${
+                              isActive
+                                ? "border-cyan-400 bg-cyan-400 text-black shadow-lg shadow-cyan-500/25 scale-110"
+                                : isCompleted
+                                  ? "border-cyan-400 bg-cyan-400 text-black shadow-md shadow-cyan-500/20"
+                                  : "border-gray-500 bg-gray-900 text-gray-300"
+                            }`}
+                          >
+                            {isCompleted ? (
+                              <Check className="h-6 w-6" />
+                            ) : (
+                              (() => {
+                                const IconComponent = step.icon;
+                                return <IconComponent className="h-6 w-6" />;
+                              })()
+                            )}
+                          </div>
+                          <span
+                            className={`text-sm font-medium text-center transition-colors duration-300 ${
+                              isActive
+                                ? "text-cyan-400 font-semibold"
+                                : isCompleted
+                                  ? "text-cyan-300"
+                                  : "text-blue-300"
+                            }`}
+                          >
+                            {step.title}
+                          </span>
+                        </div>
+                        {index < STEPS.length - 1 && (
+                          <div className="flex-1 flex items-center px-4">
+                            <div
+                              className={`w-full h-1 rounded-full transition-all duration-500 ${
+                                isCompleted
+                                  ? "bg-gradient-to-r from-cyan-400 to-blue-400"
+                                  : "bg-blue-900/30"
+                              }`}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Current Step Content */}
+            <div className="mb-8">{renderCurrentStep()}</div>
+
+            {/* Navigation Buttons */}
+            <div className="flex flex-col sm:flex-row gap-2 sm:justify-between">
+              <Button
+                variant="outline"
+                onClick={prevStep}
+                disabled={currentStep === 0}
+                className="w-full sm:w-auto order-2 sm:order-1 bg-gray-900/50 hover:bg-blue-900/30 text-cyan-300 border-blue-400/30 hover:border-cyan-400/50"
+              >
+                <ChevronLeft className="h-4 w-4 mr-2" />
+                Anterior
+              </Button>
+
+              <div className="flex flex-col sm:flex-row gap-2 order-1 sm:order-2">
+                {currentStep < STEPS.length - 1 && (
+                  <Button
+                    onClick={nextStep}
+                    disabled={!canProceedToNext()}
+                    className="w-full sm:w-auto bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 shadow-lg shadow-cyan-500/25"
+                    data-testid="button-next-step"
+                  >
+                    Siguiente
+                    <ChevronRight className="h-4 w-4 ml-2" />
+                  </Button>
+                )}
               </div>
             </div>
           </div>
-
-          {/* Current Step Content */}
-          <div className="mb-8">{renderCurrentStep()}</div>
-
-          {/* Navigation Buttons */}
-          <div className="flex flex-col sm:flex-row gap-2 sm:justify-between">
-            <Button
-              variant="outline"
-              onClick={prevStep}
-              disabled={currentStep === 0}
-              className="w-full sm:w-auto order-2 sm:order-1 bg-gray-900/50 hover:bg-blue-900/30 text-cyan-300 border-blue-400/30 hover:border-cyan-400/50"
-            >
-              <ChevronLeft className="h-4 w-4 mr-2" />
-              Anterior
-            </Button>
-
-            <div className="flex flex-col sm:flex-row gap-2 order-1 sm:order-2">
-              {currentStep < STEPS.length - 1 && (
-                <Button
-                  onClick={nextStep}
-                  disabled={!canProceedToNext()}
-                  className="w-full sm:w-auto bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 shadow-lg shadow-cyan-500/25"
-                  data-testid="button-next-step"
-                >
-                  Siguiente
-                  <ChevronRight className="h-4 w-4 ml-2" />
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
+        )}
       </div>
+
+      {/* CSS Estilos EXACTOS de Legal Defense */}
+      <style>{`
+        .cyber-panel {
+          background: rgba(0, 20, 40, 0.8);
+          border: 1px solid rgba(0, 255, 255, 0.3);
+          border-radius: 0;
+          position: relative;
+          backdrop-filter: blur(10px);
+        }
+        
+        .cyber-panel::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: linear-gradient(45deg, transparent 49%, rgba(0, 255, 255, 0.1) 50%, transparent 51%);
+          pointer-events: none;
+        }
+        
+        .contract-card {
+          background: rgba(0, 30, 60, 0.4);
+          border: 1px solid rgba(0, 255, 255, 0.2);
+          border-radius: 8px;
+          padding: 1.5rem;
+          transition: all 0.3s ease;
+          position: relative;
+        }
+        
+        .contract-card:hover {
+          border-color: rgba(0, 255, 255, 0.5);
+          box-shadow: 0 4px 20px rgba(0, 255, 255, 0.1);
+          transform: translateY(-2px);
+        }
+        
+        .status-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.25rem 0.75rem;
+          border-radius: 12px;
+          font-size: 0.75rem;
+          font-weight: bold;
+          border: 1px solid;
+        }
+        
+        .status-completed {
+          background: rgba(16, 185, 129, 0.2);
+          color: #10b981;
+          border-color: #10b981;
+        }
+        
+        .status-sent {
+          background: rgba(59, 130, 246, 0.2);
+          color: #3b82f6;
+          border-color: #3b82f6;
+        }
+        
+        .status-draft {
+          background: rgba(245, 158, 11, 0.2);
+          color: #f59e0b;
+          border-color: #f59e0b;
+        }
+        
+        .cyber-button-sm {
+          background: rgba(0, 255, 255, 0.1) !important;
+          border: 1px solid rgba(0, 255, 255, 0.3) !important;
+          color: #00ffff !important;
+          padding: 0.5rem;
+        }
+        
+        .cyber-button-sm:hover {
+          background: rgba(0, 255, 255, 0.2) !important;
+          box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+        }
+        
+        .cyber-button-primary {
+          background: linear-gradient(135deg, rgba(0, 255, 255, 0.2), rgba(0, 150, 255, 0.2)) !important;
+          border: 1px solid #00ffff !important;
+          color: #00ffff !important;
+          font-weight: bold;
+          transition: all 0.3s ease;
+        }
+        
+        .cyber-button-primary:hover {
+          background: linear-gradient(135deg, rgba(0, 255, 255, 0.3), rgba(0, 150, 255, 0.3)) !important;
+          box-shadow: 0 0 30px rgba(0, 255, 255, 0.4);
+          transform: translateY(-2px);
+        }
+      `}</style>
 
       {/* Overlay futurista de DeepSearch AI */}
 
@@ -7538,324 +7850,6 @@ This link provides a professional view of your estimate that you can access anyt
               Generate Invoice
             </Button>
           </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog del Historial de Estimados - Estilo EXACTO Legal Defense */}
-      <Dialog open={showEstimatesHistory} onOpenChange={(open) => {
-        setShowEstimatesHistory(open);
-        if (!open) setHistorySearchQuery("");
-      }}>
-        <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col p-0 bg-transparent border-0">
-          {/* Estructura EXACTA de Legal Defense */}
-          <div className="estimates-cyber-panel p-6 overflow-y-auto max-h-[85vh]">
-            <h3 className="text-xl font-bold text-cyan-400 mb-6 flex items-center">
-              <FileText className="w-5 h-5 mr-2" />
-              ESTIMADOS GUARDADOS
-            </h3>
-            
-            {/* Barra de búsqueda */}
-            <div className="mb-6">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-cyan-400" />
-                <Input
-                  type="text"
-                  placeholder="Buscar por cliente o número..."
-                  value={historySearchQuery}
-                  onChange={(e) => setHistorySearchQuery(e.target.value)}
-                  className="pl-10 pr-10 bg-gray-900/50 border border-cyan-500/30 text-cyan-100 placeholder:text-cyan-700/50 focus:border-cyan-400"
-                  data-testid="input-search-estimates"
-                />
-                {historySearchQuery && (
-                  <button
-                    onClick={() => setHistorySearchQuery("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-cyan-600 hover:text-cyan-400"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-            </div>
-            
-            {isLoadingEstimates ? (
-              <div className="flex items-center justify-center py-12">
-                <RefreshCw className="h-6 w-6 animate-spin text-cyan-400" />
-                <span className="ml-3 text-cyan-300/70">Cargando estimados...</span>
-              </div>
-            ) : savedEstimates.length === 0 ? (
-              <div className="text-center py-12">
-                <FileText className="h-12 w-12 mx-auto mb-3 text-cyan-400/30" />
-                <p className="text-cyan-300/70 mb-1">No tienes estimados guardados</p>
-                <p className="text-sm text-cyan-500/50">Crea tu primer estimado para verlo aquí</p>
-              </div>
-            ) : filteredEstimates.length === 0 ? (
-              <div className="text-center py-12">
-                <Search className="h-10 w-10 mx-auto mb-3 text-cyan-400/30" />
-                <p className="text-cyan-300/70 mb-1">No se encontraron resultados</p>
-                <p className="text-sm text-cyan-500/50">Intenta con otro término de búsqueda</p>
-              </div>
-            ) : (
-              <div className="grid gap-4">
-                {filteredEstimates.map((est) => (
-                  <div key={est.id} className="estimates-contract-card">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <div className={`estimates-status-badge ${
-                            est.status === 'approved' ? 'estimates-status-completed' :
-                            est.status === 'sent' ? 'estimates-status-sent' :
-                            'estimates-status-draft'
-                          }`}>
-                            {est.status === 'approved' && <CheckCircle className="w-4 h-4" />}
-                            {est.status === 'sent' && <Send className="w-4 h-4" />}
-                            {est.status === 'draft' && <FileText className="w-4 h-4" />}
-                            {est.status === 'approved' ? 'APROBADO' : est.status === 'sent' ? 'ENVIADO' : 'BORRADOR'}
-                          </div>
-                          <h4 className="text-cyan-400 font-semibold">{est.estimateNumber}</h4>
-                        </div>
-                        
-                        <div className="text-cyan-300/70 text-sm space-y-1">
-                          <div>Cliente: {est.clientName}</div>
-                          <div>Total: ${est.total.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
-                          <div>Creado: {new Date(est.estimateDate).toLocaleDateString()}</div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setShowEstimatesHistory(false);
-                            handleEditEstimate(est.id);
-                          }}
-                          className="estimates-cyber-button-sm"
-                          data-testid={`button-edit-estimate-${est.id}`}
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={async () => {
-                            try {
-                              if (!profile?.company) {
-                                toast({
-                                  title: "Perfil Incompleto",
-                                  description: "Debes completar el nombre de tu empresa antes de generar PDFs.",
-                                  variant: "destructive",
-                                });
-                                return;
-                              }
-
-                              const isPremiumUser = userSubscription?.plan?.id !== 1;
-                              const payload = {
-                                user: currentUser?.uid
-                                  ? [{ uid: currentUser.uid, email: currentUser.email, displayName: currentUser.displayName }]
-                                  : [{ uid: "anonymous-pdf-user", email: profile?.email || "contractor@example.com", displayName: profile?.company || "Anonymous User" }],
-                                client: { name: est.clientName || "", email: est.clientEmail || "", phone: "", address: "" },
-                                items: est.items || [],
-                                projectTotalCosts: {
-                                  subtotal: Number(Number(est.subtotal || 0).toFixed(2)) || 0,
-                                  discount: Number(Number(est.discountAmount || 0).toFixed(2)) || 0,
-                                  taxRate: Number(Number((est.taxRate || 0).toFixed(2))) || 0,
-                                  tax: Number(Number((est.tax || 0).toFixed(2))) || 0,
-                                  total: Number(Number((est.total || 0).toFixed(2))) || 0,
-                                },
-                                originalData: { projectDescription: est.title || est.rawData?.projectDescription || "" },
-                                contractor: {
-                                  name: profile?.company || "Professional Contractor",
-                                  company: profile?.company || "Construction Company",
-                                  address: profile?.address || "",
-                                  phone: profile?.phone || "",
-                                  email: profile?.email || currentUser?.email || "",
-                                  website: profile?.website || "",
-                                  logo: profile?.logo || "",
-                                  license: profile?.license || "",
-                                },
-                                isMembership: isPremiumUser,
-                                templateMode: isPremiumUser ? "premium" : "basic",
-                              };
-
-                              const response = await axios.post("/api/estimate-puppeteer-pdf", payload, { responseType: "blob" });
-                              const pdfBlob = new Blob([response.data], { type: "application/pdf" });
-                              const clientName = est.clientName?.replace(/[^a-zA-Z0-9]/g, "_") || "client";
-                              const timestamp = new Date().toISOString().slice(0, 10);
-                              await shareOrDownloadPdf(pdfBlob, `estimate-${clientName}-${timestamp}.pdf`, {
-                                title: `Estimate for ${est.clientName || "Client"}`,
-                                text: `Professional estimate from ${profile?.company || "your contractor"}`,
-                                clientName: est.clientName,
-                                estimateNumber: `EST-${timestamp}`,
-                              });
-                              toast({ title: "PDF Generado", description: "PDF descargado exitosamente" });
-                            } catch (error) {
-                              console.error("PDF generation error:", error);
-                              toast({ title: "Error", description: "No se pudo generar el PDF.", variant: "destructive" });
-                            }
-                          }}
-                          className="estimates-cyber-button-sm"
-                          data-testid={`button-download-pdf-${est.id}`}
-                        >
-                          <Download className="w-4 h-4" />
-                        </Button>
-                        
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            navigator.clipboard.writeText(`${window.location.origin}/estimate/${est.id}`);
-                            toast({ title: "Link copiado", description: "URL copiada al portapapeles" });
-                          }}
-                          className="estimates-cyber-button-sm"
-                          data-testid={`button-copy-url-${est.id}`}
-                        >
-                          <Copy className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            
-            {/* Botones de acción al final */}
-            <div className="flex justify-between mt-6 pt-4 border-t border-cyan-500/20">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowEstimatesHistory(false);
-                  setHistorySearchQuery("");
-                }}
-                className="estimates-cyber-button-sm px-4"
-                data-testid="button-close-history"
-              >
-                <X className="w-4 h-4 mr-2" />
-                Cerrar
-              </Button>
-              <Button
-                onClick={() => {
-                  setShowEstimatesHistory(false);
-                  setHistorySearchQuery("");
-                  setIsEditMode(false);
-                  setEditingEstimateId(null);
-                  setCurrentStep(0);
-                  setEstimate({
-                    client: null,
-                    items: [],
-                    projectDetails: "",
-                    subtotal: 0,
-                    tax: 0,
-                    total: 0,
-                    taxRate: 10,
-                    discountType: "percentage",
-                    discountValue: 0,
-                    discountAmount: 0,
-                    discountName: "",
-                    attachments: [],
-                  });
-                  window.history.replaceState({}, document.title, window.location.pathname);
-                }}
-                className="estimates-cyber-button-primary px-4"
-                data-testid="button-new-estimate"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Nuevo Estimado
-              </Button>
-            </div>
-          </div>
-
-          {/* Estilos CSS EXACTOS de Legal Defense */}
-          <style>{`
-            .estimates-cyber-panel {
-              background: rgba(0, 20, 40, 0.8);
-              border: 1px solid rgba(0, 255, 255, 0.3);
-              border-radius: 0;
-              position: relative;
-              backdrop-filter: blur(10px);
-            }
-            
-            .estimates-cyber-panel::before {
-              content: '';
-              position: absolute;
-              top: 0;
-              left: 0;
-              right: 0;
-              bottom: 0;
-              background: linear-gradient(45deg, transparent 49%, rgba(0, 255, 255, 0.1) 50%, transparent 51%);
-              pointer-events: none;
-            }
-            
-            .estimates-contract-card {
-              background: rgba(0, 30, 60, 0.4);
-              border: 1px solid rgba(0, 255, 255, 0.2);
-              border-radius: 8px;
-              padding: 1.5rem;
-              transition: all 0.3s ease;
-              position: relative;
-            }
-            
-            .estimates-contract-card:hover {
-              border-color: rgba(0, 255, 255, 0.5);
-              box-shadow: 0 4px 20px rgba(0, 255, 255, 0.1);
-              transform: translateY(-2px);
-            }
-            
-            .estimates-status-badge {
-              display: inline-flex;
-              align-items: center;
-              gap: 0.5rem;
-              padding: 0.25rem 0.75rem;
-              border-radius: 12px;
-              font-size: 0.75rem;
-              font-weight: bold;
-              border: 1px solid;
-            }
-            
-            .estimates-status-completed {
-              background: rgba(16, 185, 129, 0.2);
-              color: #10b981;
-              border-color: #10b981;
-            }
-            
-            .estimates-status-sent {
-              background: rgba(59, 130, 246, 0.2);
-              color: #3b82f6;
-              border-color: #3b82f6;
-            }
-            
-            .estimates-status-draft {
-              background: rgba(245, 158, 11, 0.2);
-              color: #f59e0b;
-              border-color: #f59e0b;
-            }
-            
-            .estimates-cyber-button-sm {
-              background: rgba(0, 255, 255, 0.1) !important;
-              border: 1px solid rgba(0, 255, 255, 0.3) !important;
-              color: #00ffff !important;
-              padding: 0.5rem;
-            }
-            
-            .estimates-cyber-button-sm:hover {
-              background: rgba(0, 255, 255, 0.2) !important;
-              box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
-            }
-            
-            .estimates-cyber-button-primary {
-              background: linear-gradient(135deg, rgba(0, 255, 255, 0.2), rgba(0, 150, 255, 0.2)) !important;
-              border: 1px solid #00ffff !important;
-              color: #00ffff !important;
-              font-weight: bold;
-              transition: all 0.3s ease;
-            }
-            
-            .estimates-cyber-button-primary:hover {
-              background: linear-gradient(135deg, rgba(0, 255, 255, 0.3), rgba(0, 150, 255, 0.3)) !important;
-              box-shadow: 0 0 30px rgba(0, 255, 255, 0.4);
-              transform: translateY(-2px);
-            }
-          `}</style>
         </DialogContent>
       </Dialog>
 
