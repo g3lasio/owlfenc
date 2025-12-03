@@ -6943,49 +6943,40 @@ This link provides a professional view of your estimate that you can access anyt
                 <p className="text-sm text-cyan-500/50">Intenta con otro término de búsqueda</p>
               </div>
             ) : (
-              <div className="grid gap-4">
+              <div className="grid gap-3">
                 {filteredEstimates.map((est) => (
-                  <div key={est.id} className="contract-card">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <div className={`status-badge ${
-                            est.status === 'approved' ? 'status-completed' :
-                            est.status === 'sent' ? 'status-sent' :
-                            'status-draft'
-                          }`}>
-                            {est.status === 'approved' && <CheckCircle className="w-4 h-4" />}
-                            {est.status === 'sent' && <Send className="w-4 h-4" />}
-                            {est.status === 'draft' && <FileText className="w-4 h-4" />}
-                            {est.status === 'approved' ? 'APROBADO' : est.status === 'sent' ? 'ENVIADO' : 'BORRADOR'}
-                          </div>
-                          <h4 className="text-cyan-400 font-semibold">{est.estimateNumber}</h4>
-                        </div>
-                        
-                        <div className="text-cyan-300/70 text-sm space-y-1">
-                          <div>Cliente: {est.clientName}</div>
-                          <div>Total: ${est.total.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
-                          <div>Creado: {new Date(est.estimateDate).toLocaleDateString()}</div>
+                  <div key={est.id} className="estimate-card-compact">
+                    <div className="flex items-center gap-4">
+                      <div className={`estimate-status-dot ${
+                        est.status === 'approved' ? 'dot-approved' :
+                        est.status === 'sent' ? 'dot-sent' : 'dot-draft'
+                      }`} title={est.status === 'approved' ? 'Aprobado' : est.status === 'sent' ? 'Enviado' : 'Borrador'} />
+                      
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-white font-semibold text-base truncate">{est.clientName || 'Sin nombre'}</h4>
+                        <div className="flex items-center gap-3 text-[11px] text-cyan-500/60 mt-0.5">
+                          <span className="font-mono">{est.estimateNumber}</span>
+                          <span className="text-cyan-500/30">•</span>
+                          <span className="font-medium text-cyan-400/80">${est.total.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                          <span className="text-cyan-500/30">•</span>
+                          <span>{new Date(est.estimateDate).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: '2-digit' })}</span>
                         </div>
                       </div>
                       
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
+                      <div className="flex items-center gap-1.5">
+                        <button
                           onClick={() => {
                             setShowEstimatesHistory(false);
                             handleEditEstimate(est.id);
                           }}
-                          className="cyber-button-sm"
+                          className="estimate-action-btn"
                           data-testid={`button-edit-estimate-${est.id}`}
+                          title="Ver/Editar"
                         >
-                          <Eye className="w-4 h-4" />
-                        </Button>
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
                         
-                        <Button
-                          variant="outline"
-                          size="sm"
+                        <button
                           onClick={async () => {
                             try {
                               if (!profile?.company) {
@@ -7042,24 +7033,24 @@ This link provides a professional view of your estimate that you can access anyt
                               toast({ title: "Error", description: "No se pudo generar el PDF.", variant: "destructive" });
                             }
                           }}
-                          className="cyber-button-sm"
+                          className="estimate-action-btn"
                           data-testid={`button-download-pdf-${est.id}`}
+                          title="Descargar PDF"
                         >
-                          <Download className="w-4 h-4" />
-                        </Button>
+                          <Download className="w-3.5 h-3.5" />
+                        </button>
                         
-                        <Button
-                          variant="outline"
-                          size="sm"
+                        <button
                           onClick={() => {
                             navigator.clipboard.writeText(`${window.location.origin}/estimate/${est.id}`);
                             toast({ title: "Link copiado", description: "URL copiada al portapapeles" });
                           }}
-                          className="cyber-button-sm"
+                          className="estimate-action-btn"
                           data-testid={`button-copy-url-${est.id}`}
+                          title="Copiar enlace"
                         >
-                          <Copy className="w-4 h-4" />
-                        </Button>
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -7304,6 +7295,64 @@ This link provides a professional view of your estimate that you can access anyt
           background: linear-gradient(135deg, rgba(0, 255, 255, 0.3), rgba(0, 150, 255, 0.3)) !important;
           box-shadow: 0 0 30px rgba(0, 255, 255, 0.4);
           transform: translateY(-2px);
+        }
+        
+        .estimate-card-compact {
+          background: rgba(0, 20, 40, 0.6);
+          border: 1px solid rgba(0, 255, 255, 0.15);
+          border-radius: 8px;
+          padding: 0.875rem 1rem;
+          transition: all 0.2s ease;
+        }
+        
+        .estimate-card-compact:hover {
+          background: rgba(0, 30, 60, 0.7);
+          border-color: rgba(0, 255, 255, 0.35);
+          box-shadow: 0 2px 12px rgba(0, 255, 255, 0.08);
+        }
+        
+        .estimate-status-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          flex-shrink: 0;
+          box-shadow: 0 0 6px currentColor;
+        }
+        
+        .dot-approved {
+          background: #10b981;
+          color: #10b981;
+        }
+        
+        .dot-sent {
+          background: #3b82f6;
+          color: #3b82f6;
+        }
+        
+        .dot-draft {
+          background: #f59e0b;
+          color: #f59e0b;
+        }
+        
+        .estimate-action-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 28px;
+          height: 28px;
+          border-radius: 6px;
+          background: rgba(0, 255, 255, 0.08);
+          border: 1px solid rgba(0, 255, 255, 0.2);
+          color: rgba(0, 255, 255, 0.7);
+          transition: all 0.2s ease;
+          cursor: pointer;
+        }
+        
+        .estimate-action-btn:hover {
+          background: rgba(0, 255, 255, 0.15);
+          border-color: rgba(0, 255, 255, 0.4);
+          color: #00ffff;
+          box-shadow: 0 0 8px rgba(0, 255, 255, 0.2);
         }
       `}</style>
 
