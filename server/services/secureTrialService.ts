@@ -10,6 +10,7 @@ import { db as pgDb } from '../db';
 import { users, userSubscriptions, subscriptionPlans } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
 import { db, admin } from '../lib/firebase-admin.js';
+import { subscriptionEmailService } from './subscriptionEmailService';
 
 export interface SecureTrialData {
   uid: string;
@@ -215,6 +216,22 @@ export class SecureTrialService {
       
       // Initialize usage for current month
       await this.initializeTrialUsage(uid);
+      
+      // 📧 Enviar email de confirmación de trial activado
+      try {
+        const userDoc = await db.collection('users').doc(uid).get();
+        const userData = userDoc.data();
+        if (userData?.email) {
+          await subscriptionEmailService.sendTrialActivatedEmail({
+            email: userData.email,
+            userName: userData.displayName || userData.email.split('@')[0],
+            trialEndDate: endDate
+          });
+          console.log(`📧 [SECURE-TRIAL] Trial activated email sent to: ${userData.email}`);
+        }
+      } catch (emailError) {
+        console.error('⚠️ [SECURE-TRIAL] Trial email failed (non-blocking):', emailError);
+      }
       
       console.log(`✅ [SECURE-TRIAL] Secure trial created with serverTimestamp for ${uid}`);
       return trialEntitlements;

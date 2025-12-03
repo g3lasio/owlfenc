@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { userMappingService } from '../services/userMappingService';
 import { adminAuth } from '../firebase-admin';
+import { subscriptionEmailService } from '../services/subscriptionEmailService';
 
 /**
  * RUTAS ROBUSTAS DE AUTENTICACIÓN FIREBASE
@@ -85,6 +86,15 @@ export function registerRobustFirebaseAuthRoutes(app: any) {
       if (!subscription && isNewUser) {
         console.log(`📋 [ROBUST-AUTH] Nuevo usuario sin plan: ${email} - Debe elegir plan en /subscription`);
         // NO crear trial automáticamente - usuario debe elegir
+        
+        // 📧 Enviar email de bienvenida para usuario nuevo
+        try {
+          const userName = email.split('@')[0];
+          await subscriptionEmailService.sendWelcomeEmail({ email, userName });
+          console.log(`📧 [ROBUST-AUTH] Welcome email sent to: ${email}`);
+        } catch (emailError) {
+          console.error('⚠️ [ROBUST-AUTH] Welcome email failed (non-blocking):', emailError);
+        }
       } else if (!subscription && !isNewUser) {
         console.log(`🔒 [ROBUST-AUTH] Usuario existente ${email} sin suscripción - Debe elegir plan`);
       }

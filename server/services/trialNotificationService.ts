@@ -1,11 +1,13 @@
 /**
  * TRIAL NOTIFICATION SERVICE
- * Sistema de notificaciones automáticas para trials (día 7, 12, 14)
+ * Sistema de notificaciones automáticas para trials (día 7, 11, 14)
  * Maneja downgrade automático y notificaciones de retención
+ * 📧 Usa subscriptionEmailService para templates con branding Owl Fenc
  */
 
 import { db, admin } from '../lib/firebase-admin.js';
 import { Resend } from 'resend';
+import { subscriptionEmailService } from './subscriptionEmailService';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -14,7 +16,7 @@ export interface TrialNotification {
   email: string;
   daysTrial: number;
   daysRemaining: number;
-  notificationType: 'day_7' | 'day_12' | 'day_14_expiry';
+  notificationType: 'day_7' | 'day_11' | 'day_14_expiry';
   status: 'pending' | 'sent' | 'failed';
   sentAt?: any;
   error?: string;
@@ -233,12 +235,15 @@ export class TrialNotificationService {
       let downgraded = false;
       
       // Determine notification type
-      let notificationType: 'day_7' | 'day_12' | 'day_14_expiry' | null = null;
+      // day_7: 7 días transcurridos = 7 días restantes
+      // day_11: 11 días transcurridos = 3 días restantes  
+      // day_14_expiry: 14 días = trial expirado
+      let notificationType: 'day_7' | 'day_11' | 'day_14_expiry' | null = null;
       
       if (daysSinceTrial === 7) {
         notificationType = 'day_7';
-      } else if (daysSinceTrial === 12) {
-        notificationType = 'day_12';
+      } else if (daysSinceTrial === 11) {
+        notificationType = 'day_11';
       } else if (daysSinceTrial >= 14) {
         notificationType = 'day_14_expiry';
       }
@@ -303,7 +308,8 @@ export class TrialNotificationService {
   }
   
   /**
-   * Send trial reminder notification (day 7 or 12)
+   * Send trial reminder notification (day 7 = 7 días restantes, day 11 = 3 días restantes)
+   * 📧 Usa subscriptionEmailService con branding Owl Fenc
    */
   private async sendTrialReminderNotification(
     email: string, 
@@ -312,29 +318,40 @@ export class TrialNotificationService {
   ): Promise<void> {
     try {
       const isDay7 = notification.notificationType === 'day_7';
-      const subject = isDay7 
-        ? '⏰ 7 days into your trial - See what\'s possible!' 
-        : '🚀 Only 2 days left in your trial - Don\'t miss out!';
       
-      const emailContent = this.generateReminderEmailHTML(notification, isDay7);
-      
-      const { data, error } = await resend.emails.send({
-        from: 'Owl Fenc AI <noreply@owlfenc.com>',
-        to: [email],
-        subject,
-        html: emailContent,
-        tags: [
-          { name: 'type', value: 'trial_reminder' },
-          { name: 'day', value: isDay7 ? 'day_7' : 'day_12' },
-          { name: 'uid', value: uid }
-        ]
-      });
-      
-      if (error) {
-        throw new Error(`Email send failed: ${error.message}`);
+      // Get user name from Firebase
+      let userName = email.split('@')[0];
+      try {
+        const userDoc = await db.collection('users').doc(uid).get();
+        if (userDoc.exists() && userDoc.data()?.displayName) {
+          userName = userDoc.data()!.displayName;
+        } else if (userDoc.exists() && userDoc.data()?.name) {
+          userName = userDoc.data()!.name;
+        }
+      } catch (e) {
+        console.warn('⚠️ Could not fetch user name for notification');
       }
       
-      console.log(`📧 [TRIAL-NOTIFICATIONS] Reminder email sent to ${email}:`, data?.id);
+      // Calculate trial end date
+      const trialEndDate = new Date();
+      trialEndDate.setDate(trialEndDate.getDate() + notification.daysRemaining);
+      
+      // Usar el subscriptionEmailService con branding Owl Fenc
+      if (isDay7) {
+        await subscriptionEmailService.sendTrialReminder7DaysEmail({
+          email,
+          userName,
+          trialEndDate
+        });
+        console.log(`📧 [TRIAL-NOTIFICATIONS] 7-day reminder email sent to ${email}`);
+      } else {
+        await subscriptionEmailService.sendTrialReminder3DaysEmail({
+          email,
+          userName,
+          trialEndDate
+        });
+        console.log(`📧 [TRIAL-NOTIFICATIONS] 3-day reminder email sent to ${email}`);
+      }
       
     } catch (error) {
       console.error(`❌ [TRIAL-NOTIFICATIONS] Error sending reminder email:`, error);

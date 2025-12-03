@@ -15,6 +15,7 @@ import { users } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 import { PLAN_IDS, PLAN_LIMITS, PLAN_NAMES } from '@shared/permissions-config';
 import { resendService } from './resendService.js';
+import { subscriptionEmailService } from './subscriptionEmailService';
 
 // Initialize Stripe with centralized configuration
 const stripe = createStripeClient();
@@ -426,11 +427,11 @@ export class StripeWebhookService {
           undefined
         );
         
-        // 🎉 Send welcome email with Mexican motivational tone
+        // 🎉 Send subscription confirmation email with Owl Fenc branding
         try {
-          console.log('🎉 [STRIPE-WEBHOOK] Sending welcome email for new subscription...');
+          console.log('🎉 [STRIPE-WEBHOOK] Sending subscription confirmation email...');
           
-          // Get user name from Firebase or use email
+          // Get user name from Firebase
           let userName = 'Compa';
           try {
             const userDoc = await db.collection('users').doc(uid).get();
@@ -441,26 +442,36 @@ export class StripeWebhookService {
             console.warn('⚠️ [STRIPE-WEBHOOK] Could not fetch user name, using default');
           }
           
-          // Get plan features from centralized config
-          const planLimits = PLAN_LIMITS[planInfo.planId];
-          const planFeatures = [
-            `Estimados con IA: ${planLimits.aiEstimates === -1 ? 'Ilimitados' : planLimits.aiEstimates}`,
-            `Contratos legales: ${planLimits.contracts === -1 ? 'Ilimitados' : planLimits.contracts}`,
-            `Verificación de propiedades: ${planLimits.propertyVerifications === -1 ? 'Ilimitada' : planLimits.propertyVerifications}`,
-            `Advisor de permisos: ${planLimits.permitAdvisor === -1 ? 'Ilimitado' : planLimits.permitAdvisor}`,
-            `Proyectos activos: ${planLimits.projects === -1 ? 'Ilimitados' : planLimits.projects}`
-          ];
+          // Check if this is an upgrade from a previous plan
+          const isUpgrade = oldPlan !== PLAN_NAMES[PLAN_IDS.PRIMO_CHAMBEADOR] && 
+                           oldPlan !== 'Free Trial' && 
+                           oldPlan !== 'Trial Master';
           
-          await resendService.sendWelcomeEmail({
-            userEmail: user.email || '',
+          // Calculate next billing date
+          const nextBillingDate = subscription.current_period_end 
+            ? new Date(subscription.current_period_end * 1000)
+            : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+          
+          // Get plan price in cents
+          const planPrice = subscription.items?.data?.[0]?.price?.unit_amount || 0;
+          
+          // Determine billing cycle
+          const interval = subscription.items?.data?.[0]?.price?.recurring?.interval;
+          const billingCycle: 'monthly' | 'yearly' = interval === 'year' ? 'yearly' : 'monthly';
+          
+          await subscriptionEmailService.sendSubscriptionConfirmedEmail({
+            email: user.email || '',
             userName,
             planName: planInfo.planName,
-            planFeatures
+            planPrice,
+            billingCycle,
+            nextBillingDate,
+            isUpgrade
           });
           
-          console.log('✅ [STRIPE-WEBHOOK] Welcome email sent successfully');
+          console.log(`✅ [STRIPE-WEBHOOK] ${isUpgrade ? 'Upgrade' : 'Subscription'} confirmation email sent successfully`);
         } catch (emailError) {
-          console.error('⚠️ [STRIPE-WEBHOOK] Non-critical: Failed to send welcome email:', emailError);
+          console.error('⚠️ [STRIPE-WEBHOOK] Non-critical: Failed to send confirmation email:', emailError);
           // Don't fail webhook for email errors
         }
       }
