@@ -282,6 +282,10 @@ export default function ProjectPaymentWorkflow({
       clientPhone: paymentConfig.clientPhone,
       dueDate: paymentConfig.dueDate || undefined,
       paymentMethod: paymentMethod,
+      // Auto-send email flag for payment links
+      ...(paymentMethod === "link" && {
+        autoSendEmail: paymentConfig.autoSendEmail,
+      }),
       // Manual payment specific
       ...(paymentMethod === "manual" && {
         manualMethod: paymentConfig.manualMethod,

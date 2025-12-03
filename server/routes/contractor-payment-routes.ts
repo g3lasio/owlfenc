@@ -59,6 +59,7 @@ const createPaymentSchema = z.object({
   address: z.string().optional().nullable(), // Project address from Firebase
   dueDate: z.string().optional().nullable(),
   paymentMethod: z.enum(["terminal", "link", "manual"]).optional().nullable(),
+  autoSendEmail: z.boolean().optional().default(false), // Auto-send payment link via email
   manualMethod: z.string().optional().nullable(),
   referenceNumber: z.string().optional().nullable(),
   paymentDate: z.string().optional().nullable(),
@@ -170,9 +171,81 @@ router.post("/create", isAuthenticated, requireSubscriptionLevel(PermissionLevel
         : undefined,
     });
 
+    // Auto-send payment link email if requested and payment link was created
+    // Base condition on result.paymentLinkUrl presence (not paymentMethod) to handle edge cases
+    let emailSent = false;
+    if (validatedData.autoSendEmail && result.paymentLinkUrl && validatedData.clientEmail) {
+      try {
+        const { Resend } = await import('resend');
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        
+        const amountFormatted = (validatedData.amount / 100).toFixed(2);
+        const clientName = validatedData.clientName || 'Valued Customer';
+        const description = validatedData.description || 'Payment';
+        
+        const emailHtml = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f8f9fa;">
+            <div style="background: white; border-radius: 12px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+              <h2 style="color: #1a1a1a; margin-bottom: 20px; border-bottom: 3px solid #22c55e; padding-bottom: 10px;">
+                Payment Request
+              </h2>
+              
+              <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6;">
+                Hello ${clientName},
+              </p>
+              
+              <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6;">
+                You have received a payment request for <strong>$${amountFormatted}</strong>.
+              </p>
+              
+              <div style="background: #f0fdf4; border-left: 4px solid #22c55e; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+                <p style="margin: 0; color: #166534; font-weight: 500;">${description}</p>
+              </div>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${result.paymentLinkUrl}" 
+                   style="display: inline-block; background: linear-gradient(135deg, #22c55e, #16a34a); color: white; 
+                          padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; 
+                          font-size: 16px; box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);">
+                  Pay Now - $${amountFormatted}
+                </a>
+              </div>
+              
+              <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+                Click the button above to complete your secure payment. If you have any questions, please contact us.
+              </p>
+              
+              <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 25px 0;">
+              
+              <p style="color: #9ca3af; font-size: 12px; text-align: center;">
+                This is an automated payment request. Please do not reply to this email.
+              </p>
+            </div>
+          </div>
+        `;
+        
+        const { data, error } = await resend.emails.send({
+          from: 'Owl Fenc Payments <payments@owlfenc.com>',
+          to: [validatedData.clientEmail],
+          subject: `Payment Request: $${amountFormatted}`,
+          html: emailHtml,
+        });
+        
+        if (error) {
+          console.error('📧 [AUTO-EMAIL] Failed to send payment link email:', error);
+        } else {
+          console.log(`📧 [AUTO-EMAIL] Payment link sent to ${validatedData.clientEmail}, ID: ${data?.id}`);
+          emailSent = true;
+        }
+      } catch (emailError) {
+        console.error('📧 [AUTO-EMAIL] Error sending payment link email:', emailError);
+      }
+    }
+
     res.json({
       success: true,
       data: result,
+      emailSent,
     });
   } catch (error) {
     console.error("Error creating payment:", error);
@@ -186,8 +259,9 @@ router.post("/create", isAuthenticated, requireSubscriptionLevel(PermissionLevel
 });
 
 /**
- * Create individual payment and payment link
+ * Create individual payment and payment link (alternate endpoint)
  * Uses Firebase projectId (string) as source of truth for project data
+ * Note: /create is the primary endpoint, this is maintained for compatibility
  */
 router.post(
   "/payments",
@@ -222,15 +296,89 @@ router.post(
           : undefined,
       });
 
+      // Auto-send payment link email if requested and payment link was created
+      // Base condition on result.paymentLinkUrl presence (not paymentMethod) to handle edge cases
+      let emailSent = false;
+      if (validatedData.autoSendEmail && result.paymentLinkUrl && validatedData.clientEmail) {
+        try {
+          const { Resend } = await import('resend');
+          const resend = new Resend(process.env.RESEND_API_KEY);
+          
+          const amountFormatted = (validatedData.amount / 100).toFixed(2);
+          const clientName = validatedData.clientName || 'Valued Customer';
+          const description = validatedData.description || 'Payment';
+          
+          const emailHtml = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f8f9fa;">
+              <div style="background: white; border-radius: 12px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                <h2 style="color: #1a1a1a; margin-bottom: 20px; border-bottom: 3px solid #22c55e; padding-bottom: 10px;">
+                  Payment Request
+                </h2>
+                
+                <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6;">
+                  Hello ${clientName},
+                </p>
+                
+                <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6;">
+                  You have received a payment request for <strong>$${amountFormatted}</strong>.
+                </p>
+                
+                <div style="background: #f0fdf4; border-left: 4px solid #22c55e; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+                  <p style="margin: 0; color: #166534; font-weight: 500;">${description}</p>
+                </div>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                  <a href="${result.paymentLinkUrl}" 
+                     style="display: inline-block; background: linear-gradient(135deg, #22c55e, #16a34a); color: white; 
+                            padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; 
+                            font-size: 16px; box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);">
+                    Pay Now - $${amountFormatted}
+                  </a>
+                </div>
+                
+                <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+                  Click the button above to complete your secure payment. If you have any questions, please contact us.
+                </p>
+                
+                <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 25px 0;">
+                
+                <p style="color: #9ca3af; font-size: 12px; text-align: center;">
+                  This is an automated payment request. Please do not reply to this email.
+                </p>
+              </div>
+            </div>
+          `;
+          
+          const { data, error } = await resend.emails.send({
+            from: 'Owl Fenc Payments <payments@owlfenc.com>',
+            to: [validatedData.clientEmail],
+            subject: `Payment Request: $${amountFormatted}`,
+            html: emailHtml,
+          });
+          
+          if (error) {
+            console.error('📧 [AUTO-EMAIL] Failed to send payment link email:', error);
+          } else {
+            console.log(`📧 [AUTO-EMAIL] Payment link sent to ${validatedData.clientEmail}, ID: ${data?.id}`);
+            emailSent = true;
+          }
+        } catch (emailError) {
+          console.error('📧 [AUTO-EMAIL] Error sending payment link email:', emailError);
+        }
+      }
+
       res.json({
         success: true,
         data: result,
+        emailSent,
       });
     } catch (error) {
       console.error("Error creating payment:", error);
-      res.status(500).json({
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      const statusCode = getErrorStatusCode(errorMessage);
+      res.status(statusCode).json({
         message: "Error creating payment",
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: errorMessage,
       });
     }
   },
@@ -1142,7 +1290,7 @@ router.post("/create", isAuthenticated, async (req: Request, res: Response) => {
 });
 
 /**
- * Send invoice
+ * Send payment link invoice via email (REAL implementation with Resend)
  */
 router.post("/send-invoice", isAuthenticated, async (req: Request, res: Response) => {
   try {
@@ -1159,11 +1307,77 @@ router.post("/send-invoice", isAuthenticated, async (req: Request, res: Response
       });
     }
 
-    // For now, simulate successful email sending
+    // Send real email via Resend
+    const { Resend } = await import('resend');
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    
+    const amountFormatted = typeof totalAmount === 'number' 
+      ? totalAmount.toFixed(2) 
+      : parseFloat(totalAmount).toFixed(2);
+    const name = clientName || 'Valued Customer';
+    const project = projectName || 'Your Project';
+    
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f8f9fa;">
+        <div style="background: white; border-radius: 12px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+          <h2 style="color: #1a1a1a; margin-bottom: 20px; border-bottom: 3px solid #22c55e; padding-bottom: 10px;">
+            Payment Request - ${project}
+          </h2>
+          
+          <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6;">
+            Hello ${name},
+          </p>
+          
+          <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6;">
+            You have received a payment request for <strong>$${amountFormatted}</strong> for ${project}.
+          </p>
+          
+          ${paymentLink ? `
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${paymentLink}" 
+               style="display: inline-block; background: linear-gradient(135deg, #22c55e, #16a34a); color: white; 
+                      padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; 
+                      font-size: 16px; box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);">
+              Pay Now - $${amountFormatted}
+            </a>
+          </div>
+          ` : ''}
+          
+          <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+            Click the button above to complete your secure payment. If you have any questions, please contact us.
+          </p>
+          
+          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 25px 0;">
+          
+          <p style="color: #9ca3af; font-size: 12px; text-align: center;">
+            This is an automated payment request. Please do not reply to this email.
+          </p>
+        </div>
+      </div>
+    `;
+    
+    const { data, error } = await resend.emails.send({
+      from: 'Owl Fenc Payments <payments@owlfenc.com>',
+      to: [clientEmail],
+      subject: `Payment Request: $${amountFormatted} - ${project}`,
+      html: emailHtml,
+    });
+    
+    if (error) {
+      console.error('📧 [SEND-INVOICE] Failed to send invoice email:', error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to send invoice email",
+        error: error.message,
+      });
+    }
+
+    console.log(`📧 [SEND-INVOICE] Invoice sent to ${clientEmail}, ID: ${data?.id}`);
+    
     res.json({
       success: true,
       message: `Invoice sent successfully to ${clientEmail}`,
-      emailId: `email_${Math.random().toString(36).substr(2, 9)}`,
+      emailId: data?.id,
     });
   } catch (error) {
     console.error("Error sending invoice:", error);
@@ -1175,11 +1389,11 @@ router.post("/send-invoice", isAuthenticated, async (req: Request, res: Response
 });
 
 /**
- * Resend payment link
+ * Resend payment link via email (REAL implementation with Resend)
  */
 router.post("/:paymentId/resend", isAuthenticated, async (req: Request, res: Response) => {
   try {
-    if (!req.user) {
+    if (!req.firebaseUser) {
       return res.status(401).json({ error: "User not authenticated" });
     }
 
@@ -1191,11 +1405,100 @@ router.post("/:paymentId/resend", isAuthenticated, async (req: Request, res: Res
       });
     }
 
-    // For now, simulate successful resend
+    // Get payment from database
+    const payment = await storage.getProjectPayment(paymentId);
+    if (!payment) {
+      return res.status(404).json({
+        message: "Payment not found",
+      });
+    }
+
+    // Verify ownership
+    const { userMappingService } = await import('../services/userMappingService');
+    const userId = await userMappingService.getOrCreateUserIdForFirebaseUid(req.firebaseUser.uid);
+    if (payment.userId !== userId) {
+      return res.status(403).json({
+        message: "Unauthorized to resend this payment link",
+      });
+    }
+
+    if (!payment.paymentLinkUrl || !payment.clientEmail) {
+      return res.status(400).json({
+        message: "Payment does not have a valid payment link or client email",
+      });
+    }
+
+    // Send real email via Resend
+    const { Resend } = await import('resend');
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    
+    const amountFormatted = (payment.amount / 100).toFixed(2);
+    const clientName = payment.clientName || 'Valued Customer';
+    const description = payment.description || 'Payment';
+    
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f8f9fa;">
+        <div style="background: white; border-radius: 12px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+          <h2 style="color: #1a1a1a; margin-bottom: 20px; border-bottom: 3px solid #f59e0b; padding-bottom: 10px;">
+            Payment Reminder
+          </h2>
+          
+          <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6;">
+            Hello ${clientName},
+          </p>
+          
+          <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6;">
+            This is a reminder about your pending payment of <strong>$${amountFormatted}</strong>.
+          </p>
+          
+          <div style="background: #fffbeb; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+            <p style="margin: 0; color: #92400e; font-weight: 500;">${description}</p>
+          </div>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${payment.paymentLinkUrl}" 
+               style="display: inline-block; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; 
+                      padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; 
+                      font-size: 16px; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);">
+              Pay Now - $${amountFormatted}
+            </a>
+          </div>
+          
+          <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+            Click the button above to complete your secure payment. If you have any questions, please contact us.
+          </p>
+          
+          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 25px 0;">
+          
+          <p style="color: #9ca3af; font-size: 12px; text-align: center;">
+            This is an automated payment reminder. Please do not reply to this email.
+          </p>
+        </div>
+      </div>
+    `;
+    
+    const { data, error } = await resend.emails.send({
+      from: 'Owl Fenc Payments <payments@owlfenc.com>',
+      to: [payment.clientEmail],
+      subject: `Payment Reminder: $${amountFormatted}`,
+      html: emailHtml,
+    });
+    
+    if (error) {
+      console.error('📧 [RESEND-LINK] Failed to resend payment link:', error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to resend payment link",
+        error: error.message,
+      });
+    }
+
+    console.log(`📧 [RESEND-LINK] Payment reminder sent to ${payment.clientEmail}, ID: ${data?.id}`);
+    
     res.json({
       success: true,
       message: "Payment link resent successfully",
-      emailId: `resend_${Math.random().toString(36).substr(2, 9)}`,
+      emailId: data?.id,
     });
   } catch (error) {
     console.error("Error resending payment link:", error);
