@@ -96,11 +96,12 @@ export class SecureTrialService {
       // Check if trial already exists in Firebase
       const existingTrialDoc = await db.collection('entitlements').doc(uid).get();
       
-      if (existingTrialDoc.exists()) {
+      if (existingTrialDoc.exists) {
         const data = existingTrialDoc.data();
         if (data?.trial?.isTrialing) {
           console.log(`⚠️ [SECURE-TRIAL] User ${uid} already has active trial in Firebase`);
-          return this.getTrialEntitlements(uid);
+          const existing = await this.getTrialEntitlements(uid);
+          if (existing) return existing;
         }
       }
       
@@ -249,7 +250,7 @@ export class SecureTrialService {
     try {
       const entitlementsDoc = await db.collection('entitlements').doc(uid).get();
       
-      if (!entitlementsDoc.exists()) {
+      if (!entitlementsDoc.exists) {
         return null;
       }
       
@@ -317,7 +318,7 @@ export class SecureTrialService {
       const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
       const usageDoc = await db.collection('usage').doc(`${uid}_${currentMonth}`).get();
       
-      const used = usageDoc.exists() ? (usageDoc.data() as any)?.used?.[feature] || 0 : 0;
+      const used = usageDoc.exists ? (usageDoc.data() as any)?.used?.[feature] || 0 : 0;
       const canUse = used < limit;
       
       return { canUse, used, limit };
@@ -347,7 +348,7 @@ export class SecureTrialService {
         const usageDoc = await transaction.get(usageDocRef);
         
         let usageData;
-        if (!usageDoc.exists()) {
+        if (!usageDoc.exists) {
           // Initialize usage document
           const entitlements = await this.getTrialEntitlements(uid);
           usageData = {
@@ -385,7 +386,7 @@ export class SecureTrialService {
     try {
       const entitlementsDoc = await db.collection('entitlements').doc(uid).get();
       
-      if (!entitlementsDoc.exists()) {
+      if (!entitlementsDoc.exists) {
         return;
       }
       
