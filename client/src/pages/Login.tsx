@@ -81,11 +81,41 @@ export default function AuthPage() {
   const { t } = useTranslation(); // Obtenemos la función de traducción
   
   useEffect(() => {
-    // Si hay un usuario autenticado y estamos en login, redirigir inmediatamente
-    if (currentUser && !authLoading) {
-      console.log('🎯 [AUTO-REDIRECT] Usuario autenticado detectado, redirigiendo inmediatamente...');
-      navigate("/");
-    }
+    // Si hay un usuario autenticado y estamos en login, verificar suscripción antes de redirigir
+    const checkSubscriptionAndRedirect = async () => {
+      if (currentUser && !authLoading) {
+        console.log('🎯 [AUTO-REDIRECT] Usuario autenticado detectado, verificando suscripción...');
+        
+        try {
+          // Verificar si el usuario tiene suscripción activa
+          const token = await currentUser.getIdToken();
+          const response = await fetch('/api/subscription/user-subscription', {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            // Si el usuario no tiene suscripción o tiene un plan "pending", redirigir a /subscription
+            if (!data.subscription || data.subscription.status === 'pending' || !data.subscription.planId) {
+              console.log('🎯 [AUTO-REDIRECT] Usuario nuevo sin plan, redirigiendo a /subscription');
+              navigate("/subscription");
+              return;
+            }
+          }
+        } catch (error) {
+          console.error('⚠️ [AUTO-REDIRECT] Error verificando suscripción:', error);
+          // En caso de error, continuar con redirección normal
+        }
+        
+        console.log('🎯 [AUTO-REDIRECT] Usuario con suscripción activa, redirigiendo a /');
+        navigate("/");
+      }
+    };
+    
+    checkSubscriptionAndRedirect();
   }, [currentUser, authLoading, navigate]);
 
   // Verificar si hay sesión disponible para desbloqueo

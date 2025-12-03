@@ -8,6 +8,7 @@ import { db } from '../db';
 import { otpCodes, type InsertOtpCode } from '@shared/schema';
 import { eq, and, gt, lt } from 'drizzle-orm';
 import { getAuth } from 'firebase-admin/auth';
+import { SubscriptionEmailService } from './subscriptionEmailService';
 
 if (!process.env.RESEND_API_KEY) {
   throw new Error("RESEND_API_KEY environment variable must be set");
@@ -103,7 +104,7 @@ export class OTPService {
   /**
    * Verify OTP code for registration
    */
-  async verifyRegistrationOTP(email: string, code: string, name?: string): Promise<{ success: boolean; message: string; userId?: string; firebaseUser?: any }> {
+  async verifyRegistrationOTP(email: string, code: string, name?: string): Promise<{ success: boolean; message: string; userId?: string; isNewUser?: boolean; firebaseUser?: any }> {
     try {
       console.log(`🔐 [OTP-SERVICE] Verifying registration OTP for: ${email}`);
 
@@ -168,10 +169,11 @@ export class OTPService {
 
       // Create user in Firebase
       try {
+        const displayName = name || email.split('@')[0];
         const userRecord = await getAuth().createUser({
           email: email,
           emailVerified: true, // Mark as verified since they used OTP
-          displayName: name || email.split('@')[0],
+          displayName: displayName,
         });
 
         console.log(`✅ [OTP-SERVICE] User created in Firebase: ${userRecord.uid}`);
@@ -179,10 +181,24 @@ export class OTPService {
         // Generate custom token for immediate authentication
         const customToken = await getAuth().createCustomToken(userRecord.uid);
 
+        // 📧 Send welcome email to new user
+        try {
+          const emailService = new SubscriptionEmailService();
+          await emailService.sendWelcomeEmail({
+            email: email,
+            userName: displayName
+          });
+          console.log(`📧 [OTP-SERVICE] Welcome email sent to: ${email}`);
+        } catch (emailError) {
+          console.error('⚠️ [OTP-SERVICE] Failed to send welcome email (non-blocking):', emailError);
+          // Don't fail registration if email fails
+        }
+
         return {
           success: true,
           message: 'Registro exitoso',
           userId: userRecord.uid,
+          isNewUser: true, // Flag to indicate this is a new registration
           firebaseUser: {
             uid: userRecord.uid,
             email: userRecord.email,
