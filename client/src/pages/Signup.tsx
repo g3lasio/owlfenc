@@ -101,6 +101,19 @@ export default function Signup() {
           return;
         }
         await register(data.email, data.password, data.name);
+        
+        // Enviar email de bienvenida (no bloqueante)
+        try {
+          await fetch('/api/auth/welcome-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: data.email, name: data.name }),
+          });
+          console.log('📧 [SIGNUP] Email de bienvenida enviado');
+        } catch (emailErr) {
+          console.warn('⚠️ [SIGNUP] No se pudo enviar email de bienvenida:', emailErr);
+        }
+        
         toast({
           title: "Registro exitoso",
           description: "Ahora elige tu plan para empezar.",
