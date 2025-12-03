@@ -178,6 +178,8 @@ export class ContractorPaymentService {
       // Create Stripe Checkout Session directly in the connected account
       // For Express accounts, we create the session directly on their account
       // All payments go directly to the contractor's bank account
+      // CRITICAL: unit_amount must be an integer (cents) - Stripe rejects floats
+      const roundedAmount = Math.round(request.amount);
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [
@@ -188,7 +190,7 @@ export class ContractorPaymentService {
                 name: request.description,
                 description: `Invoice #${invoiceNumber} - ${resolvedAddress}`,
               },
-              unit_amount: request.amount,
+              unit_amount: roundedAmount,
             },
             quantity: 1,
           },
