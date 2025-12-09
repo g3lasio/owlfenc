@@ -1,12 +1,46 @@
 /**
  * Rutas simplificadas para el sistema de estimados por email
  * Sistema móvil-responsivo con aprobación y ajustes
+ * 
+ * ACTUALIZADO: Ahora busca estimados tanto en SimpleTracker (legacy) como en Firebase (Mervin AI)
  */
 
 import { Router, Request, Response } from 'express';
 import { simpleTracker } from '../services/SimpleEstimateTracker';
+import { db as firebaseDb } from '../firebase-admin';
 
 const router = Router();
+
+/**
+ * Helper para buscar estimados en múltiples fuentes
+ * Primero busca en SimpleTracker (legacy), luego en Firebase
+ */
+async function findEstimateByNumber(estimateNumber: string): Promise<any | null> {
+  // 1. Buscar en SimpleTracker (legacy)
+  const trackerEstimate = simpleTracker.getEstimateByNumber(estimateNumber);
+  if (trackerEstimate) {
+    return { ...trackerEstimate, source: 'tracker' };
+  }
+  
+  // 2. Buscar en Firebase por estimateNumber
+  if (firebaseDb) {
+    try {
+      const snapshot = await firebaseDb.collection('estimates')
+        .where('estimateNumber', '==', estimateNumber)
+        .limit(1)
+        .get();
+      
+      if (!snapshot.empty) {
+        const doc = snapshot.docs[0];
+        return { id: doc.id, ...doc.data(), source: 'firebase' };
+      }
+    } catch (error) {
+      console.error('⚠️ [SIMPLE-ESTIMATE] Error buscando en Firebase:', error);
+    }
+  }
+  
+  return null;
+}
 
 /**
  * Enviar estimado por email al cliente
@@ -69,9 +103,10 @@ router.get('/approve', async (req: Request, res: Response) => {
       `);
     }
 
-    // Buscar estimado
-    const estimate = simpleTracker.getEstimateByNumber(estimateId as string);
+    // Buscar estimado en múltiples fuentes (SimpleTracker + Firebase)
+    const estimate = await findEstimateByNumber(estimateId as string);
     if (!estimate) {
+      console.log(`⚠️ [SIMPLE-ESTIMATE] Estimado no encontrado: ${estimateId}`);
       return res.status(404).send(`
         <!DOCTYPE html>
         <html lang="es">
@@ -94,6 +129,8 @@ router.get('/approve', async (req: Request, res: Response) => {
         </html>
       `);
     }
+    
+    console.log(`✅ [SIMPLE-ESTIMATE] Estimado encontrado en: ${estimate.source}`);
 
     // Si ya está aprobado, mostrar mensaje
     if (estimate.status === 'approved') {
@@ -371,13 +408,36 @@ router.post('/approve', async (req: Request, res: Response) => {
     
     console.log('✅ [SIMPLE-ESTIMATE] Procesando aprobación:', estimateId);
 
-    // Actualizar estado usando simple tracker
-    const updated = simpleTracker.approveEstimate(estimateId, clientName);
-
-    if (!updated) {
+    // Buscar estimado en múltiples fuentes
+    const estimate = await findEstimateByNumber(estimateId);
+    
+    if (!estimate) {
       return res.status(404).json({
         success: false,
         message: 'Estimado no encontrado'
+      });
+    }
+    
+    // Actualizar estado según la fuente
+    let updated = false;
+    if (estimate.source === 'tracker') {
+      updated = simpleTracker.approveEstimate(estimateId, clientName);
+    } else if (estimate.source === 'firebase' && firebaseDb) {
+      // Actualizar en Firebase
+      await firebaseDb.collection('estimates').doc(estimate.id).update({
+        status: 'approved',
+        approverName: clientName,
+        approvedAt: new Date().toISOString(),
+        approverEmail: clientEmail || null
+      });
+      updated = true;
+      console.log(`✅ [SIMPLE-ESTIMATE] Estimado aprobado en Firebase: ${estimate.id}`);
+    }
+
+    if (!updated) {
+      return res.status(500).json({
+        success: false,
+        message: 'Error actualizando el estimado'
       });
     }
 
@@ -461,9 +521,10 @@ router.get('/adjust', async (req: Request, res: Response) => {
       `);
     }
 
-    // Buscar estimado
-    const estimate = simpleTracker.getEstimateByNumber(estimateId as string);
+    // Buscar estimado en múltiples fuentes (SimpleTracker + Firebase)
+    const estimate = await findEstimateByNumber(estimateId as string);
     if (!estimate) {
+      console.log(`⚠️ [SIMPLE-ESTIMATE] Estimado no encontrado para ajustes: ${estimateId}`);
       return res.status(404).send(`
         <!DOCTYPE html>
         <html lang="es">
@@ -486,6 +547,8 @@ router.get('/adjust', async (req: Request, res: Response) => {
         </html>
       `);
     }
+    
+    console.log(`✅ [SIMPLE-ESTIMATE] Estimado encontrado para ajustes en: ${estimate.source}`);
 
     // Mostrar formulario de solicitud de ajustes
     res.send(`
@@ -739,18 +802,48 @@ router.post('/adjust', async (req: Request, res: Response) => {
     
     console.log('📝 [SIMPLE-ESTIMATE] Procesando solicitud de ajustes:', estimateId);
 
-    // Agregar solicitud de ajuste usando simple tracker
-    const updated = simpleTracker.addAdjustmentRequest(estimateId, {
-      clientName,
-      clientEmail,
-      requestedChanges,
-      clientNotes
-    });
-
-    if (!updated) {
+    // Buscar estimado en múltiples fuentes
+    const estimate = await findEstimateByNumber(estimateId);
+    
+    if (!estimate) {
       return res.status(404).json({
         success: false,
         message: 'Estimado no encontrado'
+      });
+    }
+    
+    // Agregar solicitud de ajuste según la fuente
+    let updated = false;
+    if (estimate.source === 'tracker') {
+      updated = simpleTracker.addAdjustmentRequest(estimateId, {
+        clientName,
+        clientEmail,
+        requestedChanges,
+        clientNotes
+      });
+    } else if (estimate.source === 'firebase' && firebaseDb) {
+      // Agregar solicitud de ajuste en Firebase
+      const adjustmentRequest = {
+        clientName,
+        clientEmail,
+        requestedChanges,
+        clientNotes,
+        requestedAt: new Date().toISOString()
+      };
+      
+      await firebaseDb.collection('estimates').doc(estimate.id).update({
+        status: 'adjustment_requested',
+        adjustmentRequests: [...(estimate.adjustmentRequests || []), adjustmentRequest],
+        lastAdjustmentRequestAt: new Date().toISOString()
+      });
+      updated = true;
+      console.log(`📝 [SIMPLE-ESTIMATE] Solicitud de ajuste agregada en Firebase: ${estimate.id}`);
+    }
+
+    if (!updated) {
+      return res.status(500).json({
+        success: false,
+        message: 'Error procesando la solicitud'
       });
     }
 
