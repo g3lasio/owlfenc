@@ -344,146 +344,136 @@ export class DeepSearchService {
   }
 
   /**
-   * Genera un prompt estructurado para el análisis de Claude
+   * Genera un prompt inteligente para el análisis de Claude
+   * REFACTORIZADO: Detecta CUALQUIER tipo de proyecto con IA (sin listas hardcodeadas)
+   * Usa pricing por unidad profesional y ajustes precisos por ubicación
    */
   private buildAnalysisPrompt(description: string, location?: string): string {
-    const locationContext = location ? `\nProject Location: ${location}` : '';
+    // Analizar ubicación para incluir contexto específico de precios con multiplicador
+    const { context: locationContext, multiplier } = this.buildLocationMaterialContext(location);
     
     return `
-As a MASTER GENERAL CONTRACTOR, analyze this project and determine the exact materials needed for construction.
+You are a veteran materials estimator. Analyze this project and generate a materials list.
 
-PROJECT DESCRIPTION:
-${description}${locationContext}
+## PROJECT:
+"${description}"
 
-THINK LIKE A GENERAL CONTRACTOR:
-1. What materials do I need to PURCHASE for this project?
-2. What becomes a PERMANENT part of the finished construction?
-3. What are the PRECISE quantities based on the dimensions given?
-4. What are CURRENT MARKET PRICES in this specific location?
+## LOCATION & PRICING:
+${locationContext}
+PRICE MULTIPLIER: ${multiplier}x (apply to all base prices)
 
-EXCLUDE ALL TOOLS & EQUIPMENT - Only materials that become part of the building!
+## DIMENSION EXTRACTION CHECKLIST:
+- Parse numbers WITH commas: "2,500 sqft" = 2500
+- Use EXACT stated dimensions - never truncate
+- If dimension unclear, estimate conservatively
 
-Provide your contractor analysis in this exact JSON format:
+## QUANTITY FORMULAS (include waste):
+- Siding/Roofing: sqft × 1.10
+- Fencing: lf ÷ panel_width × 1.10, posts every 8ft
+- Concrete: (sqft × thickness/12) ÷ 27 × 1.05
+- Drywall: sqft ÷ 32 × 1.10
 
+## INCLUDE ONLY:
+Materials that become permanent (panels, lumber, fasteners, sealants, underlayment, trim)
+
+## EXCLUDE:
+Tools, equipment, rentals, safety gear, labor
+
+## JSON RESPONSE FORMAT:
 {
-  "projectType": "specific project type",
-  "projectScope": "detailed work scope",
-  "materials": [
-    {
-      "id": "mat_001",
-      "name": "Commercial material name",
-      "description": "Detailed description",
-      "category": "category (lumber, metal, concrete, hardware, etc.)",
-      "quantity": number,
-      "unit": "unit (feet, pounds, gallons, pieces, etc.)",
-      "unitPrice": estimated_price_per_unit,
-      "totalPrice": total_price,
-      "specifications": "technical specifications"
-    }
-  ],
-  "laborCosts": [
-    {
-      "category": "work type",
-      "description": "work description",
-      "hours": estimated_hours,
-      "rate": hourly_rate,
-      "total": total_labor
-    }
-  ],
-  "additionalCosts": [
-    {
-      "category": "permits|transport|equipment|other",
-      "description": "cost description",
-      "cost": amount,
-      "required": true/false
-    }
-  ],
-  "recommendations": ["recommendation 1", "recommendation 2"],
-  "warnings": ["warning 1", "warning 2"],
-  "confidence": number_between_0_and_1
+  "projectType": "detected type (siding|roofing|fencing|concrete|drywall|flooring|painting|decking|plumbing|electrical|hvac|landscaping|other)",
+  "projectScope": "work description",
+  "materials": [{"id":"mat_001","name":"Material Name","description":"specs","category":"category","quantity":100,"unit":"sqft|lf|piece|gallon|bag","unitPrice":5.00,"totalPrice":500.00,"specifications":"details"}],
+  "laborCosts": [],
+  "additionalCosts": [{"category":"delivery","description":"Material delivery","cost":150,"required":true}],
+  "recommendations": [],
+  "warnings": [],
+  "confidence": 0.90
 }
 
-CONTRACTOR REQUIREMENTS:
-- Use REAL commercial material names and specifications
-- Calculate PRECISE quantities using professional formulas
-- Include current market prices for the specific location
-- Factor in appropriate waste percentages for each material
-- EXCLUDE all tools, equipment, and rental items
-- Include ONLY materials that become part of the finished project
-- Consider local building codes and permit requirements
-- Use regional pricing adjustments based on location
-- Ensure JSON is valid and complete
-- ALL TEXT MUST BE IN ENGLISH ONLY
+Respond with ONLY valid JSON, no additional text.
 `;
   }
 
   /**
+   * Construye contexto de ubicación para precios de materiales
+   * Retorna contexto narrativo Y multiplicador numérico para pricing consistente
+   * FIXED: Usa word boundaries para evitar falsos positivos (e.g., "Chicago" no matchea "ca")
+   */
+  private buildLocationMaterialContext(location?: string): { context: string; multiplier: number } {
+    if (!location || location.trim().length === 0) {
+      return {
+        context: 'Location: United States (national average)',
+        multiplier: 1.00
+      };
+    }
+
+    const locationLower = location.toLowerCase();
+    
+    // Estados con nombres completos y abreviaciones - usar word boundaries
+    const stateData: Array<{ patterns: RegExp[]; desc: string; mult: number }> = [
+      { patterns: [/\bcalifornia\b/, /\bca\b/], desc: 'California - Premium market', mult: 1.20 },
+      { patterns: [/\bnew york\b/, /\bny\b/], desc: 'New York - High cost market', mult: 1.15 },
+      { patterns: [/\bnew jersey\b/, /\bnj\b/], desc: 'New Jersey - High cost market', mult: 1.12 },
+      { patterns: [/\bconnecticut\b/, /\bct\b/], desc: 'Connecticut - High cost market', mult: 1.12 },
+      { patterns: [/\bmassachusetts\b/, /\bma\b/], desc: 'Massachusetts - High cost market', mult: 1.17 },
+      { patterns: [/\bhawaii\b/, /\bhi\b/], desc: 'Hawaii - Premium island market', mult: 1.40 },
+      { patterns: [/\balaska\b/, /\bak\b/], desc: 'Alaska - Remote premium market', mult: 1.40 },
+      { patterns: [/\bwashington\b/, /\bwa\b/], desc: 'Washington - Moderate-high market', mult: 1.12 },
+      { patterns: [/\boregon\b/, /\bor\b/], desc: 'Oregon - Moderate market', mult: 1.07 },
+      { patterns: [/\bcolorado\b/, /\bco\b/], desc: 'Colorado - Growing market', mult: 1.10 },
+      { patterns: [/\bflorida\b/, /\bfl\b/], desc: 'Florida - Moderate market', mult: 1.07 },
+      { patterns: [/\btexas\b/, /\btx\b/], desc: 'Texas - Base rate market', mult: 1.00 },
+      { patterns: [/\barizona\b/, /\baz\b/], desc: 'Arizona - Base rate market', mult: 1.00 },
+      { patterns: [/\bnevada\b/, /\bnv\b/], desc: 'Nevada - Moderate market', mult: 1.05 },
+      { patterns: [/\billinois\b/, /\bil\b/], desc: 'Illinois - Moderate market', mult: 1.07 },
+      { patterns: [/\bpennsylvania\b/, /\bpa\b/], desc: 'Pennsylvania - Moderate market', mult: 1.05 },
+      { patterns: [/\bvirginia\b/, /\bva\b/], desc: 'Virginia - Moderate market', mult: 1.07 },
+      { patterns: [/\bgeorgia\b/, /\bga\b/], desc: 'Georgia - Competitive market', mult: 0.95 },
+      { patterns: [/\bnorth carolina\b/, /\bnc\b/], desc: 'North Carolina - Competitive market', mult: 0.95 },
+      { patterns: [/\bsouth carolina\b/, /\bsc\b/], desc: 'South Carolina - Low cost market', mult: 0.92 },
+      { patterns: [/\btennessee\b/, /\btn\b/], desc: 'Tennessee - Low cost market', mult: 0.92 },
+      { patterns: [/\bohio\b/, /\boh\b/], desc: 'Ohio - Low cost market', mult: 0.92 },
+      { patterns: [/\bmichigan\b/, /\bmi\b/], desc: 'Michigan - Base rate market', mult: 1.00 },
+    ];
+
+    let stateInfo = '';
+    let multiplier = 1.00;
+
+    // Buscar match usando word boundaries
+    for (const state of stateData) {
+      if (state.patterns.some(pattern => pattern.test(locationLower))) {
+        stateInfo = state.desc;
+        multiplier = state.mult;
+        break;
+      }
+    }
+
+    // Detectar si es un ZIP code
+    const zipMatch = location.match(/\b\d{5}(-\d{4})?\b/);
+    const zipInfo = zipMatch ? ` | ZIP: ${zipMatch[0]}` : '';
+
+    return {
+      context: `Location: ${location}${zipInfo}${stateInfo ? ` | ${stateInfo}` : ''}`,
+      multiplier
+    };
+  }
+
+  /**
    * Define el prompt del sistema para Claude - Precisión Quirúrgica
+   * REFACTORIZADO: Conciso y enfocado en detección inteligente
    */
   private getSystemPrompt(): string {
-    return `
-You are a MASTER GENERAL CONTRACTOR with 25+ years of experience in precise material estimation. 
-You MUST think and calculate exactly like an experienced contractor executing the project.
+    return `You are a materials estimator. Output ONLY valid JSON.
 
-CORE EXPERTISE (WHAT MAKES YOU AN EXPERT):
-- Precise material quantity calculations using professional formulas
-- Regional cost analysis based on actual market conditions
-- Expert knowledge of material specifications and suppliers
-- Deep understanding of construction sequencing and waste factors
-- Professional experience with permitting and code requirements
+RULES:
+1. DETECT project type from context (not just keywords). "Shingle-style siding" = siding, NOT roofing.
+2. EXTRACT dimensions exactly: "2,500 sqft" = 2500 (parse commas correctly).
+3. CALCULATE quantities with waste factors (10% typical).
+4. INCLUDE only permanent materials. EXCLUDE tools/equipment/labor.
+5. APPLY the price multiplier provided for the location.
 
-CRITICAL MATERIAL RULES:
-🔸 INCLUDE ONLY: Construction materials that become part of the finished project
-🔸 EXCLUDE COMPLETELY: Tools, equipment, machinery, rental items, safety gear
-🔸 FOCUS ON: Materials a general contractor would purchase for permanent installation
-
-MATERIAL CATEGORIES TO INCLUDE:
-✅ Foundation: Concrete, rebar, vapor barriers, footings
-✅ Framing: Lumber, engineered beams, structural hardware
-✅ Exterior: Siding, roofing, windows, doors, insulation
-✅ Interior: Drywall, flooring, trim, fixtures
-✅ Systems: Electrical wire/panels, plumbing pipes/fixtures, HVAC ducts
-✅ Hardware: Fasteners, brackets, connectors (that stay in project)
-
-ITEMS TO EXCLUDE (NEVER INCLUDE):
-❌ Tools: Hammers, drills, saws, levels, tape measures
-❌ Equipment: Ladders, scaffolding, compressors, generators
-❌ Machinery: Excavators, concrete pumps, cranes
-❌ Rental Items: Dumpsters, porta-potties, temporary fencing
-❌ Safety Equipment: Hard hats, safety vests, fall protection
-❌ Temporary Items: Tarps, plastic sheeting (unless permanent vapor barrier)
-
-PRECISION CALCULATION METHODS:
-1. Use actual dimensions provided in project description
-2. Apply industry-standard formulas (studs @ 16" OC, etc.)
-3. Include appropriate waste factors by material type
-4. Calculate based on standard lumber lengths and quantities
-5. Factor in regional pricing variations based on location
-6. Consider local building codes and requirements
-
-GEOGRAPHIC PRECISION:
-- Analyze project location for accurate regional pricing
-- Apply location-specific labor rates and material costs
-- Consider local supplier availability and transportation
-- Factor in regional building codes and permit requirements
-
-CONTRACTOR THINKING PROCESS:
-1. "What materials do I need to BUY to complete this project?"
-2. "What stays in the building when I'm done?"
-3. "What quantities do I need based on actual dimensions?"
-4. "What are current prices in this specific location?"
-5. "What waste factor should I include for each material?"
-
-QUALITY STANDARDS:
-- Every material must have specific technical specifications
-- Quantities must be calculated using professional formulas
-- Prices must reflect current market rates for the location
-- Include appropriate waste factors (5-15% depending on material)
-- Provide supplier information and product details
-
-ALWAYS RESPOND IN VALID JSON FORMAT.
-ALL TEXT MUST BE IN ENGLISH ONLY.
-`;
+ALWAYS respond with valid JSON only. ALL TEXT IN ENGLISH.`;
   }
 
   /**
@@ -1170,24 +1160,69 @@ CRITICAL INSTRUCTIONS:
 
   /**
    * Extrae el tipo de proyecto de la descripción
+   * REFACTORIZADO: Usa detección inteligente basada en contexto
+   * Evita falsos positivos como "shingle-style siding" detectado como roofing
    */
   private extractProjectType(description: string): string {
     const text = description.toLowerCase();
     
-    const projectTypes = [
-      { keywords: ['fence', 'fencing', 'chain link', 'privacy fence'], type: 'fencing' },
-      { keywords: ['roof', 'roofing', 'shingle', 'tile'], type: 'roofing' },
-      { keywords: ['deck', 'decking', 'patio', 'deck board'], type: 'decking' },
-      { keywords: ['floor', 'flooring', 'hardwood', 'laminate'], type: 'flooring' },
-      { keywords: ['siding', 'exterior wall', 'vinyl siding'], type: 'siding' },
-      { keywords: ['drywall', 'sheetrock', 'interior wall'], type: 'drywall' },
-      { keywords: ['paint', 'painting', 'primer'], type: 'painting' }
-    ];
-
-    for (const project of projectTypes) {
-      if (project.keywords.some(keyword => text.includes(keyword))) {
-        return project.type;
+    // PASO 1: Detectar keywords primarios (altamente específicos)
+    // Estos tienen prioridad máxima y no causan confusión
+    const primaryKeywords: Record<string, string[]> = {
+      'siding': ['siding', 'vinyl siding', 'hardie', 'fiber cement', 'lap siding', 'exterior cladding'],
+      'fencing': ['fence', 'fencing', 'chain link', 'privacy fence', 'wood fence', 'vinyl fence'],
+      'decking': ['deck', 'decking', 'deck board', 'composite deck', 'wood deck'],
+      'flooring': ['floor', 'flooring', 'hardwood', 'laminate', 'tile floor', 'lvp', 'vinyl plank'],
+      'drywall': ['drywall', 'sheetrock', 'gypsum board', 'interior wall'],
+      'painting': ['paint', 'painting', 'primer', 'repaint'],
+      'concrete': ['concrete', 'cement', 'slab', 'foundation', 'driveway', 'patio concrete'],
+      'plumbing': ['plumbing', 'pipe', 'water heater', 'toilet', 'faucet', 'drain'],
+      'electrical': ['electrical', 'wiring', 'panel', 'outlet', 'switch', 'circuit'],
+      'hvac': ['hvac', 'air conditioning', 'furnace', 'ductwork', 'heating', 'cooling'],
+      'landscaping': ['landscaping', 'lawn', 'irrigation', 'sprinkler', 'sod', 'garden'],
+      'windows': ['window', 'windows', 'window replacement', 'window installation'],
+      'doors': ['door', 'doors', 'entry door', 'interior door', 'garage door'],
+    };
+    
+    // Contar matches por tipo de proyecto
+    const matchCounts: Record<string, number> = {};
+    
+    for (const [projectType, keywords] of Object.entries(primaryKeywords)) {
+      matchCounts[projectType] = keywords.filter(keyword => text.includes(keyword)).length;
+    }
+    
+    // PASO 2: Detectar roofing con cuidado especial
+    // "shingle" solo cuenta como roofing si NO hay "siding" en el texto
+    const roofingKeywords = ['roof', 'roofing', 'roof replacement', 'reroof'];
+    const shingleKeywords = ['shingle', 'asphalt shingle', 'architectural shingle'];
+    
+    const hasExplicitRoofing = roofingKeywords.some(k => text.includes(k));
+    const hasShingle = shingleKeywords.some(k => text.includes(k));
+    const hasSiding = text.includes('siding');
+    
+    // Si tiene "shingle" pero también tiene "siding", es siding (shingle-style siding)
+    // Si tiene "shingle" sin "siding" Y tiene "roof" keywords, es roofing
+    if (hasExplicitRoofing || (hasShingle && !hasSiding)) {
+      matchCounts['roofing'] = (matchCounts['roofing'] || 0) + 
+        (hasExplicitRoofing ? 2 : 0) + 
+        (hasShingle && !hasSiding ? 1 : 0);
+    }
+    
+    // PASO 3: Encontrar el tipo con más matches
+    let bestMatch = 'general_construction';
+    let highestCount = 0;
+    
+    for (const [projectType, count] of Object.entries(matchCounts)) {
+      if (count > highestCount) {
+        highestCount = count;
+        bestMatch = projectType;
       }
+    }
+    
+    // Solo retornar si tiene al menos 1 match
+    if (highestCount > 0) {
+      console.log(`🔍 extractProjectType: Detected "${bestMatch}" with ${highestCount} keyword matches`);
+      return bestMatch;
     }
 
     return 'general_construction';
