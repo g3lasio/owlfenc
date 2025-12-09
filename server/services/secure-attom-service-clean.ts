@@ -52,11 +52,10 @@ class SecureAttomService {
 
   /**
    * Parse address according to ATTOM API requirements
+   * Handles both comma-separated and space-separated addresses
    */
   private parseAddress(fullAddress: string) {
     console.log('🏠 [ATTOM-PARSER] Parsing address:', fullAddress);
-    
-    const parts = fullAddress.split(',').map(part => part.trim());
     
     let address1 = '';
     let city = '';
@@ -77,43 +76,121 @@ class SecureAttomService {
       'Virginia': 'VA', 'Washington': 'WA', 'West Virginia': 'WV', 'Wisconsin': 'WI', 'Wyoming': 'WY'
     };
     
-    if (parts.length >= 1) {
-      address1 = parts[0]; // Street address
-    }
+    // State abbreviations for quick lookup (case-insensitive)
+    const stateAbbreviations = new Set([
+      'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
+      'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD',
+      'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ',
+      'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
+      'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'
+    ]);
     
-    if (parts.length >= 2) {
-      city = parts[1]; // City
-    }
+    // Common city names in California for quick detection (expandable)
+    const commonCities = new Set([
+      'napa', 'oakland', 'sacramento', 'fresno', 'bakersfield', 'fairfield',
+      'san francisco', 'los angeles', 'san diego', 'san jose', 'long beach',
+      'vallejo', 'berkeley', 'richmond', 'concord', 'antioch', 'vacaville'
+    ]);
     
-    // Process remaining parts to extract state and zip
-    for (let i = 2; i < parts.length; i++) {
-      const part = parts[i];
+    // Check if address has commas (properly formatted)
+    const hasCommas = fullAddress.includes(',');
+    
+    if (hasCommas) {
+      // Standard comma-separated parsing
+      const parts = fullAddress.split(',').map(part => part.trim());
       
-      // Skip country names
-      if (part.toLowerCase().includes('estados unidos') || 
-          part.toLowerCase().includes('united states') || 
-          part.toLowerCase().includes('usa')) {
-        continue;
+      if (parts.length >= 1) {
+        address1 = parts[0];
       }
       
-      // Look for ZIP code in this part
-      const zipMatch = part.match(/\b(\d{5}(?:-\d{4})?)\b/);
-      if (zipMatch) {
-        zip = zipMatch[1];
+      if (parts.length >= 2) {
+        city = parts[1];
       }
       
-      // Look for state (either abbreviation or full name)
-      const stateAbbrevMatch = part.match(/\b([A-Z]{2})\b/);
-      if (stateAbbrevMatch) {
-        state = stateAbbrevMatch[1];
-      } else {
-        // Check if the part contains a full state name
-        for (const [fullName, abbrev] of Object.entries(stateMap)) {
-          if (part.toLowerCase().includes(fullName.toLowerCase())) {
-            state = abbrev;
-            break;
+      for (let i = 2; i < parts.length; i++) {
+        const part = parts[i];
+        
+        if (part.toLowerCase().includes('estados unidos') || 
+            part.toLowerCase().includes('united states') || 
+            part.toLowerCase().includes('usa')) {
+          continue;
+        }
+        
+        const zipMatch = part.match(/\b(\d{5}(?:-\d{4})?)\b/);
+        if (zipMatch) {
+          zip = zipMatch[1];
+        }
+        
+        const stateAbbrevMatch = part.match(/\b([A-Z]{2})\b/);
+        if (stateAbbrevMatch && stateAbbreviations.has(stateAbbrevMatch[1])) {
+          state = stateAbbrevMatch[1];
+        } else {
+          for (const [fullName, abbrev] of Object.entries(stateMap)) {
+            if (part.toLowerCase().includes(fullName.toLowerCase())) {
+              state = abbrev;
+              break;
+            }
           }
         }
+      }
+    } else {
+      // Space-separated address parsing (e.g., "2305 Browns St napa Ca" or "123 Market St San Francisco CA")
+      console.log('🏠 [ATTOM-PARSER] Parsing space-separated address');
+      
+      const words = fullAddress.trim().split(/\s+/);
+      const streetSuffixes = ['st', 'street', 'ave', 'avenue', 'blvd', 'boulevard', 'dr', 'drive', 'rd', 'road', 'ln', 'lane', 'ct', 'court', 'way', 'pl', 'place', 'cir', 'circle', 'ter', 'terrace', 'pkwy', 'parkway'];
+      
+      // Find ZIP code first (if present)
+      const zipIndex = words.findIndex(w => /^\d{5}(-\d{4})?$/.test(w));
+      if (zipIndex !== -1) {
+        zip = words[zipIndex];
+      }
+      
+      // Find state abbreviation (search from end, skip ZIP if found)
+      let stateIndex = -1;
+      const searchEnd = zipIndex !== -1 ? zipIndex : words.length;
+      for (let i = searchEnd - 1; i >= 0; i--) {
+        const word = words[i].toUpperCase().replace(/[.,]/g, '');
+        if (stateAbbreviations.has(word)) {
+          state = word;
+          stateIndex = i;
+          break;
+        }
+      }
+      
+      // Find street suffix to determine where street address ends
+      let streetEndIndex = -1;
+      for (let i = 0; i < words.length; i++) {
+        const wordLower = words[i].toLowerCase().replace(/[.,]/g, '');
+        if (streetSuffixes.includes(wordLower)) {
+          streetEndIndex = i;
+          break;
+        }
+      }
+      
+      if (streetEndIndex !== -1 && stateIndex !== -1 && stateIndex > streetEndIndex) {
+        // We have both street suffix and state
+        // Street address = everything up to and including street suffix
+        address1 = words.slice(0, streetEndIndex + 1).join(' ');
+        // City = everything between street suffix and state (handles multi-word cities)
+        if (stateIndex > streetEndIndex + 1) {
+          city = words.slice(streetEndIndex + 1, stateIndex).join(' ');
+        }
+      } else if (stateIndex !== -1 && stateIndex > 0) {
+        // No street suffix found, but we have state
+        // Try common single-word city detection first
+        const potentialCity = words[stateIndex - 1].toLowerCase();
+        if (commonCities.has(potentialCity)) {
+          city = words[stateIndex - 1];
+          address1 = words.slice(0, stateIndex - 1).join(' ');
+        } else {
+          // Fallback: assume last word before state is city
+          city = words[stateIndex - 1];
+          address1 = words.slice(0, stateIndex - 1).join(' ');
+        }
+      } else {
+        // No state found, just use the whole thing as address
+        address1 = fullAddress;
       }
     }
     

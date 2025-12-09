@@ -271,11 +271,18 @@ export const permitSearchHistory = pgTable('permit_search_history', {
 
 // Property search history table
 export const propertySearchHistory = pgTable('property_search_history', {
-  id: text('id').primaryKey(),
+  id: serial('id').primaryKey(),
+  userId: integer('user_id'),
   address: text('address').notNull(),
-  results: jsonb('results'),
-  userId: integer('user_id').notNull(),
-  searchDate: timestamp('search_date').defaultNow().notNull(),
+  ownerName: text('owner_name'),
+  parcelNumber: text('parcel_number'),
+  results: jsonb('results').notNull(),
+  title: text('title'),
+  notes: text('notes'),
+  tags: jsonb('tags'),
+  isFavorite: boolean('is_favorite').default(false),
+  createdAt: timestamp('created_at').defaultNow(),
+  searchDate: timestamp('search_date').defaultNow(),
 });
 
 // Smart Material Lists Cache - Para almacenar listas generadas por DeepSearch
@@ -687,6 +694,8 @@ export const insertPermitSearchHistorySchema = createInsertSchema(permitSearchHi
 });
 
 export const insertPropertySearchHistorySchema = createInsertSchema(propertySearchHistory).omit({
+  id: true,
+  createdAt: true,
   searchDate: true,
 });
 

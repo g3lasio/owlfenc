@@ -7644,19 +7644,17 @@ Output must be between 200-900 characters in English.`;
           const title = `Propiedad en ${address}`;
 
           const historyData = {
-            id: crypto.randomUUID(), // Generate unique ID for the history record
             userId: user.id,
             address,
-            ownerName: propertyData.owner,
+            ownerName: propertyData.owner || null,
+            parcelNumber: propertyData.parcelNumber || null,
             results: propertyData,
             title,
             isFavorite: false,
-            parcelNumber: "",
-            tags: [],
+            tags: [] as string[],
           };
 
           console.log(`📝 [PROPERTY-HISTORY-DEBUG] Datos del historial preparados:`, {
-            id: historyData.id,
             userId: historyData.userId,
             address: historyData.address,
             ownerName: historyData.ownerName,
