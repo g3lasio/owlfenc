@@ -31,16 +31,70 @@ export class SystemAPIService {
   constructor(userId: string, authHeaders: Record<string, string> = {}, baseURL: string = 'http://localhost:5000') {
     this.userId = userId;
     this.baseURL = baseURL;
-    this.authHeaders = authHeaders;
+    
+    // 🔐 CRITICAL: Normalize auth headers for consistent forwarding
+    // Express may receive headers in different cases, normalize to what axios expects
+    this.authHeaders = this.normalizeAuthHeaders(authHeaders);
+    
+    console.log('🔧 [SYSTEM-API] Initializing with userId:', userId);
+    console.log('🔧 [SYSTEM-API] Auth headers present:', Object.keys(this.authHeaders));
     
     this.client = axios.create({
       baseURL: this.baseURL,
       timeout: 60000, // 60 segundos para operaciones largas
       headers: {
         'Content-Type': 'application/json',
-        ...authHeaders // Forward all auth headers (Firebase token, cookies, etc.)
+        ...this.authHeaders // Forward all auth headers (Firebase token, cookies, etc.)
       }
     });
+
+    // 🔐 Add request interceptor for debugging auth issues
+    this.client.interceptors.request.use((config) => {
+      console.log(`🔗 [SYSTEM-API] ${config.method?.toUpperCase()} ${config.url}`);
+      console.log(`🔐 [SYSTEM-API] Authorization header present:`, !!config.headers?.['Authorization']);
+      return config;
+    });
+
+    // Add response interceptor for error logging
+    this.client.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status === 401) {
+          console.error('❌ [SYSTEM-API] 401 Unauthorized - Auth headers may not be forwarded correctly');
+          console.error('❌ [SYSTEM-API] Request URL:', error.config?.url);
+          console.error('❌ [SYSTEM-API] Headers sent:', JSON.stringify(error.config?.headers, null, 2));
+        }
+        return Promise.reject(error);
+      }
+    );
+  }
+
+  /**
+   * Normalize auth headers to ensure consistent casing
+   * Express receives headers case-insensitively but axios sends them as-is
+   */
+  private normalizeAuthHeaders(headers: Record<string, string>): Record<string, string> {
+    const normalized: Record<string, string> = {};
+    
+    for (const [key, value] of Object.entries(headers)) {
+      const lowerKey = key.toLowerCase();
+      
+      // Map to standard header names with proper casing
+      if (lowerKey === 'authorization') {
+        normalized['Authorization'] = value;
+      } else if (lowerKey === 'cookie') {
+        normalized['Cookie'] = value;
+      } else if (lowerKey === 'x-csrf-token') {
+        normalized['X-CSRF-Token'] = value;
+      } else if (lowerKey === 'x-firebase-appcheck') {
+        normalized['X-Firebase-AppCheck'] = value;
+      } else {
+        // Keep other headers as-is
+        normalized[key] = value;
+      }
+    }
+    
+    return normalized;
   }
 
   // ============= PROPERTY VERIFICATION =============
