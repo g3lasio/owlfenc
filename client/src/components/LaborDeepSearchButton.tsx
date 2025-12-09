@@ -44,6 +44,10 @@ interface LaborItem {
 
 interface LaborDeepSearchButtonProps {
   projectDescription: string;
+  projectLocation?: string;
+  projectCity?: string;
+  projectState?: string;
+  projectZip?: string;
   onLaborGenerated: (items: any[]) => void;
   onMaterialsGenerated?: (items: any[]) => void;
   onCombinedGenerated?: (materials: any[], labor: any[]) => void;
@@ -54,11 +58,32 @@ type SearchMode = 'labor' | 'materials' | 'combined';
 
 export default function LaborDeepSearchButton({
   projectDescription,
+  projectLocation,
+  projectCity,
+  projectState,
+  projectZip,
   onLaborGenerated,
   onMaterialsGenerated,
   onCombinedGenerated,
   disabled = false
 }: LaborDeepSearchButtonProps) {
+  
+  const getFullLocation = (): string => {
+    if (projectLocation && projectLocation.trim()) {
+      return projectLocation;
+    }
+    
+    const parts: string[] = [];
+    if (projectCity) parts.push(projectCity);
+    if (projectState) parts.push(projectState);
+    if (projectZip) parts.push(projectZip);
+    
+    if (parts.length > 0) {
+      return parts.join(', ');
+    }
+    
+    return '';
+  };
   const [isOpen, setIsOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -112,12 +137,15 @@ export default function LaborDeepSearchButton({
       console.log('🔧 Iniciando Labor DeepSearch...');
 
       const headers = await getAuthHeaders();
+      const location = getFullLocation();
+      console.log('🔧 Labor DeepSearch: Using location:', location || 'No location provided');
+      
       const response = await fetch('/api/labor-deepsearch/generate-items', {
         method: 'POST',
         headers,
         body: JSON.stringify({
           projectDescription,
-          location: 'Estados Unidos',
+          location: location || undefined,
           projectType: 'construction'
         }),
       });
@@ -169,12 +197,14 @@ export default function LaborDeepSearchButton({
       console.log('📦 Iniciando Materials DeepSearch...');
 
       const headers = await getAuthHeaders();
+      const location = getFullLocation();
+      
       const response = await fetch('/api/deepsearch/materials', {
         method: 'POST',
         headers,
         body: JSON.stringify({
           projectDescription,
-          location: 'Estados Unidos'
+          location: location || undefined
         }),
       });
 
@@ -227,12 +257,15 @@ export default function LaborDeepSearchButton({
       console.log('🔧📦 Iniciando Combined DeepSearch...');
 
       const headers = await getAuthHeaders();
+      const location = getFullLocation();
+      console.log('🔧📦 Combined DeepSearch: Using location:', location || 'No location provided');
+      
       const response = await fetch('/api/labor-deepsearch/combined', {
         method: 'POST',
         headers,
         body: JSON.stringify({
           projectDescription,
-          location: 'Estados Unidos',
+          location: location || undefined,
           projectType: 'construction',
           includeMaterials: true,
           includeLabor: true

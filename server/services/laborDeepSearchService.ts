@@ -1,14 +1,14 @@
 /**
- * Labor DeepSearch IA Service
+ * Labor DeepSearch IA Service - REFACTORIZADO
  * 
- * Este servicio utiliza IA para analizar descripciones de proyectos y generar
+ * Este servicio utiliza IA (Claude) para analizar descripciones de proyectos y generar
  * automáticamente listas de servicios de labor/mano de obra con costos estimados.
  * 
- * Funcionalidad:
- * - Análisis de descripción del proyecto para identificar tareas de labor
- * - Identificación automática de servicios necesarios (instalación, demolición, limpieza, etc.)
- * - Estimación de horas de trabajo y costos de mano de obra
- * - Generación de estimados de labor completos
+ * CAMBIOS IMPORTANTES:
+ * - Claude es el método PRINCIPAL de análisis (no fallback)
+ * - Detecta CUALQUIER tipo de proyecto con IA (sin listas hardcodeadas)
+ * - Usa pricing por unidad profesional (sqft, lf, cyd, square, unit, project)
+ * - Aplica ajustes precisos por ubicación (state, city, zip)
  * 
  * Casos de uso:
  * - Proyectos donde el cliente provee materiales
@@ -16,13 +16,11 @@
  * - Instalación sin materiales
  * - Servicios de preparación de sitio
  * - Hauling y disposal
+ * - CUALQUIER tipo de servicio de construcción
  */
 
 import Anthropic from '@anthropic-ai/sdk';
-import { enhancedLocationPricingService } from './enhancedLocationPricingService';
-import { advancedLaborPricingService, AdvancedLaborPricingService } from './advancedLaborPricingService';
 
-// the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
@@ -31,32 +29,39 @@ interface LaborItem {
   id: string;
   name: string;
   description: string;
-  category: string; // 'preparation', 'installation', 'cleanup', 'demolition', 'hauling', 'specialty'
+  category: string;
   quantity: number;
-  unit: string; // 'linear_ft', 'square_ft', 'cubic_yard', 'square', 'project', 'per_unit'
+  unit: string;
   unitPrice: number;
   totalCost: number;
-  skillLevel: string; // 'helper', 'skilled', 'specialist', 'foreman'
-  complexity: string; // 'low', 'medium', 'high'
-  estimatedTime: string; // duración estimada
-  includes?: string[]; // qué incluye este servicio
+  skillLevel: string;
+  complexity: string;
+  estimatedTime: string;
+  includes?: string[];
 }
 
 interface LaborAnalysisResult {
   laborItems: LaborItem[];
   totalHours: number;
   totalLaborCost: number;
-  estimatedDuration: string; // días de trabajo
+  estimatedDuration: string;
   crewSize: number;
   projectComplexity: 'low' | 'medium' | 'high';
   specialRequirements: string[];
   safetyConsiderations: string[];
+  detectedProjectType: string;
+  locationAnalysis: {
+    state: string;
+    city: string;
+    marketMultiplier: number;
+  };
 }
 
 export class LaborDeepSearchService {
   
   /**
    * Analiza un proyecto y genera una lista completa de tareas de labor
+   * SIEMPRE usa Claude IA como método principal de análisis
    */
   async analyzeLaborRequirements(
     projectDescription: string, 
@@ -64,27 +69,19 @@ export class LaborDeepSearchService {
     projectType?: string
   ): Promise<LaborAnalysisResult> {
     try {
-      console.log('🔧 Labor DeepSearch: Iniciando análisis de labor para:', { projectDescription, location, projectType });
+      console.log('🔧 Labor DeepSearch IA: Iniciando análisis con Claude para:', { 
+        projectDescription: projectDescription.substring(0, 100), 
+        location, 
+        projectType 
+      });
 
-      // ENHANCED PRECISION: Usar sistema avanzado de pricing geográfico
-      if (location && location.trim().length > 0) {
-        console.log('🎯 Using Enhanced Location Pricing for:', location);
-        try {
-          const enhancedResult = await this.analyzeWithEnhancedPricing(projectDescription, location, projectType);
-          console.log('✅ Enhanced Labor Analysis completed with', enhancedResult.laborItems.length, 'items');
-          return enhancedResult;
-        } catch (enhancedError) {
-          console.warn('⚠️ Enhanced pricing failed, falling back to standard analysis:', enhancedError);
-        }
-      }
-
-      // FALLBACK: Usar sistema original con Claude
-      const prompt = this.buildLaborAnalysisPrompt(projectDescription, location, projectType);
+      // SIEMPRE usar Claude IA para análisis - es el método principal
+      const prompt = this.buildIntelligentLaborPrompt(projectDescription, location, projectType);
       
       const response = await anthropic.messages.create({
-        model: "claude-3-7-sonnet-20250219",
+        model: "claude-sonnet-4-20250514",
         max_tokens: 4000,
-        temperature: 0.3,
+        temperature: 0.2,
         messages: [{
           role: "user",
           content: prompt
@@ -96,273 +93,258 @@ export class LaborDeepSearchService {
         throw new Error('Invalid response type from Anthropic');
       }
 
-      const analysisResult = this.parseClaudeResponse(content.text);
+      const analysisResult = this.parseClaudeResponse(content.text, location);
       
-      console.log('✅ Labor DeepSearch: Análisis completado', {
+      console.log('✅ Labor DeepSearch IA: Análisis completado', {
+        detectedType: analysisResult.detectedProjectType,
         laborItemsCount: analysisResult.laborItems.length,
         totalCost: analysisResult.totalLaborCost,
-        estimatedDuration: analysisResult.estimatedDuration
+        estimatedDuration: analysisResult.estimatedDuration,
+        location: analysisResult.locationAnalysis
       });
 
       return analysisResult;
 
     } catch (error) {
-      console.error('❌ Labor DeepSearch Error:', error);
+      console.error('❌ Labor DeepSearch IA Error:', error);
       throw new Error(`Error en análisis de labor: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   }
 
   /**
-   * Análisis avanzado con sistema de pricing geográfico mejorado
+   * Construye el prompt inteligente para Claude
+   * Diseñado para detectar CUALQUIER tipo de proyecto y usar pricing profesional
    */
-  private async analyzeWithEnhancedPricing(
-    projectDescription: string,
-    location: string,
-    projectType?: string
-  ): Promise<LaborAnalysisResult> {
+  private buildIntelligentLaborPrompt(projectDescription: string, location?: string, projectType?: string): string {
+    // Analizar ubicación para incluir contexto específico
+    const locationContext = this.buildLocationContext(location);
     
-    // 1. Obtener tareas de labor específicas del proyecto
-    const laborTasks = AdvancedLaborPricingService.getProjectLaborTasks(projectDescription);
-    
-    // 2. Calcular costos precisos por ubicación
-    const preciseCosts = await advancedLaborPricingService.calculatePreciseLaborCosts(
-      projectDescription,
-      location,
-      laborTasks
-    );
-    
-    // 3. Convertir a formato compatible con el sistema existente
-    const laborItems: LaborItem[] = preciseCosts.map(cost => ({
-      id: cost.taskId,
-      name: cost.name,
-      description: cost.description,
-      category: this.mapTaskTypeToCategory(cost.taskId),
-      quantity: cost.quantity,
-      unit: cost.unit,
-      unitPrice: cost.adjustedRate,
-      totalCost: cost.totalCost,
-      skillLevel: this.extractSkillLevel(cost.taskId),
-      complexity: this.extractComplexity(cost.taskId),
-      estimatedTime: this.calculateEstimatedTime(cost.totalCost, cost.adjustedRate),
-      includes: [cost.description]
-    }));
-    
-    // 4. Calcular métricas generales
-    const totalLaborCost = laborItems.reduce((sum, item) => sum + item.totalCost, 0);
-    const totalHours = laborItems.reduce((sum, item) => sum + (item.totalCost / item.unitPrice), 0);
-    const averageRate = totalLaborCost / totalHours;
-    
-    // 5. Determinar complejidad del proyecto
-    const projectComplexity = this.determineProjectComplexity(projectDescription, laborItems);
-    
-    // 6. Generar recomendaciones específicas
-    const specialRequirements = this.generateSpecialRequirements(projectDescription, location);
-    const safetyConsiderations = this.generateSafetyConsiderations(projectDescription);
-    
-    return {
-      laborItems,
-      totalHours,
-      totalLaborCost,
-      estimatedDuration: this.calculateProjectDuration(totalHours, averageRate),
-      crewSize: this.calculateCrewSize(laborItems),
-      projectComplexity,
-      specialRequirements,
-      safetyConsiderations
-    };
-  }
-
-  /**
-   * Métodos auxiliares para el sistema avanzado
-   */
-  private mapTaskTypeToCategory(taskId: string): string {
-    if (taskId.includes('roofing')) return 'installation';
-    if (taskId.includes('concrete')) return 'installation';
-    if (taskId.includes('landscaping')) return 'installation';
-    if (taskId.includes('framing')) return 'installation';
-    if (taskId.includes('electrical')) return 'specialty';
-    if (taskId.includes('plumbing')) return 'specialty';
-    if (taskId.includes('remove')) return 'demolition';
-    if (taskId.includes('cleanup')) return 'cleanup';
-    if (taskId.includes('prepare')) return 'preparation';
-    return 'installation';
-  }
-
-  private extractSkillLevel(taskId: string): string {
-    if (taskId.includes('electrical') || taskId.includes('plumbing')) return 'specialist';
-    if (taskId.includes('concrete') || taskId.includes('framing')) return 'skilled';
-    if (taskId.includes('cleanup') || taskId.includes('prepare')) return 'helper';
-    return 'skilled';
-  }
-
-  private extractComplexity(taskId: string): string {
-    if (taskId.includes('electrical') || taskId.includes('plumbing')) return 'high';
-    if (taskId.includes('concrete') || taskId.includes('framing')) return 'high';
-    if (taskId.includes('roofing')) return 'medium';
-    if (taskId.includes('landscaping')) return 'medium';
-    if (taskId.includes('cleanup')) return 'low';
-    return 'medium';
-  }
-
-  private calculateEstimatedTime(totalCost: number, rate: number): string {
-    const hours = totalCost / rate;
-    if (hours < 8) return `${Math.round(hours)} hours`;
-    const days = Math.ceil(hours / 8);
-    return `${days} day${days > 1 ? 's' : ''}`;
-  }
-
-  private determineProjectComplexity(description: string, laborItems: LaborItem[]): 'low' | 'medium' | 'high' {
-    const highComplexityTasks = laborItems.filter(item => item.complexity === 'high').length;
-    const totalTasks = laborItems.length;
-    
-    if (highComplexityTasks / totalTasks > 0.5) return 'high';
-    if (highComplexityTasks > 0) return 'medium';
-    return 'low';
-  }
-
-  private generateSpecialRequirements(description: string, location: string): string[] {
-    const requirements: string[] = [];
-    
-    if (description.includes('electrical')) requirements.push('Licensed electrician required');
-    if (description.includes('plumbing')) requirements.push('Licensed plumber required');
-    if (description.includes('concrete')) requirements.push('Concrete mixer and equipment');
-    if (description.includes('roofing')) requirements.push('Safety harnesses and fall protection');
-    if (description.includes('1200') || description.includes('large')) requirements.push('Building permits required');
-    
-    // Location-specific requirements
-    if (location.toLowerCase().includes('california')) {
-      requirements.push('California contractor license required');
-    }
-    
-    return requirements;
-  }
-
-  private generateSafetyConsiderations(description: string): string[] {
-    const safety: string[] = [];
-    
-    if (description.includes('roofing')) safety.push('Fall protection required');
-    if (description.includes('electrical')) safety.push('Electrical safety protocols');
-    if (description.includes('concrete')) safety.push('Proper lifting techniques');
-    if (description.includes('demolition')) safety.push('Dust and debris protection');
-    
-    return safety;
-  }
-
-  private calculateProjectDuration(totalHours: number, averageRate: number): string {
-    const workingHoursPerDay = 8;
-    const days = Math.ceil(totalHours / workingHoursPerDay);
-    
-    if (days <= 1) return '1 day';
-    if (days <= 7) return `${days} days`;
-    
-    const weeks = Math.ceil(days / 5);
-    return `${weeks} week${weeks > 1 ? 's' : ''}`;
-  }
-
-  private calculateCrewSize(laborItems: LaborItem[]): number {
-    const specialistTasks = laborItems.filter(item => item.skillLevel === 'specialist').length;
-    const skilledTasks = laborItems.filter(item => item.skillLevel === 'skilled').length;
-    const helperTasks = laborItems.filter(item => item.skillLevel === 'helper').length;
-    
-    return Math.max(2, Math.ceil((specialistTasks + skilledTasks + helperTasks) / 3));
-  }
-
-  /**
-   * Construye el prompt para Claude específico para análisis de labor
-   */
-  private buildLaborAnalysisPrompt(projectDescription: string, location?: string, projectType?: string): string {
     return `
-You are a veteran general contractor with 25+ years experience pricing construction labor in various US markets. Research and analyze the SPECIFIC LOCATION to provide accurate local pricing that reflects real market conditions in that area.
+You are a veteran general contractor with 30+ years of experience pricing construction labor across ALL types of projects in the United States. You have deep knowledge of labor markets, regional pricing variations, and professional contractor pricing methods.
 
-PROJECT DESCRIPTION:
-${projectDescription}
+## PROJECT DESCRIPTION TO ANALYZE:
+"${projectDescription}"
 
-PROJECT TYPE: ${projectType || 'General'}
-LOCATION: ${location || 'United States'}
+## LOCATION INFORMATION:
+${locationContext}
 
-LOCATION-BASED PRICING RESEARCH:
-1. ANALYZE the specific location provided (city, state, or address)
-2. RESEARCH local market conditions for construction labor in that area
-3. CONSIDER regional factors: cost of living, labor availability, local regulations
-4. ADJUST pricing based on:
-   - Urban vs Rural location
-   - State minimum wage laws
-   - Local permit requirements
-   - Regional competition levels
-   - Seasonal demand patterns
+## YOUR TASK:
+Analyze this project description and generate a COMPLETE list of labor/service tasks with accurate pricing. You must:
 
-REAL CONTRACTOR PRICING METHODS (NEVER use hourly rates):
-• LINEAR FOOT: Fencing, trim, gutters - Research local rates for this specific area
-• SQUARE FOOT: Roofing, flooring, walls - Adjust for local market conditions
-• CUBIC YARD: Concrete, excavation - Factor in local disposal costs and regulations
-• SQUARE (100 sqft): Roofing/siding - Consider local building codes and weather
-• PER PROJECT: Small jobs - Price according to local service rates
-• PER UNIT: Doors, windows, posts - Research local installation costs
+1. **DETECT THE PROJECT TYPE**: Identify what type of work this is (fencing, roofing, concrete, painting, cleaning, demolition, landscaping, electrical, plumbing, HVAC, engineering, general construction, or ANY other service). Be specific.
 
-REGIONAL PRICING EXAMPLES:
-- California: Higher rates due to regulations and cost of living
-- Texas: Moderate rates, competitive market
-- Florida: Hurricane considerations affect pricing
-- New York: Higher urban rates, strict codes
-- Rural areas: Lower rates but travel costs
-- Northeast: Weather delays factor into pricing
+2. **GENERATE LABOR TASKS**: Create a detailed list of ALL labor tasks required to complete this project. Think like a professional contractor preparing a bid.
 
-CRITICAL INSTRUCTIONS:
-1. Include ONLY LABOR/SERVICES (NO materials)
-2. Research and apply LOCAL MARKET RATES for the specific location
-3. Factor in regional economic conditions and regulations
-4. Use professional contractor pricing methods for that area
-5. Consider local competition and demand
-6. Use English for all service names and descriptions
-7. Explain briefly why prices reflect local market conditions
+3. **USE PROFESSIONAL PRICING UNITS** (CRITICAL - contractors NEVER charge hourly):
+   - LINEAR FOOT (lf): For fences, trim, gutters, baseboards, piping
+   - SQUARE FOOT (sqft): For roofing, flooring, walls, painting, pressure washing
+   - SQUARE (100 sqft): For roofing shingles, siding
+   - CUBIC YARD (cyd): For concrete, excavation, debris removal, hauling
+   - PER UNIT: For doors, windows, fixtures, posts, trees
+   - PER PROJECT: For small complete jobs, permits, engineering
+   - PER TON: For asphalt, gravel, hauling heavy materials
 
-LABOR CATEGORIES:
-- Site preparation (excavation, leveling, marking)
-- Demolition and removal
-- Main installation and construction
-- Finishing and details
-- Final cleanup
-- Hauling and disposal
+4. **APPLY LOCATION-BASED PRICING**:
+   - California: +35-50% (highest labor costs)
+   - New York/NJ/CT: +25-40%
+   - Hawaii/Alaska: +40-60%
+   - Texas/Arizona: Base rate
+   - Florida: +5-15%
+   - Midwest: -5-10%
+   - Southeast: -10-15%
+   - Rural areas: -15-20% but add travel costs
 
-RESPOND IN EXACT JSON FORMAT:
+## LABOR CATEGORY TYPES:
+- preparation: Site prep, excavation, layout, marking
+- demolition: Tear-out, removal of existing structures
+- installation: Main construction/installation work
+- finishing: Detail work, trim, final adjustments
+- cleanup: Site cleanup, debris removal
+- hauling: Transportation, disposal
+- specialty: Licensed work (electrical, plumbing, engineering)
+
+## SKILL LEVELS AND BASE RATES:
+- helper: $18-28/hr equivalent (cleanup, basic labor)
+- skilled: $35-55/hr equivalent (most trade work)
+- specialist: $55-85/hr equivalent (electrical, plumbing, HVAC)
+- foreman: $65-95/hr equivalent (supervision, complex work)
+- engineer: $100-200/hr equivalent (structural, permits)
+
+## REAL CONTRACTOR PRICING EXAMPLES:
+
+### Fencing (per linear foot):
+- Wood fence installation: $18-35/lf
+- Vinyl fence installation: $20-40/lf
+- Chain link installation: $12-25/lf
+- Post hole digging: $25-45 per hole
+- Gate installation: $150-400 per gate
+
+### Roofing (per square = 100 sqft):
+- Shingle tear-off: $75-150/square
+- Shingle installation: $350-650/square
+- Underlayment: $50-100/square
+
+### Concrete (per sqft or cyd):
+- Flatwork: $8-18/sqft
+- Stamped concrete: $12-25/sqft
+- Demolition: $3-8/sqft
+- Excavation: $45-85/cyd
+
+### Painting (per sqft):
+- Interior walls: $1.50-4/sqft
+- Exterior: $2-6/sqft
+- Prep work: $0.50-2/sqft
+
+### Demolition/Hauling:
+- Debris removal: $45-95/cyd
+- Dumpster load: $350-650/load
+
+### Cleaning Services:
+- Pressure washing: $0.15-0.50/sqft
+- Window cleaning: $5-15/window
+- Post-construction cleanup: $0.10-0.30/sqft
+
+### Landscaping:
+- Sod installation: $1-3/sqft
+- Tree removal: $300-2000/tree
+- Grading: $1-4/sqft
+
+## RESPONSE FORMAT (JSON ONLY):
 {
+  "detectedProjectType": "Specific type of project identified",
   "laborItems": [
     {
       "id": "labor_001",
-      "name": "Service name in English",
-      "description": "Detailed description of what's included in this service",
-      "category": "preparation|installation|cleanup|demolition|hauling|specialty",
-      "quantity": 250,
-      "unit": "linear_ft|square_ft|cubic_yard|square|project|per_unit",
-      "unitPrice": 16.00,
-      "totalCost": 4000.00,
-      "skillLevel": "helper|skilled|specialist|foreman",
+      "name": "Task name in English",
+      "description": "What this service includes",
+      "category": "preparation|installation|demolition|cleanup|hauling|specialty|finishing",
+      "quantity": 200,
+      "unit": "lf|sqft|square|cyd|unit|project|ton",
+      "unitPrice": 22.50,
+      "totalCost": 4500.00,
+      "skillLevel": "helper|skilled|specialist|foreman|engineer",
       "complexity": "low|medium|high",
-      "estimatedTime": "2-3 days",
-      "includes": ["What this service includes"]
+      "estimatedTime": "1-2 days",
+      "includes": ["What is included in this price"]
     }
   ],
-  "totalLaborCost": 4000.00,
-  "estimatedDuration": "5-7 days",
-  "projectComplexity": "medium",
-  "specialRequirements": ["special permits", "certifications"],
-  "safetyConsiderations": ["safety considerations"]
+  "totalLaborCost": 4500.00,
+  "estimatedDuration": "3-5 days",
+  "crewSize": 3,
+  "projectComplexity": "low|medium|high",
+  "specialRequirements": ["Permits", "Licensed workers", etc.],
+  "safetyConsiderations": ["Safety requirements"],
+  "locationAnalysis": {
+    "state": "California",
+    "city": "San Diego",
+    "marketMultiplier": 1.35
+  }
 }
 
-REFERENCE RATES BY SKILL LEVEL:
-- Helper: $20-30/hour
-- Skilled: $35-50/hour  
-- Specialist: $50-75/hour
-- Foreman: $60-85/hour
+IMPORTANT RULES:
+1. Analyze the ENTIRE description to understand the full scope
+2. NEVER use hourly rates as the unit - convert to professional units
+3. Include ALL labor tasks needed (don't skip prep or cleanup)
+4. If description mentions "labor only" or "customer provides materials", include ZERO material costs
+5. Apply location multiplier to all rates
+6. Be realistic - these are actual contractor prices
+7. ALL TEXT MUST BE IN ENGLISH
 
-Adjust rates based on location and project complexity.
-ALL TEXT MUST BE IN ENGLISH ONLY.
+Respond with ONLY the JSON object, no additional text.
 `;
+  }
+
+  /**
+   * Construye contexto de ubicación para el prompt
+   */
+  private buildLocationContext(location?: string): string {
+    if (!location || location.trim().length === 0) {
+      return `Location: United States (general pricing)
+Note: No specific location provided, using national average rates.`;
+    }
+
+    // Detectar componentes de la ubicación
+    const locationLower = location.toLowerCase();
+    let stateInfo = '';
+    let cityInfo = '';
+    let zipInfo = '';
+
+    // Detectar estados comunes
+    const statePatterns: Record<string, string> = {
+      'california': 'California - Premium market (+35-50%)',
+      'ca': 'California - Premium market (+35-50%)',
+      'new york': 'New York - High cost market (+25-40%)',
+      'ny': 'New York - High cost market (+25-40%)',
+      'texas': 'Texas - Competitive market (base rate)',
+      'tx': 'Texas - Competitive market (base rate)',
+      'florida': 'Florida - Moderate market (+5-15%)',
+      'fl': 'Florida - Moderate market (+5-15%)',
+      'arizona': 'Arizona - Competitive market (base rate)',
+      'az': 'Arizona - Competitive market (base rate)',
+      'hawaii': 'Hawaii - Premium island market (+40-60%)',
+      'hi': 'Hawaii - Premium island market (+40-60%)',
+      'alaska': 'Alaska - Remote premium market (+40-60%)',
+      'ak': 'Alaska - Remote premium market (+40-60%)',
+      'washington': 'Washington - High cost market (+15-25%)',
+      'wa': 'Washington - High cost market (+15-25%)',
+      'oregon': 'Oregon - Moderate-high market (+10-20%)',
+      'or': 'Oregon - Moderate-high market (+10-20%)',
+      'colorado': 'Colorado - Growing market (+10-15%)',
+      'co': 'Colorado - Growing market (+10-15%)',
+      'nevada': 'Nevada - Moderate market (+5-10%)',
+      'nv': 'Nevada - Moderate market (+5-10%)',
+      'massachusetts': 'Massachusetts - High cost market (+20-35%)',
+      'ma': 'Massachusetts - High cost market (+20-35%)',
+      'new jersey': 'New Jersey - High cost market (+20-30%)',
+      'nj': 'New Jersey - High cost market (+20-30%)',
+      'connecticut': 'Connecticut - High cost market (+20-30%)',
+      'ct': 'Connecticut - High cost market (+20-30%)',
+      'illinois': 'Illinois - Moderate-high market (+10-20%)',
+      'il': 'Illinois - Moderate-high market (+10-20%)',
+      'georgia': 'Georgia - Competitive market (-5-10%)',
+      'ga': 'Georgia - Competitive market (-5-10%)',
+      'north carolina': 'North Carolina - Competitive market (-5-10%)',
+      'nc': 'North Carolina - Competitive market (-5-10%)',
+      'south carolina': 'South Carolina - Low cost market (-10-15%)',
+      'sc': 'South Carolina - Low cost market (-10-15%)',
+      'tennessee': 'Tennessee - Low cost market (-10-15%)',
+      'tn': 'Tennessee - Low cost market (-10-15%)',
+      'ohio': 'Ohio - Low cost market (-10-15%)',
+      'oh': 'Ohio - Low cost market (-10-15%)',
+      'michigan': 'Michigan - Moderate market (base rate)',
+      'mi': 'Michigan - Moderate market (base rate)',
+      'pennsylvania': 'Pennsylvania - Moderate market (+5-10%)',
+      'pa': 'Pennsylvania - Moderate market (+5-10%)',
+      'virginia': 'Virginia - Moderate-high market (+10-15%)',
+      'va': 'Virginia - Moderate-high market (+10-15%)',
+    };
+
+    for (const [key, value] of Object.entries(statePatterns)) {
+      if (locationLower.includes(key)) {
+        stateInfo = value;
+        break;
+      }
+    }
+
+    // Detectar si es un ZIP code
+    const zipMatch = location.match(/\b\d{5}(-\d{4})?\b/);
+    if (zipMatch) {
+      zipInfo = `ZIP Code: ${zipMatch[0]}`;
+    }
+
+    return `Location: ${location}
+${stateInfo ? `State Analysis: ${stateInfo}` : ''}
+${zipInfo ? zipInfo : ''}
+${cityInfo ? `City: ${cityInfo}` : ''}
+
+IMPORTANT: Apply the appropriate regional labor rate multiplier based on this location.
+Research the specific market conditions for this area and adjust pricing accordingly.`;
   }
 
   /**
    * Parsea la respuesta de Claude y estructura los datos
    */
-  private parseClaudeResponse(claudeResponse: string): LaborAnalysisResult {
+  private parseClaudeResponse(claudeResponse: string, location?: string): LaborAnalysisResult {
     try {
       // Limpiar la respuesta y extraer JSON
       const jsonMatch = claudeResponse.match(/\{[\s\S]*\}/);
@@ -374,34 +356,167 @@ ALL TEXT MUST BE IN ENGLISH ONLY.
       
       // Validar estructura básica
       if (!parsed.laborItems || !Array.isArray(parsed.laborItems)) {
-        throw new Error('Estructura de respuesta inválida');
+        throw new Error('Estructura de respuesta inválida: falta laborItems');
       }
 
-      // Generar IDs únicos si no existen
-      parsed.laborItems = parsed.laborItems.map((item: any, index: number) => ({
-        ...item,
-        id: item.id || `labor_${Date.now()}_${index}`,
-        totalCost: Number(item.totalCost || 0),
-        hours: Number(item.hours || 0),
-        hourlyRate: Number(item.hourlyRate || 0),
-        crew: Number(item.crew || 1)
-      }));
+      // ALLOWED PROFESSIONAL UNITS - contractors never charge hourly
+      const ALLOWED_UNITS = ['lf', 'sqft', 'square', 'cyd', 'unit', 'project', 'ton', 'each', 'linear_ft', 'square_ft', 'cubic_yard'];
+      
+      // Normalize unit to approved format
+      const normalizeUnit = (unit: string): string => {
+        const unitLower = (unit || '').toLowerCase().trim();
+        
+        // Map common variations to standard units
+        const unitMap: Record<string, string> = {
+          'linear foot': 'lf',
+          'linear feet': 'lf',
+          'linear_foot': 'lf',
+          'linear_feet': 'lf',
+          'lin ft': 'lf',
+          'lineal foot': 'lf',
+          'square foot': 'sqft',
+          'square feet': 'sqft',
+          'sq ft': 'sqft',
+          'sq. ft.': 'sqft',
+          'square_foot': 'sqft',
+          'square_feet': 'sqft',
+          'cubic yard': 'cyd',
+          'cubic yards': 'cyd',
+          'cu yd': 'cyd',
+          'cubic_yard': 'cyd',
+          'per unit': 'unit',
+          'per project': 'project',
+          'per each': 'each',
+          'per ton': 'ton',
+          '100 sqft': 'square',
+          '100sqft': 'square',
+          // REJECT hourly units - convert to project
+          'hour': 'project',
+          'hours': 'project',
+          'hr': 'project',
+          'hrs': 'project',
+          'hourly': 'project',
+          'per hour': 'project',
+        };
+        
+        if (unitMap[unitLower]) {
+          return unitMap[unitLower];
+        }
+        
+        // If unit is in allowed list, return as-is
+        if (ALLOWED_UNITS.includes(unitLower)) {
+          return unitLower;
+        }
+        
+        // Log warning for unknown units and default to project
+        console.warn(`⚠️ Unknown unit "${unit}" detected, defaulting to "project"`);
+        return 'project';
+      };
+
+      // Generar IDs únicos si no existen y normalizar datos
+      parsed.laborItems = parsed.laborItems.map((item: any, index: number) => {
+        const normalizedUnit = normalizeUnit(item.unit);
+        
+        // If unit was converted from hourly, recalculate as lump sum
+        const isHourlyConverted = ['hour', 'hours', 'hr', 'hrs', 'hourly', 'per hour'].includes((item.unit || '').toLowerCase());
+        
+        return {
+          id: item.id || `labor_${Date.now()}_${index}`,
+          name: item.name || 'Labor Task',
+          description: item.description || '',
+          category: item.category || 'installation',
+          quantity: isHourlyConverted ? 1 : (Number(item.quantity) || 1),
+          unit: normalizedUnit,
+          unitPrice: isHourlyConverted ? Number(item.totalCost) || 0 : (Number(item.unitPrice) || 0),
+          totalCost: Number(item.totalCost) || 0,
+          skillLevel: item.skillLevel || 'skilled',
+          complexity: item.complexity || 'medium',
+          estimatedTime: item.estimatedTime || '1 day',
+          includes: item.includes || []
+        };
+      });
 
       // Calcular totales si no están presentes
-      if (!parsed.totalHours) {
-        parsed.totalHours = parsed.laborItems.reduce((sum: number, item: any) => sum + (item.hours || 0), 0);
-      }
-
       if (!parsed.totalLaborCost) {
         parsed.totalLaborCost = parsed.laborItems.reduce((sum: number, item: any) => sum + (item.totalCost || 0), 0);
       }
 
-      return parsed as LaborAnalysisResult;
+      // Calcular horas estimadas basado en costos
+      if (!parsed.totalHours) {
+        // Estimar horas basado en costo total y rate promedio de $45/hr
+        parsed.totalHours = Math.round(parsed.totalLaborCost / 45);
+      }
+
+      // Valores por defecto para campos opcionales
+      const result: LaborAnalysisResult = {
+        laborItems: parsed.laborItems,
+        totalHours: Number(parsed.totalHours) || 0,
+        totalLaborCost: Number(parsed.totalLaborCost) || 0,
+        estimatedDuration: parsed.estimatedDuration || this.calculateDuration(parsed.totalHours),
+        crewSize: Number(parsed.crewSize) || 2,
+        projectComplexity: parsed.projectComplexity || 'medium',
+        specialRequirements: parsed.specialRequirements || [],
+        safetyConsiderations: parsed.safetyConsiderations || [],
+        detectedProjectType: parsed.detectedProjectType || 'General Construction',
+        locationAnalysis: parsed.locationAnalysis || {
+          state: this.extractState(location),
+          city: '',
+          marketMultiplier: 1.0
+        }
+      };
+
+      return result;
 
     } catch (error) {
       console.error('Error parseando respuesta de Claude:', error);
       throw new Error('Error procesando respuesta de IA');
     }
+  }
+
+  /**
+   * Calcula duración basada en horas
+   */
+  private calculateDuration(totalHours: number): string {
+    if (!totalHours || totalHours <= 0) return '1 day';
+    
+    const workingHoursPerDay = 8;
+    const days = Math.ceil(totalHours / workingHoursPerDay);
+    
+    if (days <= 1) return '1 day';
+    if (days <= 7) return `${days} days`;
+    
+    const weeks = Math.ceil(days / 5);
+    return `${weeks} week${weeks > 1 ? 's' : ''}`;
+  }
+
+  /**
+   * Extrae el estado de la ubicación
+   */
+  private extractState(location?: string): string {
+    if (!location) return 'United States';
+    
+    const stateAbbreviations: Record<string, string> = {
+      'ca': 'California', 'california': 'California',
+      'tx': 'Texas', 'texas': 'Texas',
+      'fl': 'Florida', 'florida': 'Florida',
+      'ny': 'New York', 'new york': 'New York',
+      'az': 'Arizona', 'arizona': 'Arizona',
+      'wa': 'Washington', 'washington': 'Washington',
+      'or': 'Oregon', 'oregon': 'Oregon',
+      'co': 'Colorado', 'colorado': 'Colorado',
+      'nv': 'Nevada', 'nevada': 'Nevada',
+      'ga': 'Georgia', 'georgia': 'Georgia',
+      'nc': 'North Carolina', 'north carolina': 'North Carolina',
+    };
+
+    const locationLower = location.toLowerCase();
+    for (const [abbr, fullName] of Object.entries(stateAbbreviations)) {
+      if (locationLower.includes(abbr)) {
+        return fullName;
+      }
+    }
+
+    return location;
   }
 
   /**
@@ -452,27 +567,24 @@ ALL TEXT MUST BE IN ENGLISH ONLY.
     };
 
     try {
-      // PERFORMANCE OPTIMIZATION: Run both operations in parallel instead of sequential
       const promises: Promise<any>[] = [];
 
-      // Prepare labor analysis promise
       if (includeLabor) {
-        console.log('🔧 Starting parallel labor analysis...');
+        console.log('🔧 Starting labor analysis with Claude IA...');
         promises.push(
           this.generateCompatibleLaborList(projectDescription, location, projectType)
             .then(laborItems => {
               results.labor = laborItems;
               results.totalLaborCost = laborItems.reduce((sum: number, item: any) => 
                 sum + (item.totalPrice || item.totalCost || 0), 0);
-              console.log('🔧 Labor analysis completed in parallel:', laborItems.length, 'items');
+              console.log('🔧 Labor analysis completed:', laborItems.length, 'items');
               return { type: 'labor', data: laborItems };
             })
         );
       }
 
-      // Prepare materials analysis promise
       if (includeMaterials) {
-        console.log('📦 Starting parallel materials analysis...');
+        console.log('📦 Starting materials analysis...');
         promises.push(
           import('./deepSearchService').then(({ deepSearchService }) =>
             deepSearchService.generateCompatibleMaterialsList(projectDescription, location)
@@ -480,37 +592,32 @@ ALL TEXT MUST BE IN ENGLISH ONLY.
                 results.materials = materialsResult;
                 results.totalMaterialsCost = materialsResult.reduce((sum: number, item: any) => 
                   sum + (item.total || 0), 0);
-                console.log('📦 Materials analysis completed in parallel:', materialsResult.length, 'items');
+                console.log('📦 Materials analysis completed:', materialsResult.length, 'items');
                 return { type: 'materials', data: materialsResult };
               })
           )
         );
       }
 
-      // Wait for all parallel operations to complete
       if (promises.length > 0) {
-        console.log('⚡ Waiting for', promises.length, 'parallel operations to complete...');
         await Promise.all(promises);
       }
 
       results.grandTotal = results.totalMaterialsCost + results.totalLaborCost;
 
-      console.log('✅ OPTIMIZED Combined estimate generated:', {
+      console.log('✅ Combined estimate generated:', {
         materialsCount: results.materials.length,
         laborCount: results.labor.length,
-        totalMaterialsCost: results.totalMaterialsCost,
-        totalLaborCost: results.totalLaborCost,
         grandTotal: results.grandTotal
       });
 
       return results;
 
     } catch (error) {
-      console.error('❌ Error generating optimized combined estimate:', error);
+      console.error('❌ Error generating combined estimate:', error);
       throw error;
     }
   }
 }
 
-// Crear instancia del servicio
 export const laborDeepSearchService = new LaborDeepSearchService();
