@@ -445,6 +445,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
 import { SystemAPIService } from '../mervin-v2/services/SystemAPIService';
 import { ClaudeService } from '../mervin-v2/ai/ClaudeService';
 import { deepSearchService } from '../services/deepSearchService';
+import { firebaseSearchService } from '../services/firebaseSearchService';
 import type { UserSnapshot } from '../mervin-v2/services/SnapshotService';
 
 // Instancias globales de servicios (se reinicializan por request con userId)
@@ -576,6 +577,7 @@ const executeCreateContract: ToolExecutor = async (args, userContext) => {
 
 /**
  * Executor para verify_property
+ * 🔥 ENHANCED: Garantiza guardado en historial para búsquedas de Mervin AI
  */
 const executeVerifyProperty: ToolExecutor = async (args, userContext) => {
   try {
@@ -586,13 +588,44 @@ const executeVerifyProperty: ToolExecutor = async (args, userContext) => {
       includeHistory: args.includeHistory || false
     });
 
+    // 🔥 CRITICAL: Guardar SIEMPRE en historial cuando Mervin hace búsqueda
+    // Esto garantiza que las búsquedas de Mervin aparezcan en el historial
+    // igual que las búsquedas manuales desde la página de Property Verifier
+    try {
+      console.log('💾 [MERVIN-PROPERTY] Guardando búsqueda en historial para usuario:', userContext.userId);
+      
+      // Extraer datos de la propiedad de la respuesta
+      const property = propertyData.property || propertyData;
+      
+      await firebaseSearchService.createPropertySearch({
+        userId: userContext.userId,
+        searchType: 'property',
+        address: args.address,
+        ownerName: property.owner || property.ownerName,
+        parcelNumber: property.parcelNumber,
+        assessedValue: property.assessedValue,
+        yearBuilt: property.yearBuilt,
+        squareFeet: property.sqft || property.squareFeet,
+        lotSize: property.lotSize ? parseFloat(String(property.lotSize)) : undefined,
+        propertyType: property.propertyType,
+        searchResults: property,
+        searchProvider: 'MERVIN_AI',
+        status: 'completed'
+      });
+      
+      console.log('✅ [MERVIN-PROPERTY] Búsqueda guardada exitosamente en historial');
+    } catch (historyError: any) {
+      // No fallar la operación principal si falla el guardado del historial
+      console.error('⚠️ [MERVIN-PROPERTY] Error guardando en historial (continuando):', historyError.message);
+    }
+
     return {
       address: args.address,
-      owner: propertyData.owner,
-      propertyType: propertyData.propertyType,
-      yearBuilt: propertyData.yearBuilt,
-      sqft: propertyData.sqft,
-      message: `✅ Property verified: ${propertyData.owner} owns property at ${args.address}`
+      owner: propertyData.owner || propertyData.property?.owner,
+      propertyType: propertyData.propertyType || propertyData.property?.propertyType,
+      yearBuilt: propertyData.yearBuilt || propertyData.property?.yearBuilt,
+      sqft: propertyData.sqft || propertyData.property?.sqft,
+      message: `✅ Property verified: ${propertyData.owner || propertyData.property?.owner} owns property at ${args.address}`
     };
   } catch (error: any) {
     throw new Error(`Failed to verify property: ${error.message}`);

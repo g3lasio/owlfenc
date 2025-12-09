@@ -120,19 +120,9 @@ export class SystemAPIService {
       
       const propertyData = response.data;
       
-      // 2. Registrar búsqueda en historial usando /api/search/property
-      try {
-        console.log('💾 [SYSTEM-API] Guardando búsqueda de propiedad en historial...');
-        await this.client.post('/api/search/property', {
-          address: params.address,
-          city: propertyData.property?.address?.city,
-          state: propertyData.property?.address?.state,
-          zipCode: propertyData.property?.address?.zip
-        });
-        console.log('✅ [SYSTEM-API] Búsqueda guardada en historial exitosamente');
-      } catch (historyError: any) {
-        console.warn('⚠️ [SYSTEM-API] No se pudo guardar en historial (continuando):', historyError.message);
-      }
+      // NOTA: El guardado en historial ahora se hace en tools-registry.ts executeVerifyProperty
+      // para garantizar que siempre se guarde cuando Mervin hace búsquedas
+      // Removido el código duplicado aquí para evitar entradas duplicadas en historial
       
       return propertyData as PropertyData;
 
