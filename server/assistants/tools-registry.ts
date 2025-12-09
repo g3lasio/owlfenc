@@ -364,6 +364,67 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         required: ['contractId']
       }
     }
+  },
+
+  // 15. RUN DEEPSEARCH - Analyze materials and labor for a project
+  {
+    type: 'function',
+    function: {
+      name: 'run_deepsearch',
+      description: 'Run DeepSearch AI to analyze a construction project and generate detailed materials list with pricing, labor costs, and recommendations. Use this when the user wants to know costs without creating a full estimate.',
+      parameters: {
+        type: 'object',
+        properties: {
+          projectDescription: {
+            type: 'string',
+            description: 'Detailed description of the project (e.g., "150 linear feet cedar fence 6ft tall with 2 gates")'
+          },
+          location: {
+            type: 'string',
+            description: 'Project location for regional pricing (city, state)'
+          }
+        },
+        required: ['projectDescription']
+      }
+    }
+  },
+
+  // 16. GET ESTIMATE SHARE URL - Generate public shareable URL
+  {
+    type: 'function',
+    function: {
+      name: 'get_estimate_share_url',
+      description: 'Generate a public shareable URL for an estimate that clients can view, approve, or request changes without needing to login.',
+      parameters: {
+        type: 'object',
+        properties: {
+          estimateId: {
+            type: 'string',
+            description: 'The ID of the estimate to share'
+          }
+        },
+        required: ['estimateId']
+      }
+    }
+  },
+
+  // 17. GENERATE ESTIMATE PDF - Create downloadable PDF
+  {
+    type: 'function',
+    function: {
+      name: 'generate_estimate_pdf',
+      description: 'Generate a professional PDF document for an estimate that can be downloaded or sent to clients.',
+      parameters: {
+        type: 'object',
+        properties: {
+          estimateId: {
+            type: 'string',
+            description: 'The ID of the estimate to generate PDF for'
+          }
+        },
+        required: ['estimateId']
+      }
+    }
   }
 ];
 
@@ -375,6 +436,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
 // Importar servicios reales
 import { SystemAPIService } from '../mervin-v2/services/SystemAPIService';
 import { ClaudeService } from '../mervin-v2/ai/ClaudeService';
+import { deepSearchService } from '../services/deepSearchService';
 import type { UserSnapshot } from '../mervin-v2/services/SnapshotService';
 
 // Instancias globales de servicios (se reinicializan por request con userId)
@@ -691,6 +753,82 @@ const executeDeleteContract: ToolExecutor = async (args, userContext) => {
 };
 
 /**
+ * Executor para run_deepsearch
+ */
+const executeRunDeepsearch: ToolExecutor = async (args, userContext) => {
+  try {
+    console.log('🔍 [TOOL] Ejecutando DeepSearch para:', args.projectDescription);
+    
+    const result = await deepSearchService.analyzeProject(
+      args.projectDescription,
+      args.location
+    );
+
+    return {
+      projectType: result.projectType,
+      projectScope: result.projectScope,
+      materials: result.materials.slice(0, 10), // Top 10 para no sobrecargar
+      totalMaterialsCost: result.totalMaterialsCost,
+      totalLaborCost: result.totalLaborCost,
+      grandTotal: result.grandTotal,
+      recommendations: result.recommendations,
+      warnings: result.warnings,
+      confidence: result.confidence,
+      message: `✅ DeepSearch completado: ${result.materials.length} materiales, Total: $${result.grandTotal.toFixed(2)}`
+    };
+  } catch (error: any) {
+    throw new Error(`Failed to run DeepSearch: ${error.message}`);
+  }
+};
+
+/**
+ * Executor para get_estimate_share_url
+ */
+const executeGetEstimateShareUrl: ToolExecutor = async (args, userContext) => {
+  try {
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? 'https://app.owlfenc.com' 
+      : 'http://localhost:5000';
+    
+    // La URL pública para que el cliente vea/apruebe el estimado
+    const shareUrl = `${baseUrl}/api/simple-estimate/approve?estimateId=${args.estimateId}`;
+    
+    return {
+      estimateId: args.estimateId,
+      shareUrl,
+      approveUrl: shareUrl,
+      adjustUrl: `${baseUrl}/api/simple-estimate/adjust?estimateId=${args.estimateId}`,
+      message: `✅ URL de estimado generada. El cliente puede ver, aprobar o solicitar cambios sin necesidad de iniciar sesión.`
+    };
+  } catch (error: any) {
+    throw new Error(`Failed to generate share URL: ${error.message}`);
+  }
+};
+
+/**
+ * Executor para generate_estimate_pdf
+ */
+const executeGenerateEstimatePdf: ToolExecutor = async (args, userContext) => {
+  try {
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? 'https://app.owlfenc.com' 
+      : 'http://localhost:5000';
+    
+    // URL para descargar el PDF generado por Puppeteer
+    const pdfUrl = `${baseUrl}/api/estimate-puppeteer-pdf?estimateId=${args.estimateId}`;
+    
+    return {
+      estimateId: args.estimateId,
+      pdfUrl,
+      downloadUrl: pdfUrl,
+      message: `✅ PDF del estimado disponible para descarga.`
+    };
+  } catch (error: any) {
+    throw new Error(`Failed to generate estimate PDF: ${error.message}`);
+  }
+};
+
+/**
  * Registry completo de herramientas con executors
  */
 export const TOOL_REGISTRY: ToolRegistry = {
@@ -763,6 +901,21 @@ export const TOOL_REGISTRY: ToolRegistry = {
     definition: TOOL_DEFINITIONS[13],
     executor: executeDeleteContract,
     requiresConfirmation: true
+  },
+  run_deepsearch: {
+    definition: TOOL_DEFINITIONS[14],
+    executor: executeRunDeepsearch,
+    requiresConfirmation: false
+  },
+  get_estimate_share_url: {
+    definition: TOOL_DEFINITIONS[15],
+    executor: executeGetEstimateShareUrl,
+    requiresConfirmation: false
+  },
+  generate_estimate_pdf: {
+    definition: TOOL_DEFINITIONS[16],
+    executor: executeGenerateEstimatePdf,
+    requiresConfirmation: false
   }
 };
 
