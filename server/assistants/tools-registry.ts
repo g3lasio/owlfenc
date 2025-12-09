@@ -12,12 +12,12 @@ import type { UserContext } from './types';
  * Definiciones de herramientas en formato OpenAI
  */
 export const TOOL_DEFINITIONS: ToolDefinition[] = [
-  // 1. CREATE ESTIMATE
+  // 1. CREATE ESTIMATE - Con DeepSearch integrado
   {
     type: 'function',
     function: {
       name: 'create_estimate',
-      description: 'Create a detailed construction estimate with materials, labor, and pricing. Can optionally send the estimate to the client via email.',
+      description: 'Create a detailed construction estimate with AI-powered DeepSearch that automatically calculates materials, labor, and pricing. Returns shareable URL and PDF.',
       parameters: {
         type: 'object',
         properties: {
@@ -27,26 +27,34 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
           },
           clientEmail: {
             type: 'string',
-            description: 'Email address of the client'
+            description: 'Email address of the client (optional)'
           },
           clientPhone: {
             type: 'string',
             description: 'Phone number of the client (optional)'
           },
+          clientAddress: {
+            type: 'string',
+            description: 'Address of the client or project location (optional)'
+          },
           projectType: {
             type: 'string',
             description: 'Type of construction project (e.g., "fence", "deck", "patio", "driveway")'
           },
-          dimensions: {
+          projectDescription: {
             type: 'string',
-            description: 'Project dimensions (e.g., "100 linear feet", "20x30 sq ft")'
+            description: 'Detailed description of the project including dimensions and materials (e.g., "150 linear feet cedar fence 6ft tall with 2 gates")'
+          },
+          location: {
+            type: 'string',
+            description: 'Project location for regional pricing (city, state)'
           },
           sendEmail: {
             type: 'boolean',
-            description: 'Whether to send the estimate to the client via email (default: true)'
+            description: 'Whether to send the estimate to the client via email (default: false)'
           }
         },
-        required: ['clientName', 'clientEmail', 'projectType', 'dimensions']
+        required: ['clientName', 'projectType', 'projectDescription']
       }
     }
   },
@@ -458,30 +466,67 @@ function createAuthenticatedSystemAPI(userContext: UserContext): SystemAPIServic
 }
 
 /**
- * Executor para create_estimate
+ * Executor para create_estimate - Usa endpoint optimizado con DeepSearch
  */
 const executeCreateEstimate: ToolExecutor = async (args, userContext) => {
   try {
-    const systemAPI = createAuthenticatedSystemAPI(userContext);
-
-    const estimate = await systemAPI.createEstimate({
-      clientName: args.clientName,
-      clientEmail: args.clientEmail,
-      clientPhone: args.clientPhone,
-      projectType: args.projectType,
-      dimensions: args.dimensions,
-      sendEmail: args.sendEmail !== false
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? 'https://app.owlfenc.com' 
+      : 'http://localhost:5000';
+    
+    // Llamar al nuevo endpoint optimizado de Mervin
+    const response = await fetch(`${baseUrl}/api/mervin/create-estimate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userContext.firebaseToken}`
+      },
+      body: JSON.stringify({
+        clientName: args.clientName,
+        clientEmail: args.clientEmail || null,
+        clientPhone: args.clientPhone || null,
+        clientAddress: args.clientAddress || null,
+        projectType: args.projectType,
+        projectDescription: args.projectDescription,
+        location: args.location || null,
+        sendEmail: args.sendEmail === true,
+        generatePdf: true,
+        generateShareUrl: true
+      })
     });
 
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `HTTP ${response.status}`);
+    }
+
+    const result = await response.json();
+
+    if (!result.success) {
+      throw new Error(result.error || 'Error desconocido');
+    }
+
+    // Devolver respuesta enriquecida para Mervin
     return {
-      estimateId: estimate.id,
-      total: estimate.total,
+      success: true,
+      estimateId: result.estimate.id,
+      estimateNumber: result.estimate.estimateNumber,
+      total: result.estimate.total,
+      subtotal: result.estimate.subtotal,
+      taxAmount: result.estimate.taxAmount,
       clientName: args.clientName,
       projectType: args.projectType,
-      emailSent: args.sendEmail !== false,
-      message: `✅ Estimate #${estimate.id} created successfully for ${args.clientName}. Total: $${estimate.total}`
+      itemsCount: result.estimate.totalItems,
+      deepSearchConfidence: result.deepSearch?.confidence,
+      shareUrl: result.urls?.shareUrl,
+      pdfUrl: result.urls?.pdfUrl,
+      editUrl: result.urls?.editUrl,
+      emailSent: result.email?.sent || false,
+      processingTimeMs: result.processingTimeMs,
+      message: result.message
     };
   } catch (error: any) {
+    console.error('❌ [TOOLS-REGISTRY] Error en create_estimate:', error);
     throw new Error(`Failed to create estimate: ${error.message}`);
   }
 };

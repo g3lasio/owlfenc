@@ -26,6 +26,7 @@ import adminContractsRoutes from "./routes/admin-contracts";
 import urlShortenerRoutes from "./routes/urlShortener";
 import mervinV2Routes from "./routes/mervin-v2";
 import assistantsRoutes from "./routes/assistants";
+import mervinEstimatesRoutes from "./routes/mervin-estimates";
 
 // 📊 Importar servicios de optimización Fase 4 ANTES de registrar rutas
 import { observabilityService } from './services/observabilityService';
@@ -650,6 +651,10 @@ console.log('🤖 [MERVIN-V2] Sistema Mervin V2 registrado en /api/mervin-v2');
 // 🤖 Registrar sistema Assistants API (OpenAI-powered)
 app.use('/api/assistant', assistantsRoutes);
 console.log('🤖 [ASSISTANTS] Sistema OpenAI Assistants API registrado en /api/assistant');
+
+// 🤖 Registrar sistema de estimados Mervin con DeepSearch integrado
+app.use('/api/mervin', mervinEstimatesRoutes);
+console.log('🤖 [MERVIN-ESTIMATES] Sistema de estimados Mervin AI registrado en /api/mervin');
 
 // Add logging middleware only for API routes
 app.use('/api', (req, res, next) => {
