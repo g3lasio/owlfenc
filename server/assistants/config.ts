@@ -6,6 +6,7 @@
  */
 
 import OpenAI from 'openai';
+import { TOOL_DEFINITIONS } from './tools-registry';
 
 if (!process.env.OPENAI_API_KEY) {
   throw new Error('OPENAI_API_KEY is required for Assistants API');
@@ -180,14 +181,20 @@ export async function getMervinAssistant(): Promise<string> {
     const existing = assistants.data.find(a => a.name === MERVIN_ASSISTANT_CONFIG.name);
 
     if (existing) {
-      console.log('🤖 [ASSISTANTS] Using existing assistant:', existing.id);
+      // 🔥 SIEMPRE sincronizar herramientas del assistant existente
+      // Esto asegura que las 14 tools de tools-registry.ts estén registradas
+      await openai.beta.assistants.update(existing.id, {
+        tools: TOOL_DEFINITIONS,
+        instructions: MERVIN_ASSISTANT_CONFIG.instructions,
+      });
+      console.log('🤖 [ASSISTANTS] Updated existing assistant with', TOOL_DEFINITIONS.length, 'tools:', existing.id);
       cachedAssistantId = existing.id;
       return existing.id;
     }
 
-    // Crear nuevo assistant (se hará después de definir tools)
-    console.log('🤖 [ASSISTANTS] No existing assistant found, will create on first use');
-    return '';
+    // Crear nuevo assistant con tools
+    console.log('🤖 [ASSISTANTS] No existing assistant found, creating new one with tools...');
+    return createMervinAssistant(TOOL_DEFINITIONS);
   } catch (error) {
     console.error('❌ [ASSISTANTS] Error getting assistant:', error);
     throw error;
