@@ -10,6 +10,7 @@ import { verifyFirebaseAuth } from '../middleware/firebase-auth';
 import { deepSearchService } from '../services/deepSearchService';
 import { userMappingService } from '../services/userMappingService';
 import { db as firebaseDb } from '../firebase-admin';
+import { productionUsageService } from '../services/productionUsageService';
 
 const router = Router();
 
@@ -73,6 +74,30 @@ router.post('/create-estimate', verifyFirebaseAuth, async (req: Request, res: Re
     );
 
     console.log(`🔐 [MERVIN-ESTIMATE] Usuario: ${userId}, Cliente: ${clientName}`);
+
+    // 🔒 CONTROL DE USO: Verificar límites de DeepSearch ANTES de ejecutar
+    try {
+      const usageCheck = await productionUsageService.canConsumeFeature(firebaseUid, 'deepsearch');
+      console.log(`📊 [MERVIN-ESTIMATE] DeepSearch usage: ${usageCheck.used}/${usageCheck.limit === null ? 'unlimited' : usageCheck.limit}`);
+      
+      if (!usageCheck.canConsume) {
+        return res.status(403).json({
+          success: false,
+          error: 'Has alcanzado tu límite mensual de DeepSearch',
+          code: 'DEEPSEARCH_LIMIT_EXCEEDED',
+          usage: {
+            used: usageCheck.used,
+            limit: usageCheck.limit,
+            remaining: 0
+          },
+          upgradeUrl: '/subscription',
+          message: `⚠️ Has usado ${usageCheck.used} de ${usageCheck.limit} análisis DeepSearch este mes. Actualiza tu plan para continuar.`
+        });
+      }
+    } catch (usageError) {
+      console.error('⚠️ [MERVIN-ESTIMATE] Error verificando uso:', usageError);
+      // Continuar de todos modos si falla la verificación (fail-open para no bloquear usuarios)
+    }
 
     // 1. EJECUTAR DEEPSEARCH
     console.log('🔍 [MERVIN-ESTIMATE] Ejecutando DeepSearch...');
@@ -172,6 +197,20 @@ router.post('/create-estimate', verifyFirebaseAuth, async (req: Request, res: Re
     await firebaseDb.collection('estimates').doc(estimateId).set(estimateData);
     console.log(`✅ [MERVIN-ESTIMATE] Estimado guardado en Firebase: ${estimateId}`);
 
+    // 🔒 CONTEO DE USO: Incrementar contador de DeepSearch después de éxito
+    try {
+      const consumeResult = await productionUsageService.consumeFeature(firebaseUid, 'deepsearch', {
+        estimateId,
+        clientName,
+        projectType,
+        source: 'mervin_ai'
+      });
+      console.log(`📊 [MERVIN-ESTIMATE] DeepSearch contado: ${consumeResult.used}/${consumeResult.limit === null ? 'unlimited' : consumeResult.limit} (Restantes: ${consumeResult.remaining})`);
+    } catch (countError) {
+      console.error('⚠️ [MERVIN-ESTIMATE] Error contando uso de DeepSearch:', countError);
+      // No fallar la creación si falla el conteo
+    }
+
     // 6. GENERAR URL COMPARTIBLE
     const baseUrl = process.env.NODE_ENV === 'production' 
       ? 'https://app.owlfenc.com' 
@@ -258,6 +297,11 @@ router.post('/create-estimate', verifyFirebaseAuth, async (req: Request, res: Re
 router.post('/quick-estimate', verifyFirebaseAuth, async (req: Request, res: Response) => {
   try {
     const { projectDescription, location } = req.body;
+    const firebaseUid = req.firebaseUser?.uid;
+
+    if (!firebaseUid) {
+      return res.status(401).json({ success: false, error: 'Usuario no autenticado' });
+    }
 
     if (!projectDescription) {
       return res.status(400).json({
@@ -266,9 +310,42 @@ router.post('/quick-estimate', verifyFirebaseAuth, async (req: Request, res: Res
       });
     }
 
+    // 🔒 CONTROL DE USO: Verificar límites de DeepSearch
+    try {
+      const usageCheck = await productionUsageService.canConsumeFeature(firebaseUid, 'deepsearch');
+      console.log(`📊 [MERVIN-QUICK] DeepSearch usage: ${usageCheck.used}/${usageCheck.limit === null ? 'unlimited' : usageCheck.limit}`);
+      
+      if (!usageCheck.canConsume) {
+        return res.status(403).json({
+          success: false,
+          error: 'Has alcanzado tu límite mensual de DeepSearch',
+          code: 'DEEPSEARCH_LIMIT_EXCEEDED',
+          usage: {
+            used: usageCheck.used,
+            limit: usageCheck.limit,
+            remaining: 0
+          },
+          upgradeUrl: '/subscription'
+        });
+      }
+    } catch (usageError) {
+      console.error('⚠️ [MERVIN-QUICK] Error verificando uso:', usageError);
+    }
+
     console.log('⚡ [MERVIN-QUICK] Calculando estimado rápido...');
 
     const result = await deepSearchService.analyzeProject(projectDescription, location);
+    
+    // 🔒 CONTEO DE USO: Incrementar contador después de éxito
+    try {
+      await productionUsageService.consumeFeature(firebaseUid, 'deepsearch', {
+        source: 'mervin_quick_estimate',
+        projectDescription: projectDescription.substring(0, 100)
+      });
+      console.log(`📊 [MERVIN-QUICK] DeepSearch contado exitosamente`);
+    } catch (countError) {
+      console.error('⚠️ [MERVIN-QUICK] Error contando uso:', countError);
+    }
 
     res.json({
       success: true,
@@ -322,7 +399,8 @@ router.get('/estimate/:id', verifyFirebaseAuth, async (req: Request, res: Respon
       });
     }
     
-    const estimate = { id: doc.id, ...doc.data() };
+    const estimateData = doc.data() as any;
+    const estimate = { id: doc.id, ...estimateData };
 
     const baseUrl = process.env.NODE_ENV === 'production' 
       ? 'https://app.owlfenc.com' 
@@ -332,7 +410,7 @@ router.get('/estimate/:id', verifyFirebaseAuth, async (req: Request, res: Respon
       success: true,
       estimate,
       urls: {
-        shareUrl: `${baseUrl}/api/simple-estimate/approve?estimateId=${estimate.estimateNumber}&clientEmail=${encodeURIComponent((estimate as any).clientEmail || '')}`,
+        shareUrl: `${baseUrl}/api/simple-estimate/approve?estimateId=${estimateData.estimateNumber || id}&clientEmail=${encodeURIComponent(estimateData.clientEmail || '')}`,
         pdfUrl: `${baseUrl}/api/estimate-puppeteer-pdf?estimateId=${id}`,
         editUrl: `${baseUrl}/estimates-wizard?edit=${id}`
       }
