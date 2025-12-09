@@ -120,18 +120,20 @@ router.post('/create-estimate', verifyFirebaseAuth, async (req: Request, res: Re
       }))
     ];
 
-    // 3. CALCULAR TOTALES
+    // 3. CALCULAR TOTALES (mantener precisión de centavos)
     const subtotal = deepSearchResult.grandTotal;
     const taxRate = 8.75;
-    const taxAmount = Math.round((subtotal * taxRate) / 100);
-    const total = subtotal + taxAmount;
+    const taxAmount = Math.round((subtotal * (taxRate / 100)) * 100) / 100; // Precisión de centavos
+    const total = Math.round((subtotal + taxAmount) * 100) / 100;
 
     // 4. CREAR ESTIMADO EN LA BASE DE DATOS
+    // IMPORTANTE: Usar estimateNumber como doc.id para que coincida con la URL pública
     const estimateNumber = `EST-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
     const validUntil = new Date();
     validUntil.setDate(validUntil.getDate() + 30);
 
-    const estimateId = `mervin-${Date.now()}`;
+    // Usar estimateNumber como ID del documento para consistencia con URLs públicas
+    const estimateId = estimateNumber;
     const estimateData = {
       id: estimateId,
       userId,
