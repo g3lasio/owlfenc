@@ -698,23 +698,47 @@ export default function SimpleContractGenerator() {
           const pdfBlob = await pdfResponse.blob();
           const fileName = `contract_${clientName.replace(/\s+/g, "_")}_signed.pdf`;
 
-          // ✅ CRITICAL FIX: DOWNLOAD ONLY - No Web Share API, no popups
-          // This button should ONLY download the file directly
-          const url = window.URL.createObjectURL(pdfBlob);
-          const a = document.createElement("a");
-          a.style.display = "none";
-          a.href = url;
-          a.download = fileName;
-          document.body.appendChild(a);
-          a.click();
+          // Detect iOS/iPadOS - programmatic downloads don't work on Safari mobile
+          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+            (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
           
-          // Clean up
-          setTimeout(() => {
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-          }, 100);
+          if (isIOS) {
+            // iOS/iPadOS: Open PDF in new tab where user can save/share from browser
+            console.log("📱 [PDF-DOWNLOAD] iOS detected, opening PDF in new tab...");
+            const url = window.URL.createObjectURL(pdfBlob);
+            const newWindow = window.open(url, '_blank');
+            
+            if (newWindow) {
+              toast({
+                title: "PDF Opened",
+                description: "Tap the share button (↑) to save or share the PDF",
+                variant: "default",
+              });
+            } else {
+              // Fallback: Try the download method anyway
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = fileName;
+              a.click();
+            }
+            
+            setTimeout(() => window.URL.revokeObjectURL(url), 60000);
+          } else {
+            // Desktop: Use standard download method
+            const url = window.URL.createObjectURL(pdfBlob);
+            const a = document.createElement("a");
+            a.style.display = "none";
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            
+            setTimeout(() => {
+              window.URL.revokeObjectURL(url);
+              document.body.removeChild(a);
+            }, 100);
+          }
 
-          // ✅ NO TOAST: Browser shows download notification
           console.log("✅ [PDF-DOWNLOAD] PDF downloaded successfully to device");
         } else {
           const errorData = await pdfResponse.json().catch(() => ({}));
