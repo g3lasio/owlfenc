@@ -1000,6 +1000,7 @@ class FirebaseContractsService {
           .collection(this.dualSignatureCollection)
           .where('userId', '==', userId)
           .get();
+        console.log(`🔍 [DUAL-DEBUG] Query by userId="${userId}": ${dualByUserId.size} results`);
         dualByUserId.forEach(processDualDoc);
         
         // Query by firebaseUserId (legacy)
@@ -1007,6 +1008,7 @@ class FirebaseContractsService {
           .collection(this.dualSignatureCollection)
           .where('firebaseUserId', '==', userId)
           .get();
+        console.log(`🔍 [DUAL-DEBUG] Query by firebaseUserId: ${dualByFirebaseUserId.size} results`);
         dualByFirebaseUserId.forEach(processDualDoc);
         
         // Query by contractorUid (legacy)
@@ -1014,6 +1016,7 @@ class FirebaseContractsService {
           .collection(this.dualSignatureCollection)
           .where('contractorUid', '==', userId)
           .get();
+        console.log(`🔍 [DUAL-DEBUG] Query by contractorUid: ${dualByContractorUid.size} results`);
         dualByContractorUid.forEach(processDualDoc);
         
         // Query by ownerUid (another legacy field)
@@ -1021,6 +1024,7 @@ class FirebaseContractsService {
           .collection(this.dualSignatureCollection)
           .where('ownerUid', '==', userId)
           .get();
+        console.log(`🔍 [DUAL-DEBUG] Query by ownerUid: ${dualByOwnerUid.size} results`);
         dualByOwnerUid.forEach(processDualDoc);
 
         console.log(`📋 [CONTRACT-HISTORY] Found ${dualCount} in dualSignatureContracts (with legacy field queries)`);
