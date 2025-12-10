@@ -860,22 +860,39 @@ class FirebaseContractsService {
         
         // Skip archived contracts
         if (contract.isArchived === true) {
+          // Log if this is a completed contract being skipped
+          if (contract.status === 'completed' || contract.status === 'both_signed') {
+            console.log(`⚠️ [DEDUP-SKIP] Completed contract ${contractId} skipped (isArchived=true) from ${source}`);
+          }
           return false;
         }
         
         // Check by contractId first (more reliable for dual-signature workflows)
         if (contractId && seenContractIds.has(contractId)) {
-          // Already have this contract by contractId - check priority
+          // Log if this is a completed contract being skipped
+          if (contract.status === 'completed' || contract.status === 'both_signed') {
+            console.log(`⚠️ [DEDUP-SKIP] Completed contract ${contractId} skipped (duplicate by contractId) from ${source}`);
+          }
           return false;
         }
         
         // Check by docId
         if (docId && seenIds.has(docId)) {
+          // Log if this is a completed contract being skipped
+          if (contract.status === 'completed' || contract.status === 'both_signed') {
+            console.log(`⚠️ [DEDUP-SKIP] Completed contract ${contractId} skipped (duplicate by docId) from ${source}`);
+          }
           return false;
         }
         
         if (docId) seenIds.add(docId);
         if (contractId) seenContractIds.add(contractId);
+        
+        // Log if this is a completed contract being added
+        if (contract.status === 'completed' || contract.status === 'both_signed') {
+          console.log(`✅ [DEDUP-ADD] Completed contract ${contractId} ADDED from ${source}`);
+        }
+        
         contracts.push(contract);
         return true;
       };
