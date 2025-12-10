@@ -1155,7 +1155,7 @@ class PremiumPdfService {
                 <div class="signature-box">
                     <div class="signature-title">CLIENT</div>
                     <div class="signature-line"></div>
-                    <p><strong>${data.client.name}</strong></p>
+                    <p><strong>${data.client?.name || "Client"}</strong></p>
                     <p>Print Name</p>
                     <br>
                     <p>Date: <span class="date-line"></span></p>
@@ -1396,17 +1396,17 @@ class PremiumPdfService {
     <div class="parties">
         <div class="party">
             <h3>CONTRACTOR</h3>
-            <p><strong>${data.contractor.name}</strong></p>
-            <p>${data.contractor.address}</p>
-            <p>Phone: ${data.contractor.phone}</p>
-            <p>Email: ${data.contractor.email}</p>
+            <p><strong>${data.contractor?.name || "Contractor"}</strong></p>
+            <p>${data.contractor?.address || "Address not provided"}</p>
+            <p>Phone: ${data.contractor?.phone || "To be provided"}</p>
+            <p>Email: ${data.contractor?.email || "To be provided"}</p>
         </div>
         <div class="party">
             <h3>CLIENT</h3>
-            <p><strong>${data.client.name}</strong></p>
-            <p>${data.client.address}</p>
-            <p>Phone: ${data.client.phone}</p>
-            <p>Email: ${data.client.email}</p>
+            <p><strong>${data.client?.name || "Client"}</strong></p>
+            <p>${data.client?.address || "Address not provided"}</p>
+            <p>Phone: ${data.client?.phone || "To be provided"}</p>
+            <p>Email: ${data.client?.email || "To be provided"}</p>
         </div>
     </div>
 
@@ -1432,7 +1432,7 @@ class PremiumPdfService {
     <div class="section">
         <h3>3. TIMELINE</h3>
         <div class="clause">
-            Work shall commence on ${data.timeline.startDate || "TBD"} and be completed by ${data.timeline.endDate || "TBD"}.
+            Work shall commence on ${data.timeline.startDate || "TBD"} and be completed by ${data.timeline.endDate || data.timeline.completionDate || "TBD"}.
             ${data.timeline.estimatedDuration ? `Estimated duration: ${data.timeline.estimatedDuration}` : ""}
         </div>
     </div>
@@ -1499,13 +1499,13 @@ class PremiumPdfService {
         <div class="signature-block">
             <div class="signature-line"></div>
             <p>Contractor Signature</p>
-            <p>${data.contractor.name}</p>
+            <p>${data.contractor?.name || "Contractor"}</p>
             <p>Date: _______________</p>
         </div>
         <div class="signature-block">
             <div class="signature-line"></div>
             <p>Client Signature</p>
-            <p>${data.client.name}</p>
+            <p>${data.client?.name || "Client"}</p>
             <p>Date: _______________</p>
         </div>
     </div>
