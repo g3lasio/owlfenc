@@ -8570,13 +8570,24 @@ ENHANCED LEGAL CLAUSE:`;
         console.log(`🛡️ [LEGAL-CLAUSES] Processing ${selectedClauseIds.length} selected clauses → ${protectionClauses.length} with content`);
 
         // Process contract data similar to PDF generation with jurisdiction
+        // CRITICAL FIX: Use same field names as PDF generation for consistency
         const contractData = {
           client: req.body.client,
           contractor: req.body.contractor,
-          project: req.body.project,
+          project: {
+            ...req.body.project,
+            // Ensure location is available with fallback
+            location: req.body.project?.location || req.body.client?.address || "the property address specified above",
+          },
           financials: req.body.financials,
-          timeline: req.body.timeline || {},
-          permits: req.body.permits || {},
+          timeline: {
+            ...req.body.timeline,
+            // Support both endDate and completionDate for timeline
+            endDate: req.body.timeline?.endDate || req.body.timeline?.completionDate,
+            completionDate: req.body.timeline?.completionDate || req.body.timeline?.endDate,
+          },
+          // FIXED: Use permitInfo (not permits) to match PDF service expectations
+          permitInfo: req.body.permitInfo || req.body.permits || {},
           warranties: req.body.warranties || {},
           protectionClauses: protectionClauses, // FIXED: Now properly passing clauses with content
           paymentTerms: req.body.paymentTerms || {},
@@ -8587,8 +8598,12 @@ ENHANCED LEGAL CLAUSE:`;
           hasClient: !!contractData.client?.name,
           hasContractor: !!contractData.contractor?.name,
           projectType: contractData.project?.type,
+          projectLocation: contractData.project?.location,
           totalAmount: contractData.financials?.total,
           protectionClausesCount: protectionClauses.length,
+          hasPermitInfo: !!contractData.permitInfo?.permitsRequired || !!contractData.permitInfo?.required,
+          hasWarranties: !!contractData.warranties?.workmanship || !!contractData.warranties?.materials,
+          hasTimeline: !!contractData.timeline?.startDate || !!contractData.timeline?.endDate,
         });
 
         // Generate professional HTML contract content
