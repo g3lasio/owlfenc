@@ -8623,6 +8623,7 @@ ENHANCED LEGAL CLAUSE:`;
 
         console.log("✅ [CONTRACT-HTML] HTML contract generated successfully");
         console.log("📏 [CONTRACT-HTML] HTML length:", contractHTML.length);
+        console.log("🔍 [CONTRACT-HTML] Protection clauses in output:", contractHTML.includes('INTELLIGENT CONTRACTOR PROTECTION CLAUSES'));
 
         // Return JSON response with HTML content
         res.json({
