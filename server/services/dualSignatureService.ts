@@ -114,37 +114,9 @@ export class DualSignatureService {
       const contractId = this.generateUniqueContractId();
       console.log("🆔 [FIREBASE-ONLY] Contract ID generated:", contractId);
 
-      // Generate signature URLs using Owl Fenc production domain
-      const getBaseUrl = () => {
-        // Debug logging
-        console.log(
-          "🔍 [URL-DEBUG] REPLIT_DEV_DOMAIN:",
-          process.env.REPLIT_DEV_DOMAIN
-        );
-        console.log("🔍 [URL-DEBUG] NODE_ENV:", process.env.NODE_ENV);
-
-        // Production environment - use app.owlfenc.com (verified domain with API)
-        if (process.env.NODE_ENV === "production") {
-          console.log("🦉 [URL-DEBUG] Using Owl Fenc production URL: app.owlfenc.com");
-          return "https://app.owlfenc.com";
-        }
-
-        // Development - use REPLIT_DEV_DOMAIN if available
-        const replitDomain = process.env.REPLIT_DEV_DOMAIN;
-        if (replitDomain) {
-          console.log(
-            "✅ [URL-DEBUG] Using Replit domain as-is:",
-            replitDomain
-          );
-          return replitDomain; // Use as-is, no protocol addition needed
-        }
-
-        // Local development fallback
-        console.log("⚠️ [URL-DEBUG] Using localhost fallback");
-        return "http://localhost:5000";
-      };
-
-      const baseUrl = getBaseUrl();
+      // Generate signature URLs using centralized URL builder
+      const { getBaseUrlWithoutRequest } = await import('../utils/url-builder');
+      const baseUrl = getBaseUrlWithoutRequest();
       console.log("🌍 [DUAL-SIGNATURE] Base URL for signature links:", baseUrl);
 
       const contractorSignUrl = `${baseUrl}/sign/${contractId}/contractor`;
@@ -1131,7 +1103,8 @@ export class DualSignatureService {
       );
 
       const contractData = contract.contractData as any;
-      const baseUrl = process.env.REPLIT_DEV_DOMAIN || "http://localhost:5000";
+      const { getBaseUrlWithoutRequest } = await import('../utils/url-builder');
+      const baseUrl = getBaseUrlWithoutRequest();
       const downloadUrl = hasPdf
         ? `${baseUrl}/api/dual-signature/download/${contract.contractId}`
         : null;
@@ -1484,8 +1457,8 @@ export class DualSignatureService {
 
       if (remainingParty === "contractor") {
         // Notify contractor that client has signed
-        const baseUrl =
-          process.env.REPLIT_DEV_DOMAIN || "http://localhost:5000";
+        const { getBaseUrlWithoutRequest } = await import('../utils/url-builder');
+        const baseUrl = getBaseUrlWithoutRequest();
         const contractorSignUrl = `${baseUrl}/sign/${contractId}/contractor`;
 
         await this.emailService.sendContractEmail({
@@ -1510,8 +1483,8 @@ export class DualSignatureService {
         );
       } else {
         // Notify client that contractor has signed
-        const baseUrl =
-          process.env.REPLIT_DEV_DOMAIN || "http://localhost:5000";
+        const { getBaseUrlWithoutRequest: getBaseUrl } = await import('../utils/url-builder');
+        const baseUrl = getBaseUrl();
         const clientSignUrl = `${baseUrl}/sign/${contractId}/client`;
 
         // CRITICAL FIX: Ensure clientEmail exists

@@ -205,3 +205,39 @@ export function logUrlGeneration(context: string, originalUrl: string, newUrl: s
   console.log(`   Antes: ${originalUrl}`);
   console.log(`   Después: ${newUrl}`);
 }
+
+/**
+ * Obtiene la URL base sin necesidad de request HTTP
+ * Para uso en servicios que no tienen acceso al request
+ * 
+ * Prioridad:
+ * 1. NODE_ENV === production → app.owlfenc.com
+ * 2. PUBLIC_SHARE_DOMAIN (variable de entorno)
+ * 3. REPLIT_DEV_DOMAIN (dominio de Replit)
+ * 4. app.owlfenc.com (fallback seguro para producción)
+ */
+export function getBaseUrlWithoutRequest(): string {
+  // Production siempre usa el dominio verificado
+  if (process.env.NODE_ENV === 'production') {
+    console.log('🦉 [URL-BUILDER] Production mode: using app.owlfenc.com');
+    return 'https://app.owlfenc.com';
+  }
+  
+  // Variable de entorno explícita
+  if (process.env.PUBLIC_SHARE_DOMAIN) {
+    const domain = process.env.PUBLIC_SHARE_DOMAIN;
+    console.log(`🌐 [URL-BUILDER] Using PUBLIC_SHARE_DOMAIN: ${domain}`);
+    return domain.startsWith('http') ? domain : `https://${domain}`;
+  }
+  
+  // Replit development domain
+  if (process.env.REPLIT_DEV_DOMAIN) {
+    const domain = process.env.REPLIT_DEV_DOMAIN;
+    console.log(`🔧 [URL-BUILDER] Using REPLIT_DEV_DOMAIN: ${domain}`);
+    return domain.startsWith('http') ? domain : `https://${domain}`;
+  }
+  
+  // Fallback seguro: producción
+  console.log('🦉 [URL-BUILDER] Fallback: using app.owlfenc.com');
+  return 'https://app.owlfenc.com';
+}
