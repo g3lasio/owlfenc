@@ -1,5 +1,15 @@
 import puppeteer, { Browser } from "puppeteer";
 
+// Production-aware logging helper
+const isProduction = process.env.NODE_ENV === 'production';
+const debugLog = (...args: any[]) => {
+  if (!isProduction) console.log(...args);
+};
+
+// Timeout constants for Puppeteer operations
+const PDF_GENERATION_TIMEOUT = 30000; // 30 seconds max for PDF generation
+const PAGE_LOAD_TIMEOUT = 15000; // 15 seconds max for page content loading
+
 // Browser Pool for fast PDF generation (avoids 5-7 second startup per request)
 class BrowserPool {
   private static instance: BrowserPool;
@@ -266,16 +276,17 @@ class PremiumPdfService {
         });
       }
 
-      // Set viewport for consistent rendering
+      // Set timeouts and viewport for consistent rendering
+      page.setDefaultTimeout(PAGE_LOAD_TIMEOUT);
       await page.setViewport({ width: 1200, height: 1600 });
 
-      // Set content with longer timeout and better error handling
+      // Set content with production-ready timeout
       await page.setContent(enhancedHTML, {
-        waitUntil: "networkidle0",
-        timeout: 60000,
+        waitUntil: "domcontentloaded", // Faster than networkidle0
+        timeout: PAGE_LOAD_TIMEOUT,
       });
 
-      // Wait for images to load
+      // Wait for signature images with short timeout
       await page.evaluate(() => {
         return Promise.all(
           Array.from(document.images, (img) => {
@@ -283,13 +294,13 @@ class PremiumPdfService {
             return new Promise((resolve) => {
               img.addEventListener("load", resolve);
               img.addEventListener("error", resolve);
-              setTimeout(resolve, 3000);
+              setTimeout(resolve, 2000); // 2 second max per image
             });
           }),
         );
       });
 
-      // Generate PDF with signatures
+      // Generate PDF with signatures and timeout
       const pdfBuffer = await page.pdf({
         format: "A4",
         printBackground: true,
@@ -299,6 +310,7 @@ class PremiumPdfService {
           bottom: "20mm",
           left: "15mm",
         },
+        timeout: PDF_GENERATION_TIMEOUT,
       });
 
       console.log(
@@ -787,7 +799,13 @@ class PremiumPdfService {
       });
 
       const page = await browser.newPage();
-      await page.setContent(htmlWithSignatures, { waitUntil: "networkidle0" });
+      
+      // Set timeouts for page operations
+      page.setDefaultTimeout(PAGE_LOAD_TIMEOUT);
+      await page.setContent(htmlWithSignatures, { 
+        waitUntil: "domcontentloaded", // Faster than networkidle0
+        timeout: PAGE_LOAD_TIMEOUT 
+      });
 
       const pdfBuffer = await page.pdf({
         format: "A4",
@@ -798,9 +816,10 @@ class PremiumPdfService {
           bottom: "1in",
           left: "1in",
         },
+        timeout: PDF_GENERATION_TIMEOUT,
       });
 
-      console.log(
+      debugLog(
         "✅ [PDF-SIGNATURES] PDF generated successfully with signatures, size:",
         pdfBuffer.length,
       );
@@ -1460,11 +1479,15 @@ class PremiumPdfService {
       const browserTime = Date.now() - startTime;
       console.log(`⚡ [BROWSER-POOL] Browser ready in ${browserTime}ms`);
 
-      // Create new page in existing browser context
+      // Create new page in existing browser context with timeout
       page = await browser.newPage();
+      page.setDefaultTimeout(PAGE_LOAD_TIMEOUT);
       
       // Use faster waitUntil option - domcontentloaded is sufficient for static HTML
-      await page.setContent(html, { waitUntil: "domcontentloaded" });
+      await page.setContent(html, { 
+        waitUntil: "domcontentloaded",
+        timeout: PAGE_LOAD_TIMEOUT 
+      });
 
       const pdfBuffer = Buffer.from(
         await page.pdf({
@@ -1483,6 +1506,7 @@ class PremiumPdfService {
             Page <span class="pageNumber"></span> of <span class="totalPages"></span>
           </div>
         `,
+          timeout: PDF_GENERATION_TIMEOUT,
         }),
       );
 
