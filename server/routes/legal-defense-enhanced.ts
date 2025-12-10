@@ -114,11 +114,22 @@ router.post('/extract-and-validate', verifyFirebaseAuth, upload.single('estimate
 
 /**
  * Endpoint: Análisis legal avanzado con compliance
+ * 🔐 SECURITY FIX: Agregado verifyFirebaseAuth - endpoint estaba expuesto sin autenticación
  */
-router.post('/advanced-analysis', async (req, res) => {
+router.post('/advanced-analysis', verifyFirebaseAuth, async (req, res) => {
   console.log('⚖️ LEGAL DEFENSE: Análisis legal avanzado iniciado...');
   
   try {
+    // 🔐 SECURITY: Verificar autenticación
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ 
+        success: false,
+        error: 'Usuario no autenticado' 
+      });
+    }
+    console.log(`🔐 [SECURITY] Advanced analysis for user: ${firebaseUid}`);
+    
     const { projectData, includeStateCompliance = true, industrySpecificAnalysis = true, veteranProtections = true } = req.body;
 
     if (!projectData) {

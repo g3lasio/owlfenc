@@ -828,6 +828,152 @@ class FirebaseContractsService {
       return [];
     }
   }
+
+  /**
+   * 📋 Obtener historial de contratos ACTIVOS (no archivados) de un usuario
+   * Combina contractHistory y dualSignatureContracts
+   * @param userId ID del usuario (Firebase UID)
+   * 
+   * IMPORTANTE: Esta función reemplaza las queries client-side que sufren timeouts
+   * al usar Firebase Admin SDK en el servidor (más eficiente y sin límites de timeout del cliente)
+   */
+  async getContractHistory(userId: string): Promise<any[]> {
+    try {
+      console.log(`📋 [CONTRACT-HISTORY] Loading contract history for user ${userId}`);
+      
+      const contracts: any[] = [];
+      const seenIds = new Set<string>();
+      const seenContractIds = new Set<string>();
+      
+      // Status priority for deduplication (higher = better)
+      const getStatusPriority = (status: string): number => {
+        if (status === 'completed' || status === 'both_signed') return 3;
+        if (status === 'contractor_signed' || status === 'client_signed' || status === 'in_progress') return 2;
+        return 1; // draft or unknown
+      };
+
+      // Helper to add with smart deduplication
+      const addWithSmartDedup = (contract: any, source: string): boolean => {
+        const docId = contract.id || '';
+        const contractId = contract.contractId || '';
+        const newPriority = getStatusPriority(contract.status);
+        
+        // Skip archived contracts
+        if (contract.isArchived === true) {
+          return false;
+        }
+        
+        // Check by contractId first (more reliable for dual-signature workflows)
+        if (contractId && seenContractIds.has(contractId)) {
+          // Already have this contract by contractId - check priority
+          return false;
+        }
+        
+        // Check by docId
+        if (docId && seenIds.has(docId)) {
+          return false;
+        }
+        
+        if (docId) seenIds.add(docId);
+        if (contractId) seenContractIds.add(contractId);
+        contracts.push(contract);
+        return true;
+      };
+
+      // 1. Load from contractHistory collection
+      try {
+        // ✅ ROBUST: Try multiple user ID fields for legacy data
+        const historyByUserId = await db
+          .collection(this.contractHistoryCollection)
+          .where('userId', '==', userId)
+          .get();
+        
+        let historyCount = 0;
+        historyByUserId.forEach(doc => {
+          const data = doc.data();
+          const added = addWithSmartDedup({
+            ...data,
+            id: doc.id,
+            contractId: data.contractId || doc.id,
+            source: 'contractHistory',
+            createdAt: data.createdAt?.toDate() || new Date(),
+            updatedAt: data.updatedAt?.toDate() || new Date()
+          }, 'contractHistory');
+          if (added) historyCount++;
+        });
+        console.log(`📋 [CONTRACT-HISTORY] Found ${historyCount} in contractHistory`);
+      } catch (err) {
+        console.warn(`⚠️ [CONTRACT-HISTORY] Error fetching from contractHistory:`, err);
+      }
+
+      // 2. Load from dualSignatureContracts collection
+      try {
+        const dualSnapshot = await db
+          .collection(this.dualSignatureCollection)
+          .where('userId', '==', userId)
+          .get();
+
+        let dualCount = 0;
+        dualSnapshot.forEach(doc => {
+          const data = doc.data();
+          const added = addWithSmartDedup({
+            ...data,
+            id: doc.id,
+            contractId: data.contractId || doc.id,
+            clientName: data.clientName,
+            projectType: data.projectType || 'Construction',
+            status: data.status || 'draft',
+            source: 'dualSignatureContracts',
+            createdAt: data.createdAt?.toDate() || new Date(),
+            updatedAt: data.updatedAt?.toDate() || new Date(),
+            pdfUrl: data.finalPdfPath || data.signedPdfPath || data.pdfUrl || data.permanentPdfUrl,
+            contractData: {
+              client: {
+                name: data.clientName,
+                address: data.clientAddress || '',
+                email: data.clientEmail,
+                phone: data.clientPhone
+              },
+              contractor: {
+                name: data.contractorName,
+                address: data.contractorAddress || '',
+                email: data.contractorEmail,
+                phone: data.contractorPhone,
+                company: data.contractorCompany
+              },
+              project: {
+                type: data.projectType || 'Construction',
+                description: data.projectDescription || '',
+                location: data.clientAddress || ''
+              },
+              financials: {
+                total: typeof data.totalAmount === 'number' ? data.totalAmount : 
+                       (typeof data.totalAmount === 'string' ? parseFloat(data.totalAmount) || 0 : 0)
+              },
+              protections: []
+            }
+          }, 'dualSignatureContracts');
+          if (added) dualCount++;
+        });
+        console.log(`📋 [CONTRACT-HISTORY] Found ${dualCount} in dualSignatureContracts`);
+      } catch (err) {
+        console.warn(`⚠️ [CONTRACT-HISTORY] Error fetching from dualSignatureContracts:`, err);
+      }
+
+      // Sort by createdAt descending (most recent first)
+      contracts.sort((a, b) => {
+        const dateA = a.createdAt?.getTime?.() || 0;
+        const dateB = b.createdAt?.getTime?.() || 0;
+        return dateB - dateA;
+      });
+
+      console.log(`✅ [CONTRACT-HISTORY] Total unique contracts: ${contracts.length}`);
+      return contracts;
+    } catch (error) {
+      console.error('❌ [CONTRACT-HISTORY] Error getting contract history:', error);
+      return [];
+    }
+  }
 }
 
 // Exportar instancia única

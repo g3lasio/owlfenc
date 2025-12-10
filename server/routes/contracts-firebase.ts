@@ -177,6 +177,31 @@ router.get('/stats/summary', requireAuth, async (req, res) => {
   }
 });
 
+// 📋 GET /api/contracts/history - Obtener historial de contratos ACTIVOS (MUST BE BEFORE /:id)
+// ✅ CRITICAL FIX: Esta ruta usa Firebase Admin SDK en el servidor para evitar timeouts del cliente
+router.get('/history', requireAuth, async (req, res) => {
+  try {
+    const userId = req.firebaseUser?.uid;
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+    
+    console.log(`📋 [CONTRACTS-API] Obteniendo historial de contratos para usuario ${userId}`);
+    
+    const contracts = await firebaseContractsService.getContractHistory(userId);
+    
+    console.log(`✅ [CONTRACTS-API] Encontrados ${contracts.length} contratos en historial`);
+    
+    res.json(contracts);
+  } catch (error) {
+    console.error('❌ [CONTRACTS-API] Error al obtener historial de contratos:', error);
+    res.status(500).json({ 
+      error: 'Error al obtener historial de contratos',
+      message: error instanceof Error ? error.message : 'Error desconocido'
+    });
+  }
+});
+
 // 📁 GET /api/contracts/archived - Obtener contratos archivados (MUST BE BEFORE /:id)
 router.get('/archived', requireAuth, async (req, res) => {
   try {

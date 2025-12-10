@@ -266,8 +266,8 @@ class ContractHistoryService {
 
   /**
    * Obtiene el historial de contratos para un usuario
-   * Combina contratos de contractHistory y dualSignatureContracts
-   * ✅ PRODUCTION-READY: Con timeout, validación y manejo robusto de errores
+   * ✅ CRITICAL FIX: Ahora usa el backend API con Firebase Admin SDK
+   * Esto elimina los timeouts que ocurrían con las queries del cliente
    */
   async getContractHistory(userId: string): Promise<ContractHistoryEntry[]> {
     // ✅ VALIDATION: Verificar userId antes de hacer queries
@@ -276,32 +276,102 @@ class ContractHistoryService {
       return [];
     }
 
-    console.log('📋 [CONTRACT-HISTORY] Loading contracts for user:', userId);
+    console.log('📋 [CONTRACT-HISTORY] Loading contracts via backend API for user:', userId);
 
+    try {
+      // ✅ CRITICAL FIX: Use backend API instead of client-side Firebase queries
+      // This avoids timeout issues with large collections
+      const { auth } = await import('@/lib/firebase');
+      
+      let authHeaders: HeadersInit = {
+        'Content-Type': 'application/json'
+      };
+      
+      if (auth.currentUser) {
+        try {
+          const token = await auth.currentUser.getIdToken();
+          authHeaders['Authorization'] = `Bearer ${token}`;
+        } catch (err) {
+          console.warn('⚠️ [CONTRACT-HISTORY] Could not get Firebase token:', err);
+        }
+      }
+
+      const response = await fetch('/api/contracts/history', {
+        method: 'GET',
+        headers: authHeaders,
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          console.warn('⚠️ [CONTRACT-HISTORY] Not authenticated, returning empty array');
+          return [];
+        }
+        throw new Error(`API returned ${response.status}`);
+      }
+
+      const contracts = await response.json();
+      
+      // Map to ContractHistoryEntry format
+      const mappedContracts: ContractHistoryEntry[] = contracts.map((contract: any) => ({
+        id: contract.id,
+        userId: contract.userId,
+        contractId: contract.contractId,
+        clientName: contract.clientName,
+        projectType: contract.projectType || 'Construction',
+        status: contract.status || 'draft',
+        createdAt: contract.createdAt ? new Date(contract.createdAt) : new Date(),
+        updatedAt: contract.updatedAt ? new Date(contract.updatedAt) : new Date(),
+        contractorSignUrl: contract.contractorSignUrl,
+        clientSignUrl: contract.clientSignUrl,
+        shareableLink: contract.shareableLink,
+        permanentUrl: contract.permanentUrl || contract.pdfUrl,
+        contractData: contract.contractData || {
+          client: { name: contract.clientName, address: '', email: '', phone: '' },
+          contractor: { name: '', address: '' },
+          project: { type: contract.projectType || 'Construction', description: '', location: '' },
+          financials: { total: 0 },
+          protections: []
+        },
+        pdfUrl: contract.pdfUrl
+      }));
+
+      console.log('✅ [CONTRACT-HISTORY] Loaded from backend API:', mappedContracts.length, 'contracts');
+      return mappedContracts;
+    } catch (error: any) {
+      console.error('❌ [CONTRACT-HISTORY] Backend API failed, falling back to client queries:', error.message);
+      
+      // Fallback to client-side queries if backend fails (but with shorter timeout)
+      return this.getContractHistoryFallback(userId);
+    }
+  }
+
+  /**
+   * Fallback: Client-side Firebase queries (used if backend API fails)
+   * ⚠️ WARNING: This can timeout with large collections
+   */
+  private async getContractHistoryFallback(userId: string): Promise<ContractHistoryEntry[]> {
+    console.log('📋 [CONTRACT-HISTORY-FALLBACK] Using client-side queries...');
+    
     let historyContracts: ContractHistoryEntry[] = [];
     let dualContracts: ContractHistoryEntry[] = [];
 
-    // ✅ RESILIENT: Load contractHistory with timeout and individual error handling
+    // Load contractHistory with short timeout (10s)
     try {
       const historyQuery = query(
         collection(db, this.collectionName),
         where('userId', '==', userId)
       );
 
-      // Add timeout to prevent hanging queries (30s for large collections)
       const historyPromise = getDocs(historyQuery);
       const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('contractHistory query timeout')), 30000)
+        setTimeout(() => reject(new Error('timeout')), 10000)
       );
 
       const historySnapshot = await Promise.race([historyPromise, timeoutPromise]);
       
-      // 📁 IMPORTANT: Filter out archived contracts
       historyContracts = historySnapshot.docs
-        .filter(doc => {
-          const data = doc.data();
-          return data.isArchived !== true;
-        })
+        .filter(doc => doc.data().isArchived !== true)
         .map(doc => {
           const data = doc.data();
           return {
@@ -312,116 +382,48 @@ class ContractHistoryService {
           } as ContractHistoryEntry;
         });
       
-      console.log('✅ [CONTRACT-HISTORY] Loaded from contractHistory:', historyContracts.length);
-    } catch (historyError: any) {
-      console.error('⚠️ [CONTRACT-HISTORY] Failed to load contractHistory:', historyError.message);
-      // Continue execution - don't fail completely if one source fails
+      console.log('✅ [FALLBACK] Loaded from contractHistory:', historyContracts.length);
+    } catch (err: any) {
+      console.warn('⚠️ [FALLBACK] contractHistory failed:', err.message);
     }
 
-    // ✅ RESILIENT: Load dualSignatureContracts with timeout and individual error handling
+    // Load dualSignatureContracts with short timeout (10s)
     try {
       const dualQuery = query(
         collection(db, this.dualSignatureCollection),
         where('userId', '==', userId)
       );
 
-      // Add timeout to prevent hanging queries (30s for large collections)
       const dualPromise = getDocs(dualQuery);
       const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('dualSignatureContracts query timeout')), 30000)
+        setTimeout(() => reject(new Error('timeout')), 10000)
       );
 
       const dualSnapshot = await Promise.race([dualPromise, timeoutPromise]);
       
-      // 📁 IMPORTANT: Filter out archived contracts
       dualContracts = dualSnapshot.docs
-        .filter(doc => {
-          const data = doc.data();
-          return data.isArchived !== true;
-        })
-        .map(doc => {
-          const data = doc.data();
-          return this.mapDualSignatureToHistory(doc.id, data);
-        });
+        .filter(doc => doc.data().isArchived !== true)
+        .map(doc => this.mapDualSignatureToHistory(doc.id, doc.data()));
 
-      console.log('✅ [CONTRACT-HISTORY] Loaded from dualSignatureContracts:', dualContracts.length);
-    } catch (dualError: any) {
-      console.error('⚠️ [CONTRACT-HISTORY] Failed to load dualSignatureContracts:', dualError.message);
-      // Continue execution - don't fail completely if one source fails
+      console.log('✅ [FALLBACK] Loaded from dualSignatureContracts:', dualContracts.length);
+    } catch (err: any) {
+      console.warn('⚠️ [FALLBACK] dualSignatureContracts failed:', err.message);
     }
 
-    // ✅ IMPROVED MERGE: Deduplicate using contractId, prefer most advanced status
-    // Status priority: completed/both_signed > in_progress/contractor_signed/client_signed > draft
-    const getStatusPriority = (status: string): number => {
-      if (status === 'completed' || status === 'both_signed') return 3;
-      if (status === 'contractor_signed' || status === 'client_signed' || status === 'in_progress') return 2;
-      return 1; // draft or unknown
-    };
-
-    // Use Map to track contracts by contractId, keeping the one with highest status priority
-    const contractsByContractId = new Map<string, ContractHistoryEntry>();
-    const contractsByDocId = new Map<string, ContractHistoryEntry>();
+    // Simple deduplication
+    const seenIds = new Set<string>();
+    const allContracts: ContractHistoryEntry[] = [];
     
-    // Helper to add with smart deduplication (prefer completed status)
-    const addWithSmartDedup = (contract: ContractHistoryEntry, source: string): boolean => {
-      const docId = contract.id || '';
-      const contractId = contract.contractId || '';
-      const newPriority = getStatusPriority(contract.status);
-      
-      // Check by contractId first (more reliable for dual-signature workflows)
-      if (contractId) {
-        const existing = contractsByContractId.get(contractId);
-        if (existing) {
-          const existingPriority = getStatusPriority(existing.status);
-          if (newPriority > existingPriority) {
-            console.log(`🔄 [CONTRACT-HISTORY] Replacing ${existing.status} with ${contract.status} for contractId=${contractId}`);
-            contractsByContractId.set(contractId, contract);
-            return true;
-          } else {
-            console.log(`🔄 [CONTRACT-HISTORY] Skipping ${contract.status} (existing ${existing.status} has higher priority) for contractId=${contractId}`);
-            return false;
-          }
-        }
-        contractsByContractId.set(contractId, contract);
+    [...dualContracts, ...historyContracts].forEach(contract => {
+      const key = contract.contractId || contract.id || '';
+      if (key && !seenIds.has(key)) {
+        seenIds.add(key);
+        allContracts.push(contract);
       }
-      
-      // Also track by docId for contracts without contractId
-      if (docId && !contractId) {
-        if (contractsByDocId.has(docId)) {
-          console.log(`🔄 [CONTRACT-HISTORY] Skipping duplicate docId=${docId}`);
-          return false;
-        }
-        contractsByDocId.set(docId, contract);
-      }
-      
-      return true;
-    };
-    
-    // Add dualSignature contracts FIRST (they have the most up-to-date status)
-    let dualAdded = 0;
-    for (const dualContract of dualContracts) {
-      if (addWithSmartDedup(dualContract, 'dual')) dualAdded++;
-    }
-    
-    // Add history contracts (will be skipped if dualSignature has same contractId with better status)
-    let historyAdded = 0;
-    for (const contract of historyContracts) {
-      if (addWithSmartDedup(contract, 'history')) historyAdded++;
-    }
-    
-    // Combine both maps into final array
-    const allContracts: ContractHistoryEntry[] = [
-      ...Array.from(contractsByContractId.values()),
-      ...Array.from(contractsByDocId.values())
-    ];
+    });
 
-    // Ordenar por fecha de creación (más reciente primero)
     allContracts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-
-    console.log('✅ [CONTRACT-HISTORY] Total unique:', allContracts.length, 'contracts');
-    console.log('📊 [CONTRACT-HISTORY] Added - History:', historyAdded, 'Dual:', dualAdded);
-    console.log('📊 [CONTRACT-HISTORY] Duplicates filtered:', (historyContracts.length + dualContracts.length) - allContracts.length);
-    
+    console.log('✅ [FALLBACK] Total unique:', allContracts.length, 'contracts');
     return allContracts;
   }
 
