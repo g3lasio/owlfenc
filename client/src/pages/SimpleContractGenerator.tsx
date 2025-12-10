@@ -652,7 +652,7 @@ export default function SimpleContractGenerator() {
     [toast],
   );
 
-  // Download signed PDF - ALWAYS generate fresh PDF to ensure signatures are included
+  // Download signed PDF - Uses pre-generated PDF from Firebase Storage
   const downloadSignedPdf = useCallback(
     async (contractId: string, clientName: string) => {
       try {
@@ -669,15 +669,15 @@ export default function SimpleContractGenerator() {
 
         // Show immediate feedback
         toast({
-          title: "Preparing PDF",
-          description: "Generating your signed contract PDF with all signatures...",
+          title: "Downloading PDF",
+          description: "Fetching your signed contract...",
           variant: "default",
         });
 
-        // STEP 1: Get the signed HTML content with embedded signatures
-        console.log("📄 [PDF-DOWNLOAD] Fetching signed HTML content...");
-        const htmlResponse = await fetch(
-          `/api/dual-signature/download-html/${contractId}`,
+        // ✅ OPTIMIZED: Use the pre-generated PDF from Firebase Storage
+        console.log("📄 [PDF-DOWNLOAD] Fetching pre-generated PDF...");
+        const pdfResponse = await fetch(
+          `/api/dual-signature/download/${contractId}`,
           {
             headers: {
               "x-user-id": currentUser.uid,
@@ -685,37 +685,16 @@ export default function SimpleContractGenerator() {
           },
         );
 
-        if (!htmlResponse.ok) {
-          const errorData = await htmlResponse.json().catch(() => ({}));
-          console.error("❌ [PDF-DOWNLOAD] Failed to fetch HTML:", errorData);
+        if (!pdfResponse.ok) {
+          const errorData = await pdfResponse.json().catch(() => ({}));
+          console.error("❌ [PDF-DOWNLOAD] Failed to fetch PDF:", errorData);
           throw new Error(
-            errorData.message || "Failed to load signed contract. The contract may not be fully signed yet.",
+            errorData.message || "Failed to download signed contract. The contract may not be fully signed yet.",
           );
         }
 
-        const signedHtmlContent = await htmlResponse.text();
-        console.log("✅ [PDF-DOWNLOAD] HTML content retrieved, length:", signedHtmlContent.length);
-
-        // STEP 2: Generate PDF from the signed HTML content with signatures embedded
-        console.log("🔄 [PDF-DOWNLOAD] Generating PDF from HTML...");
-        const pdfResponse = await fetch(
-          "/api/dual-signature/generate-pdf-from-html",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              contractId,
-              htmlContent: signedHtmlContent,
-              clientName,
-            }),
-          },
-        );
-
         if (pdfResponse.ok) {
-          console.log("✅ [PDF-DOWNLOAD] PDF generated successfully");
-          // Get the PDF blob
+          console.log("✅ [PDF-DOWNLOAD] PDF downloaded successfully");
           const pdfBlob = await pdfResponse.blob();
           const fileName = `contract_${clientName.replace(/\s+/g, "_")}_signed.pdf`;
 
@@ -944,7 +923,7 @@ export default function SimpleContractGenerator() {
     [toast],
   );
 
-  // View contract in new window/tab - directly show the pre-generated PDF
+  // View contract in new window/tab - Uses pre-generated PDF from Firebase Storage
   const viewContract = useCallback(
     async (contractId: string, clientName: string) => {
       try {
@@ -960,168 +939,32 @@ export default function SimpleContractGenerator() {
           return;
         }
 
-        // Find the contract to get its PDF URL (after auth check)
-        const contract = contractsStore.completed.find((c: any) => c.contractId === contractId);
+        // ✅ OPTIMIZED: Open the PDF directly via the download endpoint
+        // This endpoint serves the pre-generated PDF from Firebase Storage
+        const pdfUrl = `/api/dual-signature/download/${contractId}`;
+        console.log("⚡ [VIEW] Opening PDF via optimized endpoint:", pdfUrl);
         
-        // ✅ FAST PATH: If we have a cached pdfUrl, verify ownership first
-        // window.open() doesn't have CORS restrictions, so we can use signed URLs directly
-        if (contract?.pdfUrl) {
-          // ✅ OWNERSHIP CHECK: Ensure contract belongs to current user
-          const contractUserId = contract.userId || (contract as any).firebaseUserId || (contract as any).contractorUid || (contract as any).ownerUid;
-          if (contractUserId && contractUserId === currentUser.uid) {
-            console.log("⚡ [VIEW] Using cached PDF URL (ownership verified):", contract.pdfUrl);
-            window.open(contract.pdfUrl, '_blank');
-            return;
-          } else {
-            console.log("⚠️ [VIEW] Ownership mismatch or missing, using authenticated path");
-          }
-        }
-
-        // ✅ POPUP BLOCKER FIX: Open window IMMEDIATELY before ANY async operations
-        // This maintains direct connection to user click event
-        const newWindow = window.open(
-          "",
-          "_blank",
-          "width=900,height=1100,scrollbars=yes,resizable=yes",
-        );
-
-        if (!newWindow) {
+        // Open in new tab - the download endpoint serves inline PDF
+        window.open(pdfUrl, '_blank');
+        
         toast({
-          title: "Popup Blocked",
-          description: "Please allow popups for this site to view contracts",
-          variant: "destructive",
+          title: "Opening Contract",
+          description: `Opening signed contract PDF for ${clientName}`,
         });
-        return;
-      }
-
-      // Show loading message in the new window
-      newWindow.document.write(`
-        <html>
-          <head>
-            <title>Loading Contract PDF...</title>
-            <style>
-              body {
-                font-family: system-ui, -apple-system, sans-serif;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                height: 100vh;
-                margin: 0;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-              }
-              .loader {
-                text-align: center;
-              }
-              .spinner {
-                border: 4px solid rgba(255,255,255,0.3);
-                border-radius: 50%;
-                border-top: 4px solid white;
-                width: 50px;
-                height: 50px;
-                animation: spin 1s linear infinite;
-                margin: 0 auto 20px;
-              }
-              @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-              }
-            </style>
-          </head>
-          <body>
-            <div class="loader">
-              <div class="spinner"></div>
-              <h2>Loading Contract PDF...</h2>
-              <p>Generating PDF from signed contract...</p>
-              <p style="opacity: 0.8; font-size: 14px;">Please wait, this may take a moment</p>
-            </div>
-          </body>
-        </html>
-      `);
-
-      try {
-        console.log("👀 Opening signed contract PDF view for:", contractId);
-
-        // Get the signed HTML content first with authentication headers
-        const htmlResponse = await fetch(
-          `/api/dual-signature/download-html/${contractId}`,
-          {
-            headers: {
-              "x-user-id": currentUser.uid,
-            },
-          },
-        );
-
-        if (!htmlResponse.ok) {
-          const errorData = await htmlResponse.json();
-          throw new Error(
-            errorData.message || "Failed to load signed contract",
-          );
-        }
-
-        const signedHtmlContent = await htmlResponse.text();
-
-        // Generate PDF from the EXACT signed HTML content
-        const pdfResponse = await fetch(
-          "/api/dual-signature/generate-pdf-from-html",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              contractId,
-              htmlContent: signedHtmlContent,
-              clientName,
-            }),
-          },
-        );
-
-        if (pdfResponse.ok) {
-          // Get the PDF blob and replace window content
-          const pdfBlob = await pdfResponse.blob();
-          const pdfUrl = window.URL.createObjectURL(pdfBlob);
-
-          // Replace the loading page with the PDF
-          newWindow.location.href = pdfUrl;
-
-          toast({
-            title: "PDF Opened",
-            description: `Viewing signed contract PDF for ${clientName}`,
-          });
-
-          // Clean up URL after window is closed or 30 seconds
-          setTimeout(() => {
-            window.URL.revokeObjectURL(pdfUrl);
-          }, 30000);
-        } else {
-          const errorData = await pdfResponse.json();
-          throw new Error(
-            errorData.message || "Failed to generate PDF from signed contract",
-          );
-        }
       } catch (error: any) {
-        console.error("❌ Error viewing contract:", error);
+        console.error("❌ Error in viewContract:", error);
         toast({
           title: "Error",
           description: error.message || "Failed to view contract",
           variant: "destructive",
         });
       }
-    } catch (error: any) {
-      console.error("❌ Error in viewContract:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to view contract",
-        variant: "destructive",
-      });
-    }
     },
-    [toast, currentUser, contractsStore.completed],
+    [toast, currentUser],
   );
 
   // Share contract PDF file using native share API or download
-  // ✅ SECURITY: Always use authenticated path - GCS URLs have CORS issues
+  // ✅ OPTIMIZED: Uses pre-generated PDF from Firebase Storage
   const shareContract = useCallback(
     async (contractId: string, clientName: string) => {
       try {
@@ -1137,61 +980,31 @@ export default function SimpleContractGenerator() {
         }
 
         const fileName = `${clientName.replace(/\s+/g, '_')}_Contract_Signed.pdf`;
-        let pdfBlob: Blob;
 
-        // ✅ SECURITY: Always use authenticated path for consistent security validation
-        // GCS signed URLs have CORS issues when fetched via JS, so we always generate fresh PDFs
-        // This ensures proper backend authentication and ownership validation
-        {
-          // Fallback: Generate PDF from HTML (slower path)
-          console.log("🔄 [SHARE] No cached PDF, generating from HTML...");
-          toast({
-            title: "Preparing PDF",
-            description: "Generating signed PDF for sharing...",
-          });
+        toast({
+          title: "Preparing Share",
+          description: "Loading signed contract...",
+        });
 
-          const htmlResponse = await fetch(
-            `/api/dual-signature/download-html/${contractId}`,
-            {
-              headers: {
-                "x-user-id": currentUser.uid,
-              },
+        // ✅ OPTIMIZED: Use pre-generated PDF from Firebase Storage
+        console.log("⚡ [SHARE] Fetching pre-generated PDF...");
+        const pdfResponse = await fetch(
+          `/api/dual-signature/download/${contractId}`,
+          {
+            headers: {
+              "x-user-id": currentUser.uid,
             },
+          },
+        );
+
+        if (!pdfResponse.ok) {
+          const errorData = await pdfResponse.json().catch(() => ({}));
+          throw new Error(
+            errorData.message || "Failed to load signed contract",
           );
-
-          if (!htmlResponse.ok) {
-            const errorData = await htmlResponse.json();
-            throw new Error(
-              errorData.message || "Failed to load signed contract",
-            );
-          }
-
-          const signedHtmlContent = await htmlResponse.text();
-
-          const pdfResponse = await fetch(
-            "/api/dual-signature/generate-pdf-from-html",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                contractId,
-                htmlContent: signedHtmlContent,
-                clientName,
-              }),
-            },
-          );
-
-          if (!pdfResponse.ok) {
-            const errorData = await pdfResponse.json();
-            throw new Error(
-              errorData.message || "Failed to generate PDF from signed contract",
-            );
-          }
-
-          pdfBlob = await pdfResponse.blob();
         }
+
+        const pdfBlob = await pdfResponse.blob();
 
         // Try native Web Share API with file sharing
         if (navigator.share && navigator.canShare) {
