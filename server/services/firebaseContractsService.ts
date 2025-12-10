@@ -514,8 +514,54 @@ class FirebaseContractsService {
 
       for (const collectionName of collections) {
         try {
-          const docRef = db.collection(collectionName).doc(contractId);
-          const docSnap = await docRef.get();
+          // First try by document ID
+          let docRef = db.collection(collectionName).doc(contractId);
+          let docSnap = await docRef.get();
+
+          // ✅ FALLBACK: If not found by document ID, search by contractId field with multiple user ID fields
+          if (!docSnap.exists) {
+            console.log(`📁 [ARCHIVE] Not found by doc ID in ${collectionName}, searching by contractId field...`);
+            
+            // Try with userId first
+            let querySnap = await db.collection(collectionName)
+              .where('contractId', '==', contractId)
+              .where('userId', '==', userId)
+              .limit(1)
+              .get();
+            
+            // Fallback to firebaseUserId if userId didn't match
+            if (querySnap.empty) {
+              querySnap = await db.collection(collectionName)
+                .where('contractId', '==', contractId)
+                .where('firebaseUserId', '==', userId)
+                .limit(1)
+                .get();
+            }
+            
+            // Fallback to contractorUid for legacy dual-signature contracts
+            if (querySnap.empty) {
+              querySnap = await db.collection(collectionName)
+                .where('contractId', '==', contractId)
+                .where('contractorUid', '==', userId)
+                .limit(1)
+                .get();
+            }
+            
+            // Fallback to ownerUid for other legacy contracts
+            if (querySnap.empty) {
+              querySnap = await db.collection(collectionName)
+                .where('contractId', '==', contractId)
+                .where('ownerUid', '==', userId)
+                .limit(1)
+                .get();
+            }
+            
+            if (!querySnap.empty) {
+              docRef = querySnap.docs[0].ref;
+              docSnap = querySnap.docs[0];
+              console.log(`📁 [ARCHIVE] Found by contractId field in ${collectionName}: ${docRef.id}`);
+            }
+          }
 
           if (docSnap.exists) {
             const data = docSnap.data();
@@ -583,8 +629,54 @@ class FirebaseContractsService {
 
       for (const collectionName of collections) {
         try {
-          const docRef = db.collection(collectionName).doc(contractId);
-          const docSnap = await docRef.get();
+          // First try by document ID
+          let docRef = db.collection(collectionName).doc(contractId);
+          let docSnap = await docRef.get();
+
+          // ✅ FALLBACK: If not found by document ID, search by contractId field with multiple user ID fields
+          if (!docSnap.exists) {
+            console.log(`📂 [UNARCHIVE] Not found by doc ID in ${collectionName}, searching by contractId field...`);
+            
+            // Try with userId first
+            let querySnap = await db.collection(collectionName)
+              .where('contractId', '==', contractId)
+              .where('userId', '==', userId)
+              .limit(1)
+              .get();
+            
+            // Fallback to firebaseUserId if userId didn't match
+            if (querySnap.empty) {
+              querySnap = await db.collection(collectionName)
+                .where('contractId', '==', contractId)
+                .where('firebaseUserId', '==', userId)
+                .limit(1)
+                .get();
+            }
+            
+            // Fallback to contractorUid for legacy dual-signature contracts
+            if (querySnap.empty) {
+              querySnap = await db.collection(collectionName)
+                .where('contractId', '==', contractId)
+                .where('contractorUid', '==', userId)
+                .limit(1)
+                .get();
+            }
+            
+            // Fallback to ownerUid for other legacy contracts
+            if (querySnap.empty) {
+              querySnap = await db.collection(collectionName)
+                .where('contractId', '==', contractId)
+                .where('ownerUid', '==', userId)
+                .limit(1)
+                .get();
+            }
+            
+            if (!querySnap.empty) {
+              docRef = querySnap.docs[0].ref;
+              docSnap = querySnap.docs[0];
+              console.log(`📂 [UNARCHIVE] Found by contractId field in ${collectionName}: ${docRef.id}`);
+            }
+          }
 
           if (docSnap.exists) {
             const data = docSnap.data();

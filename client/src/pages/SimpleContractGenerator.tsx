@@ -945,14 +945,31 @@ export default function SimpleContractGenerator() {
       try {
         console.log("👁️ Viewing signed contract PDF for:", contractId);
 
-        // Find the contract to get its PDF URL
+        // ✅ AUTH CHECK FIRST: Must be authenticated before any operations
+        if (!currentUser) {
+          toast({
+            title: "Authentication Required",
+            description: "Please log in to view contracts",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Find the contract to get its PDF URL (after auth check)
         const contract = contractsStore.completed.find((c: any) => c.contractId === contractId);
         
+        // ✅ FAST PATH: If we have a cached pdfUrl, verify ownership first
+        // window.open() doesn't have CORS restrictions, so we can use signed URLs directly
         if (contract?.pdfUrl) {
-          // Open the existing PDF in a new tab
-          // ✅ NO TOAST: Browser shows new tab opening, no notification needed
-          window.open(contract.pdfUrl, '_blank');
-          return;
+          // ✅ OWNERSHIP CHECK: Ensure contract belongs to current user
+          const contractUserId = contract.userId || (contract as any).firebaseUserId || (contract as any).contractorUid || (contract as any).ownerUid;
+          if (contractUserId && contractUserId === currentUser.uid) {
+            console.log("⚡ [VIEW] Using cached PDF URL (ownership verified):", contract.pdfUrl);
+            window.open(contract.pdfUrl, '_blank');
+            return;
+          } else {
+            console.log("⚠️ [VIEW] Ownership mismatch or missing, using authenticated path");
+          }
         }
 
         // ✅ POPUP BLOCKER FIX: Open window IMMEDIATELY before ANY async operations
@@ -1019,16 +1036,6 @@ export default function SimpleContractGenerator() {
 
       try {
         console.log("👀 Opening signed contract PDF view for:", contractId);
-
-        if (!currentUser) {
-          newWindow.close();
-          toast({
-            title: "Authentication Required",
-            description: "Please log in to view contracts",
-            variant: "destructive",
-          });
-          return;
-        }
 
         // Get the signed HTML content first with authentication headers
         const htmlResponse = await fetch(
@@ -1105,10 +1112,11 @@ export default function SimpleContractGenerator() {
       });
     }
     },
-    [ toast, currentUser],
+    [toast, currentUser, contractsStore.completed],
   );
 
   // Share contract PDF file using native share API or download
+  // ✅ SECURITY: Always use authenticated path - GCS URLs have CORS issues
   const shareContract = useCallback(
     async (contractId: string, clientName: string) => {
       try {
@@ -1123,55 +1131,62 @@ export default function SimpleContractGenerator() {
           return;
         }
 
-        toast({
-          title: "Preparing PDF",
-          description: "Preparing signed PDF for sharing...",
-        });
-
-        // CRITICAL FIX: Generate PDF from HTML (same as download process)
-        const htmlResponse = await fetch(
-          `/api/dual-signature/download-html/${contractId}`,
-          {
-            headers: {
-              "x-user-id": currentUser.uid,
-            },
-          },
-        );
-
-        if (!htmlResponse.ok) {
-          const errorData = await htmlResponse.json();
-          throw new Error(
-            errorData.message || "Failed to load signed contract",
-          );
-        }
-
-        const signedHtmlContent = await htmlResponse.text();
-
-        // Generate PDF from the signed HTML content
-        const pdfResponse = await fetch(
-          "/api/dual-signature/generate-pdf-from-html",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              contractId,
-              htmlContent: signedHtmlContent,
-              clientName,
-            }),
-          },
-        );
-
-        if (!pdfResponse.ok) {
-          const errorData = await pdfResponse.json();
-          throw new Error(
-            errorData.message || "Failed to generate PDF from signed contract",
-          );
-        }
-
-        const pdfBlob = await pdfResponse.blob();
         const fileName = `${clientName.replace(/\s+/g, '_')}_Contract_Signed.pdf`;
+        let pdfBlob: Blob;
+
+        // ✅ SECURITY: Always use authenticated path for consistent security validation
+        // GCS signed URLs have CORS issues when fetched via JS, so we always generate fresh PDFs
+        // This ensures proper backend authentication and ownership validation
+        {
+          // Fallback: Generate PDF from HTML (slower path)
+          console.log("🔄 [SHARE] No cached PDF, generating from HTML...");
+          toast({
+            title: "Preparing PDF",
+            description: "Generating signed PDF for sharing...",
+          });
+
+          const htmlResponse = await fetch(
+            `/api/dual-signature/download-html/${contractId}`,
+            {
+              headers: {
+                "x-user-id": currentUser.uid,
+              },
+            },
+          );
+
+          if (!htmlResponse.ok) {
+            const errorData = await htmlResponse.json();
+            throw new Error(
+              errorData.message || "Failed to load signed contract",
+            );
+          }
+
+          const signedHtmlContent = await htmlResponse.text();
+
+          const pdfResponse = await fetch(
+            "/api/dual-signature/generate-pdf-from-html",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                contractId,
+                htmlContent: signedHtmlContent,
+                clientName,
+              }),
+            },
+          );
+
+          if (!pdfResponse.ok) {
+            const errorData = await pdfResponse.json();
+            throw new Error(
+              errorData.message || "Failed to generate PDF from signed contract",
+            );
+          }
+
+          pdfBlob = await pdfResponse.blob();
+        }
 
         // Try native Web Share API with file sharing
         if (navigator.share && navigator.canShare) {
@@ -1185,10 +1200,8 @@ export default function SimpleContractGenerator() {
                 title: `Signed Contract - ${clientName}`,
                 text: `Signed contract for ${clientName}`,
               });
-              // ✅ NO TOAST: Native share UI provides feedback
               return;
             } catch (shareError: any) {
-              // User cancelled or share failed
               if (shareError.name !== 'AbortError') {
                 console.warn("Native share failed:", shareError);
               }
@@ -1197,7 +1210,6 @@ export default function SimpleContractGenerator() {
         }
 
         // Fallback: Download the PDF
-        // ✅ NO TOAST: Browser shows download notification
         const url = window.URL.createObjectURL(pdfBlob);
         const link = document.createElement('a');
         link.href = url;
