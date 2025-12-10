@@ -727,33 +727,57 @@ export class DualSignatureService {
         }
       }
 
-      // FALLBACK 3: Regenerate PDF from stored HTML content
-      if (contract.signedContractHtml || contract.contractHtml) {
+      // FALLBACK 3: Regenerate signed PDF with signatures (same as completion flow)
+      if (contract.contractHtml && contract.contractorSigned && contract.clientSigned) {
         try {
-          console.log("🔄 [DUAL-SIGNATURE] Regenerating PDF from stored HTML (fallback 3)...");
+          console.log("🔄 [DUAL-SIGNATURE] Regenerating SIGNED PDF with signatures (fallback 3)...");
           const PremiumPdfService = (await import("./premiumPdfService")).default;
           const pdfService = new PremiumPdfService();
           
-          const htmlContent = contract.signedContractHtml || contract.contractHtml;
-          const pdfBuffer = await pdfService.generatePdfFromHtml(htmlContent, {
-            format: 'Letter',
-            printBackground: true
+          // Helper to convert timestamps
+          const toJSDate = (ts: any): Date => {
+            if (!ts) return new Date();
+            if (ts instanceof Date) return ts;
+            if (ts.toDate && typeof ts.toDate === 'function') return ts.toDate();
+            if (ts._seconds || ts.seconds) return new Date((ts._seconds || ts.seconds) * 1000);
+            if (typeof ts === 'number') return new Date(ts);
+            if (typeof ts === 'string') return new Date(ts);
+            return new Date();
+          };
+          
+          // Generate PDF with signatures integrated (same as completeContract)
+          const pdfBuffer = await pdfService.generateContractWithSignatures({
+            contractHTML: contract.contractHtml || "",
+            contractorSignature: {
+              name: contract.contractorName,
+              signatureData: contract.contractorSignatureData || "",
+              typedName: contract.contractorSignatureType === "typed" ? contract.contractorName : undefined,
+              signedAt: toJSDate(contract.contractorSignedAt),
+            },
+            clientSignature: {
+              name: contract.clientName,
+              signatureData: contract.clientSignatureData || "",
+              typedName: contract.clientSignatureType === "typed" ? contract.clientName : undefined,
+              signedAt: toJSDate(contract.clientSignedAt),
+            },
           });
           
-          console.log("✅ [DUAL-SIGNATURE] PDF regenerated from HTML successfully");
+          console.log("✅ [DUAL-SIGNATURE] SIGNED PDF regenerated successfully with signatures");
           
           // Async: Save to Firebase Storage for future requests (non-blocking)
-          this.savePdfToStorageAsync(contractId, pdfBuffer, contract.userId).catch(err => {
-            console.warn("⚠️ [DUAL-SIGNATURE] Failed to cache regenerated PDF:", err.message);
-          });
+          if (pdfBuffer && pdfBuffer.length > 0) {
+            this.savePdfToStorageAsync(contractId, pdfBuffer, contract.userId).catch(err => {
+              console.warn("⚠️ [DUAL-SIGNATURE] Failed to cache regenerated PDF:", err.message);
+            });
+          }
           
           return {
             success: true,
             pdfBuffer,
-            message: "PDF regenerated successfully from contract HTML",
+            message: "Signed PDF regenerated successfully with signatures",
           };
         } catch (regenerateError: any) {
-          console.error("❌ [DUAL-SIGNATURE] Failed to regenerate PDF from HTML:", regenerateError.message);
+          console.error("❌ [DUAL-SIGNATURE] Failed to regenerate signed PDF:", regenerateError.message);
         }
       }
 
