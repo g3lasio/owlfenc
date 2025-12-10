@@ -17,9 +17,7 @@
 import { Request, Response, Express } from 'express';
 import { z } from 'zod';
 import { laborDeepSearchService } from '../services/laborDeepSearchService';
-import { aduConstructionExpertService } from '../services/aduConstructionExpertService';
-import { realityValidationService } from '../services/realityValidationService';
-import { simpleDeepSearchService } from '../services/simpleDeepSearchService';
+import { deepSearchService } from '../services/deepSearchService';
 import { verifyFirebaseAuth } from '../middleware/firebase-auth';
 import { protectDeepSearch } from '../middleware/subscription-protection';
 
@@ -222,9 +220,11 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
 
   /**
    * POST /api/labor-deepsearch/combined
-   * 🔒 PROTEGIDO: Análisis COMPLETO (materiales + labor) ultra-simplificado
+   * 🔒 PROTEGIDO: Análisis COMPLETO usando AMBOS DeepSearch especializados
    * 
-   * Este es el endpoint principal de FULL COSTS con estructura profesional
+   * Este es el endpoint principal de FULL COSTS:
+   * - Materials: deepSearchService (materiales inteligentes con multiplicadores geográficos)
+   * - Labor: laborDeepSearchService (análisis de labor especializado)
    */
   app.post('/api/labor-deepsearch/combined',
     verifyFirebaseAuth,
@@ -233,58 +233,76 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
       const userId = req.firebaseUser?.uid;
       
       try {
-        console.log(`🔍 [FULL COSTS] User: ${userId} - Nueva solicitud combinada`);
+        console.log(`🔍 [FULL COSTS] User: ${userId} - Nueva solicitud combinada (DUAL DEEPSEARCH)`);
 
-        // Validar entrada básica
         const validatedData = CombinedAnalysisSchema.parse(req.body);
         
-        // ✅ SOLO Claude Sonnet - Ultra-simplificado
-        const simpleResult = await simpleDeepSearchService.analyzeProject(
-          validatedData.projectDescription,
-          validatedData.location
-        );
+        console.log(`🔍 [FULL COSTS] Ejecutando AMBOS DeepSearch en paralelo...`);
+        
+        const [materialsResult, laborResult] = await Promise.all([
+          deepSearchService.analyzeProject(
+            validatedData.projectDescription,
+            validatedData.location
+          ),
+          laborDeepSearchService.analyzeLaborRequirements(
+            validatedData.projectDescription,
+            validatedData.location,
+            validatedData.projectType
+          )
+        ]);
 
-        // Convertir a formato compatible con frontend CON ESTRUCTURA PROFESIONAL
+        console.log(`✅ [FULL COSTS] Materials: ${materialsResult.materials.length} items, Labor: ${laborResult.laborItems.length} items`);
+
+        const laborCosts = laborResult.laborItems.map(item => ({
+          category: item.category,
+          description: item.description,
+          hours: item.quantity,
+          rate: item.unitPrice,
+          total: item.totalCost
+        }));
+
+        const totalMaterialsCost = materialsResult.materials.reduce((sum, m) => sum + (m.totalPrice || 0), 0);
+        const totalLaborCost = laborResult.totalLaborCost || laborCosts.reduce((sum, l) => sum + l.total, 0);
+        const grandTotal = totalMaterialsCost + totalLaborCost;
+
         const fullCostsResult = {
-          projectType: simpleResult.projectType,
-          projectScope: simpleResult.projectScope,
-          materials: simpleResult.materials,
-          laborCosts: simpleResult.laborCosts,
-          additionalCosts: [], // Mantenemos vacío para compatibilidad
-          totalMaterialsCost: simpleResult.professionalBreakdown.materials.total,
-          totalLaborCost: simpleResult.professionalBreakdown.labor.total,
-          totalAdditionalCost: 0,
-          grandTotal: simpleResult.grandTotal,
-          confidence: simpleResult.confidence,
+          projectType: materialsResult.projectType,
+          projectScope: materialsResult.projectScope,
+          materials: materialsResult.materials,
+          laborCosts: laborCosts,
+          additionalCosts: materialsResult.additionalCosts || [],
+          totalMaterialsCost,
+          totalLaborCost,
+          totalAdditionalCost: materialsResult.totalAdditionalCost || 0,
+          grandTotal,
+          confidence: Math.min(materialsResult.confidence, 0.85),
           recommendations: [
-            'Estimado profesional con estructura de costos transparente',
-            `Overhead ${(simpleResult.professionalBreakdown.overhead.percentage * 100).toFixed(1)}% incluido`,
-            `Profit margin ${(simpleResult.professionalBreakdown.profit.percentage * 100).toFixed(1)}% incluido`,
-            `Contingencia ${(simpleResult.professionalBreakdown.contingency.percentage * 100).toFixed(1)}% para imprevistos`,
-            `Sales tax ${(simpleResult.professionalBreakdown.salesTax.percentage * 100).toFixed(2)}% ${simpleResult.professionalBreakdown.salesTax.jurisdiction}`
+            ...materialsResult.recommendations,
+            `Labor: ${laborResult.laborItems.length} servicios detectados`,
+            `Duración estimada: ${laborResult.estimatedDuration}`,
+            `Crew size: ${laborResult.crewSize} trabajadores`
           ],
-          warnings: [],
-          // NUEVA: Estructura profesional completa
-          professionalBreakdown: simpleResult.professionalBreakdown,
-          subtotals: simpleResult.subtotals
+          warnings: [
+            ...materialsResult.warnings,
+            ...(laborResult.safetyConsiderations || []).map(s => `⚠️ ${s}`)
+          ]
         };
 
-        // ✅ CONTEO AUTOMÁTICO DE USO
         if (req.trackUsage) {
           await req.trackUsage();
         }
 
         console.log(`✅ [FULL COSTS] User: ${userId} - Completado:`, {
-          materialsCount: simpleResult.materials.length,
-          laborCount: simpleResult.laborCosts.length,
-          grandTotal: simpleResult.grandTotal
+          materialsCount: materialsResult.materials.length,
+          laborCount: laborCosts.length,
+          grandTotal
         });
 
         res.json({
           success: true,
           data: fullCostsResult,
           timestamp: new Date().toISOString(),
-          searchType: 'simple_claude_only'
+          searchType: 'dual_deepsearch'
         });
 
       } catch (error: any) {
@@ -292,8 +310,8 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
         
         res.status(500).json({
           success: false,
-          error: error.message || 'Simple analysis failed',
-          code: 'SIMPLE_DEEPSEARCH_ERROR'
+          error: error.message || 'Combined DeepSearch analysis failed',
+          code: 'DUAL_DEEPSEARCH_ERROR'
         });
       }
     }
