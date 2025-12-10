@@ -47,6 +47,7 @@ import { promptGeneratorService } from "./services/promptGeneratorService";
 import { projectPaymentService } from "./services/projectPaymentService";
 import { determineJurisdiction } from "./utils/jurisdictionDetector";
 import { jurisdictionDetector } from "./services/nationwide/JurisdictionDetector";
+import { legalClausesAIService, LEGAL_CLAUSES_LIBRARY } from "./services/legalClausesAIService";
 import { getCompanyConfig, getCompanyAddress } from "./config/company-config";
 import { registerPromptTemplateRoutes } from "./routes/prompt-templates";
 import { TRIAL_PLAN_ID, SUBSCRIPTION_PLAN_IDS } from "./constants/subscription";
@@ -1748,6 +1749,49 @@ Output must be between 200-900 characters in English.`;
 
   // Registrar rutas del Motor de Abogado Defensor Digital
   // app.use("/api/legal-defense", legalDefenseRoutes); // Temporarily disabled for horizontal navigation
+
+  // ==================== AI-POWERED LEGAL DEFENSE CLAUSES ====================
+  // Intelligent clause suggestion endpoint with AI risk analysis
+  app.post("/api/legal-defense/suggest-clauses", async (req: Request, res: Response) => {
+    try {
+      console.log("🛡️ [LEGAL-CLAUSES] AI-powered clause suggestion request received");
+      
+      const { projectType, projectValue, location, projectDescription } = req.body;
+      
+      // Validate required fields
+      if (!projectType && !projectValue && !projectDescription) {
+        return res.status(400).json({
+          success: false,
+          error: "At least one project parameter is required",
+        });
+      }
+      
+      // Call AI service for intelligent clause suggestions
+      const result = await legalClausesAIService.suggestClauses({
+        projectType: projectType || "general construction",
+        projectValue: projectValue || 0,
+        location: location || "",
+        projectDescription: projectDescription || "",
+      });
+      
+      console.log(`✅ [LEGAL-CLAUSES] Generated ${result.clauses.length} clause suggestions`);
+      console.log(`📊 [LEGAL-CLAUSES] Risk level: ${result.projectRiskAssessment.riskLevel}`);
+      
+      res.json({
+        success: true,
+        clauses: result.clauses,
+        riskAssessment: result.projectRiskAssessment,
+        timestamp: result.analysisTimestamp,
+      });
+    } catch (error: any) {
+      console.error("❌ [LEGAL-CLAUSES] Error in clause suggestion:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to generate clause suggestions",
+        details: error.message,
+      });
+    }
+  });
 
   // Registrar rutas del sistema unificado de contratos
   app.use("/api/unified-contracts", unifiedContractRoutes);
@@ -8417,6 +8461,37 @@ Output must be between 200-900 characters in English.`;
 
         console.log(`🏛️ [JURISDICTION] HTML será generado para: ${jurisdiction.name} (${jurisdiction.code})`);
 
+        // ==================== LEGAL CLAUSES PROCESSING ====================
+        // Convert frontend legalClauses to backend protectionClauses format
+        const legalClauses = req.body.legalClauses || {};
+        const selectedClauseIds = legalClauses.selected || req.body.selectedClauses || [];
+        const frontendClauses = legalClauses.clauses || [];
+        
+        // Build protectionClauses array with full legal content
+        const protectionClauses: Array<{title: string; content: string}> = [];
+        
+        for (const clauseId of selectedClauseIds) {
+          // First try to get content from library (most reliable)
+          const libraryClause = LEGAL_CLAUSES_LIBRARY[clauseId];
+          if (libraryClause) {
+            protectionClauses.push({
+              title: libraryClause.title,
+              content: libraryClause.content,
+            });
+          } else {
+            // Fallback: try to find in frontend-provided clauses
+            const frontendClause = frontendClauses.find((c: any) => c.id === clauseId);
+            if (frontendClause && frontendClause.content) {
+              protectionClauses.push({
+                title: frontendClause.title || clauseId,
+                content: frontendClause.content,
+              });
+            }
+          }
+        }
+        
+        console.log(`🛡️ [LEGAL-CLAUSES] Processing ${selectedClauseIds.length} selected clauses → ${protectionClauses.length} with content`);
+
         // Process contract data similar to PDF generation with jurisdiction
         const contractData = {
           client: req.body.client,
@@ -8426,7 +8501,7 @@ Output must be between 200-900 characters in English.`;
           timeline: req.body.timeline || {},
           permits: req.body.permits || {},
           warranties: req.body.warranties || {},
-          selectedClauses: req.body.selectedClauses || [],
+          protectionClauses: protectionClauses, // FIXED: Now properly passing clauses with content
           paymentTerms: req.body.paymentTerms || {},
           jurisdiction: jurisdiction, // Add jurisdiction info
         };
@@ -8436,7 +8511,7 @@ Output must be between 200-900 characters in English.`;
           hasContractor: !!contractData.contractor?.name,
           projectType: contractData.project?.type,
           totalAmount: contractData.financials?.total,
-          clausesCount: contractData.selectedClauses.length,
+          protectionClausesCount: protectionClauses.length,
         });
 
         // Generate professional HTML contract content
@@ -8483,6 +8558,37 @@ Output must be between 200-900 characters in English.`;
       );
       const premiumPdfService = PremiumPdfService.getInstance();
 
+      // ==================== LEGAL CLAUSES PROCESSING FOR PDF ====================
+      // Convert frontend legalClauses to backend protectionClauses format
+      const legalClauses = req.body.legalClauses || {};
+      const selectedClauseIds = legalClauses.selected || req.body.selectedClauses || req.body.selectedIntelligentClauses || [];
+      const frontendClauses = legalClauses.clauses || [];
+      
+      // Build protectionClauses array with full legal content
+      const protectionClauses: Array<{title: string; content: string}> = [];
+      
+      for (const clauseId of selectedClauseIds) {
+        // First try to get content from library (most reliable)
+        const libraryClause = LEGAL_CLAUSES_LIBRARY[clauseId];
+        if (libraryClause) {
+          protectionClauses.push({
+            title: libraryClause.title,
+            content: libraryClause.content,
+          });
+        } else {
+          // Fallback: try to find in frontend-provided clauses
+          const frontendClause = frontendClauses.find((c: any) => c.id === clauseId);
+          if (frontendClause && frontendClause.content) {
+            protectionClauses.push({
+              title: frontendClause.title || clauseId,
+              content: frontendClause.content,
+            });
+          }
+        }
+      }
+      
+      console.log(`🛡️ [LEGAL-CLAUSES-PDF] Processing ${selectedClauseIds.length} selected clauses → ${protectionClauses.length} with content`);
+
       // Enhanced contract data structure to capture ALL frontend data
       const contractData = {
         // Basic client and contractor info (existing)
@@ -8490,6 +8596,9 @@ Output must be between 200-900 characters in English.`;
         contractor: req.body.contractor,
         project: req.body.project,
         financials: req.body.financials,
+
+        // FIXED: Protection clauses with full legal content
+        protectionClauses: protectionClauses,
 
         // NEW: Enhanced frontend data capture
         contractorInfo: req.body.contractorInfo || {},
@@ -8524,6 +8633,7 @@ Output must be between 200-900 characters in English.`;
         hasExtraClauses: contractData.extraClauses.length > 0,
         hasIntelligentClauses:
           contractData.selectedIntelligentClauses.length > 0,
+        protectionClausesCount: protectionClauses.length,
         hasCustomTerms: Object.keys(contractData.customTerms).length > 0,
         hasPaymentTerms: Object.keys(contractData.paymentTerms).length > 0,
         hasWarranties: Object.keys(contractData.warranties).length > 0,
