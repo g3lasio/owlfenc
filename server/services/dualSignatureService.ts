@@ -727,7 +727,36 @@ export class DualSignatureService {
         }
       }
 
-      // Both methods failed
+      // FALLBACK 3: Regenerate PDF from stored HTML content
+      if (contract.signedContractHtml || contract.contractHtml) {
+        try {
+          console.log("🔄 [DUAL-SIGNATURE] Regenerating PDF from stored HTML (fallback 3)...");
+          const { premiumPdfService } = await import("./premiumPdfService");
+          
+          const htmlContent = contract.signedContractHtml || contract.contractHtml;
+          const pdfBuffer = await premiumPdfService.generatePdfFromHtml(htmlContent, {
+            format: 'Letter',
+            printBackground: true
+          });
+          
+          console.log("✅ [DUAL-SIGNATURE] PDF regenerated from HTML successfully");
+          
+          // Async: Save to Firebase Storage for future requests (non-blocking)
+          this.savePdfToStorageAsync(contractId, pdfBuffer, contract.userId).catch(err => {
+            console.warn("⚠️ [DUAL-SIGNATURE] Failed to cache regenerated PDF:", err.message);
+          });
+          
+          return {
+            success: true,
+            pdfBuffer,
+            message: "PDF regenerated successfully from contract HTML",
+          };
+        } catch (regenerateError: any) {
+          console.error("❌ [DUAL-SIGNATURE] Failed to regenerate PDF from HTML:", regenerateError.message);
+        }
+      }
+
+      // All methods failed
       return {
         success: false,
         message: "Signed PDF not available - please contact support",
@@ -738,6 +767,29 @@ export class DualSignatureService {
         success: false,
         message: `Error downloading PDF: ${error.message}`,
       };
+    }
+  }
+
+  /**
+   * Async helper to save regenerated PDF to Firebase Storage for caching
+   */
+  private async savePdfToStorageAsync(contractId: string, pdfBuffer: Buffer, userId: string): Promise<void> {
+    try {
+      console.log("☁️ [PDF-CACHE] Caching regenerated PDF to Firebase Storage...");
+      const { firebaseStorageService } = await import("./firebaseStorageService");
+      const permanentPdfUrl = await firebaseStorageService.uploadContractPdf(pdfBuffer, contractId);
+      
+      // Update contract with permanent URL for future requests
+      const { db: firebaseDb } = await import("../lib/firebase-admin");
+      await firebaseDb.collection('dualSignatureContracts').doc(contractId).update({
+        permanentPdfUrl,
+        pdfCachedAt: new Date().toISOString()
+      });
+      
+      console.log("✅ [PDF-CACHE] PDF cached successfully for contract:", contractId);
+    } catch (error: any) {
+      console.error("❌ [PDF-CACHE] Failed to cache PDF:", error.message);
+      throw error;
     }
   }
 
