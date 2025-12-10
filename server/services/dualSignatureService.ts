@@ -760,6 +760,11 @@ export class DualSignatureService {
               typedName: contract.clientSignatureType === "typed" ? contract.clientName : undefined,
               signedAt: toJSDate(contract.clientSignedAt),
             },
+            contractorAudit: contract.contractorAudit,
+            clientAudit: contract.clientAudit,
+            contractorCertificate: contract.contractorCertificate,
+            clientCertificate: contract.clientCertificate,
+            contractId: contractId,
           });
           
           console.log("✅ [DUAL-SIGNATURE] SIGNED PDF regenerated successfully with signatures");
@@ -992,7 +997,7 @@ export class DualSignatureService {
         console.log('✅ [DATE-DEBUG] Converted contractor signedAt:', contractorSignedDate.toISOString());
         console.log('✅ [DATE-DEBUG] Converted client signedAt:', clientSignedDate.toISOString());
 
-        // Generate PDF with signatures integrated
+        // Generate PDF with signatures integrated and digital verification seal
         pdfBuffer = await pdfService.generateContractWithSignatures({
           contractHTML: contract.contractHtml || "",
           contractorSignature: {
@@ -1013,6 +1018,11 @@ export class DualSignatureService {
                 : undefined,
             signedAt: clientSignedDate,
           },
+          contractorAudit: contract.contractorAudit,
+          clientAudit: contract.clientAudit,
+          contractorCertificate: contract.contractorCertificate,
+          clientCertificate: contract.clientCertificate,
+          contractId: contractId,
         });
 
         console.log("✅ [DUAL-SIGNATURE] PDF generated successfully");
