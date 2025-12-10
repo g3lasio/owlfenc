@@ -1,4 +1,113 @@
-import puppeteer from "puppeteer";
+import puppeteer, { Browser } from "puppeteer";
+
+// Browser Pool for fast PDF generation (avoids 5-7 second startup per request)
+class BrowserPool {
+  private static instance: BrowserPool;
+  private browser: Browser | null = null;
+  private isInitializing: boolean = false;
+  private initPromise: Promise<Browser> | null = null;
+  private lastUsed: number = 0;
+  private readonly IDLE_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+  private cleanupTimer: NodeJS.Timeout | null = null;
+
+  static getInstance(): BrowserPool {
+    if (!BrowserPool.instance) {
+      BrowserPool.instance = new BrowserPool();
+    }
+    return BrowserPool.instance;
+  }
+
+  async getBrowser(): Promise<Browser> {
+    this.lastUsed = Date.now();
+    
+    // If browser exists and is connected, return it
+    if (this.browser && this.browser.isConnected()) {
+      this.scheduleCleanup();
+      return this.browser;
+    }
+
+    // If already initializing, wait for that promise
+    if (this.isInitializing && this.initPromise) {
+      return this.initPromise;
+    }
+
+    // Initialize new browser
+    this.isInitializing = true;
+    this.initPromise = this.createBrowser();
+    
+    try {
+      this.browser = await this.initPromise;
+      this.scheduleCleanup();
+      return this.browser;
+    } finally {
+      this.isInitializing = false;
+      this.initPromise = null;
+    }
+  }
+
+  private async createBrowser(): Promise<Browser> {
+    console.log("🚀 [BROWSER-POOL] Launching persistent browser instance...");
+    const executablePath = "/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium";
+    
+    const browser = await puppeteer.launch({
+      headless: true,
+      executablePath,
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-accelerated-2d-canvas",
+        "--no-first-run",
+        "--no-zygote",
+        "--single-process",
+        "--disable-gpu",
+        "--disable-extensions",
+        "--disable-plugins",
+        "--disable-background-networking",
+        "--disable-default-apps",
+        "--disable-sync",
+        "--disable-translate",
+        "--metrics-recording-only",
+        "--mute-audio",
+        "--no-default-browser-check",
+      ],
+    });
+    
+    console.log("✅ [BROWSER-POOL] Browser launched successfully");
+    return browser;
+  }
+
+  private scheduleCleanup(): void {
+    if (this.cleanupTimer) {
+      clearTimeout(this.cleanupTimer);
+    }
+    
+    this.cleanupTimer = setTimeout(async () => {
+      if (this.browser && Date.now() - this.lastUsed >= this.IDLE_TIMEOUT) {
+        console.log("🧹 [BROWSER-POOL] Closing idle browser...");
+        await this.closeBrowser();
+      }
+    }, this.IDLE_TIMEOUT);
+  }
+
+  async closeBrowser(): Promise<void> {
+    if (this.browser) {
+      try {
+        await this.browser.close();
+      } catch (e) {
+        console.warn("⚠️ [BROWSER-POOL] Error closing browser:", e);
+      }
+      this.browser = null;
+    }
+    if (this.cleanupTimer) {
+      clearTimeout(this.cleanupTimer);
+      this.cleanupTimer = null;
+    }
+  }
+}
+
+// Export singleton for use across the app
+export const browserPool = BrowserPool.getInstance();
 
 export interface ContractPdfData {
   client: {
@@ -1186,32 +1295,23 @@ class PremiumPdfService {
   }
 
   async generateProfessionalPDF(data: ContractPdfData): Promise<Buffer> {
+    const startTime = Date.now();
     console.log("🎨 [PREMIUM PDF] Starting premium contract generation...");
 
+    let page = null;
     try {
       const html = this.generateProfessionalLegalContractHTML(data);
-      const executablePath =
-        "/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium";
+      
+      // Use browser pool for fast PDF generation (reuses browser instance)
+      const browser = await browserPool.getBrowser();
+      const browserTime = Date.now() - startTime;
+      console.log(`⚡ [BROWSER-POOL] Browser ready in ${browserTime}ms`);
 
-      const browser = await puppeteer.launch({
-        headless: true,
-        executablePath,
-        args: [
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-          "--disable-dev-shm-usage",
-          "--disable-accelerated-2d-canvas",
-          "--no-first-run",
-          "--no-zygote",
-          "--single-process",
-          "--disable-gpu",
-          "--disable-extensions",
-          "--disable-plugins",
-        ],
-      });
-
-      const page = await browser.newPage();
-      await page.setContent(html, { waitUntil: "networkidle0" });
+      // Create new page in existing browser context
+      page = await browser.newPage();
+      
+      // Use faster waitUntil option - domcontentloaded is sufficient for static HTML
+      await page.setContent(html, { waitUntil: "domcontentloaded" });
 
       const pdfBuffer = Buffer.from(
         await page.pdf({
@@ -1233,13 +1333,21 @@ class PremiumPdfService {
         }),
       );
 
-      await browser.close();
-
-      console.log("✅ [PREMIUM PDF] Premium contract generated successfully");
+      const totalTime = Date.now() - startTime;
+      console.log(`✅ [PREMIUM PDF] Premium contract generated in ${totalTime}ms`);
       return pdfBuffer;
     } catch (error) {
       console.error("❌ [PREMIUM PDF] Error generating PDF:", error);
       throw new Error("Failed to generate premium PDF contract");
+    } finally {
+      // Always close the page, but keep browser alive for next request
+      if (page) {
+        try {
+          await page.close();
+        } catch (e) {
+          // Ignore page close errors
+        }
+      }
     }
   }
 

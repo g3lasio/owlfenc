@@ -2571,6 +2571,12 @@ export default function SimpleContractGenerator() {
       return;
     }
 
+    // IMMEDIATE FEEDBACK: Show toast right away so user knows it's working
+    toast({
+      title: "Generando PDF...",
+      description: "Espera unos segundos mientras preparamos tu contrato",
+    });
+
     setIsLoading(true);
 
     try {
