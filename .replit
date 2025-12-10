@@ -58,49 +58,5 @@ externalPort = 3002
 localPort = 24678
 externalPort = 3000
 
-[[ports]]
-localPort = 33011
-externalPort = 6800
-
-[[ports]]
-localPort = 33725
-externalPort = 3003
-
-[[ports]]
-localPort = 36193
-externalPort = 8080
-
-[[ports]]
-localPort = 37001
-externalPort = 6000
-
-[[ports]]
-localPort = 37449
-externalPort = 4200
-
-[[ports]]
-localPort = 38075
-externalPort = 8008
-
-[[ports]]
-localPort = 40805
-externalPort = 8081
-
-[[ports]]
-localPort = 42029
-externalPort = 8000
-
-[[ports]]
-localPort = 42583
-externalPort = 9000
-
-[[ports]]
-localPort = 43081
-externalPort = 8099
-
-[[ports]]
-localPort = 45029
-externalPort = 5000
-
 [agent]
 integrations = ["javascript_stripe:1.0.0"]

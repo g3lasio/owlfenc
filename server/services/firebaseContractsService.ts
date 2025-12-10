@@ -852,7 +852,10 @@ class FirebaseContractsService {
         return 1; // draft or unknown
       };
 
-      // Helper to add with smart deduplication
+      // Track existing contracts by contractId for priority-based replacement
+      const contractsByContractId = new Map<string, { contract: any, index: number, priority: number }>();
+      
+      // Helper to add with smart deduplication - prioritizes higher status
       const addWithSmartDedup = (contract: any, source: string): boolean => {
         const docId = contract.id || '';
         const contractId = contract.contractId || '';
@@ -869,9 +872,18 @@ class FirebaseContractsService {
         
         // Check by contractId first (more reliable for dual-signature workflows)
         if (contractId && seenContractIds.has(contractId)) {
+          // Check if we should REPLACE the existing contract with higher priority one
+          const existing = contractsByContractId.get(contractId);
+          if (existing && newPriority > existing.priority) {
+            // Replace the lower-priority contract with this one
+            console.log(`🔄 [DEDUP-REPLACE] Replacing ${contractId} (priority ${existing.priority} → ${newPriority}) from ${source}`);
+            contracts[existing.index] = contract;
+            contractsByContractId.set(contractId, { contract, index: existing.index, priority: newPriority });
+            return true;
+          }
           // Log if this is a completed contract being skipped
           if (contract.status === 'completed' || contract.status === 'both_signed') {
-            console.log(`⚠️ [DEDUP-SKIP] Completed contract ${contractId} skipped (duplicate by contractId) from ${source}`);
+            console.log(`⚠️ [DEDUP-SKIP] Completed contract ${contractId} skipped (duplicate by contractId, existing priority: ${existing?.priority}) from ${source}`);
           }
           return false;
         }
@@ -886,7 +898,10 @@ class FirebaseContractsService {
         }
         
         if (docId) seenIds.add(docId);
-        if (contractId) seenContractIds.add(contractId);
+        if (contractId) {
+          seenContractIds.add(contractId);
+          contractsByContractId.set(contractId, { contract, index: contracts.length, priority: newPriority });
+        }
         
         // Log if this is a completed contract being added
         if (contract.status === 'completed' || contract.status === 'both_signed') {
