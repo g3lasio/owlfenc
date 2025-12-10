@@ -194,7 +194,7 @@ export class DualSignatureService {
         clientSignUrl,
         
         // Status and metadata
-        status: 'draft', // ✅ FIXED: Start as draft (links generated but not signed)
+        status: 'in_progress', // ✅ FIXED: Start as in_progress (links generated, awaiting signatures)
         permanentPdfUrl: null,
         signedPdfPath: null,
         emailSent: false,
@@ -218,7 +218,7 @@ export class DualSignatureService {
         contractId,
         clientName: request.contractData.clientName,
         projectType: 'Construction',
-        status: 'draft',
+        status: 'in_progress', // ✅ FIXED: Match status with dualSignatureContracts
         contractorSignUrl,
         clientSignUrl,
         shareableLink: clientSignUrl, // Para compatibilidad

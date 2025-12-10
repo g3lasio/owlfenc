@@ -8544,6 +8544,13 @@ ENHANCED LEGAL CLAUSE:`;
         const selectedClauseIds = legalClauses.selected || req.body.selectedClauses || [];
         const frontendClauses = legalClauses.clauses || [];
         
+        console.log("🔍 [LEGAL-CLAUSES-DEBUG] Raw input:", {
+          hasLegalClauses: !!req.body.legalClauses,
+          selectedCount: selectedClauseIds.length,
+          frontendClausesCount: frontendClauses.length,
+          selectedClauseIds: selectedClauseIds,
+        });
+        
         // Build protectionClauses array with full legal content
         const protectionClauses: Array<{title: string; content: string}> = [];
         
@@ -8555,6 +8562,7 @@ ENHANCED LEGAL CLAUSE:`;
               title: libraryClause.title,
               content: libraryClause.content,
             });
+            console.log(`🛡️ [CLAUSE] Added from library: ${clauseId} → ${libraryClause.title}`);
           } else {
             // Fallback: try to find in frontend-provided clauses
             const frontendClause = frontendClauses.find((c: any) => c.id === clauseId);
@@ -8563,6 +8571,9 @@ ENHANCED LEGAL CLAUSE:`;
                 title: frontendClause.title || clauseId,
                 content: frontendClause.content,
               });
+              console.log(`🛡️ [CLAUSE] Added from frontend: ${clauseId} → ${frontendClause.title}`);
+            } else {
+              console.log(`⚠️ [CLAUSE] NOT FOUND: ${clauseId} - not in library and not in frontend clauses`);
             }
           }
         }
