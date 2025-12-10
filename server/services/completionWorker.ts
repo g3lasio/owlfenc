@@ -593,30 +593,15 @@ class CompletionWorker {
       
       const contract = contractDoc.data()!;
       
-      // ✅ Generate Digital Certificate Footer with signing metadata
-      const digitalCertificateHtml = this.generateDigitalCertificateHtml(contract, contractId);
-      
-      // Inject certificate into HTML properly (before </body> if exists, otherwise append)
-      let htmlWithCertificate = contract.contractHtml || '';
-      const bodyCloseMatch = htmlWithCertificate.match(/<\/body>/i);
-      if (bodyCloseMatch) {
-        // Insert before </body>
-        htmlWithCertificate = htmlWithCertificate.replace(
-          /<\/body>/i,
-          `${digitalCertificateHtml}</body>`
-        );
-      } else {
-        // No </body> tag - just append (template is likely partial HTML)
-        htmlWithCertificate = htmlWithCertificate + digitalCertificateHtml;
-      }
-      
       // Import PDF service
       const { default: PremiumPdfService } = await import('./premiumPdfService');
       const pdfService = new PremiumPdfService();
       
-      // Generate PDF with embedded digital certificate
+      // ✅ UNIFIED PDF SOURCE: Generate PDF with signatures ONLY
+      // The legal seal page is added later via legalSealService.appendSealPage()
+      // This prevents duplicate seals in the final PDF
       const pdfBuffer = await pdfService.generateContractWithSignatures({
-        contractHTML: htmlWithCertificate,
+        contractHTML: contract.contractHtml || '',
         contractorSignature: {
           name: contract.contractorName,
           signatureData: contract.contractorSignature || contract.contractorSignatureData || '',
@@ -884,7 +869,7 @@ class CompletionWorker {
    */
   private async sendCompletionEmails(
     contractId: string,
-    pdfBuffer: Buffer
+    _pdfBuffer: Buffer // Deprecated: Now uses Firebase Storage as single source
   ): Promise<void> {
     try {
       const { db: firebaseDb } = await import('../lib/firebase-admin');
@@ -898,6 +883,31 @@ class CompletionWorker {
       }
       
       const contract = contractDoc.data()!;
+      
+      // ✅ UNIFIED PDF SOURCE: Fetch from Firebase Storage (same as view/download)
+      // This ensures email attachment matches exactly what users see in "View Contract"
+      let pdfBuffer: Buffer;
+      
+      if (contract.permanentPdfUrl) {
+        try {
+          console.log("☁️ [COMPLETION-WORKER] Fetching PDF from Firebase Storage for email...");
+          const fetch = (await import("node-fetch")).default;
+          const response = await fetch(contract.permanentPdfUrl);
+          
+          if (response.ok) {
+            pdfBuffer = Buffer.from(await response.arrayBuffer());
+            console.log("✅ [COMPLETION-WORKER] PDF fetched from Firebase Storage for email");
+          } else {
+            throw new Error(`Firebase Storage fetch failed: ${response.status}`);
+          }
+        } catch (storageError: any) {
+          console.warn("⚠️ [COMPLETION-WORKER] Failed to fetch from Firebase Storage, using fallback:", storageError.message);
+          pdfBuffer = _pdfBuffer; // Fallback to passed buffer
+        }
+      } else {
+        console.warn("⚠️ [COMPLETION-WORKER] No permanentPdfUrl, using passed buffer");
+        pdfBuffer = _pdfBuffer; // Fallback to passed buffer
+      }
       
       // Import email service
       const { ResendEmailAdvanced } = await import('./resendEmailAdvanced');
