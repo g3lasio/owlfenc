@@ -288,10 +288,10 @@ class ContractHistoryService {
         where('userId', '==', userId)
       );
 
-      // Add timeout to prevent hanging queries
+      // Add timeout to prevent hanging queries (30s for large collections)
       const historyPromise = getDocs(historyQuery);
       const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('contractHistory query timeout')), 10000)
+        setTimeout(() => reject(new Error('contractHistory query timeout')), 30000)
       );
 
       const historySnapshot = await Promise.race([historyPromise, timeoutPromise]);
@@ -325,10 +325,10 @@ class ContractHistoryService {
         where('userId', '==', userId)
       );
 
-      // Add timeout to prevent hanging queries
+      // Add timeout to prevent hanging queries (30s for large collections)
       const dualPromise = getDocs(dualQuery);
       const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('dualSignatureContracts query timeout')), 10000)
+        setTimeout(() => reject(new Error('dualSignatureContracts query timeout')), 30000)
       );
 
       const dualSnapshot = await Promise.race([dualPromise, timeoutPromise]);
