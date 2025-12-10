@@ -1793,6 +1793,83 @@ Output must be between 200-900 characters in English.`;
     }
   });
 
+  // ==================== ENHANCE CUSTOM CLAUSE WITH AI ====================
+  // Transform simple user text into professional legal language
+  app.post("/api/legal-defense/enhance-clause", requireAuth, async (req: Request, res: Response) => {
+    try {
+      console.log("✍️ [LEGAL-ENHANCE] Custom clause enhancement request received");
+      
+      const { text, projectType } = req.body;
+      
+      if (!text || typeof text !== 'string' || text.trim().length < 5) {
+        return res.status(400).json({
+          success: false,
+          error: "Please provide at least 5 characters of text to enhance",
+        });
+      }
+      
+      // Use Anthropic to enhance the clause
+      const Anthropic = (await import("@anthropic-ai/sdk")).default;
+      const anthropic = new Anthropic();
+      
+      const prompt = `You are an expert construction law attorney. Transform the following simple text into a professional, legally-binding contract clause.
+
+REQUIREMENTS:
+- Use sophisticated, precise legal language
+- Make it enforceable and clear
+- Keep it concise (2-4 sentences max)
+- Reference relevant legal concepts when appropriate
+- Format as a single clause paragraph
+- Do NOT include clause numbering or titles
+- Context: ${projectType || 'construction'} project
+
+USER'S SIMPLE TEXT:
+"${text.trim()}"
+
+ENHANCED LEGAL CLAUSE:`;
+
+      try {
+        const response = await anthropic.messages.create({
+          model: 'claude-3-7-sonnet-20250219',
+          max_tokens: 500,
+          messages: [{ role: 'user', content: prompt }],
+        });
+        
+        const content = response.content[0];
+        if (content.type === 'text') {
+          const enhancedText = content.text.trim();
+          console.log(`✅ [LEGAL-ENHANCE] Successfully enhanced clause (${enhancedText.length} chars)`);
+          
+          return res.json({
+            success: true,
+            enhancedText,
+            originalText: text,
+          });
+        }
+      } catch (aiError: any) {
+        console.warn("⚠️ [LEGAL-ENHANCE] AI enhancement failed, using fallback:", aiError.message);
+      }
+      
+      // Fallback: Simple enhancement without AI
+      const fallbackEnhanced = `The Parties hereby agree that ${text.trim().toLowerCase().replace(/^the client|the contractor|i |we /i, 'the responsible party shall ')}. This provision shall be binding upon execution of this Agreement and shall survive any termination thereof.`;
+      
+      res.json({
+        success: true,
+        enhancedText: fallbackEnhanced,
+        originalText: text,
+        note: "Enhanced using template (AI unavailable)",
+      });
+      
+    } catch (error: any) {
+      console.error("❌ [LEGAL-ENHANCE] Error enhancing clause:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to enhance clause",
+        details: error.message,
+      });
+    }
+  });
+
   // Registrar rutas del sistema unificado de contratos
   app.use("/api/unified-contracts", unifiedContractRoutes);
 

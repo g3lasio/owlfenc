@@ -205,6 +205,11 @@ export default function SimpleContractGenerator() {
   const [suggestedClauses, setSuggestedClauses] = useState<any[]>([]);
   const [selectedClauses, setSelectedClauses] = useState<string[]>([]);
 
+  // Custom clause states
+  const [customClauseText, setCustomClauseText] = useState<string>("");
+  const [enhancedClauseText, setEnhancedClauseText] = useState<string>("");
+  const [isEnhancingClause, setIsEnhancingClause] = useState(false);
+
   // Create from scratch states
   const [contractCreationMode, setContractCreationMode] = useState<"existing" | "scratch">("existing");
   const [scratchContractData, setScratchContractData] = useState({
@@ -5164,6 +5169,115 @@ export default function SimpleContractGenerator() {
                           </Button>
                         </div>
                       )}
+
+                      {/* Custom Clause Input */}
+                      <div className="mt-4 pt-4 border-t border-gray-700">
+                        <Label className="text-sm text-gray-300 mb-2 block">
+                          ✍️ Add Custom Clause
+                        </Label>
+                        <div className="space-y-2">
+                          <Textarea
+                            value={enhancedClauseText || customClauseText}
+                            onChange={(e) => {
+                              setCustomClauseText(e.target.value);
+                              setEnhancedClauseText("");
+                            }}
+                            placeholder="Write your clause idea in simple terms... e.g., 'Client pays for any extra materials needed'"
+                            className="bg-gray-800 border-gray-600 text-gray-200 min-h-[60px] max-h-[100px] text-sm resize-none"
+                            data-testid="input-custom-clause"
+                          />
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={!customClauseText.trim() || isEnhancingClause}
+                              onClick={async () => {
+                                if (!customClauseText.trim()) return;
+                                setIsEnhancingClause(true);
+                                try {
+                                  const token = await auth.currentUser?.getIdToken();
+                                  const response = await fetch('/api/legal-defense/enhance-clause', {
+                                    method: 'POST',
+                                    headers: {
+                                      'Content-Type': 'application/json',
+                                      'Authorization': `Bearer ${token}`,
+                                    },
+                                    body: JSON.stringify({ 
+                                      text: customClauseText,
+                                      projectType: selectedProject?.projectType || 'construction'
+                                    }),
+                                  });
+                                  const data = await response.json();
+                                  if (data.success && data.enhancedText) {
+                                    setEnhancedClauseText(data.enhancedText);
+                                    toast({
+                                      title: "✨ Clause Enhanced",
+                                      description: "Your clause has been professionally rewritten",
+                                    });
+                                  } else {
+                                    throw new Error(data.error || 'Enhancement failed');
+                                  }
+                                } catch (error: any) {
+                                  toast({
+                                    title: "Enhancement Failed",
+                                    description: error.message,
+                                    variant: "destructive",
+                                  });
+                                } finally {
+                                  setIsEnhancingClause(false);
+                                }
+                              }}
+                              className="border-purple-500 text-purple-400 hover:bg-purple-500/20 text-xs"
+                              data-testid="button-enhance-clause"
+                            >
+                              {isEnhancingClause ? (
+                                <>
+                                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                  Enhancing...
+                                </>
+                              ) : (
+                                <>
+                                  <Sparkles className="h-3 w-3 mr-1" />
+                                  AI Enhance
+                                </>
+                              )}
+                            </Button>
+                            {enhancedClauseText && (
+                              <Button
+                                size="sm"
+                                onClick={() => {
+                                  const customClause = {
+                                    id: `custom-${Date.now()}`,
+                                    title: "Custom Clause",
+                                    description: enhancedClauseText.slice(0, 100) + (enhancedClauseText.length > 100 ? '...' : ''),
+                                    content: enhancedClauseText,
+                                    risk: "medium" as const,
+                                    category: "custom",
+                                  };
+                                  setSuggestedClauses(prev => [...prev, customClause]);
+                                  setSelectedClauses(prev => [...prev, customClause.id]);
+                                  setCustomClauseText("");
+                                  setEnhancedClauseText("");
+                                  toast({
+                                    title: "✅ Clause Added",
+                                    description: "Custom clause added to your contract",
+                                  });
+                                }}
+                                className="bg-green-600 hover:bg-green-500 text-white text-xs"
+                                data-testid="button-add-custom-clause"
+                              >
+                                <Plus className="h-3 w-3 mr-1" />
+                                Add to Contract
+                              </Button>
+                            )}
+                          </div>
+                          {enhancedClauseText && (
+                            <p className="text-xs text-green-400 mt-1">
+                              ✨ Enhanced with professional legal language
+                            </p>
+                          )}
+                        </div>
+                      </div>
 
                       {/* Fallback if no clauses */}
                       {!isLoadingClauses && suggestedClauses.length === 0 && (
