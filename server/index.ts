@@ -802,6 +802,7 @@ function getEditDistance(s1: string, s2: string): number {
 }
 
 // 🚨 CRITICAL FIX: Add contract HTML generation endpoint directly due to routes.ts TypeScript errors
+// 🛡️ UPDATED: Now includes full legal clauses processing from LEGAL_CLAUSES_LIBRARY
 app.post('/api/generate-contract-html', async (req, res) => {
   try {
     console.log('📄 [CONTRACT-HTML] Generating contract HTML for legal compliance workflow...');
@@ -813,8 +814,86 @@ app.post('/api/generate-contract-html', async (req, res) => {
     const { default: PremiumPdfService } = await import('./services/premiumPdfService');
     const premiumPdfService = PremiumPdfService.getInstance();
 
+    // Import legal clauses library for full content
+    const { LEGAL_CLAUSES_LIBRARY } = await import('./services/legalClausesAIService');
+
+    // ==================== LEGAL CLAUSES PROCESSING ====================
+    // Convert frontend legalClauses to backend protectionClauses format
+    const legalClauses = req.body.legalClauses || {};
+    const selectedClauseIds = legalClauses.selected || req.body.selectedClauses || [];
+    const frontendClauses = legalClauses.clauses || [];
+    
+    console.log("🔍 [LEGAL-CLAUSES-DEBUG] Raw input:", {
+      hasLegalClauses: !!req.body.legalClauses,
+      selectedCount: selectedClauseIds.length,
+      frontendClausesCount: frontendClauses.length,
+      selectedClauseIds: selectedClauseIds,
+    });
+    
+    // Build protectionClauses array with full legal content
+    // STRATEGY: Frontend sends clauses with full content (from AI-generated suggestions)
+    // If no content, fall back to LEGAL_CLAUSES_LIBRARY
+    const protectionClauses: Array<{title: string; content: string}> = [];
+    
+    // PRIORITY 1: Use frontend clauses directly if they have content
+    // Frontend sends clauses in format: { title: string, content: string } (no id)
+    if (frontendClauses.length > 0) {
+      for (const clause of frontendClauses) {
+        if (clause.content) {
+          protectionClauses.push({
+            title: clause.title || "Legal Protection Clause",
+            content: clause.content,
+          });
+          console.log(`🛡️ [CLAUSE] Added from frontend: ${clause.title}`);
+        }
+      }
+    }
+    
+    // PRIORITY 2: If no frontend clauses, try library lookup by ID
+    if (protectionClauses.length === 0 && selectedClauseIds.length > 0) {
+      for (const clauseId of selectedClauseIds) {
+        const libraryClause = LEGAL_CLAUSES_LIBRARY[clauseId];
+        if (libraryClause) {
+          protectionClauses.push({
+            title: libraryClause.title,
+            content: libraryClause.content,
+          });
+          console.log(`🛡️ [CLAUSE] Added from library: ${clauseId} → ${libraryClause.title}`);
+        } else {
+          // Try normalized ID (underscore to hyphen)
+          const normalizedId = clauseId.replace(/_/g, '-');
+          const normalizedClause = LEGAL_CLAUSES_LIBRARY[normalizedId];
+          if (normalizedClause) {
+            protectionClauses.push({
+              title: normalizedClause.title,
+              content: normalizedClause.content,
+            });
+            console.log(`🛡️ [CLAUSE] Added from library (normalized): ${clauseId} → ${normalizedClause.title}`);
+          } else {
+            console.log(`⚠️ [CLAUSE] NOT FOUND: ${clauseId} - not in library`);
+          }
+        }
+      }
+    }
+    
+    // PRIORITY 3: Also check protections array directly from frontend
+    const directProtections = req.body.protections || [];
+    if (protectionClauses.length === 0 && directProtections.length > 0) {
+      for (const protection of directProtections) {
+        if (protection.content) {
+          protectionClauses.push({
+            title: protection.title || "Legal Protection Clause",
+            content: protection.content,
+          });
+          console.log(`🛡️ [CLAUSE] Added from protections array: ${protection.title}`);
+        }
+      }
+    }
+    
+    console.log(`🛡️ [LEGAL-CLAUSES] Processing ${selectedClauseIds.length} selected IDs, ${frontendClauses.length} frontend clauses, ${directProtections.length} direct protections → ${protectionClauses.length} final clauses`);
+
     // 🔧 CRITICAL FIX: Handle both payload formats correctly
-    const contractData = req.body.contractData || req.body || {
+    const contractData = {
       client: {
         name: req.body.client?.name || req.body.clientName || "Test Client",
         address: req.body.client?.address || req.body.clientAddress || "123 Test St, Test City, CA 12345",
@@ -832,19 +911,29 @@ app.post('/api/generate-contract-html', async (req, res) => {
         description: req.body.project?.description || req.body.projectDescription || "Professional fence installation project",
         location: req.body.project?.location || req.body.projectLocation || req.body.clientAddress || "Project location"
       },
-      financials: {
-        total: req.body.financials?.total || parseFloat(req.body.totalAmount) || 5000
+      financials: req.body.financials || {
+        total: parseFloat(req.body.totalAmount) || 5000
       },
-      protectionClauses: req.body.protectionClauses || [],
+      protectionClauses: protectionClauses, // FIXED: Now using processed clauses with full content
       timeline: req.body.timeline || {},
       warranties: req.body.warranties || {},
-      permitInfo: req.body.permitInfo || {}
+      permitInfo: req.body.permitInfo || req.body.permits || {}
     };
+
+    console.log("📋 [CONTRACT-HTML] Contract data structure:", {
+      hasClient: !!contractData.client?.name,
+      hasContractor: !!contractData.contractor?.name,
+      projectType: contractData.project?.type,
+      protectionClausesCount: protectionClauses.length,
+      hasPermitInfo: !!contractData.permitInfo?.permitsRequired || !!contractData.permitInfo?.required,
+    });
 
     // Generate professional contract HTML
     const contractHTML = premiumPdfService.generateProfessionalLegalContractHTML(contractData);
 
     console.log('✅ [CONTRACT-HTML] Contract HTML generated successfully');
+    console.log('📏 [CONTRACT-HTML] HTML length:', contractHTML.length);
+    console.log('🔍 [CONTRACT-HTML] Has protection clauses section:', contractHTML.includes('INTELLIGENT CONTRACTOR PROTECTION CLAUSES'));
 
     res.json({
       success: true,
