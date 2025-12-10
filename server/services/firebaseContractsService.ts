@@ -881,14 +881,16 @@ class FirebaseContractsService {
       };
 
       // 1. Load from contractHistory collection
+      // ✅ FIX: Query by multiple user ID fields to catch ALL legacy contracts
       try {
-        // ✅ ROBUST: Try multiple user ID fields for legacy data
+        let historyCount = 0;
+        
+        // Query by userId (primary)
         const historyByUserId = await db
           .collection(this.contractHistoryCollection)
           .where('userId', '==', userId)
           .get();
         
-        let historyCount = 0;
         historyByUserId.forEach(doc => {
           const data = doc.data();
           const added = addWithSmartDedup({
@@ -901,20 +903,57 @@ class FirebaseContractsService {
           }, 'contractHistory');
           if (added) historyCount++;
         });
-        console.log(`📋 [CONTRACT-HISTORY] Found ${historyCount} in contractHistory`);
+        
+        // Also query by firebaseUserId (legacy field)
+        const historyByFirebaseUserId = await db
+          .collection(this.contractHistoryCollection)
+          .where('firebaseUserId', '==', userId)
+          .get();
+        
+        historyByFirebaseUserId.forEach(doc => {
+          const data = doc.data();
+          const added = addWithSmartDedup({
+            ...data,
+            id: doc.id,
+            contractId: data.contractId || doc.id,
+            source: 'contractHistory',
+            createdAt: data.createdAt?.toDate() || new Date(),
+            updatedAt: data.updatedAt?.toDate() || new Date()
+          }, 'contractHistory');
+          if (added) historyCount++;
+        });
+        
+        // Also query by contractorUid (another legacy field)
+        const historyByContractorUid = await db
+          .collection(this.contractHistoryCollection)
+          .where('contractorUid', '==', userId)
+          .get();
+        
+        historyByContractorUid.forEach(doc => {
+          const data = doc.data();
+          const added = addWithSmartDedup({
+            ...data,
+            id: doc.id,
+            contractId: data.contractId || doc.id,
+            source: 'contractHistory',
+            createdAt: data.createdAt?.toDate() || new Date(),
+            updatedAt: data.updatedAt?.toDate() || new Date()
+          }, 'contractHistory');
+          if (added) historyCount++;
+        });
+        
+        console.log(`📋 [CONTRACT-HISTORY] Found ${historyCount} in contractHistory (with legacy field queries)`);
       } catch (err) {
         console.warn(`⚠️ [CONTRACT-HISTORY] Error fetching from contractHistory:`, err);
       }
 
       // 2. Load from dualSignatureContracts collection
+      // ✅ FIX: Query by multiple user ID fields to catch ALL legacy contracts
       try {
-        const dualSnapshot = await db
-          .collection(this.dualSignatureCollection)
-          .where('userId', '==', userId)
-          .get();
-
         let dualCount = 0;
-        dualSnapshot.forEach(doc => {
+        
+        // Helper to process dual signature docs
+        const processDualDoc = (doc: FirebaseFirestore.QueryDocumentSnapshot) => {
           const data = doc.data();
           const added = addWithSmartDedup({
             ...data,
@@ -954,10 +993,92 @@ class FirebaseContractsService {
             }
           }, 'dualSignatureContracts');
           if (added) dualCount++;
-        });
-        console.log(`📋 [CONTRACT-HISTORY] Found ${dualCount} in dualSignatureContracts`);
+        };
+
+        // Query by userId (primary)
+        const dualByUserId = await db
+          .collection(this.dualSignatureCollection)
+          .where('userId', '==', userId)
+          .get();
+        dualByUserId.forEach(processDualDoc);
+        
+        // Query by firebaseUserId (legacy)
+        const dualByFirebaseUserId = await db
+          .collection(this.dualSignatureCollection)
+          .where('firebaseUserId', '==', userId)
+          .get();
+        dualByFirebaseUserId.forEach(processDualDoc);
+        
+        // Query by contractorUid (legacy)
+        const dualByContractorUid = await db
+          .collection(this.dualSignatureCollection)
+          .where('contractorUid', '==', userId)
+          .get();
+        dualByContractorUid.forEach(processDualDoc);
+        
+        // Query by ownerUid (another legacy field)
+        const dualByOwnerUid = await db
+          .collection(this.dualSignatureCollection)
+          .where('ownerUid', '==', userId)
+          .get();
+        dualByOwnerUid.forEach(processDualDoc);
+
+        console.log(`📋 [CONTRACT-HISTORY] Found ${dualCount} in dualSignatureContracts (with legacy field queries)`);
       } catch (err) {
         console.warn(`⚠️ [CONTRACT-HISTORY] Error fetching from dualSignatureContracts:`, err);
+      }
+      
+      // 3. Also check the main 'contracts' collection (some contracts may be stored here)
+      try {
+        let mainCount = 0;
+        
+        const mainByUserId = await db
+          .collection(this.collection)
+          .where('userId', '==', userId)
+          .get();
+        
+        mainByUserId.forEach(doc => {
+          const data = doc.data();
+          // Skip archived contracts
+          if (data.isArchived === true) return;
+          
+          const added = addWithSmartDedup({
+            ...data,
+            id: doc.id,
+            contractId: data.contractId || doc.id,
+            source: 'contracts',
+            createdAt: data.createdAt?.toDate() || new Date(),
+            updatedAt: data.updatedAt?.toDate() || new Date()
+          }, 'contracts');
+          if (added) mainCount++;
+        });
+        
+        // Also try firebaseUserId
+        const mainByFirebaseUserId = await db
+          .collection(this.collection)
+          .where('firebaseUserId', '==', userId)
+          .get();
+        
+        mainByFirebaseUserId.forEach(doc => {
+          const data = doc.data();
+          if (data.isArchived === true) return;
+          
+          const added = addWithSmartDedup({
+            ...data,
+            id: doc.id,
+            contractId: data.contractId || doc.id,
+            source: 'contracts',
+            createdAt: data.createdAt?.toDate() || new Date(),
+            updatedAt: data.updatedAt?.toDate() || new Date()
+          }, 'contracts');
+          if (added) mainCount++;
+        });
+        
+        if (mainCount > 0) {
+          console.log(`📋 [CONTRACT-HISTORY] Found ${mainCount} in contracts collection`);
+        }
+      } catch (err) {
+        console.warn(`⚠️ [CONTRACT-HISTORY] Error fetching from contracts:`, err);
       }
 
       // Sort by createdAt descending (most recent first)
