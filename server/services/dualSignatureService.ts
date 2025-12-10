@@ -777,7 +777,17 @@ export class DualSignatureService {
    */
   private async savePdfToStorageAsync(contractId: string, pdfBuffer: Buffer, userId: string): Promise<void> {
     try {
+      // Validate inputs before attempting upload
+      if (!pdfBuffer || !Buffer.isBuffer(pdfBuffer) || pdfBuffer.length === 0) {
+        throw new Error('Invalid PDF buffer - cannot cache empty or invalid buffer');
+      }
+      if (!contractId) {
+        throw new Error('Missing contractId - cannot cache PDF without contract identifier');
+      }
+      
       console.log("☁️ [PDF-CACHE] Caching regenerated PDF to Firebase Storage...");
+      console.log(`📦 [PDF-CACHE] Buffer size: ${(pdfBuffer.length / 1024).toFixed(2)} KB, contractId: ${contractId}`);
+      
       const { firebaseStorageService } = await import("./firebaseStorageService");
       const permanentPdfUrl = await firebaseStorageService.uploadContractPdf(pdfBuffer, contractId);
       
