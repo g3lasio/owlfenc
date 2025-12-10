@@ -959,10 +959,10 @@ class PremiumPdfService {
                 <div class="party-box">
                     <div class="party-title">Client</div>
                     <div class="party-details">
-                        <p><strong>Full Name/Company:</strong> ${data.client.name}</p>
-                        <p><strong>Property Address:</strong><br>${data.client.address}</p>
-                        <p><strong>Telephone:</strong> ${data.client.phone}</p>
-                        <p><strong>Email:</strong> ${data.client.email}</p>
+                        <p><strong>Full Name/Company:</strong> ${data.client.name || "Client Name"}</p>
+                        <p><strong>Property Address:</strong><br>${data.client.address || "Address to be confirmed"}</p>
+                        <p><strong>Telephone:</strong> ${data.client.phone || "To be provided"}</p>
+                        <p><strong>Email:</strong> ${data.client.email || "To be provided"}</p>
                     </div>
                 </div>
             </div>
@@ -988,7 +988,7 @@ class PremiumPdfService {
             <div class="numbered-section">
                 <p><span class="section-number">1. SCOPE OF WORK AND SPECIFICATIONS</span></p>
                 <p class="legal-text">
-                    The Contractor hereby agrees to furnish all labor, materials, equipment, and services necessary to complete the following work: ${data.project.description}. Said work shall be performed at the following location: ${data.project.location}. All work shall be executed in a professional, workmanlike manner in strict accordance with industry best practices, applicable building codes, municipal regulations, and manufacturer specifications. The Contractor warrants that all work will meet or exceed industry standards for quality and durability.
+                    The Contractor hereby agrees to furnish all labor, materials, equipment, and services necessary to complete the following work: ${data.project.description || "As specified in project scope"}. Said work shall be performed at the following location: ${data.project.location || data.client?.address || "the property address specified above"}. All work shall be executed in a professional, workmanlike manner in strict accordance with industry best practices, applicable building codes, municipal regulations, and manufacturer specifications. The Contractor warrants that all work will meet or exceed industry standards for quality and durability.
                 </p>
             </div>
 
@@ -1225,10 +1225,14 @@ class PremiumPdfService {
 
   private generateTimelineSection(timeline?: {
     startDate: string;
-    endDate: string;
+    endDate?: string;
+    completionDate?: string;
     estimatedDuration?: string;
   }): string {
-    if (!timeline || (!timeline.startDate && !timeline.endDate)) {
+    // Support both endDate and completionDate (frontend sends completionDate)
+    const effectiveEndDate = timeline?.endDate || timeline?.completionDate;
+    
+    if (!timeline || (!timeline.startDate && !effectiveEndDate)) {
       // Default timeline section when no timeline data is provided
       return `The Contractor shall commence work within ten (10) business days following execution of this Agreement and receipt of the initial payment, weather and site conditions permitting. The Contractor shall proceed with due diligence and in a timely manner to achieve substantial completion. Time is of the essence in this Agreement. The Contractor shall provide the Client with reasonable advance notice of any circumstances that may delay completion, including but not limited to adverse weather conditions, permit delays, or unforeseen site conditions.`;
     }
@@ -1247,8 +1251,8 @@ class PremiumPdfService {
       timelineText += `The Contractor shall commence work within ten (10) business days following execution of this Agreement and receipt of the initial payment, weather and site conditions permitting. `;
     }
 
-    if (timeline.endDate) {
-      const endDate = new Date(timeline.endDate);
+    if (effectiveEndDate) {
+      const endDate = new Date(effectiveEndDate);
       const formattedEndDate = endDate.toLocaleDateString("en-US", {
         year: "numeric",
         month: "long",
@@ -1257,9 +1261,9 @@ class PremiumPdfService {
       timelineText += `<strong>Substantial Completion Date:</strong> All work shall be substantially completed by ${formattedEndDate}. `;
     }
 
-    if (timeline.startDate && timeline.endDate) {
+    if (timeline.startDate && effectiveEndDate) {
       const start = new Date(timeline.startDate);
-      const end = new Date(timeline.endDate);
+      const end = new Date(effectiveEndDate);
       const diffTime = Math.abs(end.getTime() - start.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       timelineText += `<strong>Project Duration:</strong> The estimated completion time is ${diffDays} calendar days. `;
@@ -1410,7 +1414,7 @@ class PremiumPdfService {
         <h3>1. PROJECT DESCRIPTION</h3>
         <div class="clause">
             The Contractor agrees to perform the following work: ${data.project.description || "Construction services"} 
-            at the location: ${data.project.location}.
+            at the location: ${data.project.location || data.client?.address || "the property address specified above"}.
         </div>
     </div>
 

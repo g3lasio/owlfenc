@@ -2580,7 +2580,30 @@ export default function SimpleContractGenerator() {
     setIsLoading(true);
 
     try {
-      // Collect comprehensive contract data
+      // Collect COMPREHENSIVE contract data - ALL fields from interface
+      const projectTotal = editableData.projectTotal || getCorrectProjectTotal(selectedProject);
+      const clientAddress = editableData.clientAddress ||
+        contractData?.clientInfo?.address ||
+        selectedProject.address ||
+        selectedProject.clientAddress ||
+        "";
+      
+      // Build legal clauses array from selected clauses
+      const selectedClausesData = suggestedClauses
+        .filter((c) => selectedClauses.includes(c.id))
+        .map((c) => ({
+          title: c.title,
+          content: c.content || c.description,
+        }));
+      
+      // Add custom enhanced clause if exists
+      if (enhancedClauseText) {
+        selectedClausesData.push({
+          title: "Custom Clause",
+          content: enhancedClauseText,
+        });
+      }
+
       const contractPayload = {
         userId: currentUser!.uid,
         client: {
@@ -2588,12 +2611,7 @@ export default function SimpleContractGenerator() {
             editableData.clientName ||
             contractData?.clientInfo?.name ||
             selectedProject.clientName,
-          address:
-            editableData.clientAddress ||
-            contractData?.clientInfo?.address ||
-            selectedProject.address ||
-            selectedProject.clientAddress ||
-            "",
+          address: clientAddress,
           email:
             editableData.clientEmail ||
             contractData?.clientInfo?.email ||
@@ -2613,9 +2631,10 @@ export default function SimpleContractGenerator() {
             selectedProject.projectType ||
             "",
           type: selectedProject.projectType || "Construction Project",
-          // CRITICAL FIX: Use the edited projectTotal from user input
-          total: editableData.projectTotal || getCorrectProjectTotal(selectedProject),
+          total: projectTotal,
           materials: contractData?.materials || selectedProject.materials || [],
+          // FIX: Add location from client address to prevent "undefined"
+          location: clientAddress || "As specified in project details",
         },
         contractor: {
           name: profile?.company || profile?.ownerName || "Company Name",
@@ -2627,33 +2646,63 @@ export default function SimpleContractGenerator() {
           license: profile?.license || "",
         },
         financials: {
-          // CRITICAL FIX: Use the edited projectTotal from user input for PDF generation
-          total: editableData.projectTotal || getCorrectProjectTotal(selectedProject),
-          subtotal: editableData.projectTotal || getCorrectProjectTotal(selectedProject),
+          total: projectTotal,
+          subtotal: projectTotal,
           tax: 0,
           discount: 0,
+          paymentMilestones: editableData.paymentMilestones,
         },
         timeline: {
           startDate:
             editableData.startDate || new Date().toISOString().split("T")[0],
-          completionDate: editableData.completionDate || "",
-          estimatedDuration: "As specified in project details",
+          completionDate: editableData.completionDate || 
+            new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+          estimatedDuration: editableData.startDate && editableData.completionDate
+            ? `${Math.ceil((new Date(editableData.completionDate).getTime() - new Date(editableData.startDate).getTime()) / (1000 * 60 * 60 * 24))} days`
+            : "As specified in project details",
         },
         paymentTerms: editableData.paymentMilestones || [
           {
             id: 1,
             description: "Initial deposit",
             percentage: 50,
-            amount: (editableData.projectTotal || getCorrectProjectTotal(selectedProject)) * 0.5,
+            amount: projectTotal * 0.5,
           },
           {
             id: 2,
             description: "Project completion",
             percentage: 50,
-            amount: (editableData.projectTotal || getCorrectProjectTotal(selectedProject)) * 0.5,
+            amount: projectTotal * 0.5,
           },
         ],
+        // ✅ FIX: Add permit info
+        permitInfo: {
+          permitsRequired: editableData.permitRequired === "yes",
+          responsibility: editableData.permitRequired === "yes" 
+            ? editableData.permitResponsibility 
+            : "contractor",
+          numbers: "",
+        },
+        // ✅ FIX: Add warranties
+        warranties: {
+          workmanship: `${editableData.warrantyYears || "1"} year${editableData.warrantyYears !== "1" ? "s" : ""}`,
+          materials: "Manufacturer warranty applies to all materials",
+        },
+        // ✅ FIX: Add legal defense clauses (protectionClauses format for PDF)
+        protections: selectedClausesData,
+        selectedIntelligentClauses: selectedClausesData,
+        legalClauses: {
+          selected: selectedClauses,
+          clauses: selectedClausesData,
+        },
       };
+
+      console.log("📄 [PDF DOWNLOAD] Complete payload with clauses:", {
+        clauseCount: selectedClausesData.length,
+        hasPermitInfo: !!contractPayload.permitInfo,
+        hasWarranties: !!contractPayload.warranties,
+        hasProtections: contractPayload.protections?.length || 0,
+      });
 
       console.log(
         "📄 [PDF DOWNLOAD] Generating PDF with payload:",
