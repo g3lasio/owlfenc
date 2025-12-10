@@ -731,10 +731,11 @@ export class DualSignatureService {
       if (contract.signedContractHtml || contract.contractHtml) {
         try {
           console.log("🔄 [DUAL-SIGNATURE] Regenerating PDF from stored HTML (fallback 3)...");
-          const { premiumPdfService } = await import("./premiumPdfService");
+          const PremiumPdfService = (await import("./premiumPdfService")).default;
+          const pdfService = new PremiumPdfService();
           
           const htmlContent = contract.signedContractHtml || contract.contractHtml;
-          const pdfBuffer = await premiumPdfService.generatePdfFromHtml(htmlContent, {
+          const pdfBuffer = await pdfService.generatePdfFromHtml(htmlContent, {
             format: 'Letter',
             printBackground: true
           });
