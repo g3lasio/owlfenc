@@ -2472,10 +2472,24 @@ You can also drag & drop documents here (permits, plans, estimates)"
 
                     <TabsContent value="contact" className="space-y-4 mt-6">
                       <div className="space-y-4">
-                        <h4 className="text-purple-300 font-semibold border-b border-purple-500/30 pb-2 mb-4 flex items-center gap-2">
-                          <span className="text-xl">📞</span>
-                          Municipal Contact Information
-                        </h4>
+                        <div className="flex items-center justify-between border-b border-purple-500/30 pb-2 mb-4">
+                          <h4 className="text-purple-300 font-semibold flex items-center gap-2">
+                            <span className="text-xl">📞</span>
+                            Municipal Contact Information
+                          </h4>
+                          {permitData?.contactInfo?.confidence && (
+                            <span className={`text-xs px-2 py-1 rounded-full ${
+                              permitData.contactInfo.confidence === 'high' 
+                                ? 'bg-green-500/20 text-green-300 border border-green-400/30' 
+                                : permitData.contactInfo.confidence === 'medium'
+                                ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-400/30'
+                                : 'bg-orange-500/20 text-orange-300 border border-orange-400/30'
+                            }`}>
+                              {permitData.contactInfo.confidence === 'high' ? '✓ Verified' : 
+                               permitData.contactInfo.confidence === 'medium' ? '~ Researched' : '? Limited Data'}
+                            </span>
+                          )}
+                        </div>
                         
                         {/* Primary Contact Card */}
                         <div className="relative">
