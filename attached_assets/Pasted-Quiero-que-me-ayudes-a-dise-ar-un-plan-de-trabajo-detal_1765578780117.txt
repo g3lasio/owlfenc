@@ -1,0 +1,190 @@
+Quiero que me ayudes a diseñar un plan de trabajo detallado (solo plan, NO quiero que empieces a cambiar código todavía) para expandir nuestro sistema actual de generación de contratos.
+
+1. Contexto de lo que ya tenemos
+
+Actualmente el sistema de “Legal Defense” ya es bastante robusto y quiero mantenerlo INTACTO en su esencia:
+
+Ya tenemos:
+
+Un contrato principal que se genera en PDF.
+
+Un sistema de firmas con URL (firma electrónica) ya funcionando.
+
+Sistemas de validación, manejo de estados y flujos de firmado.
+
+Lógica de documentado y almacenamiento ya operando correctamente.
+
+⚠️ Es muy importante:
+No quiero que se rompa ni se altere el estilo actual del contrato existente, ni el sistema de firmas, ni el flujo de PDF/URLs.
+Lo que quiero es montar encima del sistema actual más plantillas (templates) y más tipos de contratos, reutilizando:
+
+El mismo motor de:
+
+Generación de PDF
+
+Generación de URLs de firma
+
+Flujo de incrustación de firmas
+
+Validaciones ya existentes
+
+En resumen:
+✅ Reusar el core actual
+✅ No romper lo que ya funciona
+✅ Solo agregar más templates / opciones
+
+2. Qué queremos agregar (nueva estructura de contratos)
+A) Documentos complementarios → estos son prioridad ALTA para implementar primero (no “coming soon”)
+
+Quiero que el sistema pueda generar también estos documentos, usando el mismo flujo de PDF + firma cuando aplique:
+
+Change Order Agreement
+
+Contract Addendum
+
+Work Order / Statement of Work
+
+Lien Waiver (Partial / Final)
+
+Certificate of Completion
+
+Warranty Agreement
+
+La idea es que el usuario pueda elegir qué tipo de documento quiere generar y el sistema use el mismo pipeline actual (inputs → plantilla → PDF → URL de firma).
+
+B) Coming Soon – Prioridad 1 (Contratos base “sí o sí”)
+
+Estos irán como Coming Soon pero quiero que los consideres en el plan de arquitectura desde ahora:
+
+Lump Sum / Fixed Price Contract
+
+Time and Materials (T&M) Contract
+
+Guaranteed Maximum Price (GMP)
+
+Unit Price Contract
+
+Estos son contratos fundamentales para cualquier contratista.
+
+C) Coming Soon – Prioridad 2 (Comercial / Corporativo)
+
+Master Service Agreement (MSA)
+
+Commercial Construction Contract
+
+Tenant Improvement (TI) Contract
+
+D) Coming Soon – Prioridad 3 (Subcontractos, bien clasificados)
+
+Aquí quiero que los reclasifiquemos y organicemos para que el sistema se vea como una “mina legal” ordenada, no solo una lista larga.
+
+Propuesta de organización:
+
+Subcontractor Agreement (General)
+
+Y luego subcontracts por trade, agrupados por categoría:
+
+Estructura y Carpintería
+
+Framing Subcontract
+
+Deck / Carpentry
+
+Drywall
+
+Instalaciones Técnicas
+
+Plumbing
+
+Electrical
+
+HVAC
+
+Exterior / Outdoor
+
+Roofing
+
+Landscaping
+
+Fencing (como subcontract, además del contrato directo con cliente)
+
+Acabados
+
+Painting
+
+Flooring
+
+Siding
+
+No quiero que implementes esto todavía, solo que lo tomes en cuenta para el diseño del sistema de plantillas y la arquitectura de datos.
+
+3. Lo que necesito de ti ahora
+
+Quiero que me des un plan de trabajo realista y detallado para implementar todo esto SIN romper:
+
+El estilo actual del contrato existente
+
+El generador de PDF
+
+El sistema de URLs y firmas
+
+La lógica de validación y estados
+
+En tu respuesta quiero que incluyas, por favor:
+
+Sugerencia de arquitectura interna
+
+Cómo manejar múltiples tipos de contrato / documento:
+
+Por ejemplo, si debemos tener un sistema de “plantillas” con un contract_type o similar.
+
+Cómo mapear los campos dinámicos (placeholders) para distintos tipos de contratos sin duplicar lógica.
+
+Cambios mínimos necesarios en el backend
+
+Qué partes del código habría que generalizar para soportar varios templates.
+
+Cómo reusar exactamente el mismo flujo actual de:
+
+creación → firma → PDF → almacenamiento.
+
+Cambios en base de datos (si son necesarios)
+
+Propuesta de tablas/campos para:
+
+tipos de contrato
+
+metadata de plantillas
+
+relación entre contrato generado y tipo de plantilla
+
+Cambios en el frontend / UI
+
+Cómo mostrar de manera limpia:
+
+el contrato actual
+
+los nuevos documentos complementarios
+
+los contratos “Coming Soon” por categorías
+
+Sin hacer la interfaz confusa ni recargarla.
+
+Estrategia de compatibilidad
+
+Cómo garantizar que los contratos antiguos sigan funcionando igual.
+
+Cómo probar que el flujo actual no se rompe.
+
+Fases de implementación
+
+Fase 1: agregar documentos complementarios usando el sistema actual.
+
+Fase 2: preparar la estructura para soportar los contratos base adicionales.
+
+Fase 3: preparar la organización de subcontracts y comerciales.
+
+Quiero que el plan esté bien explicado, paso a paso, y que lo pienses como si fueras a liderar tú mismo la implementación completa sobre el código ya existente.
+
+No empieces a escribir código todavía.
+Solo dame el roadmap técnico y de arquitectura para que podamos revisarlo juntos antes de tocar nada.
