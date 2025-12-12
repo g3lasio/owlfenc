@@ -647,19 +647,46 @@ export class DualSignatureService {
         };
       }
 
-      if (contract.status !== "completed") {
+      // ✅ FIX: Allow download for contracts that are effectively complete
+      // Status can be "completed", "both_signed", or have both signatures
+      const isEffectivelyComplete = 
+        contract.status === "completed" || 
+        contract.status === "both_signed" ||
+        (contract.contractorSigned === true && contract.clientSigned === true);
+      
+      if (!isEffectivelyComplete) {
+        console.log(`⚠️ [DUAL-SIGNATURE] Contract ${contractId} is not complete yet. Status: ${contract.status}, contractorSigned: ${contract.contractorSigned}, clientSigned: ${contract.clientSigned}`);
         return {
           success: false,
           message: "Contract is not completed yet",
         };
       }
+      
+      console.log(`✅ [DUAL-SIGNATURE] Contract ${contractId} is complete. Status: ${contract.status}`);
+      console.log(`📋 [DUAL-SIGNATURE] permanentPdfUrl: ${contract.permanentPdfUrl ? 'YES' : 'NO'}, signedPdfPath: ${contract.signedPdfPath ? 'YES' : 'NO'}`);
+      console.log(`📝 [DUAL-SIGNATURE] contractHtml: ${contract.contractHtml ? 'YES' : 'NO'}, contractorSignatureData: ${contract.contractorSignatureData ? 'YES' : 'NO'}, clientSignatureData: ${contract.clientSignatureData ? 'YES' : 'NO'}`);
 
-      // ✅ PRIORITY 1: Try Firebase Storage (PERMANENT)
+      // ✅ PRIORITY 1: Try Firebase Storage (PERMANENT) with timeout
       if (contract.permanentPdfUrl) {
         try {
           console.log("☁️ [DUAL-SIGNATURE] Fetching PDF from Firebase Storage...");
+          console.log(`🔗 [DUAL-SIGNATURE] URL: ${contract.permanentPdfUrl.substring(0, 100)}...`);
+          
           const fetch = (await import("node-fetch")).default;
-          const response = await fetch(contract.permanentPdfUrl);
+          const AbortController = globalThis.AbortController || (await import("abort-controller")).default;
+          
+          // ✅ FIX: Add 15-second timeout to prevent hanging forever
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => {
+            console.warn("⏱️ [DUAL-SIGNATURE] Firebase Storage fetch timed out after 15 seconds");
+            controller.abort();
+          }, 15000);
+          
+          const response = await fetch(contract.permanentPdfUrl, {
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeoutId);
           
           if (response.ok) {
             const pdfBuffer = Buffer.from(await response.arrayBuffer());
@@ -670,10 +697,14 @@ export class DualSignatureService {
               message: "PDF downloaded successfully from permanent storage",
             };
           } else {
-            console.warn("⚠️ [DUAL-SIGNATURE] Failed to fetch from Firebase Storage, trying local fallback...");
+            console.warn(`⚠️ [DUAL-SIGNATURE] Failed to fetch from Firebase Storage (HTTP ${response.status}), trying fallbacks...`);
           }
         } catch (storageError: any) {
-          console.warn("⚠️ [DUAL-SIGNATURE] Firebase Storage fetch failed:", storageError.message);
+          if (storageError.name === 'AbortError') {
+            console.warn("⏱️ [DUAL-SIGNATURE] Firebase Storage fetch was aborted (timeout), trying fallbacks...");
+          } else {
+            console.warn("⚠️ [DUAL-SIGNATURE] Firebase Storage fetch failed:", storageError.message);
+          }
         }
       }
 
