@@ -2647,7 +2647,39 @@ You can also drag & drop documents here (permits, plans, estimates)"
                           </div>
                         )}
                         
-                        {/* No Contact Data Found Message */}
+                        {/* Contact Guidance Message - when no verified data exists */}
+                        {(permitData?.contactInfo?.isGuidance || permitData?.contactInformation?.[0]?.isGuidance) && (
+                          <div className="relative mt-4">
+                            <div className="absolute inset-0 bg-gradient-to-r from-amber-400/10 via-yellow-400/10 to-orange-400/10 rounded-lg"></div>
+                            <Card className="relative bg-gray-800/70 border-amber-400/30 backdrop-blur-sm">
+                              <CardContent className="p-6">
+                                <div className="flex items-start gap-4">
+                                  <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center justify-center text-xl shadow-lg">
+                                    💡
+                                  </div>
+                                  <div className="flex-1">
+                                    <h5 className="text-amber-300 font-semibold text-lg mb-2">
+                                      How to Find Your Local Building Department
+                                    </h5>
+                                    <p className="text-amber-200 text-sm leading-relaxed mb-4">
+                                      {permitData?.contactInfo?.guidanceNote || permitData?.contactInformation?.[0]?.guidanceNote}
+                                    </p>
+                                    {(permitData?.contactInfo?.searchTip || permitData?.contactInformation?.[0]?.searchTip) && (
+                                      <div className="bg-amber-500/10 border border-amber-400/20 rounded-lg p-3">
+                                        <p className="text-amber-100 text-xs flex items-center gap-2">
+                                          <span>🔍</span>
+                                          {permitData?.contactInfo?.searchTip || permitData?.contactInformation?.[0]?.searchTip}
+                                        </p>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </div>
+                        )}
+
+                        {/* No Contact Data Found Message - only show if no data and no guidance */}
                         {!permitData?.contactInfo && !permitData?.contactInformation && (
                           <div className="text-center py-12">
                             <div className="bg-gray-800/30 border border-gray-600/30 rounded-lg p-8">
