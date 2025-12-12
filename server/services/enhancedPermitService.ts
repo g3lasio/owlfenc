@@ -1,8 +1,8 @@
-import OpenAI from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
 
-// Create OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+// Create Anthropic client for Claude - more reliable than OpenAI project-scoped keys
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY
 });
 
 /**
@@ -21,24 +21,20 @@ class EnhancedPermitService {
       // Project-specific building code prompts
       const projectSpecificPrompts = this.getProjectSpecificPrompts(projectType);
       
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+      const response = await anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 4000,
+        system: this.getEnhancedSystemPrompt() + "\n\nIMPORTANT: You must respond with valid JSON only. No additional text before or after the JSON object.",
         messages: [
           {
-            role: "system",
-            content: this.getEnhancedSystemPrompt()
-          },
-          {
             role: "user",
-            content: this.buildProjectSpecificPrompt(address, projectType, projectDescription, projectSpecificPrompts)
+            content: this.buildProjectSpecificPrompt(address, projectType, projectDescription, projectSpecificPrompts) + "\n\nRespond with valid JSON only."
           }
-        ],
-        response_format: { type: "json_object" },
-        max_tokens: 4000,
-        temperature: 0.2
+        ]
       });
 
-      const result = JSON.parse(response.choices[0].message.content || '{}');
+      const textContent = response.content.find((c) => c.type === 'text') as { type: 'text'; text: string } | undefined;
+      const result = JSON.parse(textContent?.text || '{}');
       
       // Add metadata
       result.meta = {

@@ -1,10 +1,10 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
-import OpenAI from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
 
-// Create OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+// Create Anthropic client for Claude - more reliable than OpenAI project-scoped keys
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY
 });
 
 /**
@@ -319,13 +319,13 @@ class SearchService {
    */
   async generatePermitSummary(htmlContents: string[], projectDetails: any): Promise<any> {
     try {
-      console.log('Generating comprehensive permit summary using OpenAI advanced knowledge');
+      console.log('Generating comprehensive permit summary using Claude AI');
       
       // Extract detailed project information
       const projectType = projectDetails.projectType;
       const address = projectDetails.address;
       
-      // Create a highly detailed context for OpenAI to provide real, specific information
+      // Create a highly detailed context for Claude to provide real, specific information
       const context = `
       PROYECTO DE CONSTRUCCIÓN ESPECÍFICO:
       Tipo de Proyecto: ${projectType}
@@ -345,13 +345,7 @@ class SearchService {
       
       POR FAVOR PROPORCIONA INFORMACIÓN REAL Y ESPECÍFICA, NO GENÉRICA.`;
       
-      // Call OpenAI API to generate a comprehensive structured analysis with optimized prompt
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: `You are a premium construction permit expert providing $100/month value through comprehensive, specific information.
+      const systemPrompt = `You are a premium construction permit expert providing $100/month value through comprehensive, specific information.
 
 CRITICAL: Provide REAL, SPECIFIC information including:
 - Exact department names, addresses, phone numbers
@@ -372,11 +366,11 @@ Return detailed JSON with:
 - timeline: [critical path, dependencies, seasonal considerations, deadlines]
 - officialResources: [formUrls, guidanceDocuments, checklistUrls, portalLinks]
 
-Provide premium-level detail that justifies professional subscription cost.`
-          },
-          {
-            role: "user",
-            content: `${context}
+Provide premium-level detail that justifies professional subscription cost.
+
+IMPORTANT: You must respond with valid JSON only. No additional text before or after the JSON object.`;
+
+      const userPrompt = `${context}
 
 CRITICAL REQUIREMENTS for professional-grade information:
 
@@ -409,38 +403,27 @@ CRITICAL REQUIREMENTS for professional-grade information:
    - Plumbing inspector contact information
    - Inspection scheduling department phone numbers
 
-Example format for comprehensive contact information:
-{
-  "contactInformation": [
-    {
-      "department": "Building Department",
-      "directPhone": "(555) 123-4567",
-      "email": "building@cityname.gov",
-      "physicalAddress": "123 Main St, City, State 12345",
-      "website": "https://cityname.gov/building",
-      "inspectorName": "John Smith, Chief Building Inspector",
-      "inspectorPhone": "(555) 123-4568",
-      "inspectorEmail": "jsmith@cityname.gov",
-      "hours": "Monday-Friday 8:00 AM - 4:30 PM",
-      "onlinePortal": "https://cityname.gov/permits/portal",
-      "schedulingPhone": "(555) 123-4569"
-    }
-  ]
-}
+Respond with valid JSON only.`;
 
-Provide professional contractor-grade information with real links and clear responsibilities.`
+      // Call Claude API to generate a comprehensive structured analysis
+      const response = await anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 4000,
+        system: systemPrompt,
+        messages: [
+          {
+            role: "user",
+            content: userPrompt
           }
-        ],
-        response_format: { type: "json_object" },
-        max_tokens: 2000,
-        temperature: 0.3
+        ]
       });
       
       // Parse and return the structured data
       try {
-        const content = response.choices[0]?.message?.content;
+        const textContent = response.content.find((c) => c.type === 'text') as { type: 'text'; text: string } | undefined;
+        const content = textContent?.text;
         if (!content) {
-          throw new Error('No content received from OpenAI');
+          throw new Error('No content received from Claude');
         }
         
         const result = JSON.parse(content);
@@ -456,10 +439,11 @@ Provide professional contractor-grade information with real links and clear resp
         
         return result;
       } catch (parseError) {
-        console.error('Error parsing OpenAI response:', parseError);
+        console.error('Error parsing Claude response:', parseError);
+        const textContent = response.content.find((c) => c.type === 'text') as { type: 'text'; text: string } | undefined;
         // Return the raw text if JSON parsing fails
         return { 
-          raw: response.choices[0].message.content || 'No content received',
+          raw: textContent?.text || 'No content received',
           error: "Failed to structure the response properly",
           meta: {
             generated: new Date().toISOString(),
