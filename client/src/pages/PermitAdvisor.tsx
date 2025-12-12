@@ -1797,7 +1797,7 @@ You can also drag & drop documents here (permits, plans, estimates)"
                 <Button
                   onClick={() => {
                     if (projectDescription.trim()) {
-                      setCurrentStep(3);
+                      handleSearch();
                     } else {
                       toast({
                         title: "Missing Information",
@@ -1806,12 +1806,26 @@ You can also drag & drop documents here (permits, plans, estimates)"
                       });
                     }
                   }}
-                  disabled={!projectDescription.trim()}
-                  className="bg-cyan-600 hover:bg-cyan-500 text-black font-medium px-4 sm:px-6 text-sm order-1 sm:order-2"
+                  disabled={!projectDescription.trim() || isLoading || !canUse('permitAdvisor')}
+                  className={`font-medium px-4 sm:px-6 text-sm order-1 sm:order-2 ${
+                    canUse('permitAdvisor')
+                      ? "bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white"
+                      : "bg-gray-600 text-gray-300 cursor-not-allowed"
+                  }`}
                 >
-                  <span className="hidden sm:inline">Start DeepSearch Analysis</span>
-                  <span className="sm:hidden">Start Analysis</span>
-                  <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
+                  {isLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-white mr-1 sm:mr-2"></div>
+                      <span className="hidden sm:inline">Running Analysis...</span>
+                      <span className="sm:hidden">Analyzing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Search className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                      <span className="hidden sm:inline">Start DeepSearch Analysis</span>
+                      <span className="sm:hidden">Start Analysis</span>
+                    </>
+                  )}
                 </Button>
               </div>
             </CardContent>
