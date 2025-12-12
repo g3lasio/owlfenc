@@ -1968,47 +1968,82 @@ You can also drag & drop documents here (permits, plans, estimates)"
                                 <CardContent className="p-6">
                                   <div className="flex items-start gap-4">
                                     <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg flex items-center justify-center shadow-lg">
-                                      <span className="text-xl">📋</span>
+                                      <span className="text-xl">{permit.required === false ? '⚪' : '📋'}</span>
                                     </div>
                                     <div className="flex-1 min-w-0 space-y-3">
                                       <div>
-                                        <h3 className="text-xl font-semibold text-cyan-300 mb-2 break-words">
-                                          {permit.type || `Permit ${idx + 1}`}
-                                        </h3>
+                                        <div className="flex items-center gap-2 mb-2">
+                                          <h3 className="text-xl font-semibold text-cyan-300 break-words">
+                                            {permit.permitType || permit.type || permit.name || `Permit ${idx + 1}`}
+                                          </h3>
+                                          {permit.required === false && (
+                                            <Badge className="bg-gray-600/50 text-gray-300 text-xs">Not Required</Badge>
+                                          )}
+                                          {permit.required === true && (
+                                            <Badge className="bg-green-600/50 text-green-300 text-xs">Required</Badge>
+                                          )}
+                                        </div>
                                         <p className="text-gray-300 leading-relaxed break-words">
-                                          {permit.description || permit.requirements || "Permit details"}
+                                          {permit.requirements || permit.description || permit.note || "Permit details"}
                                         </p>
                                       </div>
 
-                                      {permit.fees && (
+                                      {/* Jurisdiction */}
+                                      {permit.jurisdiction && (
+                                        <div className="bg-cyan-500/10 border border-cyan-400/30 rounded-lg p-4">
+                                          <h4 className="text-cyan-400 font-medium mb-2 flex items-center gap-2">
+                                            🏛️ Jurisdiction
+                                          </h4>
+                                          <p className="text-cyan-200">
+                                            {permit.jurisdiction}
+                                          </p>
+                                        </div>
+                                      )}
+
+                                      {/* Fees */}
+                                      {(permit.applicationFee || permit.fees || permit.cost) && (
                                         <div className="bg-green-500/10 border border-green-400/30 rounded-lg p-4">
                                           <h4 className="text-green-400 font-medium mb-2 flex items-center gap-2">
                                             💰 Estimated Fees
                                           </h4>
                                           <p className="text-green-200 font-semibold">
-                                            {permit.fees}
+                                            {permit.applicationFee || permit.fees || permit.cost}
                                           </p>
                                         </div>
                                       )}
 
-                                      {permit.timeline && (
+                                      {/* Exemptions */}
+                                      {permit.exemptions && (
+                                        <div className="bg-yellow-500/10 border border-yellow-400/30 rounded-lg p-4">
+                                          <h4 className="text-yellow-400 font-medium mb-2 flex items-center gap-2">
+                                            ⚠️ Exemptions
+                                          </h4>
+                                          <p className="text-yellow-200">
+                                            {permit.exemptions}
+                                          </p>
+                                        </div>
+                                      )}
+
+                                      {/* Application Location */}
+                                      {permit.applicationLocation && (
+                                        <div className="bg-purple-500/10 border border-purple-400/30 rounded-lg p-4">
+                                          <h4 className="text-purple-400 font-medium mb-2 flex items-center gap-2">
+                                            📍 Where to Apply
+                                          </h4>
+                                          <p className="text-purple-200">
+                                            {permit.applicationLocation}
+                                          </p>
+                                        </div>
+                                      )}
+
+                                      {/* Timeline */}
+                                      {(permit.timeline || permit.processingTime) && (
                                         <div className="bg-blue-500/10 border border-blue-400/30 rounded-lg p-4">
                                           <h4 className="text-blue-400 font-medium mb-2 flex items-center gap-2">
                                             ⏱️ Processing Time
                                           </h4>
                                           <p className="text-blue-200">
-                                            {permit.timeline}
-                                          </p>
-                                        </div>
-                                      )}
-
-                                      {permit.contact && (
-                                        <div className="bg-purple-500/10 border border-purple-400/30 rounded-lg p-4">
-                                          <h4 className="text-purple-400 font-medium mb-2 flex items-center gap-2">
-                                            📞 Contact Information
-                                          </h4>
-                                          <p className="text-purple-200">
-                                            {permit.contact}
+                                            {permit.timeline || permit.processingTime}
                                           </p>
                                         </div>
                                       )}
@@ -2054,11 +2089,16 @@ You can also drag & drop documents here (permits, plans, estimates)"
                                       <div className="flex-1 min-w-0 space-y-3">
                                         <div>
                                           <h3 className="text-xl font-semibold text-emerald-300 mb-2 break-words">
-                                            {codeSection.section || codeSection.title || `Building Code Section ${idx + 1}`}
+                                            {codeSection.codeSection || codeSection.section || codeSection.title || `Building Code Section ${idx + 1}`}
                                           </h3>
                                           <p className="text-gray-300 leading-relaxed break-words">
-                                            {codeSection.description || codeSection.summary || "Code section details"}
+                                            {codeSection.requirement || codeSection.description || codeSection.summary || "Code section details"}
                                           </p>
+                                          {codeSection.specification && (
+                                            <p className="text-cyan-300 text-sm mt-2 italic">
+                                              📏 {codeSection.specification}
+                                            </p>
+                                          )}
                                         </div>
 
                                         {/* Enhanced Details Section */}
