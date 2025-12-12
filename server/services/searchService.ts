@@ -421,12 +421,19 @@ Respond with valid JSON only.`;
       // Parse and return the structured data
       try {
         const textContent = response.content.find((c) => c.type === 'text') as { type: 'text'; text: string } | undefined;
-        const content = textContent?.text;
+        let content = textContent?.text;
         if (!content) {
           throw new Error('No content received from Claude');
         }
         
-        const result = JSON.parse(content);
+        // Clean markdown code blocks if present
+        if (content.includes('```json')) {
+          content = content.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+        } else if (content.includes('```')) {
+          content = content.replace(/```\s*/g, '');
+        }
+        
+        const result = JSON.parse(content.trim());
         
         // Add metadata for frontend use
         result.meta = {
