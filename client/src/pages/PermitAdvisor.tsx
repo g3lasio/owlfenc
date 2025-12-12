@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle2, Search, Clock, Trash2, Paperclip, X, FileText, Upload, Download, MapPin, ArrowRight, ArrowLeft, Eye, Database, Building, RefreshCw, History, DollarSign, Lock, Crown, Zap } from "lucide-react";
+import { CheckCircle2, Search, Clock, Trash2, Paperclip, X, FileText, Upload, Download, MapPin, ArrowRight, ArrowLeft, Eye, Database, Building, RefreshCw, History, DollarSign, Lock, Crown, Zap, Sparkles } from "lucide-react";
 import MapboxPlacesAutocomplete from "@/components/ui/mapbox-places-autocomplete";
 import { useToast } from "@/hooks/use-toast";
 import { auth, db } from "@/lib/firebase";
@@ -148,6 +148,7 @@ export default function PermitAdvisor() {
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [isEnhancingDescription, setIsEnhancingDescription] = useState(false);
   const { toast } = useToast();
   const { profile } = useProfile();
   const { user } = useAuth();
@@ -966,6 +967,44 @@ export default function PermitAdvisor() {
     }
   };
 
+  // AI Enhancement function for project description
+  const handleEnhanceDescription = async () => {
+    if (!projectDescription.trim() || projectDescription.length < 10) {
+      toast({
+        title: "Brief Description Required",
+        description: "Please enter at least a brief description to enhance",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsEnhancingDescription(true);
+    try {
+      const response = await apiRequest("POST", "/api/ai-enhance", {
+        originalText: projectDescription,
+        projectType: projectType
+      });
+
+      const data = await response.json();
+      if (data.enhancedDescription) {
+        setProjectDescription(data.enhancedDescription);
+        toast({
+          title: "Description Enhanced",
+          description: "Your project description has been expanded with AI",
+        });
+      }
+    } catch (error) {
+      console.error("Error enhancing description:", error);
+      toast({
+        title: "Enhancement Failed",
+        description: "Could not enhance description. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsEnhancingDescription(false);
+    }
+  };
+
   const historyQuery = useQuery({
     queryKey: ["/api/permit/history"],
     enabled: showHistory,
@@ -1119,7 +1158,7 @@ export default function PermitAdvisor() {
                   {/* Step Card - Compact Layout */}
                   <div className="relative flex-1">
                     <div
-                      className={`p-3 rounded-xl border-2 transition-all duration-500 cursor-pointer transform hover:scale-105 ${
+                      className={`p-4 rounded-xl border-2 transition-all duration-500 cursor-pointer transform hover:scale-105 ${
                         step.status === "completed"
                           ? "border-green-400/70 bg-gradient-to-br from-green-400/10 to-green-500/5 shadow-xl shadow-green-400/20"
                           : step.status === "processing"
@@ -1137,11 +1176,11 @@ export default function PermitAdvisor() {
                       }}
                     >
                       {/* Horizontal Layout: Icon + Content */}
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
                         {/* Icon Circle */}
                         <div className="flex-shrink-0">
                           <div
-                            className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-500 ${
+                            className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all duration-500 ${
                               step.status === "completed"
                                 ? "border-green-400 bg-green-400/25 shadow-lg shadow-green-400/30"
                                 : step.status === "processing"
@@ -1152,15 +1191,15 @@ export default function PermitAdvisor() {
                             }`}
                           >
                             {step.status === "completed" ? (
-                              <CheckCircle2 className="h-4 w-4 text-green-400" />
+                              <CheckCircle2 className="h-5 w-5 text-green-400" />
                             ) : (
                               <div className={`transition-all duration-500 ${
                                 step.status === "processing" ? "text-cyan-300" : 
                                 step.step === currentStep ? "text-cyan-300" : "text-gray-400"
                               }`}>
-                                {step.step === 1 && <MapPin className="h-4 w-4" />}
-                                {step.step === 2 && <FileText className="h-4 w-4" />}
-                                {step.step === 3 && <Eye className="h-4 w-4" />}
+                                {step.step === 1 && <MapPin className="h-5 w-5" />}
+                                {step.step === 2 && <FileText className="h-5 w-5" />}
+                                {step.step === 3 && <Eye className="h-5 w-5" />}
                               </div>
                             )}
                           </div>
@@ -1169,7 +1208,7 @@ export default function PermitAdvisor() {
                         {/* Content: Title + Badge */}
                         <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
                           <h3
-                            className={`font-semibold text-sm leading-tight ${
+                            className={`font-semibold text-base leading-tight ${
                               step.status === "completed"
                                 ? "text-green-400"
                                 : step.status === "processing"
@@ -1640,8 +1679,8 @@ export default function PermitAdvisor() {
                 Provide detailed project information and attach relevant documents
               </p>
             </CardHeader>
-            <CardContent className="space-y-4 sm:space-y-6 px-3 sm:px-6 pb-4 sm:pb-6">
-              <div className="space-y-3 sm:space-y-4">
+            <CardContent className="space-y-2 sm:space-y-4 px-3 sm:px-6 pb-3 sm:pb-5">
+              <div className="space-y-2 sm:space-y-3">
                 <label className="text-xs sm:text-sm font-medium text-cyan-300 flex items-center gap-1 sm:gap-2">
                   <span>Project Description & Documents</span>
                   <Paperclip className="h-3 w-3 sm:h-4 sm:w-4 text-cyan-300/70 flex-shrink-0" />
@@ -1666,14 +1705,29 @@ You can also drag & drop documents here (permits, plans, estimates)"
                       }`}
                     />
                     
-                    <button
-                      type="button"
-                      onClick={() => document.getElementById("file-input")?.click()}
-                      className="absolute right-2 top-2 w-6 h-6 sm:w-8 sm:h-8 bg-cyan-500/20 hover:bg-cyan-500/30 rounded-full flex items-center justify-center transition-all duration-300 group hover:scale-110"
-                      title="Upload documents"
-                    >
-                      <Upload className="h-3 w-3 sm:h-4 sm:w-4 text-cyan-300 group-hover:text-cyan-200" />
-                    </button>
+                    <div className="absolute right-2 top-2 flex flex-col gap-1">
+                      <button
+                        type="button"
+                        onClick={() => document.getElementById("file-input")?.click()}
+                        className="w-6 h-6 sm:w-8 sm:h-8 bg-cyan-500/20 hover:bg-cyan-500/30 rounded-full flex items-center justify-center transition-all duration-300 group hover:scale-110"
+                        title="Upload documents"
+                      >
+                        <Upload className="h-3 w-3 sm:h-4 sm:w-4 text-cyan-300 group-hover:text-cyan-200" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleEnhanceDescription}
+                        disabled={isEnhancingDescription || !projectDescription.trim() || projectDescription.length < 10}
+                        className="w-6 h-6 sm:w-8 sm:h-8 bg-purple-500/20 hover:bg-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed rounded-full flex items-center justify-center transition-all duration-300 group hover:scale-110"
+                        title="Enhance with AI"
+                      >
+                        {isEnhancingDescription ? (
+                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-purple-300"></div>
+                        ) : (
+                          <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 text-purple-300 group-hover:text-purple-200" />
+                        )}
+                      </button>
+                    </div>
 
                     <input
                       id="file-input"
@@ -1778,10 +1832,10 @@ You can also drag & drop documents here (permits, plans, estimates)"
                 Comprehensive permit requirements and analysis for your project
               </p>
             </CardHeader>
-            <CardContent className="space-y-4 sm:space-y-6 px-3 sm:px-6 pb-4 sm:pb-6">
+            <CardContent className="space-y-2 sm:space-y-4 px-3 sm:px-6 pb-3 sm:pb-5">
               
               {/* Usage Counter */}
-              <div className="text-center mb-4">
+              <div className="text-center mb-2">
                 <div className="inline-flex items-center gap-2 px-3 py-2 bg-slate-800/50 rounded-lg border border-slate-600/50">
                   <div className="flex items-center gap-2">
                     {userPlan?.name === 'Master Contractor' || userPlan?.name === 'Trial Master' ? (
@@ -1804,36 +1858,37 @@ You can also drag & drop documents here (permits, plans, estimates)"
 
               {/* Analysis Controls - Mobile Optimized */}
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-                <Button
-                  onClick={handleSearch}
-                  disabled={isLoading || !selectedAddress || !projectType || !projectDescription.trim() || !canUse('permitAdvisor')}
-                  className={`font-medium px-4 sm:px-6 py-2 sm:py-3 shadow-lg text-sm ${
-                    canUse('permitAdvisor')
-                      ? "bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white"
-                      : "bg-gradient-to-r from-gray-600 to-gray-500 text-gray-300 cursor-not-allowed"
-                  }`}
-                >
-                  {!canUse('permitAdvisor') ? (
-                    <>
-                      <Lock className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                      <span className="hidden sm:inline">Límite Alcanzado</span>
-                      <span className="sm:hidden">Bloqueado</span>
-                    </>
-                  ) : isLoading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-white mr-1 sm:mr-2"></div>
-                      <span className="hidden sm:inline">Running Analysis...</span>
-                      <span className="sm:hidden">Analyzing...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Search className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                      <span className="hidden sm:inline">Run DeepSearch Analysis</span>
-                      <span className="sm:hidden">Start Analysis</span>
-                    </>
-                  )}
-                </Button>
-                
+                {!permitData && (
+                  <Button
+                    onClick={handleSearch}
+                    disabled={isLoading || !selectedAddress || !projectType || !projectDescription.trim() || !canUse('permitAdvisor')}
+                    className={`font-medium px-4 sm:px-6 py-2 sm:py-3 shadow-lg text-sm ${
+                      canUse('permitAdvisor')
+                        ? "bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white"
+                        : "bg-gradient-to-r from-gray-600 to-gray-500 text-gray-300 cursor-not-allowed"
+                    }`}
+                  >
+                    {!canUse('permitAdvisor') ? (
+                      <>
+                        <Lock className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                        <span className="hidden sm:inline">Límite Alcanzado</span>
+                        <span className="sm:hidden">Bloqueado</span>
+                      </>
+                    ) : isLoading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-white mr-1 sm:mr-2"></div>
+                        <span className="hidden sm:inline">Running Analysis...</span>
+                        <span className="sm:hidden">Analyzing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Search className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                        <span className="hidden sm:inline">Run DeepSearch Analysis</span>
+                        <span className="sm:hidden">Start Analysis</span>
+                      </>
+                    )}
+                  </Button>
+                )}
                 {permitData && (
                   <Button
                     onClick={generatePDF}
