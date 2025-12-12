@@ -1,10 +1,13 @@
 /**
  * Middleware de autenticación con Firebase
  * Extrae el token de Firebase y obtiene el ID del usuario real
+ * 
+ * IMPORTANT: Uses shared Firebase Admin instance from firebase-admin.ts
+ * to ensure proper initialization with storageBucket
  */
 
 import { Request, Response, NextFunction } from 'express';
-import admin from 'firebase-admin';
+import { admin } from '../lib/firebase-admin';
 
 // Interfaz para extender el objeto Request con información del usuario
 declare global {
@@ -19,27 +22,8 @@ declare global {
   }
 }
 
-// Inicializar Firebase Admin SDK si no está inicializado
-if (!admin.apps.length) {
-  try {
-    // En producción, usar las credenciales del entorno
-    if (process.env.FIREBASE_ADMIN_CREDENTIALS) {
-      const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_CREDENTIALS);
-      admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-        projectId: 'owl-fenc'
-      });
-    } else {
-      // Para desarrollo local, usar el SDK por defecto
-      admin.initializeApp({
-        projectId: 'owl-fenc'
-      });
-    }
-    console.log('✅ Firebase Admin SDK inicializado correctamente');
-  } catch (error) {
-    console.warn('⚠️ No se pudo inicializar Firebase Admin SDK:', (error as Error).message);
-  }
-}
+// Firebase Admin is initialized via the shared module (firebase-admin.ts)
+// No duplicate initialization needed here
 
 /**
  * Middleware para verificar autenticación con Firebase

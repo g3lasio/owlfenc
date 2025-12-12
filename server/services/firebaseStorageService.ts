@@ -8,29 +8,20 @@
  * - Backup automático en la nube
  * - Escalable y confiable
  * 
- * ✅ FIXED: Usa Firebase Admin SDK para Node.js (no Web SDK)
+ * ✅ FIXED: Uses shared Firebase Admin instance from firebase-admin.ts
+ * This ensures storage bucket is always properly configured
  */
 
-import * as admin from 'firebase-admin';
+import { getStorageBucket } from '../lib/firebase-admin';
 
-// Initialize Firebase Admin if not already initialized
-if (!admin.apps.length) {
-  try {
-    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT || '{}');
-    
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-      storageBucket: process.env.FIREBASE_STORAGE_BUCKET || 'owl-fence-mervin.appspot.com'
-    });
-    
-    console.log('✅ [FIREBASE-ADMIN-STORAGE] Firebase Admin SDK initialized for storage');
-  } catch (error: any) {
-    console.error('❌ [FIREBASE-ADMIN-STORAGE] Failed to initialize Firebase Admin:', error.message);
-    console.warn('⚠️ [FIREBASE-ADMIN-STORAGE] Falling back to local storage only');
-  }
+// Get storage bucket from shared Firebase Admin instance
+const bucket = getStorageBucket();
+
+if (bucket) {
+  console.log('✅ [FIREBASE-STORAGE-SERVICE] Using shared storage bucket');
+} else {
+  console.warn('⚠️ [FIREBASE-STORAGE-SERVICE] Storage bucket not available - PDF uploads will fail');
 }
-
-const bucket = admin.apps.length > 0 ? admin.storage().bucket() : null;
 
 export class FirebaseStorageService {
   /**

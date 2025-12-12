@@ -1,6 +1,11 @@
 import express, { type Request, Response, NextFunction } from "express";
 import dotenv from "dotenv";
 import path from "path";
+
+// 🔥 CRITICAL: Initialize Firebase Admin FIRST with storageBucket
+// This must happen before any other Firebase-dependent imports
+import './lib/firebase-admin';
+
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import multer from "multer";
