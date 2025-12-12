@@ -122,8 +122,13 @@ export async function apiRequest(
       }
 
       // Fetch con timeout dinámico según el endpoint
+      // DeepSearch y Permit APIs necesitan más tiempo (hasta 2 minutos)
       // Assistant API necesita más tiempo para polling de OpenAI
-      const fetchTimeout = url.includes('/api/assistant/') ? 90000 : 15000;
+      const fetchTimeout = url.includes('deepsearch') || url.includes('labor-deepsearch') || url.includes('/permit/') 
+        ? 120000 
+        : url.includes('/api/assistant/') 
+        ? 90000 
+        : 15000;
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), fetchTimeout);
       
