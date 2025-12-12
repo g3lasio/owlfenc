@@ -702,34 +702,11 @@ export class QAHardeningService {
    */
   private async generateLoadTestToken(): Promise<string> {
     try {
-      // Importar Firebase Admin SDK REAL con inicialización automática
-      const admin = (await import('firebase-admin')).default;
+      // Use shared Firebase Admin singleton - already initialized in lib/firebase-admin.ts
+      const { admin, adminAuth } = await import('../lib/firebase-admin');
       
-      // Inicializar Firebase Admin si no está inicializado (mismo patrón que middleware)
-      if (!admin.apps.length) {
-        console.log('🔐 [LOAD-TEST] Inicializando Firebase Admin SDK...');
-        try {
-          // Usar el mismo patrón de inicialización que el middleware de auth
-          if (process.env.FIREBASE_ADMIN_CREDENTIALS) {
-            const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_CREDENTIALS);
-            admin.initializeApp({
-              credential: admin.credential.cert(serviceAccount),
-              projectId: 'owl-fenc'
-            });
-          } else {
-            // Para desarrollo local, usar el SDK por defecto
-            admin.initializeApp({
-              projectId: 'owl-fenc'
-            });
-          }
-          console.log('✅ [LOAD-TEST] Firebase Admin SDK inicializado correctamente');
-        } catch (initError) {
-          console.error('❌ [LOAD-TEST] Error inicializando Firebase Admin SDK:', initError);
-          throw new Error('Firebase Admin SDK initialization failed - cannot run authenticated load tests');
-        }
-      }
-      
-      const auth = admin.auth();
+      console.log('🔐 [LOAD-TEST] Using shared Firebase Admin SDK singleton');
+      const auth = adminAuth;
       
       // Crear test user en Firebase Auth si no existe
       const testUserId = 'load-test-user-qa-hardening';

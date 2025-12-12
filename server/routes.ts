@@ -34,7 +34,7 @@ import { memoryService } from "./services/memoryService";
 import { stripeService } from "./services/stripeService";
 import { permitService } from "./services/permitService";
 import { userMappingService } from "./services/userMappingService";
-import admin from "firebase-admin";
+import { admin, db as firebaseDb } from "./lib/firebase-admin";
 import { buildDynamicUrl, getEstimateSharableDomain } from './utils/url-builder';
 import { searchService } from "./services/searchService";
 import { sendEmail } from "./services/emailService";
@@ -7399,17 +7399,8 @@ ENHANCED LEGAL CLAUSE:`;
 
       // Try to save to Firebase inner collection: users/{userId}/companyInfo/info
       try {
-        // Initialize Firebase Admin if not already done
-        if (!admin.apps.length) {
-          const serviceAccount = JSON.parse(
-            process.env.FIREBASE_SERVICE_ACCOUNT_KEY || "{}",
-          );
-          admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount),
-          });
-        }
-
-        const db = admin.firestore();
+        // Firebase Admin is initialized via shared singleton in lib/firebase-admin.ts
+        const db = firebaseDb;
         const companyInfoRef = db
           .collection("users")
           .doc(userId)

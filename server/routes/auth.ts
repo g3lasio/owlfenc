@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import { db } from '../db';
 import { users, webauthnCredentials } from '@shared/schema';
 import { eq } from 'drizzle-orm';
-import admin from 'firebase-admin';
+import { admin } from '../lib/firebase-admin';
 import crypto from 'crypto';
 import rateLimit from 'express-rate-limit';
 import { resendService } from '../services/resendService';

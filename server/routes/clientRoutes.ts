@@ -1,24 +1,12 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import admin from 'firebase-admin';
+import { admin } from '../lib/firebase-admin';
 import { verifyFirebaseAuth } from '../middleware/firebase-auth';
 
 const router = Router();
 
-// Initialize Firebase if not already done
-if (!admin.apps.length) {
-  try {
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      }),
-    });
-  } catch (error) {
-    console.log('Firebase admin already initialized or configuration missing');
-  }
-}
+// Firebase Admin is initialized via shared singleton in lib/firebase-admin.ts
+// No duplicate initialization needed here
 
 // Esquemas de validación para clientes Firebase
 const clientSchema = z.object({

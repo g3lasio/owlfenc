@@ -4,7 +4,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import admin from 'firebase-admin';
+import { admin } from '../lib/firebase-admin';
 import { rateLimit } from 'express-rate-limit';
 
 // 🔐 SECURITY CONFIGURATION

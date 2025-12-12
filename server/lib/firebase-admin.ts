@@ -85,17 +85,10 @@ export { admin };
 // Export storage bucket for PDF operations
 export const getStorageBucket = (): admin.storage.Bucket | null => storageBucket;
 
-// Admin auth methods (simplified for development)
-export const adminAuth = {
-  verifyIdToken: async (token: string) => {
-    // In development, just extract user ID from token
-    // In production, this should use Firebase Auth
-    try {
-      // Simple token validation for development
-      return { uid: token.split('-')[0] || 'dev-user' };
-    } catch (error) {
-      console.error('Error verifying token:', error);
-      return { uid: 'dev-user' };
-    }
-  }
-};
+/**
+ * PRODUCTION-READY Firebase Auth wrapper
+ * Uses real Firebase Admin Auth for token verification
+ * 
+ * SECURITY: This MUST use admin.auth() for production token verification
+ */
+export const adminAuth = admin.auth();

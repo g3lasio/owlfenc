@@ -8,9 +8,10 @@
 
 import { admin, db as firebaseDb, adminAuth as unifiedAdminAuth, getStorageBucket } from './lib/firebase-admin';
 
-// Re-export from unified module
+// Re-export from unified module - CRITICAL: Use the same adminAuth instance
+// to ensure consistent token verification and revocation handling
 export const adminApp = admin.apps[0] || admin.app();
-export const adminAuth = admin.auth();
+export const adminAuth = unifiedAdminAuth; // SECURITY: Must use singleton instance
 export const db = firebaseDb;
 export { getStorageBucket };
 
