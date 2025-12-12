@@ -2366,11 +2366,21 @@ You can also drag & drop documents here (permits, plans, estimates)"
                                     </div>
                                     <div className="flex-1 space-y-2">
                                       <h4 className="text-blue-300 font-semibold">
-                                        {typeof step === "string" ? `Step ${idx + 1}` : step.step || `Step ${idx + 1}`}
+                                        {typeof step === "string" ? `Step ${idx + 1}` : step.step || step.title || `Step ${idx + 1}`}
                                       </h4>
                                       <p className="text-gray-300 text-sm leading-relaxed">
-                                        {typeof step === "string" ? step : step.step || step.description || "Process step details"}
+                                        {typeof step === "string" ? step : step.details || step.description || step.action || (typeof step.step === 'string' ? step.step : "Process step details")}
                                       </p>
+                                      {step.timing && (
+                                        <p className="text-cyan-400 text-xs mt-1">
+                                          ⏱️ {step.timing}
+                                        </p>
+                                      )}
+                                      {step.documentation && (
+                                        <p className="text-yellow-300 text-xs mt-1">
+                                          📄 Required: {Array.isArray(step.documentation) ? step.documentation.join(', ') : step.documentation}
+                                        </p>
+                                      )}
                                     </div>
                                   </div>
                                 </CardContent>
