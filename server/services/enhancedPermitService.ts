@@ -88,13 +88,37 @@ Search for the real, verified contact details including phone number, official w
       const textContent = response.content.find((c) => c.type === 'text') as { type: 'text'; text: string } | undefined;
       let rawText = textContent?.text || '{}';
       
+      // Remove markdown code blocks
       if (rawText.includes('```json')) {
         rawText = rawText.replace(/```json\s*/g, '').replace(/```\s*/g, '');
       } else if (rawText.includes('```')) {
         rawText = rawText.replace(/```\s*/g, '');
       }
       
-      const result = JSON.parse(rawText.trim());
+      // Try to extract JSON object from response if it contains other text
+      const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        rawText = jsonMatch[0];
+      }
+      
+      let result;
+      try {
+        result = JSON.parse(rawText.trim());
+      } catch (parseError) {
+        console.warn(`⚠️ [MUNICIPAL-SEARCH] Failed to parse JSON, using fallback. Raw response: ${rawText.substring(0, 200)}...`);
+        // If we can't parse JSON, return a fallback with guidance
+        result = {
+          department: `${cityState} Building Department`,
+          phone: null,
+          website: null,
+          physicalAddress: null,
+          email: null,
+          hours: null,
+          onlinePortal: null,
+          confidence: 'low'
+        };
+      }
+      
       const elapsedTime = Date.now() - startTime;
       
       console.log(`✅ [MUNICIPAL-SEARCH] Found contact for ${cityState} in ${elapsedTime}ms (confidence: ${result.confidence})`);
@@ -134,23 +158,80 @@ Search for the real, verified contact details including phone number, official w
   }
 
   /**
-   * Extract city and state from address
+   * US State name to abbreviation mapping
+   */
+  private stateNameToAbbr: Record<string, string> = {
+    'alabama': 'AL', 'alaska': 'AK', 'arizona': 'AZ', 'arkansas': 'AR', 'california': 'CA',
+    'colorado': 'CO', 'connecticut': 'CT', 'delaware': 'DE', 'florida': 'FL', 'georgia': 'GA',
+    'hawaii': 'HI', 'idaho': 'ID', 'illinois': 'IL', 'indiana': 'IN', 'iowa': 'IA',
+    'kansas': 'KS', 'kentucky': 'KY', 'louisiana': 'LA', 'maine': 'ME', 'maryland': 'MD',
+    'massachusetts': 'MA', 'michigan': 'MI', 'minnesota': 'MN', 'mississippi': 'MS', 'missouri': 'MO',
+    'montana': 'MT', 'nebraska': 'NE', 'nevada': 'NV', 'new hampshire': 'NH', 'new jersey': 'NJ',
+    'new mexico': 'NM', 'new york': 'NY', 'north carolina': 'NC', 'north dakota': 'ND', 'ohio': 'OH',
+    'oklahoma': 'OK', 'oregon': 'OR', 'pennsylvania': 'PA', 'rhode island': 'RI', 'south carolina': 'SC',
+    'south dakota': 'SD', 'tennessee': 'TN', 'texas': 'TX', 'utah': 'UT', 'vermont': 'VT',
+    'virginia': 'VA', 'washington': 'WA', 'west virginia': 'WV', 'wisconsin': 'WI', 'wyoming': 'WY',
+    'district of columbia': 'DC', 'puerto rico': 'PR'
+  };
+
+  /**
+   * Extract city and state from address - IMPROVED VERSION
+   * Handles formats like:
+   * - "123 Main St, Vallejo, California 94590, USA"
+   * - "123 Main St, Vallejo, CA 94590"
+   * - "Vallejo, CA"
    */
   private extractCityState(address: string): string {
-    const cityStateMatch = address.match(/([A-Za-z\s]+),\s*([A-Z]{2})/i);
-    if (cityStateMatch) {
-      return `${cityStateMatch[1].trim()}, ${cityStateMatch[2].toUpperCase()}`;
-    }
-    
     const parts = address.split(',').map(p => p.trim());
-    if (parts.length >= 2) {
-      const stateZip = parts[parts.length - 1];
-      const stateMatch = stateZip.match(/([A-Z]{2})/i);
-      if (stateMatch && parts.length >= 2) {
-        return `${parts[parts.length - 2]}, ${stateMatch[1].toUpperCase()}`;
+    
+    // Look for full state name first (e.g., "California 94590" or just "California")
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i].toLowerCase();
+      for (const [stateName, abbr] of Object.entries(this.stateNameToAbbr)) {
+        if (part.includes(stateName)) {
+          // Found full state name, city is the previous part
+          if (i > 0) {
+            const city = parts[i - 1].replace(/^\d+\s+/, '').trim(); // Remove leading street numbers
+            // Skip if city looks like a street address (contains "street", "st", "ave", etc.)
+            if (!city.toLowerCase().match(/\b(street|st|avenue|ave|road|rd|drive|dr|lane|ln|way|court|ct|circle|cir|boulevard|blvd)\b/)) {
+              console.log(`🔍 [EXTRACT-CITY] Found: ${city}, ${abbr} from full state name "${stateName}"`);
+              return `${city}, ${abbr}`;
+            }
+            // If it looks like a street, try the part before that
+            if (i > 1) {
+              const prevCity = parts[i - 2].replace(/^\d+\s+/, '').trim();
+              console.log(`🔍 [EXTRACT-CITY] Found: ${prevCity}, ${abbr} (skipped street name)`);
+              return `${prevCity}, ${abbr}`;
+            }
+          }
+        }
       }
     }
     
+    // Look for state abbreviation pattern (e.g., "CA 94590" or just "CA")
+    for (let i = 0; i < parts.length; i++) {
+      const stateMatch = parts[i].match(/\b([A-Z]{2})\b\s*\d{0,5}/i);
+      if (stateMatch) {
+        const abbr = stateMatch[1].toUpperCase();
+        // Verify it's a real state abbreviation
+        if (Object.values(this.stateNameToAbbr).includes(abbr)) {
+          if (i > 0) {
+            const city = parts[i - 1].replace(/^\d+\s+/, '').trim();
+            if (!city.toLowerCase().match(/\b(street|st|avenue|ave|road|rd|drive|dr|lane|ln|way|court|ct|circle|cir|boulevard|blvd)\b/)) {
+              console.log(`🔍 [EXTRACT-CITY] Found: ${city}, ${abbr} from abbreviation`);
+              return `${city}, ${abbr}`;
+            }
+            if (i > 1) {
+              const prevCity = parts[i - 2].replace(/^\d+\s+/, '').trim();
+              console.log(`🔍 [EXTRACT-CITY] Found: ${prevCity}, ${abbr} (skipped street name)`);
+              return `${prevCity}, ${abbr}`;
+            }
+          }
+        }
+      }
+    }
+    
+    console.log(`⚠️ [EXTRACT-CITY] Could not parse city/state from: ${address}`);
     return address;
   }
 
