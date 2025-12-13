@@ -1,0 +1,95 @@
+We’re hitting a blocking issue when moving from Step 2 → Step 3 in the Change Order flow.
+
+Symptom
+
+When clicking “Generate” (Step 3), logs show:
+POST /generate-pdf 400 ... {"success":false,"error":"Invalid request form..."}
+
+So the system is rejecting the request before the PDF is generated.
+
+What I think is happening
+
+This looks like a request validation/schema mismatch, likely because:
+
+/generate-pdf is still expecting the legacy Independent Contractor request shape
+
+Change Order is sending a different payload (or missing required fields)
+
+Or Step 3 is still calling the wrong endpoint (legacy /generate-pdf) instead of the multi-template generator route
+
+This is not just a bug. We need the PDF generation pipeline to be properly multi-template and future-proof.
+
+Required Fix: Make PDF generation multi-template robust (without breaking legacy)
+1) Standardize ONE request contract for all templates
+
+Create a single DTO/schema for PDF generation that works for any template:
+
+GenerateDocumentRequest
+
+templateId (required for new docs, optional for legacy fallback)
+
+templateVersion (default "1.0")
+
+linkedContractId (required for Change Order, Addendum, etc.)
+
+data (template-specific payload from Step 2)
+
+branding (optional or resolved server-side)
+
+signatureType ('single' | 'dual' | 'none') OR derived from registry
+
+Then validate it with Zod (or equivalent) in one place.
+
+2) Template routing must happen BEFORE PDF engine
+
+The server must:
+
+Read templateId
+
+Load template from TEMPLATE_REGISTRY
+
+Validate requiredFields for that template
+
+Generate HTML via template.generateHTML(data, branding)
+
+Pass HTML into the existing PDF engine (do NOT change PDF engine)
+
+3) Keep legacy backwards compatibility
+
+If templateId is missing:
+
+fallback to independent-contractor
+
+accept legacy request structure if needed, but internally map it into the unified DTO
+
+4) Debugging tasks (do these first)
+
+Log the request body received by /generate-pdf (sanitized)
+
+Log the validation error details (which fields are missing)
+
+Compare with what Step 3 is sending
+
+Confirm Step 3 is calling the correct endpoint for multi-template generation
+
+5) Deliverable
+
+Fix Change Order end-to-end so it generates a PDF successfully
+
+Ensure Independent Contractor still generates as before
+
+Add a regression test:
+
+Change Order valid request passes schema and generates PDF
+
+Legacy request still works
+
+Important constraints
+
+Do NOT refactor the PDF engine itself.
+
+Do NOT change signature system core.
+
+Only fix the input contract + template routing so the engine receives the correct HTML.
+
+Once this is corrected, every future template will be plug-and-play instead of breaking the generator.
