@@ -4202,6 +4202,18 @@ export default function SimpleContractGenerator() {
                       </div>
                     )}
                   </div>
+                  
+                  {/* Back Button for Existing Tab */}
+                  <div className="flex justify-start pt-4 border-t border-gray-700 mt-4">
+                    <Button
+                      onClick={() => setCurrentStep(0)}
+                      variant="outline"
+                      className="border-gray-600 text-gray-300 hover:bg-gray-800"
+                      data-testid="button-back-step1-existing"
+                    >
+                      Back
+                    </Button>
+                  </div>
                     </TabsContent>
 
                     {/* Create from Scratch Tab */}
@@ -4563,7 +4575,15 @@ export default function SimpleContractGenerator() {
                       </div>
 
                       {/* Action Button */}
-                      <div className="flex justify-end pt-4">
+                      <div className="flex justify-between pt-4">
+                        <Button
+                          onClick={() => setCurrentStep(0)}
+                          variant="outline"
+                          className="border-gray-600 text-gray-300 hover:bg-gray-800"
+                          data-testid="button-back-step1"
+                        >
+                          Back
+                        </Button>
                         <Button
                           onClick={handleScratchContractProceed}
                           className="bg-cyan-500 hover:bg-cyan-600 text-black font-semibold px-6 py-2"
@@ -4912,7 +4932,7 @@ export default function SimpleContractGenerator() {
                         </p>
                         <Select 
                           value={selectedDocumentType} 
-                          onValueChange={setSelectedDocumentType}
+                          disabled
                           data-testid="select-contract-type"
                         >
                           <SelectTrigger className="bg-gray-800 border-cyan-500/50 text-white h-12" data-testid="contract-type-trigger">
@@ -6303,7 +6323,16 @@ export default function SimpleContractGenerator() {
                     )}
 
                     {/* Additional Actions */}
-                    <div className="border-t border-gray-700 pt-4 text-center">
+                    <div className="border-t border-gray-700 pt-4 flex justify-between items-center">
+                      <Button
+                        onClick={() => setCurrentStep(2)}
+                        variant="outline"
+                        size="sm"
+                        className="border-gray-600 text-gray-300 hover:bg-gray-800"
+                        data-testid="button-back-step3"
+                      >
+                        Back
+                      </Button>
                       <Button
                         onClick={handleNewContract}
                         variant="outline"
