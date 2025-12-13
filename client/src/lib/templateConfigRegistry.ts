@@ -223,15 +223,21 @@ templateConfigRegistry.register({
     const costMultiplier = formData.costType === 'deduction' ? -1 : 1;
     const additionalCost = (formData.additionalCost || 0) * costMultiplier;
     const originalTotal = baseData.financials?.total || 0;
+    const revisedTotal = originalTotal + additionalCost;
     
     return {
       ...baseData,
+      financials: {
+        ...baseData.financials,
+        total: revisedTotal,
+      },
       changeOrder: {
         originalContractDate: formData.originalContractDate,
         originalContractId: formData.originalContractId,
         changeDescription: formData.changeDescription,
         additionalCost: additionalCost,
-        revisedTotal: originalTotal + additionalCost,
+        revisedTotal: revisedTotal,
+        originalTotal: originalTotal,
         newCompletionDate: formData.adjustTimeline ? formData.newCompletionDate : undefined,
       },
     };

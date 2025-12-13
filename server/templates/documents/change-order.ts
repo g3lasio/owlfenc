@@ -216,7 +216,7 @@ function generateChangeOrderHTML(data: TemplateData, branding: ContractorBrandin
 <div class="financial-summary">
     <div class="financial-row">
         <span>Original Contract Amount:</span>
-        <span>$${(data.financials.total - changeOrder.additionalCost).toLocaleString()}</span>
+        <span>$${((changeOrder as any).originalTotal || (data.financials.total - changeOrder.additionalCost)).toLocaleString()}</span>
     </div>
     <div class="financial-row">
         <span>Change Order Amount (${changeOrder.additionalCost >= 0 ? 'Addition' : 'Deduction'}):</span>
@@ -224,7 +224,7 @@ function generateChangeOrderHTML(data: TemplateData, branding: ContractorBrandin
     </div>
     <div class="financial-row">
         <span>REVISED CONTRACT TOTAL:</span>
-        <span>$${changeOrder.revisedTotal.toLocaleString()}</span>
+        <span>$${(changeOrder.revisedTotal || data.financials.total).toLocaleString()}</span>
     </div>
 </div>
 

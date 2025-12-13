@@ -4580,12 +4580,82 @@ export default function SimpleContractGenerator() {
                       }}
                       onSubmit={async (transformedData) => {
                         console.log("📋 [DYNAMIC-CONFIG] Form submitted:", transformedData);
-                        setContractData(transformedData);
-                        toast({
-                          title: "Configuration Complete",
-                          description: "Generating your document...",
-                        });
-                        setCurrentStep(3);
+                        setIsLoading(true);
+                        
+                        try {
+                          const documentPayload = {
+                            userId: currentUser?.uid,
+                            templateId: selectedDocumentType,
+                            client: {
+                              name: editableData.clientName || selectedProject?.clientName || '',
+                              address: editableData.clientAddress || selectedProject?.address || '',
+                              email: editableData.clientEmail || selectedProject?.clientEmail || '',
+                              phone: editableData.clientPhone || selectedProject?.clientPhone || '',
+                            },
+                            contractor: {
+                              name: profile?.company || profile?.ownerName || 'Contractor Name',
+                              company: profile?.company || 'Company Name',
+                              address: profile?.address || '',
+                              phone: profile?.phone || '',
+                              email: profile?.email || '',
+                              license: (profile as any)?.licenseNumber || '',
+                            },
+                            project: {
+                              type: selectedProject?.projectType || 'Construction Project',
+                              description: selectedProject?.projectDescription || selectedProject?.title || '',
+                              location: editableData.clientAddress || selectedProject?.address || '',
+                              startDate: editableData.startDate,
+                              endDate: editableData.completionDate,
+                            },
+                            financials: {
+                              total: editableData.projectTotal || selectedProject?.totalAmount || 0,
+                              paymentMilestones: editableData.paymentMilestones,
+                            },
+                            ...transformedData,
+                          };
+
+                          console.log("📋 [DYNAMIC-CONFIG] Generating document with payload:", documentPayload);
+
+                          const htmlResponse = await fetch("/api/generate-contract-html", {
+                            method: "POST",
+                            headers: {
+                              "Content-Type": "application/json",
+                              Authorization: `Bearer ${currentUser?.uid}`,
+                            },
+                            body: JSON.stringify(documentPayload),
+                          });
+
+                          if (htmlResponse.ok) {
+                            const contractHTMLData = await htmlResponse.json();
+                            const contractHtmlContent = contractHTMLData.html || contractHTMLData.contractHTML || '';
+                            
+                            if (contractHtmlContent) {
+                              setContractHTML(contractHtmlContent);
+                              setContractData(documentPayload);
+                              setIsContractReady(true);
+                              setCurrentStep(3);
+
+                              toast({
+                                title: "Document Generated",
+                                description: `${selectedDocumentType === 'change-order' ? 'Change Order' : 'Document'} created successfully.`,
+                              });
+                            } else {
+                              throw new Error("No HTML content in response");
+                            }
+                          } else {
+                            const errorData = await htmlResponse.json().catch(() => ({}));
+                            throw new Error(errorData.error || `Failed to generate document (${htmlResponse.status})`);
+                          }
+                        } catch (error) {
+                          console.error("❌ [DYNAMIC-CONFIG] Error generating document:", error);
+                          toast({
+                            title: "Error",
+                            description: error instanceof Error ? error.message : "Failed to generate document",
+                            variant: "destructive",
+                          });
+                        } finally {
+                          setIsLoading(false);
+                        }
                       }}
                       onBack={() => setCurrentStep(1)}
                       isSubmitting={isLoading}

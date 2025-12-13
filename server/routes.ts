@@ -8606,11 +8606,52 @@ ENHANCED LEGAL CLAUSE:`;
           hasPermitInfo: !!contractData.permitInfo?.permitsRequired || !!contractData.permitInfo?.required,
           hasWarranties: !!contractData.warranties?.workmanship || !!contractData.warranties?.materials,
           hasTimeline: !!contractData.timeline?.startDate || !!contractData.timeline?.endDate,
+          templateId: req.body.templateId,
         });
 
-        // Generate professional HTML contract content
-        const contractHTML =
-          premiumPdfService.generateProfessionalLegalContractHTML(contractData);
+        // Check if using multi-template system
+        const templateId = req.body.templateId;
+        let contractHTML: string;
+        
+        if (templateId && templateId !== 'independent-contractor') {
+          // Use templateService for dynamic templates (change-order, etc.)
+          const { templateService } = await import('./templates/templateService');
+          
+          console.log(`📋 [CONTRACT-HTML] Using template service for: ${templateId}`);
+          
+          const templateData = {
+            client: contractData.client,
+            contractor: contractData.contractor,
+            project: contractData.project,
+            financials: contractData.financials,
+            changeOrder: req.body.changeOrder,
+            addendum: req.body.addendum,
+            workOrder: req.body.workOrder,
+            lienWaiver: req.body.lienWaiver,
+            completion: req.body.completion,
+            warranty: req.body.warranty,
+          };
+          
+          const branding = {
+            companyName: contractData.contractor?.company || contractData.contractor?.name,
+            address: contractData.contractor?.address,
+            phone: contractData.contractor?.phone,
+            email: contractData.contractor?.email,
+            licenseNumber: contractData.contractor?.license,
+          };
+          
+          const result = await templateService.generateDocument(templateId, templateData as any, branding);
+          
+          if (!result.success || !result.html) {
+            throw new Error(result.error || `Template ${templateId} generation failed`);
+          }
+          
+          contractHTML = result.html;
+          console.log(`✅ [CONTRACT-HTML] Template ${templateId} generated via templateService`);
+        } else {
+          // Use legacy premiumPdfService for independent-contractor
+          contractHTML = premiumPdfService.generateProfessionalLegalContractHTML(contractData);
+        }
 
         console.log("✅ [CONTRACT-HTML] HTML contract generated successfully");
         console.log("📏 [CONTRACT-HTML] HTML length:", contractHTML.length);
