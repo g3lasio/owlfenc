@@ -4487,6 +4487,108 @@ export default function SimpleContractGenerator() {
               </Card>
             )}
 
+            {/* Prominent Document Types Panel - Visible when project is selected */}
+            {currentStep === 2 && selectedProject && isDocumentTypeSelectorEnabled && availableDocumentTypes.length > 0 && (
+              <Card className="bg-gradient-to-r from-cyan-900/30 to-blue-900/30 border-cyan-500/50 mb-6">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-cyan-400">
+                    <FileText className="h-5 w-5" />
+                    📋 Documentos Legales Disponibles
+                    <Badge variant="outline" className="ml-2 text-xs bg-green-500/20 text-green-400 border-green-500/50">
+                      {availableDocumentTypes.length} Templates Activos
+                    </Badge>
+                  </CardTitle>
+                  <p className="text-sm text-gray-400 mt-1">
+                    Selecciona el tipo de documento que deseas generar para este proyecto
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* Legacy Contract - Always first */}
+                    <div 
+                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                        selectedDocumentType === 'independent-contractor' 
+                          ? 'border-cyan-400 bg-cyan-500/10' 
+                          : 'border-gray-600 hover:border-cyan-400/50 bg-gray-800/50'
+                      }`}
+                      onClick={() => setSelectedDocumentType('independent-contractor')}
+                      data-testid="doc-card-independent-contractor"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <Shield className="h-6 w-6 text-cyan-400" />
+                        <Badge className="bg-cyan-500 text-black text-xs">Principal</Badge>
+                      </div>
+                      <h4 className="font-semibold text-white mb-1">Contrato de Contratista</h4>
+                      <p className="text-xs text-gray-400 mb-3">Contrato de construcción estándar con protección legal completa</p>
+                      <Button 
+                        size="sm" 
+                        className={`w-full ${selectedDocumentType === 'independent-contractor' ? 'bg-cyan-500 text-black' : 'bg-gray-700 text-white hover:bg-cyan-500 hover:text-black'}`}
+                        onClick={(e) => { e.stopPropagation(); setSelectedDocumentType('independent-contractor'); }}
+                      >
+                        {selectedDocumentType === 'independent-contractor' ? '✓ Seleccionado' : 'Seleccionar'}
+                      </Button>
+                    </div>
+
+                    {/* Dynamic Templates from API */}
+                    {availableDocumentTypes.map((docType) => (
+                      <div 
+                        key={docType.id}
+                        className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                          selectedDocumentType === docType.id 
+                            ? 'border-cyan-400 bg-cyan-500/10' 
+                            : 'border-gray-600 hover:border-cyan-400/50 bg-gray-800/50'
+                        }`}
+                        onClick={() => setSelectedDocumentType(docType.id)}
+                        data-testid={`doc-card-${docType.id}`}
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <FileCheck className="h-6 w-6 text-green-400" />
+                          <Badge className={`text-xs ${docType.signatureType === 'single' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50' : 'bg-blue-500/20 text-blue-400 border-blue-500/50'}`} variant="outline">
+                            {docType.signatureType === 'single' ? '1 Firma' : '2 Firmas'}
+                          </Badge>
+                        </div>
+                        <h4 className="font-semibold text-white mb-1">{docType.displayName}</h4>
+                        <p className="text-xs text-gray-400 mb-3 line-clamp-2">{docType.description}</p>
+                        <Button 
+                          size="sm" 
+                          className={`w-full ${selectedDocumentType === docType.id ? 'bg-green-500 text-black' : 'bg-gray-700 text-white hover:bg-green-500 hover:text-black'}`}
+                          onClick={(e) => { e.stopPropagation(); setSelectedDocumentType(docType.id); }}
+                        >
+                          {selectedDocumentType === docType.id ? '✓ Seleccionado' : 'GENERAR'}
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Selected Document Info */}
+                  {selectedDocumentType && selectedDocumentType !== 'independent-contractor' && (
+                    <div className="mt-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+                      <p className="text-sm text-green-400 flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4" />
+                        Documento seleccionado: <strong>{availableDocumentTypes.find(t => t.id === selectedDocumentType)?.displayName}</strong>
+                        {' - '}Continúa abajo para personalizar y generar.
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Message when no project selected yet */}
+            {currentStep === 1 && !selectedProject && isDocumentTypeSelectorEnabled && (
+              <Card className="bg-gray-800/50 border-gray-600 border-dashed">
+                <CardContent className="py-6 text-center">
+                  <FileText className="h-10 w-10 text-gray-500 mx-auto mb-3" />
+                  <p className="text-gray-400">
+                    📋 <strong>7 tipos de documentos legales</strong> disponibles
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Selecciona un proyecto arriba para ver y generar documentos complementarios
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Step 2: Review & Generate */}
             {currentStep === 2 && selectedProject && (
               <Card className="bg-gray-900 border-gray-700">
