@@ -1,0 +1,100 @@
+I found two important issues in the current Change Order flow that we need to fix to keep the system logically correct and user-proof.
+
+ISSUE 1: AI Enhancement depends on Financial & Timeline inputs, but the UI order is backwards
+What’s happening
+
+The AI Enhancement correctly uses:
+
+Financial Impact (+ / – amount)
+
+Timeline Adjustment
+
+The contractor’s short “Description of Changes”
+
+However, in the current Step 2 layout:
+
+The Change Description appears before Financial Impact
+
+Contractors often click Enhance with AI before defining costs or timeline
+
+Result:
+The AI assumes $0 cost impact and no schedule impact, which is incorrect and misleading
+
+This is not an AI bug, it’s a flow order problem.
+
+Why this matters
+
+The AI output becomes legally weaker and factually wrong if:
+
+Cost and timeline are not defined first
+
+Enhancement is triggered too early
+
+REQUIRED FIX (UX + Logic)
+
+For Change Order Step 2, the input order must be:
+
+1️⃣ Financial Impact (required first)
+2️⃣ Timeline Adjustment (optional, but before AI)
+3️⃣ Description of Changes (text input)
+4️⃣ Enhance with AI button
+
+The AI button should:
+
+Be visually associated with the Description field
+
+But logically depend on Financial + Timeline data already being filled
+
+Optionally be disabled until a financial impact is entered
+
+👉 Goal:
+The contractor defines facts first, then the AI enhances them.
+
+ISSUE 2: Original Contract summary shows Client Name as N/A
+What’s happening
+
+In Step 2, the Original Contract summary panel:
+
+Shows contract details correctly
+
+But Client Name appears as “N/A”
+
+However:
+
+In Step 1, the correct client name is visible when selecting the contract
+
+So the data exists, but it’s not being mapped correctly into Step 2
+
+REQUIRED FIX (Data Mapping)
+
+Ensure the selected contract’s client data is:
+
+Passed from Step 1 → Step 2
+
+Correctly mapped to the summary UI
+
+Client Name should NEVER be N/A if it exists on the contract
+
+Likely causes:
+
+Field mismatch (e.g. client.name vs customerName)
+
+Partial object passed instead of full contract record
+
+EXPECTATION
+
+Please fix both issues with minimal changes:
+
+Do NOT touch the PDF generator
+
+Do NOT change signature logic
+
+Do NOT refactor the overall flow
+
+Once fixed:
+
+AI enhancement will produce accurate legal language
+
+Contract summary will be trustworthy and consistent
+
+Let me know once both are corrected so I can retest the Change Order end-to-end.

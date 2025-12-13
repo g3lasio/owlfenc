@@ -4741,12 +4741,18 @@ export default function SimpleContractGenerator() {
                                 ? selectedContract.createdAt
                                 : new Date().toISOString();
                           
+                          const projectData = selectedContract.contractData?.project || {};
+                          
                           const baseData = {
-                            clientInfo: {
+                            client: {
                               name: selectedContract.clientName || clientData.name || '',
                               address: clientData.address || '',
                               email: clientData.email || '',
                               phone: clientData.phone || '',
+                            },
+                            project: {
+                              type: projectData.type || selectedContract.projectType || 'Construction',
+                              location: projectData.location || clientData.address || '',
                             },
                             financials: {
                               total: normalizeCurrency(selectedContract.totalAmount) || normalizeCurrency(financials.total) || 0,

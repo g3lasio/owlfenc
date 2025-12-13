@@ -116,26 +116,6 @@ templateConfigRegistry.register({
     helpText: 'A Change Order formally documents modifications to an existing contract. It requires both parties to sign.',
     groups: [
       {
-        id: 'change-details',
-        title: 'Change Details',
-        description: 'Describe what is being changed',
-        icon: 'Edit',
-        fields: [
-          {
-            id: 'changeDescription',
-            label: 'Description of Changes',
-            type: 'textarea',
-            placeholder: 'Describe the scope changes, additional work, or modifications...',
-            helpText: 'Be specific about what work is being added, removed, or modified',
-            required: true,
-            validation: {
-              minLength: 10,
-              maxLength: 2000,
-            },
-          },
-        ],
-      },
-      {
         id: 'financial-impact',
         title: 'Financial Impact',
         description: 'Cost adjustment for this change',
@@ -196,6 +176,26 @@ templateConfigRegistry.register({
             showIf: {
               field: 'adjustTimeline',
               value: true,
+            },
+          },
+        ],
+      },
+      {
+        id: 'change-details',
+        title: 'Change Details',
+        description: 'Describe what is being changed',
+        icon: 'Edit',
+        fields: [
+          {
+            id: 'changeDescription',
+            label: 'Description of Changes',
+            type: 'textarea',
+            placeholder: 'Describe the scope changes, additional work, or modifications...',
+            helpText: 'Be specific about what work is being added, removed, or modified. The AI enhancement uses the financial and timeline info above.',
+            required: true,
+            validation: {
+              minLength: 10,
+              maxLength: 2000,
             },
           },
         ],
