@@ -3691,8 +3691,29 @@ ENHANCED LEGAL CLAUSE:`;
       const templateId = req.body.templateId;
       console.log("📋 [API] Template ID received:", templateId);
 
+      // MULTI-TEMPLATE FORMAT: Handle new format with templateData wrapper
+      // New format: { templateId, templateData: { client, contractor, ... }, linkedContractId }
+      // Legacy format: { client, contractor, ... } at root level
+      let requestData = req.body;
+      let linkedContractId = req.body.linkedContractId;
+      
+      if (req.body.templateData && templateId) {
+        console.log("📋 [API] Detected multi-template format with templateData wrapper");
+        console.log("📋 [API] templateData keys:", Object.keys(req.body.templateData));
+        console.log("📋 [API] linkedContractId:", linkedContractId);
+        
+        // Extract data from templateData wrapper
+        requestData = {
+          ...req.body.templateData,
+          templateId: templateId,
+          linkedContractId: linkedContractId,
+        };
+        
+        console.log("📋 [API] Extracted requestData keys:", Object.keys(requestData));
+      }
+
       // Check if contract data is provided (has client and contractor objects)
-      if (req.body.client && req.body.contractor) {
+      if (requestData.client && requestData.contractor) {
         
         // MULTI-TEMPLATE SUPPORT: Check if using a template from registry
         if (templateId && templateId !== 'independent-contractor') {
@@ -3711,49 +3732,50 @@ ENHANCED LEGAL CLAUSE:`;
           
           console.log(`✅ [API] Found template: ${template.displayName} v${template.templateVersion}`);
           
-          // Prepare branding data
+          // Prepare branding data from requestData (supports both legacy and new format)
           const branding = {
-            companyName: req.body.contractor.company || req.body.contractor.name,
-            address: req.body.contractor.address,
-            phone: req.body.contractor.phone,
-            email: req.body.contractor.email,
-            licenseNumber: req.body.contractor.license,
+            companyName: requestData.contractor.company || requestData.contractor.name,
+            address: requestData.contractor.address,
+            phone: requestData.contractor.phone,
+            email: requestData.contractor.email,
+            licenseNumber: requestData.contractor.license,
           };
           
-          // Prepare template data
-          const templateData = {
-            client: req.body.client,
-            contractor: req.body.contractor,
+          // Prepare template data from requestData (supports both legacy and new format)
+          const templateDataForHtml = {
+            client: requestData.client,
+            contractor: requestData.contractor,
             project: {
-              type: req.body.project?.type || 'Construction',
-              description: req.body.project?.description || '',
-              location: req.body.project?.location || req.body.client?.address || '',
-              startDate: req.body.project?.startDate,
-              endDate: req.body.project?.endDate,
+              type: requestData.project?.type || 'Construction',
+              description: requestData.project?.description || '',
+              location: requestData.project?.location || requestData.client?.address || '',
+              startDate: requestData.project?.startDate,
+              endDate: requestData.project?.endDate,
             },
             financials: {
-              total: req.body.financials?.total || req.body.project?.total || 0,
-              subtotal: req.body.financials?.subtotal,
-              tax: req.body.financials?.tax,
-              taxRate: req.body.financials?.taxRate,
+              total: requestData.financials?.total || requestData.project?.total || 0,
+              subtotal: requestData.financials?.subtotal,
+              tax: requestData.financials?.tax,
+              taxRate: requestData.financials?.taxRate,
             },
-            changeOrder: req.body.changeOrder,
-            addendum: req.body.addendum,
-            workOrder: req.body.workOrder,
-            lienWaiver: req.body.lienWaiver,
-            completion: req.body.completion,
-            warranty: req.body.warranty,
+            changeOrder: requestData.changeOrder,
+            addendum: requestData.addendum,
+            workOrder: requestData.workOrder,
+            lienWaiver: requestData.lienWaiver,
+            completion: requestData.completion,
+            warranty: requestData.warranty,
+            linkedContractId: linkedContractId, // Pass linked contract ID for change orders
           };
           
           // Generate HTML using template registry
-          const html = template.generateHTML(templateData, branding);
+          const html = template.generateHTML(templateDataForHtml, branding);
           
           // Convert HTML to PDF using puppeteer
           const { puppeteerPdfService } = await import("./puppeteer-pdf-service");
           const pdfBuffer = await puppeteerPdfService.generatePdfFromHtml(html);
           
           // Set headers for PDF download
-          const filename = `${template.displayName.replace(/\s+/g, "_")}_${req.body.client.name.replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.pdf`;
+          const filename = `${template.displayName.replace(/\s+/g, "_")}_${requestData.client.name.replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.pdf`;
           
           res.setHeader("Content-Type", "application/pdf");
           res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
@@ -3764,20 +3786,20 @@ ENHANCED LEGAL CLAUSE:`;
         }
         
         console.log(
-          "🎨 [API] Detected contract data format - using premium service...",
+          "🎨 [API] Detected contract data format - using premium service (legacy/independent-contractor)...",
         );
 
         // Get Firebase UID for user authentication
         const firebaseUserId =
           req.headers["authorization"]?.replace("Bearer ", "") ||
-          req.body.userId;
+          requestData.userId || req.body.userId;
         console.log(
           "🔑 [API] Firebase UID for contractor data:",
           firebaseUserId,
         );
 
-        // Get contractor data - use from request first, with profile fallback
-        let contractorData = req.body.contractor || {};
+        // Get contractor data - use from requestData (supports both legacy and new format)
+        let contractorData = requestData.contractor || {};
 
         // Skip database lookup due to schema issues - validate contractor data is provided
         console.log(
