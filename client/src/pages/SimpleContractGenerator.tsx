@@ -4743,12 +4743,23 @@ export default function SimpleContractGenerator() {
                           
                           const projectData = selectedContract.contractData?.project || {};
                           
+                          // Extract contractor data from the original contract or use current profile
+                          const contractorData = selectedContract.contractData?.contractor || {};
+                          
                           const baseData = {
                             client: {
                               name: selectedContract.clientName || clientData.name || '',
                               address: clientData.address || '',
                               email: clientData.email || '',
                               phone: clientData.phone || '',
+                            },
+                            contractor: {
+                              name: contractorData.name || profile?.company || profile?.ownerName || 'Contractor Name',
+                              company: contractorData.company || profile?.company || 'Company Name',
+                              address: contractorData.address || profile?.address || '',
+                              phone: contractorData.phone || profile?.phone || '',
+                              email: contractorData.email || profile?.email || '',
+                              license: contractorData.license || (profile as any)?.licenseNumber || '',
                             },
                             project: {
                               type: projectData.type || selectedContract.projectType || 'Construction',
