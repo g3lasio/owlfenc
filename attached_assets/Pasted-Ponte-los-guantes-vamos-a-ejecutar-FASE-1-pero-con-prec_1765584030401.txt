@@ -1,0 +1,133 @@
+Ponte los guantes, vamos a ejecutar FASE 1, pero con precisión quirúrgica y respetando estrictamente el plan aprobado.
+
+CONTEXTO
+
+El roadmap que propusiste está bien pensado y queda aprobado, con cuatro ajustes clave que deben respetarse desde el inicio.
+El objetivo es expandir el sistema, no refactorizar ni poner en riesgo nada de lo que ya funciona en producción.
+
+INSTRUCCIONES CLARAS PARA FASE 1
+1️⃣ NO refactorizar el contrato actual
+
+El Independent Contractor Agreement actual NO se toca.
+
+No se extrae todavía a independent-contractor.ts.
+
+Debe seguir funcionando exactamente igual.
+
+El nuevo sistema de templates debe convivir en paralelo.
+
+Si templateId no viene en el request, usa el flujo legacy actual sin cambios.
+
+👉 La refactorización del contrato existente se evaluará más adelante, no en esta fase.
+
+2️⃣ Sistema de templates NUEVO, montado encima del core actual
+
+Implementa:
+
+Template Registry
+
+TemplateService
+
+Todos los documentos nuevos (Change Order, Addendum, etc.) deben:
+
+Generar HTML propio
+
+Pasar por el mismo pipeline existente de:
+
+PDF
+
+URLs de firma
+
+Incrustación de firmas
+
+Validaciones
+
+Storage
+
+⚠️ Bajo ninguna circunstancia se debe modificar:
+
+El motor de PDF
+
+El sistema de firmas
+
+El flujo de URLs
+
+El storage actual
+
+3️⃣ Versionado desde el día 1
+
+templateVersion debe existir desde ahora, aunque sea "1.0".
+
+Debe vivir:
+
+En el registry
+
+En el documento guardado (Firebase)
+
+Esto es obligatorio para futuro legal y compatibilidad.
+
+4️⃣ Firma flexible (preparar el terreno)
+
+No usar solo requiresSignature: boolean.
+
+Preparar el campo para algo como:
+
+signatureType: 'none' | 'single' | 'dual'
+
+No hace falta implementar toda la lógica ahora, pero la estructura debe quedar lista.
+
+5️⃣ Feature Flags obligatorios
+
+Implementar feature flags desde el inicio para:
+
+Documentos complementarios
+
+Selector de tipo de documento en UI
+
+Debe ser posible:
+
+Activar/desactivar Fase 1 sin redeploy
+
+Probar internamente sin afectar usuarios actuales
+
+ALCANCE EXACTO DE FASE 1 (NO MÁS)
+
+Implementar documentos complementarios:
+
+Change Order Agreement
+
+Contract Addendum
+
+Work Order / Statement of Work
+
+Lien Waiver (Partial / Final)
+
+Certificate of Completion
+
+Warranty Agreement
+
+Usar exactamente el mismo flujo existente de generación y firma.
+
+UI: agregar selector de tipo de documento solo si está protegido por feature flag.
+
+Tests de regresión obligatorios para confirmar:
+
+Contratos legacy siguen funcionando idénticos.
+
+PDFs y firmas no cambian.
+
+LO QUE ESPERO DE TI
+
+Ejecuta Fase 1 sin improvisar.
+
+Sigue el roadmap aprobado.
+
+No agregues features fuera de alcance.
+
+Si algo no está claro, pregunta antes de asumir.
+
+Primero estabilidad.
+Luego expansión.
+Luego perfección.
+
+Avanza con Fase 1 bajo estas reglas.

@@ -1,4 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { templateService } from '../templates/templateService';
+import { TemplateData, ContractorBranding } from '../templates/registry';
 
 export interface ContractData {
   client: {
@@ -67,11 +69,56 @@ export class HybridContractGenerator {
 
   /**
    * Generate professional contract with PDF generation capability
+   * Supports new template system via templateId (Phase 1: Multi-Template System)
    */
   async generateProfessionalContract(contractData: ContractData, options: any = {}): Promise<ContractGenerationResult> {
     const startTime = Date.now();
     
     try {
+      // PHASE 1: Check if templateId is provided - route to new template system
+      if (options.templateId && templateService.isTemplateAvailable(options.templateId)) {
+        console.log(`📋 [TEMPLATE-SYSTEM] Using template: ${options.templateId}`);
+        
+        const templateData: TemplateData = {
+          client: contractData.client,
+          contractor: {
+            ...contractData.contractor,
+            company: options.contractorBranding?.companyName || contractData.contractor.name,
+          },
+          project: contractData.project,
+          financials: contractData.financials,
+          changeOrder: options.changeOrder,
+          addendum: options.addendum,
+          workOrder: options.workOrder,
+          lienWaiver: options.lienWaiver,
+          completion: options.completion,
+          warranty: options.warranty,
+        };
+
+        const branding: ContractorBranding = options.contractorBranding || {};
+        const result = await templateService.generateDocument(options.templateId, templateData, branding);
+
+        if (!result.success) {
+          console.error(`❌ [TEMPLATE-SYSTEM] Template generation failed: ${result.error}`);
+          return {
+            success: false,
+            error: result.error,
+          };
+        }
+
+        const generationTime = Date.now() - startTime;
+        return {
+          success: true,
+          html: result.html,
+          metadata: {
+            pageCount: this.estimatePageCount(result.html || ''),
+            generationTime,
+            templateUsed: `template:${options.templateId}:v${result.metadata?.templateVersion || '1.0'}`,
+          },
+        };
+      }
+
+      // LEGACY FLOW: No templateId - use existing Independent Contractor Agreement
       console.log('🤖 [CONTRACT] Iniciando generación profesional de contrato...');
       
       // Generate HTML contract

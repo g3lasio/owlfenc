@@ -1,0 +1,102 @@
+/**
+ * Feature Flags Configuration
+ * 
+ * Permite habilitar/deshabilitar features sin redeploy.
+ * Phase 1: Legal Defense Multi-Template System
+ */
+
+export interface FeatureFlags {
+  multiTemplateSystem: boolean;
+  documentTypeSelector: boolean;
+  changeOrderTemplate: boolean;
+  contractAddendumTemplate: boolean;
+  workOrderTemplate: boolean;
+  lienWaiverPartialTemplate: boolean;
+  lienWaiverFinalTemplate: boolean;
+  certificateCompletionTemplate: boolean;
+  warrantyAgreementTemplate: boolean;
+}
+
+const defaultFlags: FeatureFlags = {
+  multiTemplateSystem: true,
+  documentTypeSelector: true,
+  changeOrderTemplate: true,
+  contractAddendumTemplate: true,
+  workOrderTemplate: true,
+  lienWaiverPartialTemplate: true,
+  lienWaiverFinalTemplate: true,
+  certificateCompletionTemplate: true,
+  warrantyAgreementTemplate: true,
+};
+
+class FeatureFlagService {
+  private flags: FeatureFlags;
+
+  constructor() {
+    this.flags = this.loadFlags();
+  }
+
+  private loadFlags(): FeatureFlags {
+    return {
+      multiTemplateSystem: this.parseEnvFlag('FF_MULTI_TEMPLATE_SYSTEM', defaultFlags.multiTemplateSystem),
+      documentTypeSelector: this.parseEnvFlag('FF_DOCUMENT_TYPE_SELECTOR', defaultFlags.documentTypeSelector),
+      changeOrderTemplate: this.parseEnvFlag('FF_CHANGE_ORDER_TEMPLATE', defaultFlags.changeOrderTemplate),
+      contractAddendumTemplate: this.parseEnvFlag('FF_CONTRACT_ADDENDUM_TEMPLATE', defaultFlags.contractAddendumTemplate),
+      workOrderTemplate: this.parseEnvFlag('FF_WORK_ORDER_TEMPLATE', defaultFlags.workOrderTemplate),
+      lienWaiverPartialTemplate: this.parseEnvFlag('FF_LIEN_WAIVER_PARTIAL_TEMPLATE', defaultFlags.lienWaiverPartialTemplate),
+      lienWaiverFinalTemplate: this.parseEnvFlag('FF_LIEN_WAIVER_FINAL_TEMPLATE', defaultFlags.lienWaiverFinalTemplate),
+      certificateCompletionTemplate: this.parseEnvFlag('FF_CERTIFICATE_COMPLETION_TEMPLATE', defaultFlags.certificateCompletionTemplate),
+      warrantyAgreementTemplate: this.parseEnvFlag('FF_WARRANTY_AGREEMENT_TEMPLATE', defaultFlags.warrantyAgreementTemplate),
+    };
+  }
+
+  private parseEnvFlag(envKey: string, defaultValue: boolean): boolean {
+    const envValue = process.env[envKey];
+    if (envValue === undefined || envValue === '') {
+      return defaultValue;
+    }
+    return envValue.toLowerCase() === 'true' || envValue === '1';
+  }
+
+  isEnabled(flagName: keyof FeatureFlags): boolean {
+    return this.flags[flagName] ?? false;
+  }
+
+  isMultiTemplateSystemEnabled(): boolean {
+    return this.flags.multiTemplateSystem;
+  }
+
+  isDocumentTypeSelectorEnabled(): boolean {
+    return this.flags.documentTypeSelector;
+  }
+
+  isTemplateEnabled(templateId: string): boolean {
+    const templateFlagMap: Record<string, keyof FeatureFlags> = {
+      'change-order': 'changeOrderTemplate',
+      'contract-addendum': 'contractAddendumTemplate',
+      'work-order': 'workOrderTemplate',
+      'lien-waiver-partial': 'lienWaiverPartialTemplate',
+      'lien-waiver-final': 'lienWaiverFinalTemplate',
+      'certificate-completion': 'certificateCompletionTemplate',
+      'warranty-agreement': 'warrantyAgreementTemplate',
+    };
+
+    const flagName = templateFlagMap[templateId];
+    if (!flagName) {
+      return false;
+    }
+
+    return this.flags.multiTemplateSystem && this.flags[flagName];
+  }
+
+  getAllFlags(): FeatureFlags {
+    return { ...this.flags };
+  }
+
+  reloadFlags(): void {
+    this.flags = this.loadFlags();
+    console.log('🏳️ [FEATURE-FLAGS] Flags reloaded:', this.flags);
+  }
+}
+
+export const featureFlags = new FeatureFlagService();
