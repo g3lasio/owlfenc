@@ -1,0 +1,112 @@
+I want to add an AI Enhancement feature to the Change Description field in the Change Order flow. The goal is to impress the user while staying legally safe and technically clean.
+
+DECISION
+
+We will offer ONE single button only (no multiple options) to avoid confusion.
+
+Button label suggestion:
+
+“Enhance with AI”
+
+This button will intelligently transform the contractor’s short notes into a well-structured, attorney-style change description.
+
+EXPECTED BEHAVIOR
+1️⃣ What the AI does
+
+When the user clicks “Enhance with AI”:
+
+The AI takes:
+
+The contractor’s raw text
+
+Financial impact (+ / – and amount)
+
+Timeline adjustment (new date or delta days)
+
+Basic data from the linked original contract
+
+It rewrites the content in clear, professional legal language
+
+It organizes the text into a structured format suitable for a Change Order
+
+2️⃣ Strict rule: NO invention
+
+The AI must:
+
+❌ NOT invent materials, quantities, dates, or conditions
+
+✅ Only reorganize, clarify, and legally formalize existing inputs
+
+✅ Clearly connect scope change → cost impact → timeline impact
+
+This is critical.
+
+OUTPUT FORMAT (IMPORTANT)
+
+The generated text should follow a consistent, premium structure like:
+
+Change Summary
+
+Detailed Scope of Change
+
+Cost Impact
+
+Schedule Impact
+
+Confirmation Statement
+(“All other terms and conditions of the original contract remain unchanged.”)
+
+This should feel “lawyer-grade”, not generic AI text.
+
+UX REQUIREMENTS
+
+Clicking “Enhance with AI” opens a preview modal:
+
+Shows enhanced version of the text
+
+Actions:
+
+Apply → replaces the description field
+
+Regenerate → creates a new version
+
+Cancel → keeps original text
+
+Do NOT auto-replace without user confirmation.
+
+DATA & AUDIT (LIGHTWEIGHT BUT IMPORTANT)
+
+Store:
+
+aiEnhanced: true | false
+
+aiOriginalText
+
+aiFinalText
+
+aiModelVersion
+
+timestamp
+
+This is for transparency and future-proofing.
+
+TECHNICAL CONSTRAINTS
+
+This feature must NOT touch:
+
+PDF generator
+
+Signature system
+
+URLs or validation flow
+
+It only affects the HTML content passed to the existing PDF engine.
+
+SCOPE
+
+Implement this only for Change Order as a pilot.
+
+If successful, we can later reuse the pattern for Addendum, Warranty, etc.
+
+Proceed with this enhancement carefully. The goal is:
+contractor writes 2 lines → system produces a document that looks professionally drafted.

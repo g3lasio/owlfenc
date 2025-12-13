@@ -31,9 +31,11 @@ router.post('/enhance-description', verifyFirebaseAuth, async (req: Request, res
         error: 'Usuario no autenticado' 
       });
     }
-    let userId = await userMappingService.getInternalUserId(firebaseUid);
+    const userMapping = await userMappingService.getInternalUserId(firebaseUid);
+    let userId = typeof userMapping === 'object' ? userMapping?.id : userMapping;
     if (!userId) {
-      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      const newMapping = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      userId = typeof newMapping === 'object' ? newMapping?.id : newMapping;
     }
     if (!userId) {
       return res.status(500).json({ 
@@ -70,8 +72,8 @@ router.post('/enhance-description', verifyFirebaseAuth, async (req: Request, res
         source: 'openai-gpt4'
       });
 
-    } catch (aiError) {
-      console.warn('⚠️ Error con OpenAI, usando método de respaldo:', aiError.message);
+    } catch (aiError: any) {
+      console.warn('⚠️ Error con OpenAI, usando método de respaldo:', aiError?.message);
 
       // Usar método de respaldo si OpenAI falla
       const fallbackEnhancement = createFallbackEnhancement(originalText);
@@ -188,26 +190,217 @@ router.post('/enhance-project', async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('❌ Error procesando proyecto con IA:', error);
     console.error('❌ Error details:', {
-      name: error.name,
-      message: error.message,
-      code: error.code,
-      stack: error.stack
+      name: error?.name,
+      message: error?.message,
+      code: error?.code,
+      stack: error?.stack
     });
 
     // Always use fallback for now since we need to ensure functionality
     console.log('🔄 Using fallback due to error...');
-    const fallbackContent = generateFallbackContent(field, context);
+    const fallbackField = req.body?.field || 'general';
+    const fallbackContext = req.body?.context || {};
+    const fallbackContent = generateFallbackContent(fallbackField, fallbackContext);
     
     res.json({
       success: true,
       enhancedContent: fallbackContent,
-      field,
+      field: fallbackField,
       source: 'fallback-professional',
       timestamp: new Date().toISOString(),
       warning: 'Generated using professional template'
     });
   }
 });
+
+// Schema for Change Order AI Enhancement
+const changeOrderEnhanceSchema = z.object({
+  originalText: z.string().min(5, 'Description must have at least 5 characters'),
+  costType: z.enum(['addition', 'deduction']),
+  additionalCost: z.number(),
+  adjustTimeline: z.boolean().default(false),
+  newCompletionDate: z.string().optional(),
+  originalContract: z.object({
+    clientName: z.string().optional(),
+    originalTotal: z.number().optional(),
+    originalDate: z.string().optional(),
+    projectType: z.string().optional(),
+  }).optional(),
+});
+
+/**
+ * POST /api/ai/enhance-change-order
+ * AI Enhancement for Change Order descriptions
+ * Transforms contractor notes into professional legal-style text
+ * 🔐 SECURITY: Requires Firebase authentication
+ */
+router.post('/enhance-change-order', verifyFirebaseAuth, async (req: Request, res: Response) => {
+  try {
+    console.log('🔧 [CHANGE-ORDER-AI] New enhancement request');
+    
+    const firebaseUid = req.firebaseUser?.uid;
+    if (!firebaseUid) {
+      return res.status(401).json({ 
+        success: false,
+        error: 'User not authenticated' 
+      });
+    }
+    
+    const userMapping = await userMappingService.getInternalUserId(firebaseUid);
+    let userId = typeof userMapping === 'object' ? userMapping?.id : userMapping;
+    if (!userId) {
+      const newMapping = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      userId = typeof newMapping === 'object' ? newMapping?.id : newMapping;
+    }
+    console.log(`🔐 [SECURITY] Change Order AI enhancement for user_id: ${userId}`);
+
+    const validatedData = changeOrderEnhanceSchema.parse(req.body);
+    const { originalText, costType, additionalCost, adjustTimeline, newCompletionDate, originalContract } = validatedData;
+
+    console.log('✅ [CHANGE-ORDER-AI] Data validated, calling OpenAI...');
+
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OpenAI API key not configured');
+    }
+
+    const costImpactText = costType === 'addition' 
+      ? `Additional cost of $${additionalCost.toLocaleString()}` 
+      : `Credit/reduction of $${additionalCost.toLocaleString()}`;
+
+    const timelineText = adjustTimeline && newCompletionDate 
+      ? `New completion date: ${newCompletionDate}` 
+      : 'No timeline changes';
+
+    const systemPrompt = `You are a legal document specialist for construction contracts. Your task is to transform a contractor's brief notes into a professional, legally-sound Change Order description.
+
+CRITICAL RULES:
+1. DO NOT invent any materials, quantities, dates, or conditions that are not in the original text
+2. ONLY reorganize, clarify, and legally formalize the existing information
+3. Maintain factual accuracy - if something is unclear, phrase it generally rather than inventing details
+4. Use professional legal language suitable for a contract amendment
+5. Connect scope change → cost impact → timeline impact logically
+
+OUTPUT FORMAT (use these exact section headers):
+## CHANGE SUMMARY
+[One sentence summary of the change]
+
+## DETAILED SCOPE OF CHANGE
+[Expand and clarify the contractor's notes into professional language]
+
+## COST IMPACT
+[State the financial adjustment clearly]
+
+## SCHEDULE IMPACT
+[State any timeline changes or confirm no changes]
+
+## CONFIRMATION
+All other terms and conditions of the original contract dated [ORIGINAL_DATE] remain unchanged and in full force and effect.`;
+
+    const userPrompt = `Transform this contractor's change description into a professional Change Order document:
+
+ORIGINAL CONTRACTOR NOTES:
+"${originalText}"
+
+FINANCIAL IMPACT:
+- Type: ${costType === 'addition' ? 'Addition (+)' : 'Deduction (-)'}
+- Amount: $${additionalCost.toLocaleString()}
+${originalContract?.originalTotal ? `- Original Contract Value: $${originalContract.originalTotal.toLocaleString()}` : ''}
+
+TIMELINE:
+${timelineText}
+
+${originalContract?.clientName ? `CLIENT: ${originalContract.clientName}` : ''}
+${originalContract?.projectType ? `PROJECT TYPE: ${originalContract.projectType}` : ''}
+${originalContract?.originalDate ? `ORIGINAL CONTRACT DATE: ${originalContract.originalDate}` : ''}
+
+Remember: Do NOT invent any details. Only reorganize and professionalize what the contractor provided.`;
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt }
+      ],
+      max_tokens: 1000,
+      temperature: 0.4,
+    });
+
+    const enhancedContent = completion.choices[0].message.content?.trim();
+
+    if (!enhancedContent) {
+      throw new Error('No content generated by AI');
+    }
+
+    console.log('✅ [CHANGE-ORDER-AI] Enhancement generated successfully');
+
+    res.json({
+      success: true,
+      enhancedDescription: enhancedContent,
+      metadata: {
+        aiEnhanced: true,
+        aiOriginalText: originalText,
+        aiFinalText: enhancedContent,
+        aiModelVersion: 'gpt-4o',
+        timestamp: new Date().toISOString(),
+      },
+      source: 'openai-gpt4o',
+    });
+
+  } catch (error: any) {
+    console.error('❌ [CHANGE-ORDER-AI] Error:', error);
+
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid input data',
+        details: error.errors
+      });
+    }
+
+    // Fallback: return a professionally formatted version without AI
+    const fallback = generateChangeOrderFallback(req.body);
+    res.json({
+      success: true,
+      enhancedDescription: fallback,
+      metadata: {
+        aiEnhanced: false,
+        aiOriginalText: req.body.originalText || '',
+        aiFinalText: fallback,
+        aiModelVersion: 'fallback',
+        timestamp: new Date().toISOString(),
+      },
+      source: 'fallback',
+      warning: 'Generated using professional template due to AI service unavailability'
+    });
+  }
+});
+
+// Fallback generator for Change Order enhancement
+function generateChangeOrderFallback(data: any): string {
+  const { originalText, costType, additionalCost, adjustTimeline, newCompletionDate } = data;
+  const costLabel = costType === 'addition' ? 'increase' : 'decrease';
+  
+  return `## CHANGE SUMMARY
+This Change Order documents modifications to the original contract scope as described below.
+
+## DETAILED SCOPE OF CHANGE
+${originalText || 'Scope changes as discussed and agreed upon by both parties.'}
+
+## COST IMPACT
+The contract value will ${costLabel} by $${(additionalCost || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}.
+
+## SCHEDULE IMPACT
+${adjustTimeline && newCompletionDate 
+  ? `The project completion date has been adjusted to ${newCompletionDate}.` 
+  : 'No changes to the original project timeline.'}
+
+## CONFIRMATION
+All other terms and conditions of the original contract remain unchanged and in full force and effect.`;
+}
 
 // Professional fallback content generator
 function generateFallbackContent(field: string, context: any): string {
