@@ -99,13 +99,23 @@ class TemplateConfigRegistry {
 export const templateConfigRegistry = new TemplateConfigRegistry();
 
 const changeOrderSchema = z.object({
+  contractSource: z.enum(['existing', 'external']).default('existing'),
+  originalContractId: z.string().optional(),
+  externalContractName: z.string().optional(),
   originalContractDate: z.string().min(1, 'Original contract date is required'),
-  originalContractId: z.string().min(1, 'Original contract reference is required'),
   changeDescription: z.string().min(10, 'Please describe what is being changed'),
   additionalCost: z.number(),
   costType: z.enum(['addition', 'deduction']),
   newCompletionDate: z.string().optional(),
   adjustTimeline: z.boolean().default(false),
+}).refine((data) => {
+  if (data.contractSource === 'existing') {
+    return !!data.originalContractId;
+  }
+  return !!data.externalContractName;
+}, {
+  message: 'Please select a contract or enter external contract name',
+  path: ['originalContractId'],
 });
 
 templateConfigRegistry.register({
@@ -123,12 +133,33 @@ templateConfigRegistry.register({
         icon: 'Link',
         fields: [
           {
-            id: 'originalContractId',
-            label: 'Original Contract ID',
-            type: 'contract-reference',
-            placeholder: 'Select or enter contract reference',
-            helpText: 'Reference to the contract being modified',
+            id: 'contractSource',
+            label: 'Contract Source',
+            type: 'select',
             required: true,
+            defaultValue: 'existing',
+            options: [
+              { value: 'existing', label: 'Select from my contracts' },
+              { value: 'external', label: 'External contract (not in system)' },
+            ],
+          },
+          {
+            id: 'originalContractId',
+            label: 'Select Contract',
+            type: 'contract-reference',
+            placeholder: 'Select a contract',
+            helpText: 'Choose from your existing contracts',
+            required: false,
+            showIf: { field: 'contractSource', value: 'existing' },
+          },
+          {
+            id: 'externalContractName',
+            label: 'Contract Name',
+            type: 'text',
+            placeholder: 'e.g., Kitchen Remodel Contract',
+            helpText: 'Name or description of the external contract',
+            required: false,
+            showIf: { field: 'contractSource', value: 'external' },
           },
           {
             id: 'originalContractDate',

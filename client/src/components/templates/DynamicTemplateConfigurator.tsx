@@ -11,6 +11,7 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,6 +51,7 @@ import {
   Loader2,
   ArrowLeft,
   ArrowRight,
+  FileText,
 } from "lucide-react";
 import {
   templateConfigRegistry,
@@ -57,6 +59,7 @@ import {
   type FieldGroup,
   type TemplateUIConfig,
 } from "@/lib/templateConfigRegistry";
+import { useAuth } from "@/hooks/use-auth";
 
 interface DynamicTemplateConfiguratorProps {
   templateId: string;
@@ -74,6 +77,13 @@ const iconMap: Record<string, any> = {
   Calendar,
 };
 
+interface ExistingContract {
+  id: string;
+  clientName: string;
+  projectType?: string;
+  createdAt?: string;
+}
+
 export default function DynamicTemplateConfigurator({
   templateId,
   baseData,
@@ -82,6 +92,12 @@ export default function DynamicTemplateConfigurator({
   isSubmitting = false,
 }: DynamicTemplateConfiguratorProps) {
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const { user } = useAuth();
+  
+  const { data: existingContracts = [], isLoading: loadingContracts } = useQuery<ExistingContract[]>({
+    queryKey: ['/api/contracts-firebase/history'],
+    enabled: !!user,
+  });
   
   const configEntry = templateConfigRegistry.get(templateId);
   
@@ -192,13 +208,50 @@ export default function DynamicTemplateConfigurator({
   const renderFieldInput = (field: FieldDescriptor, formField: any) => {
     switch (field.type) {
       case 'text':
-      case 'contract-reference':
         return (
           <Input
             {...formField}
             placeholder={field.placeholder}
             data-testid={`input-${field.id}`}
           />
+        );
+
+      case 'contract-reference':
+        return (
+          <Select
+            value={formField.value || ''}
+            onValueChange={formField.onChange}
+          >
+            <SelectTrigger data-testid={`select-${field.id}`}>
+              <SelectValue placeholder={loadingContracts ? "Loading contracts..." : "Select a contract"} />
+            </SelectTrigger>
+            <SelectContent>
+              {loadingContracts ? (
+                <SelectItem value="_loading" disabled>
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading...
+                  </span>
+                </SelectItem>
+              ) : existingContracts.length === 0 ? (
+                <SelectItem value="_empty" disabled>
+                  No contracts found
+                </SelectItem>
+              ) : (
+                existingContracts.map((contract) => (
+                  <SelectItem key={contract.id} value={contract.id}>
+                    <span className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">{contract.clientName}</span>
+                      <span className="text-xs text-muted-foreground">
+                        #{contract.id.slice(-6)}
+                      </span>
+                    </span>
+                  </SelectItem>
+                ))
+              )}
+            </SelectContent>
+          </Select>
         );
 
       case 'textarea':
