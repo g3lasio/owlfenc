@@ -2595,6 +2595,8 @@ export default function SimpleContractGenerator() {
           selected: selectedClauses,
           clauses: selectedClausesData,
         },
+        // ✅ FIX: Add templateId for multi-template support (Change Order, etc.)
+        templateId: selectedDocumentType !== 'independent-contractor' ? selectedDocumentType : undefined,
       };
 
       console.log("📄 [PDF DOWNLOAD] Complete payload with clauses:", {
@@ -2632,63 +2634,25 @@ export default function SimpleContractGenerator() {
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
         const isIPadOS = navigator.userAgent.includes('Mac') && 'ontouchend' in document;
         
-        // Handle PDF based on device type
+        // Handle PDF based on device type - ALWAYS prioritize direct download
         if (isMobile || isIOS || isIPadOS) {
-          // Mobile/Tablet: Try Web Share API first, fallback to opening in new tab
-          const file = new File([blob], fileName, { type: 'application/pdf' });
-          let shareSuccessful = false;
+          // Mobile/Tablet: Direct download (no Web Share API to avoid share options)
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = fileName;
+          a.style.display = 'none';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
           
-          // Try Web Share API if available
-          if (navigator.share && typeof navigator.canShare === 'function') {
-            try {
-              const canShareFiles = navigator.canShare({ files: [file] });
-              
-              if (canShareFiles) {
-                await navigator.share({
-                  title: 'Contract PDF',
-                  text: `Contract for ${selectedProject.clientName}`,
-                  files: [file]
-                });
-                
-                shareSuccessful = true;
-                toast({
-                  title: "✅ PDF Ready",
-                  description: "Choose where to save or share your contract",
-                });
-              }
-            } catch (shareError: any) {
-              // User cancelled or share failed
-              if (shareError.name === 'AbortError') {
-                console.log('User cancelled share');
-                shareSuccessful = false; // User cancelled, show fallback
-              } else {
-                console.warn('Share API failed:', shareError);
-                shareSuccessful = false;
-              }
-            }
-          }
+          // Clean up after a delay
+          setTimeout(() => window.URL.revokeObjectURL(url), 1000);
           
-          // If share was not successful, use fallback methods
-          // ✅ NO TOAST: Browser/OS shows PDF opened or download notification
-          if (!shareSuccessful) {
-            // Fallback: Open in new tab or download directly
-            const url = window.URL.createObjectURL(blob);
-            const newTab = window.open(url, '_blank');
-            
-            if (!newTab) {
-              // Popup blocked - force download
-              const a = document.createElement("a");
-              a.href = url;
-              a.download = fileName;
-              a.style.display = 'none';
-              document.body.appendChild(a);
-              a.click();
-              document.body.removeChild(a);
-            }
-            
-            // Clean up after a delay
-            setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-          }
+          toast({
+            title: "✅ PDF Downloaded",
+            description: "Check your downloads folder",
+          });
         } else {
           // Desktop: Traditional download
           // ✅ NO TOAST: Browser shows download notification
