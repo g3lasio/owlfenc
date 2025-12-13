@@ -8,6 +8,7 @@
 export interface FeatureFlags {
   multiTemplateSystem: boolean;
   documentTypeSelector: boolean;
+  independentContractorTemplate: boolean;
   changeOrderTemplate: boolean;
   contractAddendumTemplate: boolean;
   workOrderTemplate: boolean;
@@ -20,6 +21,7 @@ export interface FeatureFlags {
 const defaultFlags: FeatureFlags = {
   multiTemplateSystem: true,
   documentTypeSelector: true,
+  independentContractorTemplate: true,
   changeOrderTemplate: true,
   contractAddendumTemplate: true,
   workOrderTemplate: true,
@@ -40,6 +42,7 @@ class FeatureFlagService {
     return {
       multiTemplateSystem: this.parseEnvFlag('FF_MULTI_TEMPLATE_SYSTEM', defaultFlags.multiTemplateSystem),
       documentTypeSelector: this.parseEnvFlag('FF_DOCUMENT_TYPE_SELECTOR', defaultFlags.documentTypeSelector),
+      independentContractorTemplate: this.parseEnvFlag('FF_INDEPENDENT_CONTRACTOR_TEMPLATE', defaultFlags.independentContractorTemplate),
       changeOrderTemplate: this.parseEnvFlag('FF_CHANGE_ORDER_TEMPLATE', defaultFlags.changeOrderTemplate),
       contractAddendumTemplate: this.parseEnvFlag('FF_CONTRACT_ADDENDUM_TEMPLATE', defaultFlags.contractAddendumTemplate),
       workOrderTemplate: this.parseEnvFlag('FF_WORK_ORDER_TEMPLATE', defaultFlags.workOrderTemplate),
@@ -72,6 +75,7 @@ class FeatureFlagService {
 
   isTemplateEnabled(templateId: string): boolean {
     const templateFlagMap: Record<string, keyof FeatureFlags> = {
+      'independent-contractor': 'independentContractorTemplate',
       'change-order': 'changeOrderTemplate',
       'contract-addendum': 'contractAddendumTemplate',
       'work-order': 'workOrderTemplate',
@@ -82,8 +86,10 @@ class FeatureFlagService {
     };
 
     const flagName = templateFlagMap[templateId];
+    
+    // If no explicit flag mapping exists, default to enabled (allow new templates to appear)
     if (!flagName) {
-      return false;
+      return this.flags.multiTemplateSystem;
     }
 
     return this.flags.multiTemplateSystem && this.flags[flagName];

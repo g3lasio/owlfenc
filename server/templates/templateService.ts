@@ -14,6 +14,7 @@ import {
   TemplateCategory 
 } from './registry';
 
+import './documents/independent-contractor';
 import './documents/change-order';
 import './documents/contract-addendum';
 import './documents/work-order';
@@ -86,18 +87,28 @@ class TemplateService {
     displayName: string;
     description: string;
     category: TemplateCategory;
+    subcategory?: string;
+    status: string;
     signatureType: string;
     icon?: string;
   }> {
-    return this.getAvailableTemplates().map(t => ({
-      id: t.id,
-      name: t.name,
-      displayName: t.displayName,
-      description: t.description,
-      category: t.category,
-      signatureType: t.signatureType,
-      icon: t.icon,
-    }));
+    if (!this.isTemplateSystemEnabled()) {
+      return [];
+    }
+
+    return templateRegistry.getAll()
+      .filter(template => featureFlags.isTemplateEnabled(template.id))
+      .map(t => ({
+        id: t.id,
+        name: t.name,
+        displayName: t.displayName,
+        description: t.description,
+        category: t.category,
+        subcategory: t.subcategory,
+        status: t.status,
+        signatureType: t.signatureType,
+        icon: t.icon,
+      }));
   }
 
   validateData(templateId: string, data: Partial<TemplateData>): TemplateValidationResult {

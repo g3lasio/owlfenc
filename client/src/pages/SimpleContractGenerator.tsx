@@ -231,13 +231,15 @@ export default function SimpleContractGenerator() {
   const [isAIProcessing, setIsAIProcessing] = useState(false);
 
   // Document Type Selector states (Multi-Template System)
-  const [selectedDocumentType, setSelectedDocumentType] = useState<string>("independent-contractor"); // default to legacy
+  const [selectedDocumentType, setSelectedDocumentType] = useState<string>(""); // dynamically set from first active template
   const [availableDocumentTypes, setAvailableDocumentTypes] = useState<Array<{
     id: string;
     name: string;
     displayName: string;
     description: string;
     category: string;
+    subcategory?: string;
+    status: string;
     signatureType: string;
     icon?: string;
   }>>([]);
@@ -2237,9 +2239,19 @@ export default function SimpleContractGenerator() {
         
         if (response.ok) {
           const data = await response.json();
+          const templates = data.templates || [];
           setIsDocumentTypeSelectorEnabled(data.featureFlags?.documentTypeSelector || false);
-          setAvailableDocumentTypes(data.templates || []);
-          console.log('📋 [MULTI-TEMPLATE] Document types loaded:', data.templates?.length || 0, 'Feature enabled:', data.featureFlags?.documentTypeSelector);
+          setAvailableDocumentTypes(templates);
+          
+          // Set initial selected document type to first active template, fallback to any available
+          const firstActiveTemplate = templates.find((t: { status: string }) => t.status === 'active');
+          const fallbackTemplate = templates[0];
+          const defaultTemplate = firstActiveTemplate || fallbackTemplate;
+          if (defaultTemplate) {
+            setSelectedDocumentType(defaultTemplate.id);
+          }
+          
+          console.log('📋 [MULTI-TEMPLATE] Document types loaded:', templates.length, 'Feature enabled:', data.featureFlags?.documentTypeSelector, 'Default:', firstActiveTemplate?.id);
         }
       } catch (error) {
         console.error('❌ Error fetching document types:', error);
@@ -4563,43 +4575,71 @@ export default function SimpleContractGenerator() {
                             <SelectValue placeholder="Select contract type" />
                           </SelectTrigger>
                           <SelectContent className="bg-gray-900 border-cyan-500/50 max-h-80">
-                            {/* Primary Contracts Section */}
-                            <div className="px-2 py-1.5 text-xs font-semibold text-cyan-400 bg-cyan-500/10">
-                              📋 Primary Contracts
-                            </div>
-                            <SelectItem value="independent-contractor" className="text-white hover:bg-cyan-500/20 py-2" data-testid="contract-type-default">
-                              <div className="flex items-center gap-3">
-                                <Shield className="h-4 w-4 text-cyan-400 flex-shrink-0" />
-                                <div className="flex flex-col">
-                                  <span className="font-medium">Independent Contractor Agreement</span>
-                                  <span className="text-xs text-gray-400">Standard construction contract with full legal protection</span>
+                            {/* Primary Contracts Section - 100% Registry Driven by subcategory */}
+                            {availableDocumentTypes.filter(t => t.subcategory === 'primary').length > 0 && (
+                              <>
+                                <div className="px-2 py-1.5 text-xs font-semibold text-cyan-400 bg-cyan-500/10">
+                                  📋 Primary Contracts
                                 </div>
-                              </div>
-                            </SelectItem>
+                                {availableDocumentTypes
+                                  .filter(t => t.subcategory === 'primary')
+                                  .map((docType) => (
+                                    <SelectItem 
+                                      key={docType.id} 
+                                      value={docType.id} 
+                                      className="text-white hover:bg-cyan-500/20 py-2" 
+                                      data-testid="contract-type-default"
+                                      disabled={docType.status === 'coming_soon'}
+                                    >
+                                      <div className="flex items-center gap-3">
+                                        <Shield className="h-4 w-4 text-cyan-400 flex-shrink-0" />
+                                        <div className="flex flex-col">
+                                          <div className="flex items-center gap-2">
+                                            <span className="font-medium">{docType.displayName}</span>
+                                            {docType.status === 'coming_soon' && (
+                                              <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 bg-gray-500/20 text-gray-400 border-gray-500/50">
+                                                Próximamente
+                                              </Badge>
+                                            )}
+                                          </div>
+                                          <span className="text-xs text-gray-400">{docType.description}</span>
+                                        </div>
+                                      </div>
+                                    </SelectItem>
+                                  ))}
+                              </>
+                            )}
                             
-                            {/* Contract Amendments Section */}
-                            {availableDocumentTypes.filter(t => ['change-order', 'contract-addendum', 'work-order'].includes(t.id)).length > 0 && (
+                            {/* Contract Amendments Section - Registry Driven by subcategory */}
+                            {availableDocumentTypes.filter(t => t.subcategory === 'amendment' || t.subcategory === 'work-authorization').length > 0 && (
                               <>
                                 <div className="px-2 py-1.5 text-xs font-semibold text-yellow-400 bg-yellow-500/10 mt-1">
                                   📝 Contract Amendments
                                 </div>
                                 {availableDocumentTypes
-                                  .filter(t => ['change-order', 'contract-addendum', 'work-order'].includes(t.id))
+                                  .filter(t => t.subcategory === 'amendment' || t.subcategory === 'work-authorization')
                                   .map((docType) => (
                                     <SelectItem 
                                       key={docType.id} 
                                       value={docType.id} 
                                       className="text-white hover:bg-yellow-500/20 py-2"
                                       data-testid={`contract-type-${docType.id}`}
+                                      disabled={docType.status === 'coming_soon'}
                                     >
                                       <div className="flex items-center gap-3">
                                         <FileCheck className="h-4 w-4 text-yellow-400 flex-shrink-0" />
                                         <div className="flex flex-col">
                                           <div className="flex items-center gap-2">
                                             <span className="font-medium">{docType.displayName}</span>
-                                            <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 bg-blue-500/20 text-blue-300 border-blue-500/50">
-                                              {docType.signatureType === 'dual' ? '2 Firmas' : '1 Firma'}
-                                            </Badge>
+                                            {docType.status === 'coming_soon' ? (
+                                              <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 bg-gray-500/20 text-gray-400 border-gray-500/50">
+                                                Próximamente
+                                              </Badge>
+                                            ) : (
+                                              <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 bg-blue-500/20 text-blue-300 border-blue-500/50">
+                                                {docType.signatureType === 'dual' ? '2 Firmas' : '1 Firma'}
+                                              </Badge>
+                                            )}
                                           </div>
                                           <span className="text-xs text-gray-400">{docType.description}</span>
                                         </div>
@@ -4609,29 +4649,36 @@ export default function SimpleContractGenerator() {
                               </>
                             )}
                             
-                            {/* Lien Waivers Section */}
-                            {availableDocumentTypes.filter(t => t.id.includes('lien-waiver')).length > 0 && (
+                            {/* Lien Waivers Section - Registry Driven by subcategory */}
+                            {availableDocumentTypes.filter(t => t.subcategory === 'legal').length > 0 && (
                               <>
                                 <div className="px-2 py-1.5 text-xs font-semibold text-green-400 bg-green-500/10 mt-1">
                                   ✅ Lien Waivers
                                 </div>
                                 {availableDocumentTypes
-                                  .filter(t => t.id.includes('lien-waiver'))
+                                  .filter(t => t.subcategory === 'legal')
                                   .map((docType) => (
                                     <SelectItem 
                                       key={docType.id} 
                                       value={docType.id} 
                                       className="text-white hover:bg-green-500/20 py-2"
                                       data-testid={`contract-type-${docType.id}`}
+                                      disabled={docType.status === 'coming_soon'}
                                     >
                                       <div className="flex items-center gap-3">
                                         <FileCheck className="h-4 w-4 text-green-400 flex-shrink-0" />
                                         <div className="flex flex-col">
                                           <div className="flex items-center gap-2">
                                             <span className="font-medium">{docType.displayName}</span>
-                                            <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 bg-yellow-500/20 text-yellow-300 border-yellow-500/50">
-                                              1 Firma
-                                            </Badge>
+                                            {docType.status === 'coming_soon' ? (
+                                              <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 bg-gray-500/20 text-gray-400 border-gray-500/50">
+                                                Próximamente
+                                              </Badge>
+                                            ) : (
+                                              <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 bg-yellow-500/20 text-yellow-300 border-yellow-500/50">
+                                                1 Firma
+                                              </Badge>
+                                            )}
                                           </div>
                                           <span className="text-xs text-gray-400">{docType.description}</span>
                                         </div>
@@ -4641,29 +4688,36 @@ export default function SimpleContractGenerator() {
                               </>
                             )}
                             
-                            {/* Completion & Warranty Section */}
-                            {availableDocumentTypes.filter(t => ['certificate-completion', 'warranty-agreement'].includes(t.id)).length > 0 && (
+                            {/* Completion & Warranty Section - Registry Driven by subcategory */}
+                            {availableDocumentTypes.filter(t => t.subcategory === 'completion' || t.subcategory === 'warranty').length > 0 && (
                               <>
                                 <div className="px-2 py-1.5 text-xs font-semibold text-purple-400 bg-purple-500/10 mt-1">
                                   🏆 Completion & Warranty
                                 </div>
                                 {availableDocumentTypes
-                                  .filter(t => ['certificate-completion', 'warranty-agreement'].includes(t.id))
+                                  .filter(t => t.subcategory === 'completion' || t.subcategory === 'warranty')
                                   .map((docType) => (
                                     <SelectItem 
                                       key={docType.id} 
                                       value={docType.id} 
                                       className="text-white hover:bg-purple-500/20 py-2"
                                       data-testid={`contract-type-${docType.id}`}
+                                      disabled={docType.status === 'coming_soon'}
                                     >
                                       <div className="flex items-center gap-3">
                                         <FileCheck className="h-4 w-4 text-purple-400 flex-shrink-0" />
                                         <div className="flex flex-col">
                                           <div className="flex items-center gap-2">
                                             <span className="font-medium">{docType.displayName}</span>
-                                            <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 bg-blue-500/20 text-blue-300 border-blue-500/50">
-                                              {docType.signatureType === 'dual' ? '2 Firmas' : '1 Firma'}
-                                            </Badge>
+                                            {docType.status === 'coming_soon' ? (
+                                              <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 bg-gray-500/20 text-gray-400 border-gray-500/50">
+                                                Próximamente
+                                              </Badge>
+                                            ) : (
+                                              <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 bg-blue-500/20 text-blue-300 border-blue-500/50">
+                                                {docType.signatureType === 'dual' ? '2 Firmas' : '1 Firma'}
+                                              </Badge>
+                                            )}
                                           </div>
                                           <span className="text-xs text-gray-400">{docType.description}</span>
                                         </div>
