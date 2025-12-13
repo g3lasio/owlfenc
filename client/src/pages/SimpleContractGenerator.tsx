@@ -5709,7 +5709,13 @@ export default function SimpleContractGenerator() {
                               The contract HTML was not generated properly. Please regenerate the contract first.
                             </p>
                             <Button
-                              onClick={handleGenerateContract}
+                              onClick={() => {
+                                if (templateConfigRegistry.needsDynamicConfig(selectedDocumentType)) {
+                                  setCurrentStep(2);
+                                } else {
+                                  handleGenerateContract();
+                                }
+                              }}
                               disabled={isLoading}
                               className="bg-red-600 hover:bg-red-500 text-white font-medium py-2 px-4 w-full mt-3 text-sm"
                             >
@@ -5718,7 +5724,7 @@ export default function SimpleContractGenerator() {
                               ) : (
                                 <RefreshCw className="h-4 w-4 mr-2" />
                               )}
-                              {isLoading ? "Generating..." : "Regenerate Contract"}
+                              {isLoading ? "Generating..." : templateConfigRegistry.needsDynamicConfig(selectedDocumentType) ? "Go Back to Configure" : "Regenerate Contract"}
                             </Button>
                           </div>
                         )}
