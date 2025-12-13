@@ -1,0 +1,104 @@
+Leí tu análisis y coincido contigo: la observación es correcta y el problema es conceptual, no solo técnico. Un Change Order no nace de un proyecto/estimado, nace de un contrato ya existente. Dicho eso, vamos a avanzar con tu propuesta bajo reglas claras para no romper el sistema actual.
+
+DECISIÓN
+
+Aprobamos el rediseño del flujo del Change Order para que esté basado en contrato existente, pero sin refactorizar ni alterar el flujo actual del Independent Contractor Agreement.
+
+El sistema debe soportar flujos paralelos, no un flujo único forzado.
+
+REGLA MADRE (esto gobierna todo Legal Defense)
+
+Contratos nuevos (ej. Independent Contractor Agreement)
+→ nacen de proyecto/estimado o desde cero
+
+Documentos que modifican o cierran contratos (Change Order, Addendum, Lien Waiver, Certificate, Warranty)
+→ nacen SIEMPRE de un contrato existente
+
+No mezclar conceptos.
+
+IMPLEMENTACIÓN APROBADA (CON LÍMITES)
+1️⃣ Paso 0: Selector de tipo de documento (Router, no refactor)
+
+Agregar un Paso 0 ligero que solo decide el flujo:
+
+Independent Contractor Agreement
+
+Change Order
+
+(otros en el futuro)
+
+Este paso NO reemplaza ni refactoriza el flujo actual.
+
+Solo enruta al flujo correcto.
+
+2️⃣ Flujo A: Independent Contractor Agreement (NO TOCAR)
+
+Paso 1: Seleccionar proyecto/estimado (como hoy)
+
+Paso 2: Configuración actual
+
+Paso 3: Generar PDF
+
+⚠️ Este flujo debe seguir funcionando EXACTAMENTE igual.
+
+3️⃣ Flujo B: Change Order (NUEVO, separado)
+
+Paso 1: Seleccionar CONTRATO EXISTENTE (no proyecto)
+
+Debe venir del history de contratos del sistema
+
+Con ID, cliente, monto original, fechas
+
+Paso 2: Configurar Change Order
+
+Descripción del cambio
+
+Ajuste de costo (+ / -)
+
+Ajuste de timeline (opcional)
+
+Paso 3: Generar PDF
+
+Vinculado explícitamente al contrato original (linkedContractId)
+
+Usando el template change-order
+
+4️⃣ Autocarga obligatoria
+
+Al seleccionar el contrato base:
+
+Autocargar datos relevantes del contrato original
+
+No pedirle al usuario reescribir lo que ya existe
+
+El Change Order solo pide lo nuevo, no lo repetido.
+
+5️⃣ Motor existente intacto
+
+NO tocar:
+
+Generador de PDF
+
+Sistema de firmas
+
+URLs
+
+Validaciones core
+
+El único cambio permitido es:
+
+Decidir correctamente qué template HTML se le pasa al motor
+
+OBJETIVO DE ESTA ITERACIÓN
+
+Corregir la incoherencia conceptual
+
+Evitar inconsistencias de datos
+
+Validar el patrón con Change Order
+
+Dejar listo el camino para Addendum, Lien Waiver, Certificate, etc.
+
+Prefiero un sistema coherente y sólido ahora, que parches rápidos que luego cuesten caro.
+
+Avanza con esta estrategia y confírmame cuando el flujo de Change Order nazca exclusivamente de un contrato existente y ya no dependa de proyectos/estimados.

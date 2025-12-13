@@ -59,7 +59,7 @@ export interface TemplateUIConfig {
   icon: string;
   helpText: string;
   groups: FieldGroup[];
-  zodSchema: z.ZodObject<any>;
+  zodSchema: z.ZodSchema<any>;
 }
 
 export interface TemplateConfigEntry {
