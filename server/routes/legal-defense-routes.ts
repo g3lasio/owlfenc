@@ -399,9 +399,8 @@ function generateFallbackDefensiveContract(projectData: any): string {
 // PHASE 1: Multi-Template System Endpoints
 // ============================================
 
-// GET available document templates (protected by feature flag)
+// GET available document templates (public endpoint - only returns metadata)
 router.get('/templates',
-  verifyFirebaseAuth,
   async (req, res) => {
     try {
       if (!featureFlags.isMultiTemplateSystemEnabled()) {

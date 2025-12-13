@@ -230,6 +230,20 @@ export default function SimpleContractGenerator() {
   // AI Enhancement states
   const [isAIProcessing, setIsAIProcessing] = useState(false);
 
+  // Document Type Selector states (Multi-Template System)
+  const [selectedDocumentType, setSelectedDocumentType] = useState<string>("independent-contractor"); // default to legacy
+  const [availableDocumentTypes, setAvailableDocumentTypes] = useState<Array<{
+    id: string;
+    name: string;
+    displayName: string;
+    description: string;
+    category: string;
+    signatureType: string;
+    icon?: string;
+  }>>([]);
+  const [isDocumentTypeSelectorEnabled, setIsDocumentTypeSelectorEnabled] = useState(false);
+  const [isLoadingDocumentTypes, setIsLoadingDocumentTypes] = useState(false);
+
   // Manual total entry modal state (for corrupted legacy drafts)
   const [isManualTotalModalOpen, setIsManualTotalModalOpen] = useState(false);
   const [manualTotalInput, setManualTotalInput] = useState("");
@@ -2204,6 +2218,41 @@ export default function SimpleContractGenerator() {
     return () => unsubscribe();
   }, [currentUser?.uid, toast]);
 
+  // Fetch available document types from the Multi-Template System
+  useEffect(() => {
+    const fetchDocumentTypes = async () => {
+      if (!currentUser?.uid) return;
+      
+      setIsLoadingDocumentTypes(true);
+      try {
+        // Get Firebase ID token for proper authentication
+        const token = await auth.currentUser?.getIdToken(false).catch(() => null);
+        
+        const response = await fetch('/api/legal-defense/templates', {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : { 'x-firebase-uid': currentUser.uid }),
+          },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setIsDocumentTypeSelectorEnabled(data.featureFlags?.documentTypeSelector || false);
+          setAvailableDocumentTypes(data.templates || []);
+          console.log('📋 [MULTI-TEMPLATE] Document types loaded:', data.templates?.length || 0, 'Feature enabled:', data.featureFlags?.documentTypeSelector);
+        }
+      } catch (error) {
+        console.error('❌ Error fetching document types:', error);
+        setIsDocumentTypeSelectorEnabled(false);
+        setAvailableDocumentTypes([]);
+      } finally {
+        setIsLoadingDocumentTypes(false);
+      }
+    };
+    
+    fetchDocumentTypes();
+  }, [currentUser?.uid]);
+
   // Initialize editable data when project is selected
   useEffect(() => {
     if (selectedProject) {
@@ -2917,6 +2966,9 @@ export default function SimpleContractGenerator() {
 
         // Pass the complete selected project data for contractor extraction
         originalRequest: selectedProject,
+        
+        // Multi-Template System: Pass selected template ID (if not default)
+        templateId: selectedDocumentType !== 'independent-contractor' ? selectedDocumentType : undefined,
       };
 
       // CRITICAL VALIDATION: Log financial data for debugging corruption issues
@@ -2938,6 +2990,7 @@ export default function SimpleContractGenerator() {
 
       console.log("Generating contract with payload:", contractPayload);
       console.log("🔍 [DEBUG] Project type:", selectedProject?.isFromScratch ? 'From Scratch' : 'Existing Project');
+      console.log("📋 [MULTI-TEMPLATE] Selected document type:", selectedDocumentType, contractPayload.templateId ? `(using template: ${contractPayload.templateId})` : '(using legacy flow)');
 
       // First generate contract HTML for legal workflow
       const htmlResponse = await fetch("/api/generate-contract-html", {
@@ -3102,6 +3155,7 @@ export default function SimpleContractGenerator() {
     selectedClauses,
     suggestedClauses,
     getCorrectProjectTotal,
+    selectedDocumentType,
     toast,
   ]);
 
@@ -3134,6 +3188,8 @@ export default function SimpleContractGenerator() {
     setDualSignatureStatus("");
     setContractorSignUrl("");
     setClientSignUrl("");
+    // Reset document type selector to default
+    setSelectedDocumentType("independent-contractor");
   }, []);
 
   // Dual Signature Handler - Initiate dual signature workflow
@@ -4487,6 +4543,64 @@ export default function SimpleContractGenerator() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-6">
+                    {/* Document Type Selector - Multi-Template System (Behind Feature Flag) */}
+                    {isDocumentTypeSelectorEnabled && (
+                      <div className="border border-cyan-500/30 rounded-lg p-4 bg-cyan-500/5">
+                        <h3 className="text-lg font-semibold mb-3 text-cyan-400 flex items-center gap-2">
+                          <FileText className="h-4 w-4" />
+                          Document Type
+                          <Badge variant="outline" className="text-xs bg-cyan-500/20 text-cyan-400 border-cyan-500/50">
+                            New
+                          </Badge>
+                        </h3>
+                        <p className="text-sm text-gray-400 mb-3">
+                          Select the type of legal document you want to generate
+                        </p>
+                        <Select 
+                          value={selectedDocumentType} 
+                          onValueChange={setSelectedDocumentType}
+                          data-testid="select-document-type"
+                        >
+                          <SelectTrigger className="bg-gray-800 border-gray-600 text-white" data-testid="document-type-trigger">
+                            <SelectValue placeholder="Select document type" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-gray-800 border-gray-600">
+                            {/* Default/Legacy option */}
+                            <SelectItem value="independent-contractor" className="text-white hover:bg-gray-700" data-testid="document-type-default">
+                              <div className="flex flex-col">
+                                <span className="font-medium">Independent Contractor Agreement</span>
+                                <span className="text-xs text-gray-400">Standard construction contract</span>
+                              </div>
+                            </SelectItem>
+                            {/* Dynamic templates from API */}
+                            {availableDocumentTypes.map((docType) => (
+                              <SelectItem 
+                                key={docType.id} 
+                                value={docType.id} 
+                                className="text-white hover:bg-gray-700"
+                                data-testid={`document-type-${docType.id}`}
+                              >
+                                <div className="flex flex-col">
+                                  <span className="font-medium">{docType.displayName}</span>
+                                  <span className="text-xs text-gray-400">{docType.description}</span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {selectedDocumentType !== 'independent-contractor' && (
+                          <p className="text-xs text-cyan-400 mt-2 flex items-center gap-1">
+                            <CheckCircle className="h-3 w-3" />
+                            {availableDocumentTypes.find(t => t.id === selectedDocumentType)?.signatureType === 'dual' 
+                              ? 'Requires contractor & client signatures' 
+                              : availableDocumentTypes.find(t => t.id === selectedDocumentType)?.signatureType === 'single'
+                                ? 'Requires single signature'
+                                : 'No signature required'}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
                     {/* Editable Client Information */}
                     <div className="border border-gray-600 rounded-lg p-4">
                       <h3 className="text-lg font-semibold mb-3 text-cyan-400 flex items-center gap-2">

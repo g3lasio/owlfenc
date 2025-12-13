@@ -15,6 +15,8 @@ import {
   validateUsageLimit,
   incrementUsageOnSuccess 
 } from '../middleware/subscription-auth';
+import { templateService } from '../templates/templateService';
+import { featureFlags } from '../config/featureFlags';
 
 const router = Router();
 
@@ -598,5 +600,141 @@ function validateExtractedData(data: any) {
 function getNestedValue(obj: any, path: string): any {
   return path.split('.').reduce((current, key) => current?.[key], obj);
 }
+
+// ============================================
+// PHASE 1: Multi-Template System Endpoints
+// ============================================
+
+// GET available document templates (public endpoint - only returns metadata)
+router.get('/templates',
+  async (req, res) => {
+    try {
+      if (!featureFlags.isMultiTemplateSystemEnabled()) {
+        return res.status(404).json({
+          success: false,
+          error: 'Template system is not enabled',
+        });
+      }
+
+      const templates = templateService.getTemplateMetadata();
+      
+      res.json({
+        success: true,
+        templates,
+        featureFlags: {
+          multiTemplateSystem: featureFlags.isMultiTemplateSystemEnabled(),
+          documentTypeSelector: featureFlags.isEnabled('documentTypeSelector'),
+        },
+      });
+    } catch (error) {
+      console.error('❌ [TEMPLATES] Error fetching templates:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Error fetching templates',
+      });
+    }
+  }
+);
+
+// GET specific template details
+router.get('/templates/:templateId',
+  verifyFirebaseAuth,
+  async (req, res) => {
+    try {
+      const { templateId } = req.params;
+
+      if (!featureFlags.isMultiTemplateSystemEnabled()) {
+        return res.status(404).json({
+          success: false,
+          error: 'Template system is not enabled',
+        });
+      }
+
+      const template = templateService.getTemplate(templateId);
+      
+      if (!template) {
+        return res.status(404).json({
+          success: false,
+          error: `Template '${templateId}' not found or not available`,
+        });
+      }
+
+      res.json({
+        success: true,
+        template: {
+          id: template.id,
+          name: template.name,
+          displayName: template.displayName,
+          description: template.description,
+          category: template.category,
+          templateVersion: template.templateVersion,
+          signatureType: template.signatureType,
+          requiredFields: template.requiredFields,
+          optionalFields: template.optionalFields,
+          icon: template.icon,
+        },
+      });
+    } catch (error) {
+      console.error('❌ [TEMPLATES] Error fetching template:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Error fetching template',
+      });
+    }
+  }
+);
+
+// POST generate document from template
+router.post('/templates/:templateId/generate',
+  verifyFirebaseAuth,
+  requireLegalDefenseAccess,
+  validateUsageLimit('contracts'),
+  incrementUsageOnSuccess('contracts'),
+  async (req, res) => {
+    try {
+      const { templateId } = req.params;
+      const { data, branding } = req.body;
+
+      console.log(`📋 [TEMPLATE-GENERATE] Generating ${templateId} document...`);
+
+      if (!featureFlags.isMultiTemplateSystemEnabled()) {
+        return res.status(404).json({
+          success: false,
+          error: 'Template system is not enabled',
+        });
+      }
+
+      if (!templateService.isTemplateAvailable(templateId)) {
+        return res.status(404).json({
+          success: false,
+          error: `Template '${templateId}' not found or not available`,
+        });
+      }
+
+      const result = await templateService.generateDocument(templateId, data, branding || {});
+
+      if (!result.success) {
+        return res.status(400).json({
+          success: false,
+          error: result.error,
+        });
+      }
+
+      console.log(`✅ [TEMPLATE-GENERATE] Document generated: ${templateId}`);
+
+      res.json({
+        success: true,
+        html: result.html,
+        metadata: result.metadata,
+      });
+    } catch (error) {
+      console.error('❌ [TEMPLATE-GENERATE] Error generating document:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Error generating document',
+      });
+    }
+  }
+);
 
 export default router;
