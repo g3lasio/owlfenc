@@ -4487,107 +4487,6 @@ export default function SimpleContractGenerator() {
               </Card>
             )}
 
-            {/* Prominent Document Types Panel - Visible when project is selected */}
-            {currentStep === 2 && selectedProject && isDocumentTypeSelectorEnabled && availableDocumentTypes.length > 0 && (
-              <Card className="bg-gradient-to-r from-cyan-900/30 to-blue-900/30 border-cyan-500/50 mb-6">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-cyan-400">
-                    <FileText className="h-5 w-5" />
-                    📋 Documentos Legales Disponibles
-                    <Badge variant="outline" className="ml-2 text-xs bg-green-500/20 text-green-400 border-green-500/50">
-                      {availableDocumentTypes.length} Templates Activos
-                    </Badge>
-                  </CardTitle>
-                  <p className="text-sm text-gray-400 mt-1">
-                    Selecciona el tipo de documento que deseas generar para este proyecto
-                  </p>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {/* Legacy Contract - Always first */}
-                    <div 
-                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                        selectedDocumentType === 'independent-contractor' 
-                          ? 'border-cyan-400 bg-cyan-500/10' 
-                          : 'border-gray-600 hover:border-cyan-400/50 bg-gray-800/50'
-                      }`}
-                      onClick={() => setSelectedDocumentType('independent-contractor')}
-                      data-testid="doc-card-independent-contractor"
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <Shield className="h-6 w-6 text-cyan-400" />
-                        <Badge className="bg-cyan-500 text-black text-xs">Principal</Badge>
-                      </div>
-                      <h4 className="font-semibold text-white mb-1">Contrato de Contratista</h4>
-                      <p className="text-xs text-gray-400 mb-3">Contrato de construcción estándar con protección legal completa</p>
-                      <Button 
-                        size="sm" 
-                        className={`w-full ${selectedDocumentType === 'independent-contractor' ? 'bg-cyan-500 text-black' : 'bg-gray-700 text-white hover:bg-cyan-500 hover:text-black'}`}
-                        onClick={(e) => { e.stopPropagation(); setSelectedDocumentType('independent-contractor'); }}
-                      >
-                        {selectedDocumentType === 'independent-contractor' ? '✓ Seleccionado' : 'Seleccionar'}
-                      </Button>
-                    </div>
-
-                    {/* Dynamic Templates from API */}
-                    {availableDocumentTypes.map((docType) => (
-                      <div 
-                        key={docType.id}
-                        className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                          selectedDocumentType === docType.id 
-                            ? 'border-cyan-400 bg-cyan-500/10' 
-                            : 'border-gray-600 hover:border-cyan-400/50 bg-gray-800/50'
-                        }`}
-                        onClick={() => setSelectedDocumentType(docType.id)}
-                        data-testid={`doc-card-${docType.id}`}
-                      >
-                        <div className="flex items-start justify-between mb-2">
-                          <FileCheck className="h-6 w-6 text-green-400" />
-                          <Badge className={`text-xs ${docType.signatureType === 'single' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50' : 'bg-blue-500/20 text-blue-400 border-blue-500/50'}`} variant="outline">
-                            {docType.signatureType === 'single' ? '1 Firma' : '2 Firmas'}
-                          </Badge>
-                        </div>
-                        <h4 className="font-semibold text-white mb-1">{docType.displayName}</h4>
-                        <p className="text-xs text-gray-400 mb-3 line-clamp-2">{docType.description}</p>
-                        <Button 
-                          size="sm" 
-                          className={`w-full ${selectedDocumentType === docType.id ? 'bg-green-500 text-black' : 'bg-gray-700 text-white hover:bg-green-500 hover:text-black'}`}
-                          onClick={(e) => { e.stopPropagation(); setSelectedDocumentType(docType.id); }}
-                        >
-                          {selectedDocumentType === docType.id ? '✓ Seleccionado' : 'GENERAR'}
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                  
-                  {/* Selected Document Info */}
-                  {selectedDocumentType && selectedDocumentType !== 'independent-contractor' && (
-                    <div className="mt-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
-                      <p className="text-sm text-green-400 flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4" />
-                        Documento seleccionado: <strong>{availableDocumentTypes.find(t => t.id === selectedDocumentType)?.displayName}</strong>
-                        {' - '}Continúa abajo para personalizar y generar.
-                      </p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Message when no project selected yet */}
-            {currentStep === 1 && !selectedProject && isDocumentTypeSelectorEnabled && (
-              <Card className="bg-gray-800/50 border-gray-600 border-dashed">
-                <CardContent className="py-6 text-center">
-                  <FileText className="h-10 w-10 text-gray-500 mx-auto mb-3" />
-                  <p className="text-gray-400">
-                    📋 <strong>7 tipos de documentos legales</strong> disponibles
-                  </p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Selecciona un proyecto arriba para ver y generar documentos complementarios
-                  </p>
-                </CardContent>
-              </Card>
-            )}
 
             {/* Step 2: Review & Generate */}
             {currentStep === 2 && selectedProject && (
@@ -4645,60 +4544,147 @@ export default function SimpleContractGenerator() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-6">
-                    {/* Document Type Selector - Multi-Template System (Behind Feature Flag) */}
+                    {/* Contract Type Selector - Multi-Template System */}
                     {isDocumentTypeSelectorEnabled && (
-                      <div className="border border-cyan-500/30 rounded-lg p-4 bg-cyan-500/5">
-                        <h3 className="text-lg font-semibold mb-3 text-cyan-400 flex items-center gap-2">
-                          <FileText className="h-4 w-4" />
-                          Document Type
-                          <Badge variant="outline" className="text-xs bg-cyan-500/20 text-cyan-400 border-cyan-500/50">
-                            New
-                          </Badge>
+                      <div className="border border-cyan-500/30 rounded-lg p-4 bg-gradient-to-r from-cyan-900/20 to-blue-900/20">
+                        <h3 className="text-lg font-semibold mb-2 text-cyan-400 flex items-center gap-2">
+                          <Shield className="h-5 w-5" />
+                          Contract Type
                         </h3>
                         <p className="text-sm text-gray-400 mb-3">
-                          Select the type of legal document you want to generate
+                          Select the type of contract for this project
                         </p>
                         <Select 
                           value={selectedDocumentType} 
                           onValueChange={setSelectedDocumentType}
-                          data-testid="select-document-type"
+                          data-testid="select-contract-type"
                         >
-                          <SelectTrigger className="bg-gray-800 border-gray-600 text-white" data-testid="document-type-trigger">
-                            <SelectValue placeholder="Select document type" />
+                          <SelectTrigger className="bg-gray-800 border-cyan-500/50 text-white h-12" data-testid="contract-type-trigger">
+                            <SelectValue placeholder="Select contract type" />
                           </SelectTrigger>
-                          <SelectContent className="bg-gray-800 border-gray-600">
-                            {/* Default/Legacy option */}
-                            <SelectItem value="independent-contractor" className="text-white hover:bg-gray-700" data-testid="document-type-default">
-                              <div className="flex flex-col">
-                                <span className="font-medium">Independent Contractor Agreement</span>
-                                <span className="text-xs text-gray-400">Standard construction contract</span>
+                          <SelectContent className="bg-gray-900 border-cyan-500/50 max-h-80">
+                            {/* Primary Contracts Section */}
+                            <div className="px-2 py-1.5 text-xs font-semibold text-cyan-400 bg-cyan-500/10">
+                              📋 Primary Contracts
+                            </div>
+                            <SelectItem value="independent-contractor" className="text-white hover:bg-cyan-500/20 py-2" data-testid="contract-type-default">
+                              <div className="flex items-center gap-3">
+                                <Shield className="h-4 w-4 text-cyan-400 flex-shrink-0" />
+                                <div className="flex flex-col">
+                                  <span className="font-medium">Independent Contractor Agreement</span>
+                                  <span className="text-xs text-gray-400">Standard construction contract with full legal protection</span>
+                                </div>
                               </div>
                             </SelectItem>
-                            {/* Dynamic templates from API */}
-                            {availableDocumentTypes.map((docType) => (
-                              <SelectItem 
-                                key={docType.id} 
-                                value={docType.id} 
-                                className="text-white hover:bg-gray-700"
-                                data-testid={`document-type-${docType.id}`}
-                              >
-                                <div className="flex flex-col">
-                                  <span className="font-medium">{docType.displayName}</span>
-                                  <span className="text-xs text-gray-400">{docType.description}</span>
+                            
+                            {/* Contract Amendments Section */}
+                            {availableDocumentTypes.filter(t => ['change-order', 'contract-addendum', 'work-order'].includes(t.id)).length > 0 && (
+                              <>
+                                <div className="px-2 py-1.5 text-xs font-semibold text-yellow-400 bg-yellow-500/10 mt-1">
+                                  📝 Contract Amendments
                                 </div>
-                              </SelectItem>
-                            ))}
+                                {availableDocumentTypes
+                                  .filter(t => ['change-order', 'contract-addendum', 'work-order'].includes(t.id))
+                                  .map((docType) => (
+                                    <SelectItem 
+                                      key={docType.id} 
+                                      value={docType.id} 
+                                      className="text-white hover:bg-yellow-500/20 py-2"
+                                      data-testid={`contract-type-${docType.id}`}
+                                    >
+                                      <div className="flex items-center gap-3">
+                                        <FileCheck className="h-4 w-4 text-yellow-400 flex-shrink-0" />
+                                        <div className="flex flex-col">
+                                          <div className="flex items-center gap-2">
+                                            <span className="font-medium">{docType.displayName}</span>
+                                            <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 bg-blue-500/20 text-blue-300 border-blue-500/50">
+                                              {docType.signatureType === 'dual' ? '2 Firmas' : '1 Firma'}
+                                            </Badge>
+                                          </div>
+                                          <span className="text-xs text-gray-400">{docType.description}</span>
+                                        </div>
+                                      </div>
+                                    </SelectItem>
+                                  ))}
+                              </>
+                            )}
+                            
+                            {/* Lien Waivers Section */}
+                            {availableDocumentTypes.filter(t => t.id.includes('lien-waiver')).length > 0 && (
+                              <>
+                                <div className="px-2 py-1.5 text-xs font-semibold text-green-400 bg-green-500/10 mt-1">
+                                  ✅ Lien Waivers
+                                </div>
+                                {availableDocumentTypes
+                                  .filter(t => t.id.includes('lien-waiver'))
+                                  .map((docType) => (
+                                    <SelectItem 
+                                      key={docType.id} 
+                                      value={docType.id} 
+                                      className="text-white hover:bg-green-500/20 py-2"
+                                      data-testid={`contract-type-${docType.id}`}
+                                    >
+                                      <div className="flex items-center gap-3">
+                                        <FileCheck className="h-4 w-4 text-green-400 flex-shrink-0" />
+                                        <div className="flex flex-col">
+                                          <div className="flex items-center gap-2">
+                                            <span className="font-medium">{docType.displayName}</span>
+                                            <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 bg-yellow-500/20 text-yellow-300 border-yellow-500/50">
+                                              1 Firma
+                                            </Badge>
+                                          </div>
+                                          <span className="text-xs text-gray-400">{docType.description}</span>
+                                        </div>
+                                      </div>
+                                    </SelectItem>
+                                  ))}
+                              </>
+                            )}
+                            
+                            {/* Completion & Warranty Section */}
+                            {availableDocumentTypes.filter(t => ['certificate-completion', 'warranty-agreement'].includes(t.id)).length > 0 && (
+                              <>
+                                <div className="px-2 py-1.5 text-xs font-semibold text-purple-400 bg-purple-500/10 mt-1">
+                                  🏆 Completion & Warranty
+                                </div>
+                                {availableDocumentTypes
+                                  .filter(t => ['certificate-completion', 'warranty-agreement'].includes(t.id))
+                                  .map((docType) => (
+                                    <SelectItem 
+                                      key={docType.id} 
+                                      value={docType.id} 
+                                      className="text-white hover:bg-purple-500/20 py-2"
+                                      data-testid={`contract-type-${docType.id}`}
+                                    >
+                                      <div className="flex items-center gap-3">
+                                        <FileCheck className="h-4 w-4 text-purple-400 flex-shrink-0" />
+                                        <div className="flex flex-col">
+                                          <div className="flex items-center gap-2">
+                                            <span className="font-medium">{docType.displayName}</span>
+                                            <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 bg-blue-500/20 text-blue-300 border-blue-500/50">
+                                              {docType.signatureType === 'dual' ? '2 Firmas' : '1 Firma'}
+                                            </Badge>
+                                          </div>
+                                          <span className="text-xs text-gray-400">{docType.description}</span>
+                                        </div>
+                                      </div>
+                                    </SelectItem>
+                                  ))}
+                              </>
+                            )}
                           </SelectContent>
                         </Select>
+                        
+                        {/* Selected Contract Info */}
                         {selectedDocumentType !== 'independent-contractor' && (
-                          <p className="text-xs text-cyan-400 mt-2 flex items-center gap-1">
-                            <CheckCircle className="h-3 w-3" />
-                            {availableDocumentTypes.find(t => t.id === selectedDocumentType)?.signatureType === 'dual' 
-                              ? 'Requires contractor & client signatures' 
-                              : availableDocumentTypes.find(t => t.id === selectedDocumentType)?.signatureType === 'single'
-                                ? 'Requires single signature'
-                                : 'No signature required'}
-                          </p>
+                          <div className="mt-3 p-2 bg-cyan-500/10 border border-cyan-500/30 rounded flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-cyan-400 flex-shrink-0" />
+                            <span className="text-sm text-cyan-300">
+                              {availableDocumentTypes.find(t => t.id === selectedDocumentType)?.signatureType === 'dual' 
+                                ? 'Requiere firma del contratista y cliente' 
+                                : 'Requiere una sola firma'}
+                            </span>
+                          </div>
                         )}
                       </div>
                     )}
