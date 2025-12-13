@@ -3686,9 +3686,83 @@ ENHANCED LEGAL CLAUSE:`;
     try {
       console.log("🎨 [API] Processing PDF generation request...");
       console.log("Request body keys:", Object.keys(req.body));
+      
+      // CRITICAL FIX: Extract templateId for multi-template support
+      const templateId = req.body.templateId;
+      console.log("📋 [API] Template ID received:", templateId);
 
       // Check if contract data is provided (has client and contractor objects)
       if (req.body.client && req.body.contractor) {
+        
+        // MULTI-TEMPLATE SUPPORT: Check if using a template from registry
+        if (templateId && templateId !== 'independent-contractor') {
+          console.log(`📋 [API] Using template registry for: ${templateId}`);
+          
+          const { templateRegistry } = await import("./templates/registry");
+          const template = templateRegistry.get(templateId);
+          
+          if (!template) {
+            console.log(`❌ [API] Template not found: ${templateId}`);
+            return res.status(400).json({
+              success: false,
+              error: `Template not found: ${templateId}`,
+            });
+          }
+          
+          console.log(`✅ [API] Found template: ${template.displayName} v${template.templateVersion}`);
+          
+          // Prepare branding data
+          const branding = {
+            companyName: req.body.contractor.company || req.body.contractor.name,
+            address: req.body.contractor.address,
+            phone: req.body.contractor.phone,
+            email: req.body.contractor.email,
+            licenseNumber: req.body.contractor.license,
+          };
+          
+          // Prepare template data
+          const templateData = {
+            client: req.body.client,
+            contractor: req.body.contractor,
+            project: {
+              type: req.body.project?.type || 'Construction',
+              description: req.body.project?.description || '',
+              location: req.body.project?.location || req.body.client?.address || '',
+              startDate: req.body.project?.startDate,
+              endDate: req.body.project?.endDate,
+            },
+            financials: {
+              total: req.body.financials?.total || req.body.project?.total || 0,
+              subtotal: req.body.financials?.subtotal,
+              tax: req.body.financials?.tax,
+              taxRate: req.body.financials?.taxRate,
+            },
+            changeOrder: req.body.changeOrder,
+            addendum: req.body.addendum,
+            workOrder: req.body.workOrder,
+            lienWaiver: req.body.lienWaiver,
+            completion: req.body.completion,
+            warranty: req.body.warranty,
+          };
+          
+          // Generate HTML using template registry
+          const html = template.generateHTML(templateData, branding);
+          
+          // Convert HTML to PDF using puppeteer
+          const { puppeteerPdfService } = await import("./puppeteer-pdf-service");
+          const pdfBuffer = await puppeteerPdfService.generatePdfFromHtml(html);
+          
+          // Set headers for PDF download
+          const filename = `${template.displayName.replace(/\s+/g, "_")}_${req.body.client.name.replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.pdf`;
+          
+          res.setHeader("Content-Type", "application/pdf");
+          res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+          res.setHeader("Content-Length", pdfBuffer.length);
+          
+          console.log(`✅ [API] ${template.displayName} PDF generated: ${pdfBuffer.length} bytes`);
+          return res.send(pdfBuffer);
+        }
+        
         console.log(
           "🎨 [API] Detected contract data format - using premium service...",
         );
