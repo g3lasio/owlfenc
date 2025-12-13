@@ -1,0 +1,59 @@
+Tu propuesta me gusta y el enfoque es correcto. El flujo de dos niveles (selección de template → configuración dinámica) es el camino adecuado. Aprobamos avanzar con una condición muy clara: no romper ni refactorizar el flujo existente.
+
+DECISIÓN
+
+Vamos a implementar tu propuesta en paralelo, usando Change Order como piloto, sin afectar:
+	•	El flujo actual del Independent Contractor Agreement
+	•	El generador de PDF existente
+	•	El sistema de firmas (URLs, single/dual, embedding)
+	•	Las validaciones y almacenamiento actuales
+
+El Independent Contractor Agreement debe seguir funcionando exactamente igual, con su Step 2 actual intacto.
+
+⸻
+
+REGLAS CLARAS DE IMPLEMENTACIÓN
+
+1️⃣ Flujo existente NO se toca
+	•	El Step 2 actual sigue siendo exclusivo del Independent Contractor Agreement.
+	•	No se refactoriza ni se reemplaza.
+	•	No se migra a la nueva arquitectura todavía.
+
+2️⃣ Nuevo flujo solo para templates nuevos
+	•	Para templates nuevos (empezando por Change Order):
+	•	Usar el sistema de configuración dinámica que propusiste.
+	•	Panels y schemas solo se cargan cuando templateId !== independent-contractor.
+
+3️⃣ Change Order = piloto controlado
+	•	Implementa:
+	•	TemplateConfigurationRegistry
+	•	Config schema + UI panels solo para Change Order
+	•	Nada más por ahora.
+	•	Si Change Order funciona bien:
+	•	Repetimos el patrón para Addendum, Work Order, etc.
+
+4️⃣ Arquitectura paralela, no destructiva
+	•	No refactorices SimpleContractGenerator.
+	•	Si necesitas lógica nueva:
+	•	Crea un DynamicTemplateGenerator o similar.
+	•	El routing decide qué generador usar según templateId.
+
+5️⃣ UI clara para el usuario
+	•	Si el usuario elige Independent Contractor:
+	•	Ve el flujo actual (sin cambios).
+	•	Si elige Change Order:
+	•	Ve el nuevo flujo dinámico.
+	•	Nada de mezclar configuraciones.
+
+⸻
+
+OBJETIVO DE ESTA ITERACIÓN
+	•	Validar la arquitectura con un caso real (Change Order).
+	•	Confirmar que:
+	•	El PDF se genera correctamente
+	•	Las firmas funcionan
+	•	El UX es claro
+	•	Sin riesgo para producción.
+
+Avanza con esta estrategia.
+Prefiero progreso sólido a velocidad que rompa cosas.

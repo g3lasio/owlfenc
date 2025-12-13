@@ -85,6 +85,8 @@ import {
   ContractHistoryEntry,
 } from "@/services/contractHistoryService";
 import { getClients as getFirebaseClients } from "@/services/clientService";
+import DynamicTemplateConfigurator from "@/components/templates/DynamicTemplateConfigurator";
+import { templateConfigRegistry } from "@/lib/templateConfigRegistry";
 
 // Interface for completed contracts
 interface CompletedContract {
@@ -4555,6 +4557,40 @@ export default function SimpleContractGenerator() {
                   </div>
                 </CardHeader>
                 <CardContent>
+                  {/* PARALLEL ARCHITECTURE: Dynamic templates use DynamicTemplateConfigurator */}
+                  {templateConfigRegistry.needsDynamicConfig(selectedDocumentType) ? (
+                    <DynamicTemplateConfigurator
+                      templateId={selectedDocumentType}
+                      baseData={{
+                        project: selectedProject,
+                        client: {
+                          name: editableData.clientName || selectedProject?.clientName,
+                          email: editableData.clientEmail || selectedProject?.clientEmail,
+                          phone: editableData.clientPhone || selectedProject?.clientPhone,
+                          address: editableData.clientAddress || selectedProject?.address,
+                        },
+                        financials: {
+                          total: editableData.projectTotal || selectedProject?.totalAmount,
+                          milestones: editableData.paymentMilestones,
+                        },
+                        dates: {
+                          startDate: editableData.startDate,
+                          completionDate: editableData.completionDate,
+                        },
+                      }}
+                      onSubmit={async (transformedData) => {
+                        console.log("📋 [DYNAMIC-CONFIG] Form submitted:", transformedData);
+                        setContractData(transformedData);
+                        toast({
+                          title: "Configuration Complete",
+                          description: "Generating your document...",
+                        });
+                        setCurrentStep(3);
+                      }}
+                      onBack={() => setCurrentStep(1)}
+                      isSubmitting={isLoading}
+                    />
+                  ) : (
                   <div className="space-y-6">
                     {/* Contract Type Selector - Multi-Template System */}
                     {isDocumentTypeSelectorEnabled && (
@@ -5504,6 +5540,7 @@ export default function SimpleContractGenerator() {
                       </div>
                     </div>
                   </div>
+                  )}
                 </CardContent>
               </Card>
             )}
