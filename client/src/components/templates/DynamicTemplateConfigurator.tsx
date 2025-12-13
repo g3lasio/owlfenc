@@ -225,7 +225,7 @@ export default function DynamicTemplateConfigurator({
     setIsEnhancing(true);
 
     try {
-      const response = await fetch('/api/ai/enhance-change-order', {
+      const response = await fetch('/api/project/enhance-change-order', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
