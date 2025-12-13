@@ -52,7 +52,20 @@ import {
   ArrowLeft,
   ArrowRight,
   FileText,
+  Sparkles,
+  RefreshCw,
+  Check,
+  X,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 import {
   templateConfigRegistry,
   type FieldDescriptor,
@@ -84,6 +97,14 @@ interface ExistingContract {
   createdAt?: string;
 }
 
+interface AIEnhancementMetadata {
+  aiEnhanced: boolean;
+  aiOriginalText: string;
+  aiFinalText: string;
+  aiModelVersion: string;
+  timestamp: string;
+}
+
 export default function DynamicTemplateConfigurator({
   templateId,
   baseData,
@@ -93,6 +114,14 @@ export default function DynamicTemplateConfigurator({
 }: DynamicTemplateConfiguratorProps) {
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const { user } = useAuth();
+  const { toast } = useToast();
+  
+  const [isEnhancing, setIsEnhancing] = useState(false);
+  const [showEnhanceModal, setShowEnhanceModal] = useState(false);
+  const [enhancedText, setEnhancedText] = useState('');
+  const [originalTextForEnhance, setOriginalTextForEnhance] = useState('');
+  const [aiMetadata, setAiMetadata] = useState<AIEnhancementMetadata | null>(null);
+  const [appliedEnhancementText, setAppliedEnhancementText] = useState<string | null>(null);
   
   const { data: existingContracts = [], isLoading: loadingContracts } = useQuery<ExistingContract[]>({
     queryKey: ['/api/contracts/history'],
@@ -154,6 +183,13 @@ export default function DynamicTemplateConfigurator({
     });
   }, [config.groups]);
 
+  useEffect(() => {
+    if (appliedEnhancementText !== null && watchedValues.changeDescription !== appliedEnhancementText) {
+      setAiMetadata(null);
+      setAppliedEnhancementText(null);
+    }
+  }, [watchedValues.changeDescription, appliedEnhancementText]);
+
   const toggleGroup = (groupId: string) => {
     setCollapsedGroups((prev) => {
       const next = new Set(prev);
@@ -168,7 +204,88 @@ export default function DynamicTemplateConfigurator({
 
   const handleFormSubmit = (formData: any) => {
     const transformedData = transformToTemplateData(formData, baseData);
+    if (aiMetadata && appliedEnhancementText && formData.changeDescription === appliedEnhancementText) {
+      transformedData.aiEnhancement = aiMetadata;
+    }
     onSubmit(transformedData);
+  };
+
+  const handleEnhanceWithAI = async () => {
+    const currentDescription = form.getValues('changeDescription');
+    if (!currentDescription || currentDescription.trim().length < 5) {
+      toast({
+        title: "Text too short",
+        description: "Please enter at least 5 characters to enhance with AI.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setOriginalTextForEnhance(currentDescription);
+    setIsEnhancing(true);
+
+    try {
+      const response = await fetch('/api/ai/enhance-change-order', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          originalText: currentDescription,
+          costType: form.getValues('costType') || 'addition',
+          additionalCost: form.getValues('additionalCost') || 0,
+          adjustTimeline: form.getValues('adjustTimeline') || false,
+          newCompletionDate: form.getValues('newCompletionDate'),
+          originalContract: {
+            clientName: baseData?.client?.name,
+            originalTotal: baseData?.financials?.total,
+            originalDate: baseData?.signedDate,
+            projectType: baseData?.project?.type,
+          },
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setEnhancedText(data.enhancedDescription);
+        setAiMetadata(data.metadata);
+        setShowEnhanceModal(true);
+      } else {
+        throw new Error(data.error || 'Enhancement failed');
+      }
+    } catch (error: any) {
+      console.error('AI enhancement error:', error);
+      toast({
+        title: "Enhancement failed",
+        description: error.message || "Unable to enhance description. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsEnhancing(false);
+    }
+  };
+
+  const handleApplyEnhancement = () => {
+    form.setValue('changeDescription', enhancedText, { shouldValidate: true });
+    setAppliedEnhancementText(enhancedText);
+    setShowEnhanceModal(false);
+    toast({
+      title: "Enhancement applied",
+      description: "Your description has been updated with the AI-enhanced version.",
+    });
+  };
+
+  const handleCancelEnhancement = () => {
+    setShowEnhanceModal(false);
+    setEnhancedText('');
+    setAiMetadata(null);
+  };
+
+  const handleRegenerate = () => {
+    setShowEnhanceModal(false);
+    handleEnhanceWithAI();
   };
 
   const shouldShowField = (field: FieldDescriptor): boolean => {
@@ -263,13 +380,39 @@ export default function DynamicTemplateConfigurator({
         );
 
       case 'textarea':
+        const isChangeDescription = field.id === 'changeDescription' && templateId === 'change-order';
         return (
-          <Textarea
-            {...formField}
-            placeholder={field.placeholder}
-            className="min-h-[100px]"
-            data-testid={`textarea-${field.id}`}
-          />
+          <div className="space-y-2">
+            <Textarea
+              {...formField}
+              placeholder={field.placeholder}
+              className="min-h-[100px]"
+              data-testid={`textarea-${field.id}`}
+            />
+            {isChangeDescription && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleEnhanceWithAI}
+                disabled={isEnhancing || !formField.value || formField.value.trim().length < 5}
+                className="gap-2 text-purple-600 border-purple-200 hover:bg-purple-50 hover:border-purple-300"
+                data-testid="button-enhance-ai"
+              >
+                {isEnhancing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Enhancing...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    Enhance with AI
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
         );
 
       case 'number':
@@ -502,6 +645,76 @@ export default function DynamicTemplateConfigurator({
           </div>
         </form>
       </Form>
+
+      <Dialog open={showEnhanceModal} onOpenChange={(open) => { if (!open) handleCancelEnhancement(); }}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-purple-600" />
+              AI-Enhanced Description
+            </DialogTitle>
+            <DialogDescription>
+              Review the professionally enhanced version of your change order description.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-y-auto my-4 space-y-4">
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <p className="text-xs text-muted-foreground font-medium mb-1">Original Text:</p>
+              <p className="text-sm text-muted-foreground">{originalTextForEnhance}</p>
+            </div>
+            
+            <div className="p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg">
+              <p className="text-xs text-purple-600 dark:text-purple-400 font-medium mb-2">Enhanced Version:</p>
+              <div className="text-sm text-purple-900 dark:text-purple-100 whitespace-pre-wrap">
+                {enhancedText}
+              </div>
+            </div>
+            
+            {aiMetadata && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span className="px-2 py-0.5 bg-purple-100 dark:bg-purple-800 text-purple-700 dark:text-purple-300 rounded">
+                  {aiMetadata.aiModelVersion}
+                </span>
+                <span>{new Date(aiMetadata.timestamp).toLocaleString()}</span>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={handleCancelEnhancement}
+              className="gap-2"
+              data-testid="button-cancel-enhance"
+            >
+              <X className="h-4 w-4" />
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleRegenerate}
+              disabled={isEnhancing}
+              className="gap-2"
+              data-testid="button-regenerate"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Regenerate
+            </Button>
+            <Button
+              type="button"
+              onClick={handleApplyEnhancement}
+              className="gap-2 bg-purple-600 hover:bg-purple-700"
+              data-testid="button-apply-enhance"
+            >
+              <Check className="h-4 w-4" />
+              Apply Enhancement
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
