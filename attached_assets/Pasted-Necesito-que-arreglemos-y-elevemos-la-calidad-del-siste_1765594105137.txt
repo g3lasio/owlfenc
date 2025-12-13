@@ -1,0 +1,64 @@
+Necesito que arreglemos y elevemos la calidad del sistema multi-template. Ahorita el dropdown muestra tipos de documentos/contratos, pero quiero garantizar 3 cosas: (1) respaldo real por template, (2) calidad del contenido, (3) formato consistente con el contrato existente.
+
+1) Cada opción del dropdown debe estar respaldada por un template real
+	•	No quiero “items UI” que no tengan un template funcional detrás.
+	•	Requiero que el dropdown se construya 100% desde TEMPLATE_REGISTRY:
+	•	Si status = active → aparece con botón Generar
+	•	Si status = coming_soon → aparece bloqueado, sin generar
+	•	Si no existe template en registry → NO debe aparecer en UI
+
+✅ Objetivo: cero opciones “fantasma”.
+
+2) Calidad legal y completitud del contenido por documento
+	•	Cada documento/contrato activo debe tener contenido completo, no placeholder.
+	•	Cada template debe tener:
+	•	Secciones claras (títulos, numeración, definiciones si aplica)
+	•	Campos dinámicos bien ubicados
+	•	Lenguaje coherente, consistente y profesional
+	•	Validación de campos requeridos antes de generar PDF
+
+Quiero una revisión de cada template activo y un checklist por template de:
+	•	Campos requeridos
+	•	Campos opcionales
+	•	Secciones incluidas
+	•	Riesgos (si falta algo importante)
+
+3) Formato y estilo: usar como referencia el template del Independent Contractor Agreement
+
+El contrato actual está bien presentado:
+	•	Ordenado
+	•	Paginado
+	•	Con estilo consistente
+	•	Footer “Powered by Mervin AI”
+
+Quiero que TODOS los templates nuevos sigan el mismo estándar visual:
+	•	Misma estructura base (layout wrapper)
+	•	Misma tipografía / espaciado / encabezados
+	•	Mismo footer (“Powered by Mervin AI”)
+	•	Márgenes y saltos de página consistentes
+	•	Que el HTML resultante sea 100% compatible con el motor de PDF existente
+
+✅ Recomendación técnica: crear un baseLayout() o documentShell() reutilizable para:
+	•	Header
+	•	Footer
+	•	Page container / spacing
+	•	Estilo común
+Y que cada template solo entregue el “body” (contenido), no el layout completo.
+
+4) Pruebas y evidencia
+
+Antes de considerarlo listo:
+	•	Genera un PDF de ejemplo por cada template activo
+	•	Verifica:
+	•	No se rompe el paginado
+	•	Footer visible en todas las páginas necesarias
+	•	Firmas se incrustan bien (single o dual según corresponda)
+
+5) Entregable final (lo que quiero que me muestres)
+	1.	Lista final de templates activos y coming soon (desde registry)
+	2.	Para cada template activo:
+	•	PDF sample
+	•	Lista de campos requeridos/opcionales
+	3.	Confirmación de que el UI dropdown se alimenta solo del registry (sin hardcode)
+
+No toques el contrato legacy. Solo estandariza el sistema nuevo y asegúrate que cada opción visible sea real y de alta calidad.
