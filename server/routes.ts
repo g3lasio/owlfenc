@@ -3774,15 +3774,24 @@ ENHANCED LEGAL CLAUSE:`;
           const { puppeteerPdfService } = await import("./puppeteer-pdf-service");
           const pdfBuffer = await puppeteerPdfService.generatePdfFromHtml(html);
           
-          // Set headers for PDF download
           const filename = `${template.displayName.replace(/\s+/g, "_")}_${requestData.client.name.replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.pdf`;
           
-          res.setHeader("Content-Type", "application/pdf");
-          res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-          res.setHeader("Content-Length", pdfBuffer.length);
-          
           console.log(`✅ [API] ${template.displayName} PDF generated: ${pdfBuffer.length} bytes`);
-          return res.send(pdfBuffer);
+          
+          // FIX: Return JSON response with base64 PDF for frontend consumption
+          // This allows frontend to properly track state and download the PDF
+          const pdfBase64 = pdfBuffer.toString('base64');
+          
+          return res.json({
+            success: true,
+            templateId: templateId,
+            templateVersion: template.templateVersion,
+            filename: filename,
+            pdfBase64: pdfBase64,
+            pdfSize: pdfBuffer.length,
+            html: html, // Include HTML for contractHTML state
+            contractId: `${templateId}-${Date.now()}`, // Generate a tracking ID
+          });
         }
         
         console.log(

@@ -5932,13 +5932,40 @@ export default function SimpleContractGenerator() {
                         }
 
                         const result = await response.json();
-                        setGeneratedContract(result.contractId || result.id);
-                        setCurrentStep(3);
                         
-                        toast({
-                          title: "Change Order Generated",
-                          description: "Your Change Order has been created successfully",
-                        });
+                        // FIX: Set all required state for Step 3 to recognize the contract as ready
+                        if (result.success) {
+                          console.log('✅ [CHANGE-ORDER] PDF generated successfully:', {
+                            templateId: result.templateId,
+                            contractId: result.contractId,
+                            pdfSize: result.pdfSize,
+                            hasHtml: !!result.html,
+                          });
+                          
+                          // Set contract HTML for Step 3 display
+                          if (result.html) {
+                            setContractHTML(result.html);
+                          }
+                          
+                          // Set contract as ready
+                          setIsContractReady(true);
+                          setGeneratedContract(result.contractId || result.templateId);
+                          setContractData({
+                            ...contractData,
+                            ...transformedData,
+                            pdfBase64: result.pdfBase64,
+                            filename: result.filename,
+                          });
+                          
+                          setCurrentStep(3);
+                          
+                          toast({
+                            title: "Change Order Generated",
+                            description: "Your Change Order has been created successfully",
+                          });
+                        } else {
+                          throw new Error(result.error || 'PDF generation failed');
+                        }
                       } catch (error) {
                         console.error('Error generating Change Order:', error);
                         toast({

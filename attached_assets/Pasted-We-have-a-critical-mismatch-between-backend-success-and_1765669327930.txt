@@ -1,0 +1,79 @@
+We have a critical mismatch between backend success and frontend state in Change Order Step 3.
+
+What I see
+
+UI shows:
+
+“Contract Not Generated”
+
+“Contract HTML: Missing”
+
+“Contract ready: No”
+So Step 3 thinks contractHTML was never produced.
+
+But logs confirm backend success:
+
+templateId = change-order
+
+template registry found template
+
+PDF generated from HTML (49110 bytes)
+
+POST /generate-pdf returns 200
+
+Also the express log shows the response body like:
+{"0":37,"1":80,"2":68,...}
+This looks like a Node Buffer being returned as JSON (wrong response format).
+
+Required Fix (Backend response + Frontend wiring)
+1) Fix /generate-pdf response format
+
+Right now it seems we are returning the PDF Buffer incorrectly (serialized as JSON object with numeric keys).
+
+We need ONE of these correct approaches:
+
+Option A (recommended): return binary PDF
+
+res.setHeader("Content-Type", "application/pdf")
+
+res.setHeader("Content-Disposition", "attachment; filename=change-order.pdf")
+
+res.send(pdfBuffer) (NOT res.json)
+
+Option B: return JSON with base64
+
+{ success: true, pdfBase64: "...", templateId, templateVersion }
+
+Frontend decodes base64 to Blob for download
+
+Either way, stop returning the buffer as JSON object.
+
+2) Ensure frontend sets “contract generated/ready” for Change Order
+
+Step 3 is still gating on contractHtml being present (“Contract HTML: Missing”), but Change Order flow may not be setting that state correctly.
+
+We need Step 3 to mark success when:
+
+PDF generation returns success (binary or base64)
+
+and/or the backend returns html in the response (optional)
+
+At minimum:
+
+If the PDF call succeeds, set contractReady = true for Change Order
+
+Remove dependency on legacy contractHtml state if it’s not used for this template
+
+3) Confirm end-to-end behavior
+
+After the fix:
+
+Change Order “Generate” should download a valid PDF
+
+UI should NOT show “Contract Not Generated”
+
+“Send for signature” should become enabled appropriately (single/dual based on template)
+
+No changes to PDF engine or signature engine logic are needed. This is response formatting + UI wiring.
+
+Si Banjol arregla solo eso, ese Step 3 va a dejar de “gritar” aunque el backend ya hizo su trabajo.
