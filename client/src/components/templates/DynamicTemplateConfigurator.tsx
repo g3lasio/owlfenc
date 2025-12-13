@@ -435,13 +435,23 @@ export default function DynamicTemplateConfigurator({
               $
             </span>
             <Input
-              type="number"
-              step="0.01"
+              type="text"
+              inputMode="decimal"
               {...formField}
-              onChange={(e) => formField.onChange(Number(e.target.value))}
-              placeholder={field.placeholder}
+              value={formField.value === 0 ? '' : formField.value}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === '' || val === '.') {
+                  formField.onChange(0);
+                } else {
+                  const num = parseFloat(val);
+                  if (!isNaN(num)) {
+                    formField.onChange(num);
+                  }
+                }
+              }}
+              placeholder={field.placeholder || '0.00'}
               className="pl-7"
-              min={field.validation?.min}
               data-testid={`input-${field.id}`}
             />
           </div>
