@@ -95,8 +95,16 @@ export default function DynamicTemplateConfigurator({
   const { user } = useAuth();
   
   const { data: existingContracts = [], isLoading: loadingContracts } = useQuery<ExistingContract[]>({
-    queryKey: ['/api/contracts-firebase/history'],
+    queryKey: ['/api/contracts/history'],
     enabled: !!user,
+    select: (data: any[]) => {
+      return data.map((contract: any) => ({
+        id: contract.contractId || contract.id,
+        clientName: contract.clientName || contract.contractData?.client?.name || 'Unknown Client',
+        projectType: contract.projectType || contract.contractData?.project?.type || 'Construction',
+        createdAt: contract.createdAt,
+      }));
+    },
   });
   
   const configEntry = templateConfigRegistry.get(templateId);
