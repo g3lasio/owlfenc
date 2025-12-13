@@ -425,6 +425,47 @@ export default function DynamicTemplateConfigurator({
         </div>
       )}
 
+      {/* Read-only Contract Summary for Change Orders */}
+      {templateId === 'change-order' && baseData.linkedContractId && (
+        <Card className="border-orange-200 bg-orange-50 dark:bg-orange-900/20 dark:border-orange-700">
+          <CardHeader className="py-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-800 text-orange-600 dark:text-orange-300">
+                <FileText className="h-5 w-5" />
+              </div>
+              <div>
+                <CardTitle className="text-base text-orange-800 dark:text-orange-200">Original Contract</CardTitle>
+                <CardDescription className="text-orange-600 dark:text-orange-400">This Change Order modifies the following contract</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0 pb-4">
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="text-orange-600 dark:text-orange-400 font-medium">Contract ID:</span>
+                <p className="text-orange-800 dark:text-orange-200 font-mono text-xs">{baseData.linkedContractId}</p>
+              </div>
+              <div>
+                <span className="text-orange-600 dark:text-orange-400 font-medium">Client:</span>
+                <p className="text-orange-800 dark:text-orange-200">{baseData.client?.name || 'N/A'}</p>
+              </div>
+              <div>
+                <span className="text-orange-600 dark:text-orange-400 font-medium">Original Total:</span>
+                <p className="text-orange-800 dark:text-orange-200 font-semibold">
+                  ${(baseData.financials?.total || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                </p>
+              </div>
+              {baseData.signedDate && (
+                <div>
+                  <span className="text-orange-600 dark:text-orange-400 font-medium">Signed Date:</span>
+                  <p className="text-orange-800 dark:text-orange-200">{new Date(baseData.signedDate).toLocaleDateString()}</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
           {config.groups.map((group) => renderFieldGroup(group))}

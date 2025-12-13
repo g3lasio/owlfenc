@@ -4732,6 +4732,15 @@ export default function SimpleContractGenerator() {
                           const clientData = selectedContract.contractData?.client || {};
                           const financials = selectedContract.contractData?.financials || {};
                           
+                          // Extract contract date (signedDate or createdAt)
+                          const contractCreatedAt = selectedContract.createdAt?.seconds 
+                            ? new Date(selectedContract.createdAt.seconds * 1000).toISOString()
+                            : selectedContract.createdAt instanceof Date 
+                              ? selectedContract.createdAt.toISOString()
+                              : typeof selectedContract.createdAt === 'string'
+                                ? selectedContract.createdAt
+                                : new Date().toISOString();
+                          
                           const baseData = {
                             clientInfo: {
                               name: selectedContract.clientName || clientData.name || '',
@@ -4743,6 +4752,8 @@ export default function SimpleContractGenerator() {
                               total: normalizeCurrency(selectedContract.totalAmount) || normalizeCurrency(financials.total) || 0,
                             },
                             linkedContractId: selectedContract.contractId || selectedContract.id,
+                            signedDate: selectedContract.signedDate || contractCreatedAt,
+                            createdAt: contractCreatedAt,
                           };
                           setContractData(baseData);
                           setCurrentStep(2);

@@ -99,23 +99,12 @@ class TemplateConfigRegistry {
 export const templateConfigRegistry = new TemplateConfigRegistry();
 
 const changeOrderSchema = z.object({
-  contractSource: z.enum(['existing', 'external']).default('existing'),
-  originalContractId: z.string().optional(),
-  externalContractName: z.string().optional(),
-  originalContractDate: z.string().min(1, 'Original contract date is required'),
   changeDescription: z.string().min(10, 'Please describe what is being changed'),
   additionalCost: z.number(),
   costType: z.enum(['addition', 'deduction']),
-  newCompletionDate: z.string().optional(),
+  costNotes: z.string().optional(),
   adjustTimeline: z.boolean().default(false),
-}).refine((data) => {
-  if (data.contractSource === 'existing') {
-    return !!data.originalContractId;
-  }
-  return !!data.externalContractName;
-}, {
-  message: 'Please select a contract or enter external contract name',
-  path: ['originalContractId'],
+  newCompletionDate: z.string().optional(),
 });
 
 templateConfigRegistry.register({
@@ -126,50 +115,6 @@ templateConfigRegistry.register({
     icon: 'FileEdit',
     helpText: 'A Change Order formally documents modifications to an existing contract. It requires both parties to sign.',
     groups: [
-      {
-        id: 'original-contract',
-        title: 'Original Contract Reference',
-        description: 'Link this change order to the original contract',
-        icon: 'Link',
-        fields: [
-          {
-            id: 'contractSource',
-            label: 'Contract Source',
-            type: 'select',
-            required: true,
-            defaultValue: 'existing',
-            options: [
-              { value: 'existing', label: 'Select from my contracts' },
-              { value: 'external', label: 'External contract (not in system)' },
-            ],
-          },
-          {
-            id: 'originalContractId',
-            label: 'Select Contract',
-            type: 'contract-reference',
-            placeholder: 'Select a contract',
-            helpText: 'Choose from your existing contracts',
-            required: false,
-            showIf: { field: 'contractSource', value: 'existing' },
-          },
-          {
-            id: 'externalContractName',
-            label: 'Contract Name',
-            type: 'text',
-            placeholder: 'e.g., Kitchen Remodel Contract',
-            helpText: 'Name or description of the external contract',
-            required: false,
-            showIf: { field: 'contractSource', value: 'external' },
-          },
-          {
-            id: 'originalContractDate',
-            label: 'Original Contract Date',
-            type: 'date',
-            helpText: 'Date when the original contract was signed',
-            required: true,
-          },
-        ],
-      },
       {
         id: 'change-details',
         title: 'Change Details',
@@ -218,6 +163,14 @@ templateConfigRegistry.register({
               min: 0,
             },
           },
+          {
+            id: 'costNotes',
+            label: 'Cost Notes (Optional)',
+            type: 'textarea',
+            placeholder: 'Additional notes about the cost adjustment...',
+            helpText: 'Explain reasoning for cost change if needed',
+            required: false,
+          },
         ],
       },
       {
@@ -256,6 +209,11 @@ templateConfigRegistry.register({
     const originalTotal = baseData.financials?.total || 0;
     const revisedTotal = originalTotal + additionalCost;
     
+    // Robust date extraction with fallback
+    const originalContractDate = baseData.signedDate 
+      || baseData.createdAt 
+      || new Date().toISOString();
+    
     return {
       ...baseData,
       financials: {
@@ -263,10 +221,12 @@ templateConfigRegistry.register({
         total: revisedTotal,
       },
       changeOrder: {
-        originalContractDate: formData.originalContractDate,
-        originalContractId: formData.originalContractId,
+        linkedContractId: baseData.linkedContractId || 'N/A',
+        originalContractId: baseData.linkedContractId || 'N/A',
+        originalContractDate: originalContractDate,
         changeDescription: formData.changeDescription,
         additionalCost: additionalCost,
+        costNotes: formData.costNotes,
         revisedTotal: revisedTotal,
         originalTotal: originalTotal,
         newCompletionDate: formData.adjustTimeline ? formData.newCompletionDate : undefined,
