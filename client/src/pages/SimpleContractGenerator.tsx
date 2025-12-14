@@ -2525,8 +2525,10 @@ export default function SimpleContractGenerator() {
         };
         
         // Build the same payload used during generation
+        // ✅ FIX: Force 'change-order' templateId for Change Order downloads
+        // This ensures the backend uses the correct template registry path
         const downloadPayload = {
-          templateId: contractData.templateId || selectedDocumentType || 'change-order',
+          templateId: 'change-order',
           templateData: {
             client: contractData.client || contractData.clientInfo,
             contractor: contractorForDownload,
