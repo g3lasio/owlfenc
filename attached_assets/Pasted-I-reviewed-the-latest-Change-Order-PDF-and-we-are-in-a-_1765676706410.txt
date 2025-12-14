@@ -1,0 +1,130 @@
+I reviewed the latest Change Order PDF and we are in a very good place. The system works, the document is legally coherent, and it is already usable. Now we need to elevate it to the next level.
+
+The goal is simple:
+This document should look and read as if it were drafted by a top-tier litigation attorney. Harvey Specter doesn’t walk into court unless he knows he’s going to win. That’s the standard.
+
+REQUIRED IMPROVEMENTS (CONTENT + PRESENTATION)
+1️⃣ Footer branding (mandatory)
+
+Add a consistent footer on every page:
+
+“Powered by Mervin AI”
+
+Subtle
+
+Professional
+
+Same placement on all pages
+
+Not distracting, but clearly present
+
+This was part of the original vision and should now be enforced as a standard across all templates.
+
+2️⃣ Elevate the legal tone (Harvey Specter standard)
+
+The current content is correct, but we want it to feel:
+
+More authoritative
+
+More deliberate
+
+More litigation-ready
+
+This means:
+
+Stronger legal phrasing
+
+Cleaner sentence structure
+
+No casual or generic language
+
+Every paragraph should feel intentional
+
+The document should read like:
+
+“This was drafted by someone who fully expected this to be challenged in court.”
+
+3️⃣ Description of Change: tighten and professionalize
+
+Even when AI enhancement is used, the output must always:
+
+Clearly attribute the change to the Client’s request
+
+Explicitly connect scope → cost → (if applicable) timeline
+
+Avoid ambiguity or open interpretation
+
+This section is the most likely to be scrutinized in a dispute. It must be airtight.
+
+4️⃣ Timeline language consistency
+
+If the Change Order states no timeline impact, then:
+
+The general clause about potential timeline adjustments must not contradict that.
+
+Either:
+
+Clearly state “No adjustment to the project completion date”, or
+
+Explicitly define under what limited conditions an adjustment may occur
+
+No vague language that can be twisted later.
+
+5️⃣ Date formatting (court-facing detail)
+
+Replace all technical timestamps like:
+2025-11-26T23:36:42.540Z
+
+With clean legal formatting:
+
+“November 26, 2025”
+
+This is small, but in court these details matter.
+
+6️⃣ Visual polish (subtle, not flashy)
+
+Without turning this into a marketing piece:
+
+Improve spacing and hierarchy in the text
+
+Section titles should feel deliberate
+
+The document should visually signal seriousness and confidence
+
+Think:
+
+Clean
+
+Balanced
+
+Professional
+
+Litigation-ready
+
+IMPORTANT CONSTRAINTS
+
+Do NOT change the PDF engine
+
+Do NOT change the signature system
+
+Do NOT break existing templates
+
+This is a template and styling refinement, not a refactor
+
+END GOAL
+
+When this Change Order is:
+
+Downloaded
+
+Printed
+
+Placed on a judge’s desk
+
+It should immediately communicate:
+
+“This contractor knew exactly what they were doing.”
+
+That’s the bar.
+
+Proceed with these refinements and confirm once the updated PDF reflects this level.

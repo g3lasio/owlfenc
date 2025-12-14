@@ -1,9 +1,43 @@
 /**
  * Change Order Agreement Template
- * Version 1.0
+ * Version 2.0 - Harvey Specter Litigation-Ready Standard
+ * 
+ * This template generates court-ready Change Order documents with:
+ * - Professional legal language suitable for litigation
+ * - Consistent "Powered by Mervin AI" branding
+ * - Clean date formatting (no ISO timestamps)
+ * - Airtight scope → cost → timeline attribution
  */
 
 import { templateRegistry, TemplateData, ContractorBranding } from '../registry';
+
+/**
+ * Formats a date string or Date object to clean legal format
+ * Converts ISO timestamps like "2025-11-26T23:36:42.540Z" to "November 26, 2025"
+ */
+function formatLegalDate(dateInput: string | Date | undefined): string {
+  if (!dateInput) {
+    return new Date().toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  }
+  
+  try {
+    const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+    if (isNaN(date.getTime())) {
+      return String(dateInput);
+    }
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  } catch {
+    return String(dateInput);
+  }
+}
 
 function generateChangeOrderHTML(data: TemplateData, branding: ContractorBranding): string {
   const contractorName = branding.companyName || data.contractor.name || 'Contractor';
@@ -12,11 +46,7 @@ function generateChangeOrderHTML(data: TemplateData, branding: ContractorBrandin
   const contractorEmail = branding.email || data.contractor.email || '';
   const contractorLicense = branding.licenseNumber || data.contractor.license || '';
 
-  const currentDate = new Date().toLocaleDateString('en-US', { 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
-  });
+  const currentDate = formatLegalDate(new Date());
 
   const changeOrder = data.changeOrder || {
     originalContractDate: currentDate,
@@ -27,6 +57,10 @@ function generateChangeOrderHTML(data: TemplateData, branding: ContractorBrandin
     newCompletionDate: data.project.endDate,
   };
 
+  const formattedOriginalContractDate = formatLegalDate(changeOrder.originalContractDate);
+  const formattedNewCompletionDate = changeOrder.newCompletionDate ? formatLegalDate(changeOrder.newCompletionDate) : null;
+  const hasTimelineChange = !!formattedNewCompletionDate;
+
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -35,140 +69,195 @@ function generateChangeOrderHTML(data: TemplateData, branding: ContractorBrandin
     <style>
         @page {
             size: 8.5in 11in;
-            margin: 0.75in;
+            margin: 0.75in 0.75in 1in 0.75in;
+            @bottom-center {
+                content: "Powered by Mervin AI";
+                font-family: 'Arial', sans-serif;
+                font-size: 9pt;
+                color: #666;
+            }
         }
         body {
-            font-family: 'Times New Roman', serif;
-            font-size: 12pt;
-            line-height: 1.4;
+            font-family: 'Times New Roman', Georgia, serif;
+            font-size: 11.5pt;
+            line-height: 1.5;
             margin: 0;
             padding: 0;
-            color: #000;
+            color: #1a1a1a;
         }
         .header-section {
             text-align: center;
-            margin-bottom: 25px;
-            border-bottom: 2px solid #333;
-            padding-bottom: 15px;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #1a1a1a;
+            padding-bottom: 20px;
         }
         .contract-title {
-            font-size: 18pt;
+            font-size: 20pt;
             font-weight: bold;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            margin: 0;
+            letter-spacing: 2px;
+            margin: 0 0 8px 0;
+            color: #000;
         }
         .contract-subtitle {
             font-size: 11pt;
-            color: #555;
+            color: #333;
             margin-top: 5px;
+            font-style: italic;
         }
         .section-header {
             font-size: 12pt;
             font-weight: bold;
-            margin: 20px 0 10px 0;
+            margin: 28px 0 12px 0;
             text-transform: uppercase;
-            border-bottom: 1px solid #ccc;
-            padding-bottom: 5px;
+            letter-spacing: 1px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 6px;
+            color: #000;
         }
         .info-grid {
             display: table;
             width: 100%;
-            margin: 15px 0;
+            margin: 20px 0;
+            border-collapse: collapse;
         }
         .info-row {
             display: table-row;
         }
         .info-label {
             display: table-cell;
-            width: 180px;
+            width: 200px;
             font-weight: bold;
-            padding: 5px 0;
+            padding: 8px 0;
+            vertical-align: top;
         }
         .info-value {
             display: table-cell;
-            padding: 5px 0;
+            padding: 8px 0;
         }
         .parties-section {
             display: flex;
             justify-content: space-between;
-            margin: 20px 0;
+            margin: 25px 0;
+            gap: 30px;
         }
         .party-column {
             flex: 1;
-            padding: 0 15px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            background: #fafafa;
         }
         .party-title {
             font-weight: bold;
-            font-size: 13pt;
-            margin-bottom: 10px;
+            font-size: 12pt;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid #999;
+            padding-bottom: 6px;
+        }
+        .party-column div {
+            margin: 4px 0;
         }
         .change-box {
-            border: 1px solid #333;
-            padding: 15px;
+            border: 2px solid #1a1a1a;
+            padding: 20px;
             margin: 20px 0;
-            background: #f9f9f9;
+            background: #f8f8f8;
+        }
+        .change-box p {
+            margin: 0;
+            text-align: justify;
+            line-height: 1.6;
         }
         .numbered-section {
-            margin: 12px 0;
+            margin: 14px 0;
             text-align: justify;
+            line-height: 1.6;
         }
         .section-number {
             font-weight: bold;
-            margin-right: 8px;
+            margin-right: 10px;
         }
         .financial-summary {
-            margin: 20px 0;
-            border: 1px solid #333;
-            padding: 15px;
+            margin: 25px 0;
+            border: 2px solid #1a1a1a;
+            padding: 20px;
         }
         .financial-row {
             display: flex;
             justify-content: space-between;
-            padding: 5px 0;
-            border-bottom: 1px dotted #ccc;
+            padding: 8px 0;
+            border-bottom: 1px dotted #999;
         }
         .financial-row:last-child {
             border-bottom: none;
             font-weight: bold;
             font-size: 13pt;
-            padding-top: 10px;
+            padding-top: 15px;
+            margin-top: 10px;
+            border-top: 2px solid #333;
         }
         .signature-section {
-            margin-top: 40px;
+            margin-top: 50px;
             page-break-inside: avoid;
         }
         .signature-grid {
             display: flex;
             justify-content: space-between;
-            margin-top: 30px;
+            margin-top: 35px;
+            gap: 40px;
         }
         .signature-column {
             flex: 1;
-            margin: 0 15px;
         }
         .signature-line {
             border-bottom: 1px solid #000;
-            height: 50px;
-            margin: 20px 0 5px 0;
+            height: 45px;
+            margin: 25px 0 8px 0;
         }
         .signature-label {
-            margin: 5px 0;
-            font-size: 11pt;
+            margin: 6px 0;
+            font-size: 10.5pt;
         }
         .date-line {
             border-bottom: 1px solid #000;
-            width: 150px;
+            width: 160px;
             display: inline-block;
             margin-left: 10px;
+        }
+        .legal-notice {
+            margin-top: 30px;
+            padding: 15px;
+            background: #f0f0f0;
+            border-left: 4px solid #333;
+            font-size: 10pt;
+            line-height: 1.5;
+        }
+        .footer-branding {
+            position: fixed;
+            bottom: 0.4in;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-family: 'Arial', sans-serif;
+            font-size: 9pt;
+            color: #888;
+            letter-spacing: 0.5px;
+        }
+        @media print {
+            .footer-branding {
+                position: fixed;
+                bottom: 0.3in;
+            }
         }
     </style>
 </head>
 <body>
 
 <div class="header-section">
-    <h1 class="contract-title">CHANGE ORDER AGREEMENT</h1>
-    <p class="contract-subtitle">Amendment to Original Contract</p>
+    <h1 class="contract-title">Change Order Agreement</h1>
+    <p class="contract-subtitle">Formal Amendment to Original Contract</p>
 </div>
 
 <div class="info-grid">
@@ -178,7 +267,7 @@ function generateChangeOrderHTML(data: TemplateData, branding: ContractorBrandin
     </div>
     <div class="info-row">
         <span class="info-label">Original Contract Date:</span>
-        <span class="info-value">${changeOrder.originalContractDate}</span>
+        <span class="info-value">${formattedOriginalContractDate}</span>
     </div>
     <div class="info-row">
         <span class="info-label">Original Contract ID:</span>
@@ -192,18 +281,18 @@ function generateChangeOrderHTML(data: TemplateData, branding: ContractorBrandin
 
 <div class="parties-section">
     <div class="party-column">
-        <div class="party-title">CLIENT</div>
+        <div class="party-title">Client</div>
         <div><strong>${data.client.name}</strong></div>
         <div>${data.client.address}</div>
         ${data.client.phone ? `<div>Phone: ${data.client.phone}</div>` : ''}
         ${data.client.email ? `<div>Email: ${data.client.email}</div>` : ''}
     </div>
     <div class="party-column">
-        <div class="party-title">CONTRACTOR</div>
+        <div class="party-title">Contractor</div>
         <div><strong>${contractorName}</strong></div>
         ${contractorAddress ? `<div>${contractorAddress}</div>` : ''}
         ${contractorPhone ? `<div>Phone: ${contractorPhone}</div>` : ''}
-        ${contractorLicense ? `<div>License: ${contractorLicense}</div>` : ''}
+        ${contractorLicense ? `<div>License No.: ${contractorLicense}</div>` : ''}
     </div>
 </div>
 
@@ -216,50 +305,60 @@ function generateChangeOrderHTML(data: TemplateData, branding: ContractorBrandin
 <div class="financial-summary">
     <div class="financial-row">
         <span>Original Contract Amount:</span>
-        <span>$${((changeOrder as any).originalTotal || (data.financials.total - changeOrder.additionalCost)).toLocaleString()}</span>
+        <span>$${((changeOrder as any).originalTotal || (data.financials.total - changeOrder.additionalCost)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
     </div>
     <div class="financial-row">
-        <span>Change Order Amount (${changeOrder.additionalCost >= 0 ? 'Addition' : 'Deduction'}):</span>
-        <span>${changeOrder.additionalCost >= 0 ? '+' : ''}$${changeOrder.additionalCost.toLocaleString()}</span>
+        <span>Change Order Amount (${changeOrder.additionalCost >= 0 ? 'Addition' : 'Credit'}):</span>
+        <span>${changeOrder.additionalCost >= 0 ? '+' : '-'}$${Math.abs(changeOrder.additionalCost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
     </div>
     <div class="financial-row">
-        <span>REVISED CONTRACT TOTAL:</span>
-        <span>$${(changeOrder.revisedTotal || data.financials.total).toLocaleString()}</span>
+        <span>Revised Contract Total:</span>
+        <span>$${(changeOrder.revisedTotal || data.financials.total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
     </div>
 </div>
 
-${changeOrder.newCompletionDate ? `
-<div class="section-header">Schedule Adjustment</div>
+<div class="section-header">Schedule Impact</div>
+${hasTimelineChange ? `
 <p class="numbered-section">
-    The project completion date is hereby revised to: <strong>${changeOrder.newCompletionDate}</strong>
+    The parties hereby agree that the project completion date shall be revised to <strong>${formattedNewCompletionDate}</strong>. This adjustment is directly attributable to the scope modifications set forth in this Change Order.
 </p>
-` : ''}
+` : `
+<p class="numbered-section">
+    The parties acknowledge and agree that the modifications set forth in this Change Order shall have <strong>no impact on the original project completion date</strong>. The Contractor shall complete all work, including the scope of this Change Order, within the timeframe established in the Original Contract.
+</p>
+`}
 
 <div class="section-header">Terms and Conditions</div>
 
 <p class="numbered-section">
-    <span class="section-number">1.</span> This Change Order, when signed by both parties, becomes a binding amendment to the Original Contract.
+    <span class="section-number">1.</span> <strong>Binding Effect.</strong> Upon execution by both parties, this Change Order shall constitute a binding amendment to the Original Contract dated ${formattedOriginalContractDate}. The terms herein shall be enforceable to the same extent as the Original Contract.
 </p>
 
 <p class="numbered-section">
-    <span class="section-number">2.</span> All terms and conditions of the Original Contract remain in full force and effect except as specifically modified by this Change Order.
+    <span class="section-number">2.</span> <strong>Preservation of Original Terms.</strong> All terms, conditions, warranties, and provisions of the Original Contract shall remain in full force and effect, except as expressly modified by this Change Order. In the event of any conflict between the Original Contract and this Change Order, the terms of this Change Order shall govern.
 </p>
 
 <p class="numbered-section">
-    <span class="section-number">3.</span> Payment for this Change Order work shall be due upon completion of the change order scope, unless otherwise specified.
+    <span class="section-number">3.</span> <strong>Payment Terms.</strong> Payment for work performed under this Change Order shall be due and payable upon completion of the change order scope, unless the parties have agreed otherwise in writing. The Client's failure to remit payment within the agreed timeframe shall constitute a material breach of this Agreement.
 </p>
 
 <p class="numbered-section">
-    <span class="section-number">4.</span> Work shall not commence on this Change Order until this document has been signed by both parties.
+    <span class="section-number">4.</span> <strong>Authorization Required.</strong> Contractor shall not commence any work described in this Change Order until this document has been duly executed by both parties. Any work performed prior to execution shall be at the Contractor's sole risk and expense.
 </p>
 
+${hasTimelineChange ? '' : `
 <p class="numbered-section">
-    <span class="section-number">5.</span> The Contractor reserves the right to adjust project timeline proportionally to the scope of additional work.
+    <span class="section-number">5.</span> <strong>Schedule Contingency.</strong> Notwithstanding the foregoing, should circumstances arise during execution that materially affect the Contractor's ability to complete the work within the original timeframe, the Contractor shall promptly notify the Client in writing. Any schedule adjustment resulting from such circumstances shall require a separate written amendment signed by both parties.
 </p>
+`}
+
+<div class="legal-notice">
+    <strong>Notice:</strong> This Change Order, together with the Original Contract and any prior amendments, constitutes the entire agreement between the parties with respect to the subject matter hereof. No modification, amendment, or waiver of any provision of this Change Order shall be effective unless set forth in a writing signed by both parties.
+</div>
 
 <div class="signature-section">
-    <div class="section-header">Authorization</div>
-    <p>By signing below, both parties agree to the changes described in this Change Order Agreement.</p>
+    <div class="section-header">Authorization and Acceptance</div>
+    <p>By affixing their signatures below, both parties acknowledge that they have read, understand, and agree to be bound by the terms of this Change Order Agreement.</p>
     
     <div class="signature-grid">
         <div class="signature-column">
@@ -277,6 +376,8 @@ ${changeOrder.newCompletionDate ? `
     </div>
 </div>
 
+<div class="footer-branding">Powered by Mervin AI</div>
+
 </body>
 </html>`;
 }
@@ -289,7 +390,7 @@ templateRegistry.register({
   category: 'document',
   subcategory: 'amendment',
   status: 'active',
-  templateVersion: '1.0',
+  templateVersion: '2.0',
   signatureType: 'dual',
   requiredFields: [
     'client.name',
