@@ -287,45 +287,42 @@ CRITICAL RULES:
 7. Use professional legal language suitable for a contract amendment
 8. Connect scope change → cost impact → timeline impact logically
 
-OUTPUT FORMAT (use these exact section headers):
-## CHANGE SUMMARY
-[One sentence summary of the change IN ENGLISH]
+CRITICAL FORMATTING RULES:
+- Output PLAIN TEXT ONLY - NO markdown formatting whatsoever
+- Do NOT use ## headers, ** bold **, * italics *, or any other markdown syntax
+- Do NOT use bullet points with - or *
+- Write in flowing professional paragraphs only
+- The output will be inserted directly into a PDF document, so it must be clean plain text
 
-## DETAILED SCOPE OF CHANGE
-[Expand, translate if needed, and clarify the contractor's notes into professional ENGLISH legal language]
+OUTPUT FORMAT (plain text paragraphs, NO markdown):
+Write a single, cohesive professional paragraph that covers:
+1. A brief summary of what change was requested by the Client
+2. The specific scope of work being modified
+3. The financial impact of this change
+4. Any schedule impact (or confirmation of no schedule impact)
+5. Confirmation that all other contract terms remain unchanged
 
-## COST IMPACT
-[State the financial adjustment clearly IN ENGLISH]
-
-## SCHEDULE IMPACT
-[State any timeline changes or confirm no changes IN ENGLISH]
-
-## CONFIRMATION
-All other terms and conditions of the original contract dated [ORIGINAL_DATE] remain unchanged and in full force and effect.`;
+Keep it concise but legally precise. One to three paragraphs maximum.`;
 
     const userPrompt = `Transform this contractor's change description into a professional Change Order document.
 
-IMPORTANT: The contractor's notes may be in Spanish or another language. You MUST translate everything to professional English. Do NOT copy any text verbatim - rewrite everything in professional legal English.
+CRITICAL REQUIREMENTS:
+1. Output PLAIN TEXT ONLY - absolutely NO markdown (no ##, **, -, etc.)
+2. TRANSLATE everything to professional English (input may be in Spanish)
+3. REWRITE in professional legal language - do NOT copy verbatim
+4. Write 1-3 flowing paragraphs, not bullet points or headers
 
 ORIGINAL CONTRACTOR NOTES (may be in Spanish - translate to English):
 "${originalText}"
 
-FINANCIAL IMPACT:
-- Type: ${costType === 'addition' ? 'Addition (+)' : 'Deduction (-)'}
-- Amount: $${additionalCost.toLocaleString()}
+CONTEXT:
+- Financial Impact: ${costType === 'addition' ? 'Addition' : 'Credit'} of $${additionalCost.toLocaleString()}
 ${originalContract?.originalTotal ? `- Original Contract Value: $${originalContract.originalTotal.toLocaleString()}` : ''}
+- Timeline: ${timelineText}
+${originalContract?.clientName ? `- Client: ${originalContract.clientName}` : ''}
+${originalContract?.projectType ? `- Project Type: ${originalContract.projectType}` : ''}
 
-TIMELINE:
-${timelineText}
-
-${originalContract?.clientName ? `CLIENT: ${originalContract.clientName}` : ''}
-${originalContract?.projectType ? `PROJECT TYPE: ${originalContract.projectType}` : ''}
-${originalContract?.originalDate ? `ORIGINAL CONTRACT DATE: ${originalContract.originalDate}` : ''}
-
-Remember: 
-1. TRANSLATE to English if input is in Spanish or another language
-2. REWRITE in professional legal language - do NOT copy verbatim
-3. Do NOT invent any details - only professionalize what was provided`;
+Write a professional description that attributes the change to the Client's request, explains the scope modification, states the cost impact, and confirms schedule impact (or no impact). Output clean plain text paragraphs only.`;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o",

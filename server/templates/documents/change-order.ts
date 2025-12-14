@@ -235,21 +235,14 @@ function generateChangeOrderHTML(data: TemplateData, branding: ContractorBrandin
             line-height: 1.5;
         }
         .footer-branding {
-            position: fixed;
-            bottom: 0.4in;
-            left: 0;
-            right: 0;
             text-align: center;
             font-family: 'Arial', sans-serif;
             font-size: 9pt;
             color: #888;
             letter-spacing: 0.5px;
-        }
-        @media print {
-            .footer-branding {
-                position: fixed;
-                bottom: 0.3in;
-            }
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
         }
     </style>
 </head>
