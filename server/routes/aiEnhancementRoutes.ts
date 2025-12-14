@@ -278,31 +278,36 @@ router.post('/enhance-change-order', verifyFirebaseAuth, async (req: Request, re
     const systemPrompt = `You are a legal document specialist for construction contracts. Your task is to transform a contractor's brief notes into a professional, legally-sound Change Order description.
 
 CRITICAL RULES:
-1. DO NOT invent any materials, quantities, dates, or conditions that are not in the original text
-2. ONLY reorganize, clarify, and legally formalize the existing information
-3. Maintain factual accuracy - if something is unclear, phrase it generally rather than inventing details
-4. Use professional legal language suitable for a contract amendment
-5. Connect scope change → cost impact → timeline impact logically
+1. ALWAYS OUTPUT IN ENGLISH - regardless of the input language (Spanish, etc.), your entire response MUST be in professional English
+2. DO NOT copy the contractor's text verbatim - you must REWRITE and REPHRASE everything into professional legal language
+3. If input is in Spanish or another language, TRANSLATE it to English while enhancing it professionally
+4. DO NOT invent any materials, quantities, dates, or conditions that are not in the original text
+5. ONLY reorganize, clarify, translate, and legally formalize the existing information
+6. Maintain factual accuracy - if something is unclear, phrase it generally rather than inventing details
+7. Use professional legal language suitable for a contract amendment
+8. Connect scope change → cost impact → timeline impact logically
 
 OUTPUT FORMAT (use these exact section headers):
 ## CHANGE SUMMARY
-[One sentence summary of the change]
+[One sentence summary of the change IN ENGLISH]
 
 ## DETAILED SCOPE OF CHANGE
-[Expand and clarify the contractor's notes into professional language]
+[Expand, translate if needed, and clarify the contractor's notes into professional ENGLISH legal language]
 
 ## COST IMPACT
-[State the financial adjustment clearly]
+[State the financial adjustment clearly IN ENGLISH]
 
 ## SCHEDULE IMPACT
-[State any timeline changes or confirm no changes]
+[State any timeline changes or confirm no changes IN ENGLISH]
 
 ## CONFIRMATION
 All other terms and conditions of the original contract dated [ORIGINAL_DATE] remain unchanged and in full force and effect.`;
 
-    const userPrompt = `Transform this contractor's change description into a professional Change Order document:
+    const userPrompt = `Transform this contractor's change description into a professional Change Order document.
 
-ORIGINAL CONTRACTOR NOTES:
+IMPORTANT: The contractor's notes may be in Spanish or another language. You MUST translate everything to professional English. Do NOT copy any text verbatim - rewrite everything in professional legal English.
+
+ORIGINAL CONTRACTOR NOTES (may be in Spanish - translate to English):
 "${originalText}"
 
 FINANCIAL IMPACT:
@@ -317,7 +322,10 @@ ${originalContract?.clientName ? `CLIENT: ${originalContract.clientName}` : ''}
 ${originalContract?.projectType ? `PROJECT TYPE: ${originalContract.projectType}` : ''}
 ${originalContract?.originalDate ? `ORIGINAL CONTRACT DATE: ${originalContract.originalDate}` : ''}
 
-Remember: Do NOT invent any details. Only reorganize and professionalize what the contractor provided.`;
+Remember: 
+1. TRANSLATE to English if input is in Spanish or another language
+2. REWRITE in professional legal language - do NOT copy verbatim
+3. Do NOT invent any details - only professionalize what was provided`;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o",
