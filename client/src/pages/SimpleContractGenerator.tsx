@@ -2506,37 +2506,58 @@ export default function SimpleContractGenerator() {
     setIsLoading(true);
 
     try {
-      // ✅ CHANGE ORDER FIX: If we already have pdfBase64 from generation, use it directly
-      if (hasChangeOrderPdf) {
-        console.log('📄 [CHANGE ORDER] Downloading pre-generated PDF from base64...');
+      // ✅ CHANGE ORDER FIX: Re-generate PDF with binary download mode
+      if (hasChangeOrderPdf && contractData) {
+        console.log('📄 [CHANGE ORDER] Downloading PDF via binary endpoint...');
         
-        // Strip data URL prefix if present (e.g., "data:application/pdf;base64,")
-        let base64Data = contractData.pdfBase64;
-        if (base64Data.includes(',')) {
-          base64Data = base64Data.split(',').pop() || base64Data;
+        // Build contractor data from profile (same as generation)
+        const contractorForDownload = contractData.contractor || {
+          name: profile?.company || profile?.ownerName || "Company Name",
+          company: profile?.company || "Company Name",
+          address: `${profile?.address || ""} ${profile?.city || ""} ${profile?.state || ""} ${profile?.zipCode || ""}`.trim(),
+          phone: profile?.phone || profile?.mobilePhone || "",
+          email: profile?.email || "",
+          license: profile?.license || "",
+        };
+        
+        // Build the same payload used during generation
+        const downloadPayload = {
+          templateId: contractData.templateId || selectedDocumentType || 'change-order',
+          templateData: {
+            client: contractData.client || contractData.clientInfo,
+            contractor: contractorForDownload,
+            project: contractData.project,
+            financials: contractData.financials,
+            changeOrder: contractData.changeOrder,
+          },
+          linkedContractId: contractData.linkedContractId,
+        };
+        
+        // Fetch as raw binary blob
+        const response = await fetch('/api/generate-pdf?download=true', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${currentUser?.uid || ''}`,
+          },
+          body: JSON.stringify(downloadPayload),
+        });
+        
+        if (!response.ok) {
+          throw new Error(`PDF download failed: ${response.status}`);
         }
         
-        // Normalize: remove whitespace/newlines and convert URL-safe chars
-        base64Data = base64Data
-          .replace(/\s/g, '')      // Remove whitespace/newlines
-          .replace(/-/g, '+')      // URL-safe to standard base64
-          .replace(/_/g, '/');     // URL-safe to standard base64
+        // Get blob directly from response
+        const blob = await response.blob();
         
-        // Validate non-empty base64
-        if (!base64Data || base64Data.length === 0) {
-          throw new Error('PDF data is empty or invalid');
+        if (blob.size === 0) {
+          throw new Error('Downloaded PDF is empty');
         }
         
-        // Decode base64 to binary
-        const binaryString = atob(base64Data);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-        const blob = new Blob([bytes], { type: 'application/pdf' });
+        console.log(`✅ [CHANGE ORDER] PDF blob received: ${blob.size} bytes`);
         
         // Generate filename
-        const clientName = contractData.clientInfo?.name || contractData.client?.name || 'client';
+        const clientName = contractData.client?.name || contractData.clientInfo?.name || 'client';
         const fileName = contractData.filename || `Change-Order-${clientName.replace(/\s+/g, "_")}-${new Date().toISOString().split("T")[0]}.pdf`;
         
         // Handle PDF download
@@ -2552,7 +2573,7 @@ export default function SimpleContractGenerator() {
         // Clean up
         setTimeout(() => window.URL.revokeObjectURL(url), 1000);
         
-        // Success toast for all users (desktop and mobile)
+        // Success toast
         toast({
           title: "✅ PDF Downloaded",
           description: "Check your downloads folder",

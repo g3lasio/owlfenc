@@ -3778,8 +3778,18 @@ ENHANCED LEGAL CLAUSE:`;
           
           console.log(`✅ [API] ${template.displayName} PDF generated: ${pdfBuffer.length} bytes`);
           
-          // FIX: Return JSON response with base64 PDF for frontend consumption
-          // This allows frontend to properly track state and download the PDF
+          // Check if download=true query param is present - return raw binary
+          const isDownload = req.query.download === 'true';
+          
+          if (isDownload) {
+            console.log(`📥 [API] Download mode - returning raw binary PDF`);
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+            res.setHeader('Content-Length', pdfBuffer.length);
+            return res.send(pdfBuffer);
+          }
+          
+          // Otherwise return JSON response with base64 for state tracking
           const pdfBase64 = pdfBuffer.toString('base64');
           
           return res.json({
@@ -3789,8 +3799,8 @@ ENHANCED LEGAL CLAUSE:`;
             filename: filename,
             pdfBase64: pdfBase64,
             pdfSize: pdfBuffer.length,
-            html: html, // Include HTML for contractHTML state
-            contractId: `${templateId}-${Date.now()}`, // Generate a tracking ID
+            html: html,
+            contractId: `${templateId}-${Date.now()}`,
           });
         }
         
