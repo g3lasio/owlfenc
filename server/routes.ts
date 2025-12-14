@@ -3783,10 +3783,13 @@ ENHANCED LEGAL CLAUSE:`;
           
           if (isDownload) {
             console.log(`📥 [API] Download mode - returning raw binary PDF`);
-            res.setHeader('Content-Type', 'application/pdf');
-            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-            res.setHeader('Content-Length', pdfBuffer.length);
-            return res.send(pdfBuffer);
+            // Use res.end() for raw binary to avoid Express JSON serialization
+            res.writeHead(200, {
+              'Content-Type': 'application/pdf',
+              'Content-Disposition': `attachment; filename="${filename}"`,
+              'Content-Length': pdfBuffer.length,
+            });
+            return res.end(pdfBuffer);
           }
           
           // Otherwise return JSON response with base64 for state tracking
