@@ -1,0 +1,84 @@
+We’re now downloading a file with .pdf extension, but the file is corrupted. Chrome shows “Failed to load PDF document”.
+
+What this means
+
+The PDF is not being sent as a valid binary PDF.
+Most likely the PDF Buffer is being serialized (JSON/object) or the response headers / frontend handling are incorrect.
+
+A valid PDF file must start with %PDF-1.x.
+The current downloaded file does not.
+
+REQUIRED FIX (DO NOT GUESS)
+1️⃣ Backend: send raw PDF binary ONLY
+
+When downloading the PDF, the endpoint must do exactly this:
+
+res.setHeader("Content-Type", "application/pdf");
+res.setHeader(
+  "Content-Disposition",
+  `attachment; filename="Change_Order_${linkedContractId}.pdf"`
+);
+res.setHeader("Content-Length", pdfBuffer.length);
+res.send(pdfBuffer); // NOT res.json, NOT wrapped object
+
+
+No { success: true }, no JSON wrapper, no object.
+
+2️⃣ Frontend: treat response as BLOB
+
+The download handler must:
+
+const res = await fetch("/generate-pdf", { method: "POST", body });
+const blob = await res.blob();
+const url = URL.createObjectURL(blob);
+
+const a = document.createElement("a");
+a.href = url;
+a.download = "Change_Order.pdf";
+a.click();
+
+URL.revokeObjectURL(url);
+
+
+❌ Do NOT call res.json()
+❌ Do NOT try to parse or stringify the response
+
+3️⃣ Separate responsibilities (recommended)
+
+To avoid future bugs:
+
+/generate-document
+→ generates HTML + stores PDF (JSON response)
+
+/download-pdf/:documentId
+→ binary-only endpoint (PDF stream)
+
+Do not mix generation + download logic in the same response.
+
+4️⃣ Validation step (mandatory)
+
+Before marking this fixed:
+
+Open the downloaded file in a hex viewer or text editor
+
+Confirm first bytes are %PDF-1.x
+
+Confirm Chrome + Preview (Mac) open it
+
+Acceptance Criteria
+
+PDF opens in Chrome without error
+
+File size matches backend log (~49KB)
+
+Independent Contractor PDFs still work
+
+Change Order PDFs work consistently
+
+Final note (important)
+
+This is not an AI problem, not a template problem, not a latency problem.
+
+This is pure binary handling + HTTP response correctness.
+
+Once this is fixed, your PDF pipeline will be solid for all future templates.
