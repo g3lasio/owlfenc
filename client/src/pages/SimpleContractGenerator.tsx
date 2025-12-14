@@ -161,6 +161,10 @@ export default function SimpleContractGenerator() {
   >("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [showAllProjects, setShowAllProjects] = useState(false);
+  
+  // Step 0: Document selector state
+  const [docCategory, setDocCategory] = useState('contracts');
+  const [docSearch, setDocSearch] = useState('');
 
   // ✅ MIGRATION: Using unified contractsStore for ALL contract tabs (Nov 2025)
   // REMOVED legacy state: draftContracts,  inProgressContracts, archivedContracts
@@ -3965,105 +3969,162 @@ export default function SimpleContractGenerator() {
               </div>
             </div>
 
-            {/* Step 0: Document Type Router */}
-            {currentStep === 0 && (
-              <Card className="bg-gray-900 border-gray-700">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-cyan-400">
-                    <FileText className="h-5 w-5" />
-                    What would you like to create?
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid md:grid-cols-2 gap-6">
-                    {/* Independent Contractor Agreement Option */}
-                    <Card 
-                      className={`cursor-pointer transition-all hover:border-cyan-400 ${
-                        documentFlowType === 'independent-contractor' 
-                          ? 'border-cyan-400 bg-cyan-400/10' 
-                          : 'border-gray-700 hover:bg-gray-800'
-                      }`}
-                      onClick={() => setDocumentFlowType('independent-contractor')}
-                      data-testid="card-independent-contractor"
-                    >
-                      <CardContent className="pt-6">
-                        <div className="flex flex-col items-center text-center space-y-4">
-                          <div className={`p-4 rounded-full ${
-                            documentFlowType === 'independent-contractor' 
-                              ? 'bg-cyan-400 text-black' 
-                              : 'bg-gray-800 text-cyan-400'
-                          }`}>
-                            <FileCheck className="h-8 w-8" />
-                          </div>
-                          <div>
-                            <h3 className="text-lg font-semibold text-white">Independent Contractor Agreement</h3>
-                            <p className="text-gray-400 text-sm mt-2">
-                              Create a new contract from an existing project estimate or from scratch
-                            </p>
-                          </div>
-                          <div className="flex flex-wrap gap-2 justify-center">
-                            <Badge variant="outline" className="text-xs border-gray-600 text-gray-400">
-                              New Contract
-                            </Badge>
-                            <Badge variant="outline" className="text-xs border-gray-600 text-gray-400">
-                              From Estimate
-                            </Badge>
-                          </div>
+            {/* Step 0: Document Type Router - Compact Grid with Tabs */}
+            {currentStep === 0 && (() => {
+              const documentCategories = [
+                { id: 'contracts', label: 'Contracts', icon: FileCheck },
+                { id: 'amendments', label: 'Amendments', icon: Edit2 },
+                { id: 'subcontracts', label: 'Subcontracts', icon: Truck },
+                { id: 'commercial', label: 'Commercial', icon: DollarSign },
+                { id: 'coming-soon', label: 'Coming Soon', icon: Clock },
+              ];
+              
+              const allDocuments = [
+                { id: 'independent-contractor', name: 'Independent Contractor', description: 'New contract from estimate or scratch', category: 'contracts', status: 'active', icon: FileCheck, color: 'cyan' },
+                { id: 'change-order', name: 'Change Order', description: 'Modify scope, cost, or timeline', category: 'amendments', status: 'active', requiresContract: true, icon: Edit2, color: 'orange' },
+                { id: 'contract-addendum', name: 'Contract Addendum', description: 'Add terms to existing contract', category: 'amendments', status: 'coming-soon', requiresContract: true, icon: FileText, color: 'yellow' },
+                { id: 'work-order', name: 'Work Order', description: 'Authorize specific work tasks', category: 'amendments', status: 'coming-soon', requiresContract: true, icon: Wrench, color: 'blue' },
+                { id: 'lien-waiver-partial', name: 'Partial Lien Waiver', description: 'Release lien for partial payment', category: 'contracts', status: 'coming-soon', icon: Shield, color: 'green' },
+                { id: 'lien-waiver-final', name: 'Final Lien Waiver', description: 'Release lien upon final payment', category: 'contracts', status: 'coming-soon', icon: Shield, color: 'green' },
+                { id: 'subcontract-agreement', name: 'Subcontract Agreement', description: 'Agreement with subcontractors', category: 'subcontracts', status: 'coming-soon', icon: Truck, color: 'purple' },
+                { id: 'commercial-contract', name: 'Commercial Contract', description: 'Commercial project agreement', category: 'commercial', status: 'coming-soon', icon: DollarSign, color: 'emerald' },
+                { id: 'warranty-agreement', name: 'Warranty Agreement', description: 'Warranty terms and conditions', category: 'contracts', status: 'coming-soon', icon: CheckCircle, color: 'teal' },
+                { id: 'certificate-completion', name: 'Certificate of Completion', description: 'Project completion certification', category: 'contracts', status: 'coming-soon', icon: FileCheck, color: 'indigo' },
+              ];
+              
+              const filteredDocs = allDocuments.filter(doc => {
+                const matchesCategory = docCategory === 'coming-soon' 
+                  ? doc.status === 'coming-soon'
+                  : doc.category === docCategory && doc.status !== 'coming-soon';
+                const matchesSearch = !docSearch.trim() || 
+                  doc.name.toLowerCase().includes(docSearch.toLowerCase()) ||
+                  doc.description.toLowerCase().includes(docSearch.toLowerCase());
+                return matchesCategory && matchesSearch;
+              });
+              
+              const handleDocSelect = (doc: typeof allDocuments[0]) => {
+                if (doc.status === 'coming-soon') return;
+                if (doc.id === 'independent-contractor') {
+                  setDocumentFlowType('independent-contractor');
+                } else if (doc.id === 'change-order') {
+                  setDocumentFlowType('change-order');
+                }
+                setSelectedDocumentType(doc.id);
+                setCurrentStep(1);
+              };
+              
+              const getStatusBadge = (doc: typeof allDocuments[0]) => {
+                if (doc.status === 'coming-soon') {
+                  return <Badge className="bg-gray-700 text-gray-400 text-[10px] px-1.5">Coming Soon</Badge>;
+                }
+                if (doc.requiresContract) {
+                  return <Badge className="bg-orange-500/20 text-orange-400 text-[10px] px-1.5">Requires Contract</Badge>;
+                }
+                return <Badge className="bg-cyan-500/20 text-cyan-400 text-[10px] px-1.5">Active</Badge>;
+              };
+              
+              return (
+                <Card className="bg-gray-900 border-gray-700">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-cyan-400 text-lg">
+                      <FileText className="h-5 w-5" />
+                      Select Document Type
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Search Bar */}
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        placeholder="Search documents..."
+                        value={docSearch}
+                        onChange={(e) => setDocSearch(e.target.value)}
+                        className="pl-10 bg-gray-800 border-gray-600 text-white placeholder-gray-400 h-9"
+                        data-testid="input-doc-search"
+                      />
+                    </div>
+                    
+                    {/* Category Tabs */}
+                    <div className="flex flex-wrap gap-1 p-1 bg-gray-800/50 rounded-lg">
+                      {documentCategories.map((cat) => {
+                        const IconComponent = cat.icon;
+                        const count = cat.id === 'coming-soon'
+                          ? allDocuments.filter(d => d.status === 'coming-soon').length
+                          : allDocuments.filter(d => d.category === cat.id && d.status !== 'coming-soon').length;
+                        return (
+                          <button
+                            key={cat.id}
+                            onClick={() => setDocCategory(cat.id)}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                              docCategory === cat.id
+                                ? 'bg-cyan-400 text-black'
+                                : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                            }`}
+                            data-testid={`tab-${cat.id}`}
+                          >
+                            <IconComponent className="h-3.5 w-3.5" />
+                            <span className="hidden sm:inline">{cat.label}</span>
+                            <span className="text-[10px] opacity-70">({count})</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    
+                    {/* Compact Document Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 max-h-[400px] overflow-y-auto pr-1">
+                      {filteredDocs.length === 0 ? (
+                        <div className="col-span-full text-center py-8 text-gray-400">
+                          <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                          <p className="text-sm">No documents found</p>
                         </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* Change Order Option */}
-                    <Card 
-                      className={`cursor-pointer transition-all hover:border-orange-400 ${
-                        documentFlowType === 'change-order' 
-                          ? 'border-orange-400 bg-orange-400/10' 
-                          : 'border-gray-700 hover:bg-gray-800'
-                      }`}
-                      onClick={() => setDocumentFlowType('change-order')}
-                      data-testid="card-change-order"
-                    >
-                      <CardContent className="pt-6">
-                        <div className="flex flex-col items-center text-center space-y-4">
-                          <div className={`p-4 rounded-full ${
-                            documentFlowType === 'change-order' 
-                              ? 'bg-orange-400 text-black' 
-                              : 'bg-gray-800 text-orange-400'
-                          }`}>
-                            <Edit2 className="h-8 w-8" />
-                          </div>
-                          <div>
-                            <h3 className="text-lg font-semibold text-white">Change Order</h3>
-                            <p className="text-gray-400 text-sm mt-2">
-                              Modify scope, cost, or timeline of an existing contract
-                            </p>
-                          </div>
-                          <div className="flex flex-wrap gap-2 justify-center">
-                            <Badge variant="outline" className="text-xs border-gray-600 text-gray-400">
-                              Requires Contract
-                            </Badge>
-                            <Badge variant="outline" className="text-xs border-gray-600 text-gray-400">
-                              Amendment
-                            </Badge>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  <div className="mt-8 flex justify-center">
-                    <Button
-                      onClick={() => setCurrentStep(1)}
-                      className="bg-cyan-400 text-black hover:bg-cyan-300 px-8"
-                      data-testid="button-continue-to-step-1"
-                    >
-                      Continue
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                      ) : (
+                        filteredDocs.map((doc) => {
+                          const IconComponent = doc.icon;
+                          const isDisabled = doc.status === 'coming-soon';
+                          const isSelected = (doc.id === 'independent-contractor' && documentFlowType === 'independent-contractor') ||
+                                           (doc.id === 'change-order' && documentFlowType === 'change-order');
+                          return (
+                            <button
+                              key={doc.id}
+                              onClick={() => handleDocSelect(doc)}
+                              disabled={isDisabled}
+                              className={`group relative flex items-start gap-3 p-3 rounded-lg border text-left transition-all ${
+                                isDisabled
+                                  ? 'border-gray-700/50 bg-gray-800/30 cursor-not-allowed opacity-60'
+                                  : isSelected
+                                    ? `border-${doc.color}-400 bg-${doc.color}-400/10`
+                                    : 'border-gray-700 bg-gray-800/50 hover:border-cyan-400 hover:bg-gray-800'
+                              }`}
+                              data-testid={`tile-${doc.id}`}
+                            >
+                              <div className={`p-2 rounded-lg shrink-0 ${
+                                isDisabled ? 'bg-gray-700/50 text-gray-500' : `bg-${doc.color}-500/20 text-${doc.color}-400`
+                              }`}>
+                                <IconComponent className="h-4 w-4" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-2">
+                                  <h4 className={`font-medium text-sm truncate ${isDisabled ? 'text-gray-500' : 'text-white'}`}>
+                                    {doc.name}
+                                  </h4>
+                                  {getStatusBadge(doc)}
+                                </div>
+                                <p className={`text-xs mt-0.5 line-clamp-1 ${isDisabled ? 'text-gray-600' : 'text-gray-400'}`}>
+                                  {doc.description}
+                                </p>
+                              </div>
+                              {isDisabled && (
+                                <Lock className="absolute top-2 right-2 h-3 w-3 text-gray-600" />
+                              )}
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })()}
 
             {/* Step 1: Project Selection (Independent Contractor Flow) */}
             {currentStep === 1 && documentFlowType === 'independent-contractor' && (
