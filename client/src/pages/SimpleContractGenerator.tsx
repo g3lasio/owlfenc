@@ -2471,7 +2471,27 @@ export default function SimpleContractGenerator() {
   // Direct PDF download function - uses working PDF endpoint
   const handleDownloadPDF = useCallback(async () => {
     // ✅ FIXED: Resilient auth check for PDF download  
-    if (!selectedProject || (!currentUser?.uid && !profile?.email)) return;
+    // For Change Orders, selectedProject might not exist but contractData.pdfBase64 does
+    // For Independent Contractor, selectedProject is required
+    const hasChangeOrderPdf = documentFlowType === 'change-order' && contractData?.pdfBase64;
+    const hasProject = !!selectedProject;
+    const isAuthenticated = !!(currentUser?.uid || profile?.email);
+    
+    // Early return if neither path is available
+    if (!hasChangeOrderPdf && !hasProject) {
+      console.log('❌ [PDF DOWNLOAD] No project or Change Order PDF available');
+      return;
+    }
+    
+    // Auth check for ALL flows (including Change Order)
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to download PDFs",
+        variant: "destructive",
+      });
+      return;
+    }
 
     // Check contract access permissions (Trial Master and paid plans have full access)
     if (isPrimoChambeador) {
@@ -2483,15 +2503,71 @@ export default function SimpleContractGenerator() {
       return;
     }
 
-    // IMMEDIATE FEEDBACK: Show toast right away so user knows it's working
-    toast({
-      title: "Generando PDF...",
-      description: "Espera unos segundos mientras preparamos tu contrato",
-    });
-
     setIsLoading(true);
 
     try {
+      // ✅ CHANGE ORDER FIX: If we already have pdfBase64 from generation, use it directly
+      if (hasChangeOrderPdf) {
+        console.log('📄 [CHANGE ORDER] Downloading pre-generated PDF from base64...');
+        
+        // Strip data URL prefix if present (e.g., "data:application/pdf;base64,")
+        let base64Data = contractData.pdfBase64;
+        if (base64Data.includes(',')) {
+          base64Data = base64Data.split(',').pop() || base64Data;
+        }
+        
+        // Normalize: remove whitespace/newlines and convert URL-safe chars
+        base64Data = base64Data
+          .replace(/\s/g, '')      // Remove whitespace/newlines
+          .replace(/-/g, '+')      // URL-safe to standard base64
+          .replace(/_/g, '/');     // URL-safe to standard base64
+        
+        // Validate non-empty base64
+        if (!base64Data || base64Data.length === 0) {
+          throw new Error('PDF data is empty or invalid');
+        }
+        
+        // Decode base64 to binary
+        const binaryString = atob(base64Data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        const blob = new Blob([bytes], { type: 'application/pdf' });
+        
+        // Generate filename
+        const clientName = contractData.clientInfo?.name || contractData.client?.name || 'client';
+        const fileName = contractData.filename || `Change-Order-${clientName.replace(/\s+/g, "_")}-${new Date().toISOString().split("T")[0]}.pdf`;
+        
+        // Handle PDF download
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        // Clean up
+        setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+        
+        // Success toast for all users (desktop and mobile)
+        toast({
+          title: "✅ PDF Downloaded",
+          description: "Check your downloads folder",
+        });
+        
+        setIsLoading(false);
+        return;
+      }
+      
+      // IMMEDIATE FEEDBACK for Independent Contractor flow (requires API call)
+      toast({
+        title: "Generando PDF...",
+        description: "Espera unos segundos mientras preparamos tu contrato",
+      });
+      
       // Collect COMPREHENSIVE contract data - ALL fields from interface
       const projectTotal = editableData.projectTotal || getCorrectProjectTotal(selectedProject);
       const clientAddress = editableData.clientAddress ||
@@ -2702,6 +2778,8 @@ export default function SimpleContractGenerator() {
     contractData,
     getCorrectProjectTotal,
     toast,
+    documentFlowType,
+    isPrimoChambeador,
   ]);
 
   // Fallback contract creation using Firebase stored data
