@@ -4022,14 +4022,16 @@ export default function SimpleContractGenerator() {
 
             {/* Step 0: Document Type Router - Compact Grid with Tabs */}
             {currentStep === 0 && (() => {
+              // Categories represent legal document types only (no "Coming Soon" or "Commercial" tabs)
+              // Commercial contracts are still contracts - residential/commercial is context, not document type
               const documentCategories = [
                 { id: 'contracts', label: 'Contracts', icon: FileCheck },
                 { id: 'amendments', label: 'Amendments', icon: Edit2 },
                 { id: 'subcontracts', label: 'Subcontracts', icon: Truck },
-                { id: 'commercial', label: 'Commercial', icon: DollarSign },
-                { id: 'coming-soon', label: 'Coming Soon', icon: Clock },
               ];
               
+              // All documents with "coming-soon" as a status within their category
+              // Commercial Contract moved to "contracts" category
               const allDocuments = [
                 { id: 'independent-contractor', name: 'Independent Contractor', description: 'New contract from estimate or scratch', category: 'contracts', status: 'active', icon: FileCheck, color: 'cyan' },
                 { id: 'change-order', name: 'Change Order', description: 'Modify scope, cost, or timeline', category: 'amendments', status: 'active', requiresContract: true, icon: Edit2, color: 'orange' },
@@ -4038,20 +4040,27 @@ export default function SimpleContractGenerator() {
                 { id: 'lien-waiver-partial', name: 'Partial Lien Waiver', description: 'Release lien for partial payment', category: 'contracts', status: 'coming-soon', icon: Shield, color: 'green' },
                 { id: 'lien-waiver-final', name: 'Final Lien Waiver', description: 'Release lien upon final payment', category: 'contracts', status: 'coming-soon', icon: Shield, color: 'green' },
                 { id: 'subcontract-agreement', name: 'Subcontract Agreement', description: 'Agreement with subcontractors', category: 'subcontracts', status: 'coming-soon', icon: Truck, color: 'purple' },
-                { id: 'commercial-contract', name: 'Commercial Contract', description: 'Commercial project agreement', category: 'commercial', status: 'coming-soon', icon: DollarSign, color: 'emerald' },
+                { id: 'commercial-contract', name: 'Commercial Contract', description: 'Commercial project agreement', category: 'contracts', status: 'coming-soon', icon: DollarSign, color: 'emerald' },
                 { id: 'warranty-agreement', name: 'Warranty Agreement', description: 'Warranty terms and conditions', category: 'contracts', status: 'coming-soon', icon: CheckCircle, color: 'teal' },
                 { id: 'certificate-completion', name: 'Certificate of Completion', description: 'Project completion certification', category: 'contracts', status: 'coming-soon', icon: FileCheck, color: 'indigo' },
               ];
               
-              const filteredDocs = allDocuments.filter(doc => {
-                const matchesCategory = docCategory === 'coming-soon' 
-                  ? doc.status === 'coming-soon'
-                  : doc.category === docCategory && doc.status !== 'coming-soon';
-                const matchesSearch = !docSearch.trim() || 
-                  doc.name.toLowerCase().includes(docSearch.toLowerCase()) ||
-                  doc.description.toLowerCase().includes(docSearch.toLowerCase());
-                return matchesCategory && matchesSearch;
-              });
+              // Filter shows ALL documents in a category (active + coming-soon)
+              // Active documents appear first, then coming-soon
+              const filteredDocs = allDocuments
+                .filter(doc => {
+                  const matchesCategory = doc.category === docCategory;
+                  const matchesSearch = !docSearch.trim() || 
+                    doc.name.toLowerCase().includes(docSearch.toLowerCase()) ||
+                    doc.description.toLowerCase().includes(docSearch.toLowerCase());
+                  return matchesCategory && matchesSearch;
+                })
+                .sort((a, b) => {
+                  // Active documents first, then coming-soon
+                  if (a.status === 'active' && b.status !== 'active') return -1;
+                  if (a.status !== 'active' && b.status === 'active') return 1;
+                  return 0;
+                });
               
               const handleDocSelect = (doc: typeof allDocuments[0]) => {
                 if (doc.status === 'coming-soon') return;
@@ -4095,13 +4104,13 @@ export default function SimpleContractGenerator() {
                       />
                     </div>
                     
-                    {/* Category Tabs */}
+                    {/* Category Tabs - shows total docs per category (active + coming-soon) */}
                     <div className="flex flex-wrap gap-1 p-1 bg-gray-800/50 rounded-lg">
                       {documentCategories.map((cat) => {
                         const IconComponent = cat.icon;
-                        const count = cat.id === 'coming-soon'
-                          ? allDocuments.filter(d => d.status === 'coming-soon').length
-                          : allDocuments.filter(d => d.category === cat.id && d.status !== 'coming-soon').length;
+                        const categoryDocs = allDocuments.filter(d => d.category === cat.id);
+                        const totalCount = categoryDocs.length;
+                        const activeCount = categoryDocs.filter(d => d.status === 'active').length;
                         return (
                           <button
                             key={cat.id}
@@ -4115,7 +4124,9 @@ export default function SimpleContractGenerator() {
                           >
                             <IconComponent className="h-3.5 w-3.5" />
                             <span className="hidden sm:inline">{cat.label}</span>
-                            <span className="text-[10px] opacity-70">({count})</span>
+                            <span className="text-[10px] opacity-70">
+                              ({activeCount}{totalCount > activeCount ? `/${totalCount}` : ''})
+                            </span>
                           </button>
                         );
                       })}
