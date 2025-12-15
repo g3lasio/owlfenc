@@ -114,10 +114,42 @@ class BrowserPool {
       this.cleanupTimer = null;
     }
   }
+
+  /**
+   * ⚡ PERFORMANCE: Pre-warm the browser pool at app startup
+   * This eliminates cold-start latency (5-7 seconds) for the first PDF request
+   * Called from server startup to ensure browser is ready when clients open signature links
+   */
+  async warmup(): Promise<void> {
+    console.log("🔥 [BROWSER-POOL] Warming up browser pool...");
+    const startTime = Date.now();
+    try {
+      await this.getBrowser();
+      const duration = Date.now() - startTime;
+      console.log(`✅ [BROWSER-POOL] Browser pool warmed up in ${duration}ms - ready for instant PDF generation`);
+    } catch (error: any) {
+      console.warn(`⚠️ [BROWSER-POOL] Failed to warmup browser pool: ${error.message} - will lazy-load on first request`);
+    }
+  }
+
+  /**
+   * Check if the browser is currently warm and ready
+   */
+  isWarm(): boolean {
+    return this.browser !== null && this.browser.isConnected();
+  }
 }
 
 // Export singleton for use across the app
 export const browserPool = BrowserPool.getInstance();
+
+/**
+ * ⚡ STARTUP OPTIMIZATION: Warmup function to call from server initialization
+ * This pre-launches the browser to eliminate cold-start latency for signature links
+ */
+export async function warmupBrowserPool(): Promise<void> {
+  return browserPool.warmup();
+}
 
 export interface ContractPdfData {
   client: {

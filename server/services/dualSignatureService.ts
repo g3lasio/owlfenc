@@ -14,6 +14,27 @@
 // This service now operates 100% on Firebase for complete consistency
 import { ResendEmailAdvanced } from "./resendEmailAdvanced";
 import crypto from "crypto";
+
+// ⚡ PERFORMANCE: Cached Firebase Admin imports - resolved once, reused on subsequent calls
+// This eliminates the dynamic import overhead while avoiding module loading order issues
+let cachedFirebaseDb: FirebaseFirestore.Firestore | null = null;
+let cachedFirebaseAdmin: typeof import('firebase-admin') | null = null;
+
+async function getFirebaseDb(): Promise<FirebaseFirestore.Firestore> {
+  if (!cachedFirebaseDb) {
+    const { db } = await import("../lib/firebase-admin");
+    cachedFirebaseDb = db;
+  }
+  return cachedFirebaseDb;
+}
+
+async function getFirebaseAdmin(): Promise<typeof import('firebase-admin')> {
+  if (!cachedFirebaseAdmin) {
+    const { admin } = await import("../lib/firebase-admin");
+    cachedFirebaseAdmin = admin;
+  }
+  return cachedFirebaseAdmin;
+}
 import {
   createDigitalCertificate,
   parseDeviceInfo,
@@ -129,7 +150,8 @@ export class DualSignatureService {
       console.log("👥 [DUAL-SIGNATURE] Client URL:", clientSignUrl);
 
       // ✅ FIREBASE-ONLY: Save contract to Firebase dualSignatureContracts collection
-      const { db: firebaseDb } = await import("../lib/firebase-admin");
+      // ⚡ PERFORMANCE: Using cached import (firebaseDb)
+      const db = await getFirebaseDb();
       
       const firebaseContract = {
         contractId,
@@ -179,7 +201,7 @@ export class DualSignatureService {
         templateId: request.templateId || null,
       };
 
-      await firebaseDb
+      await db
         .collection('dualSignatureContracts')
         .doc(contractId)
         .set(firebaseContract);
@@ -228,7 +250,7 @@ export class DualSignatureService {
         }
       };
 
-      await firebaseDb
+      await db
         .collection('contractHistory')
         .doc(contractId)
         .set(historyEntry);
@@ -253,7 +275,7 @@ export class DualSignatureService {
       });
 
       // Update email sent status in Firebase
-      await firebaseDb
+      await db
         .collection('dualSignatureContracts')
         .doc(contractId)
         .update({
@@ -304,9 +326,10 @@ export class DualSignatureService {
         contractId
       );
 
-      const { db: firebaseDb } = await import("../lib/firebase-admin");
+      // ⚡ PERFORMANCE: Using cached import (firebaseDb)
+      const db = await getFirebaseDb();
       
-      const contractDoc = await firebaseDb
+      const contractDoc = await db
         .collection('dualSignatureContracts')
         .doc(contractId)
         .get();
@@ -384,10 +407,11 @@ export class DualSignatureService {
         submission.contractId
       );
 
-      const { db: firebaseDb } = await import("../lib/firebase-admin");
+      // ⚡ PERFORMANCE: Using cached import (firebaseDb)
+      const db = await getFirebaseDb();
       
       // Get current contract from Firebase
-      const contractRef = firebaseDb
+      const contractRef = db
         .collection('dualSignatureContracts')
         .doc(submission.contractId);
       
@@ -451,42 +475,52 @@ export class DualSignatureService {
       });
 
       // 🔐 STEP 3: Save to Firebase Cloud Storage (Triple Redundancy #2)
+      // ⚡ PERFORMANCE: This is non-critical and runs async - doesn't block signature response
       let cloudStorageUrl: string | undefined;
-      try {
-        const { admin } = await import("../lib/firebase-admin");
-        const bucket = admin.storage().bucket();
-        
-        // Convert base64 to buffer if it's a drawn signature
-        if (submission.signatureData.startsWith('data:image')) {
-          const base64Data = submission.signatureData.split(',')[1];
-          const buffer = Buffer.from(base64Data, 'base64');
+      const cloudStoragePromise = (async () => {
+        try {
+          // ⚡ PERFORMANCE: Using cached import (firebaseAdmin)
+          const firebaseAdmin = await getFirebaseAdmin();
+          const bucket = firebaseAdmin.storage().bucket();
           
-          const fileName = `signatures/${submission.contractId}/${submission.party}_${certificate.certificateId}.png`;
-          const file = bucket.file(fileName);
-          
-          await file.save(buffer, {
-            metadata: {
-              contentType: 'image/png',
+          // Convert base64 to buffer if it's a drawn signature
+          if (submission.signatureData.startsWith('data:image')) {
+            const base64Data = submission.signatureData.split(',')[1];
+            const buffer = Buffer.from(base64Data, 'base64');
+            
+            const fileName = `signatures/${submission.contractId}/${submission.party}_${certificate.certificateId}.png`;
+            const file = bucket.file(fileName);
+            
+            await file.save(buffer, {
               metadata: {
-                contractId: submission.contractId,
-                party: submission.party,
-                certificateId: certificate.certificateId,
-                timestamp: certificate.timestamp,
-                signerName: submission.fullName
+                contentType: 'image/png',
+                metadata: {
+                  contractId: submission.contractId,
+                  party: submission.party,
+                  certificateId: certificate.certificateId,
+                  timestamp: certificate.timestamp,
+                  signerName: submission.fullName
+                }
               }
-            }
-          });
-          
-          // Make file publicly readable (for PDF generation)
-          await file.makePublic();
-          cloudStorageUrl = file.publicUrl();
-          
-          console.log(`☁️ [CLOUD-STORAGE] Signature saved to Firebase Storage: ${fileName}`);
+            });
+            
+            // Make file publicly readable (for PDF generation)
+            await file.makePublic();
+            cloudStorageUrl = file.publicUrl();
+            
+            console.log(`☁️ [CLOUD-STORAGE] Signature saved to Firebase Storage: ${fileName}`);
+            return cloudStorageUrl;
+          }
+          return undefined;
+        } catch (storageError: any) {
+          console.warn(`⚠️ [CLOUD-STORAGE] Failed to save to Cloud Storage (non-critical):`, storageError.message);
+          return undefined;
         }
-      } catch (storageError: any) {
-        console.warn(`⚠️ [CLOUD-STORAGE] Failed to save to Cloud Storage (non-critical):`, storageError.message);
-        // Don't fail the signature process if storage fails - we still have Firestore
-      }
+      })();
+      
+      // ⚡ PERFORMANCE: Await the cloud storage promise now before building updateData
+      // The upload started earlier and we've done other work in the meantime
+      cloudStorageUrl = await cloudStoragePromise;
 
       // 🔐 STEP 4: Prepare enhanced update data with certificate and audit
       // ✅ CHAIN OF CUSTODY: All metadata persisted together for verification
@@ -617,8 +651,9 @@ export class DualSignatureService {
       );
 
       // CRITICAL FIX: Using Firebase instead of PostgreSQL
-      const { db: firebaseDb } = await import("../lib/firebase-admin");
-      const contractDoc = await firebaseDb
+      // ⚡ PERFORMANCE: Using cached import (firebaseDb)
+      const db = await getFirebaseDb();
+      const contractDoc = await db
         .collection('dualSignatureContracts')
         .doc(contractId)
         .get();
@@ -853,8 +888,9 @@ export class DualSignatureService {
       const permanentPdfUrl = await firebaseStorageService.uploadContractPdf(pdfBuffer, contractId);
       
       // Update contract with permanent URL for future requests
-      const { db: firebaseDb } = await import("../lib/firebase-admin");
-      await firebaseDb.collection('dualSignatureContracts').doc(contractId).update({
+      // ⚡ PERFORMANCE: Using cached import (firebaseDb)
+      const db = await getFirebaseDb();
+      await db.collection('dualSignatureContracts').doc(contractId).update({
         permanentPdfUrl,
         pdfCachedAt: new Date().toISOString()
       });
@@ -876,8 +912,9 @@ export class DualSignatureService {
   }> {
     try {
       // CRITICAL FIX: Using Firebase instead of PostgreSQL
-      const { db: firebaseDb } = await import("../lib/firebase-admin");
-      const contractDoc = await firebaseDb
+      // ⚡ PERFORMANCE: Using cached import (firebaseDb)
+      const db = await getFirebaseDb();
+      const contractDoc = await db
         .collection('dualSignatureContracts')
         .doc(contractId)
         .get();
@@ -928,10 +965,11 @@ export class DualSignatureService {
     try {
       console.log("🏁 [FIREBASE-ONLY] Completing contract:", contractId);
 
-      const { db: firebaseDb } = await import("../lib/firebase-admin");
+      // ⚡ PERFORMANCE: Using cached import (firebaseDb)
+      const db = await getFirebaseDb();
       
       // Get contract data with signatures from Firebase
-      const contractDoc = await firebaseDb
+      const contractDoc = await db
         .collection('dualSignatureContracts')
         .doc(contractId)
         .get();
@@ -1138,7 +1176,7 @@ export class DualSignatureService {
 
       // Update Firebase with completion status (with or without PDF)
       const completionDate = new Date();
-      await firebaseDb
+      await db
         .collection('dualSignatureContracts')
         .doc(contractId)
         .update({
@@ -1165,7 +1203,7 @@ export class DualSignatureService {
         console.log("📋 [DUAL-SIGNATURE] Updating contract history...");
 
         // Update the contractHistory collection directly
-        await firebaseDb
+        await db
           .collection('contractHistory')
           .doc(contractId)
           .update({
@@ -1459,8 +1497,9 @@ export class DualSignatureService {
       );
 
       // CRITICAL FIX: Using Firebase instead of PostgreSQL
-      const { db: firebaseDb } = await import("../lib/firebase-admin");
-      const contractDoc = await firebaseDb
+      // ⚡ PERFORMANCE: Using cached import (firebaseDb)
+      const db = await getFirebaseDb();
+      const contractDoc = await db
         .collection('dualSignatureContracts')
         .doc(contractId)
         .get();
@@ -1527,8 +1566,9 @@ export class DualSignatureService {
       );
 
       // ✅ Get contract data from Firebase
-      const { db: firebaseDb } = await import("../lib/firebase-admin");
-      const contractDoc = await firebaseDb
+      // ⚡ PERFORMANCE: Using cached import (firebaseDb)
+      const db = await getFirebaseDb();
+      const contractDoc = await db
         .collection('dualSignatureContracts')
         .doc(contractId)
         .get();

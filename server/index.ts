@@ -1382,6 +1382,14 @@ console.log('🔧 [UNIFIED-ANALYSIS] Sistema híbrido registrado en /api/analysi
     console.log('📊 Multi-tenant contractor management system active');
     console.log('🎯 Professional contract generation and email delivery enabled');
     
+    // ⚡ PERFORMANCE OPTIMIZATION: Pre-warm the browser pool for signature PDFs
+    // This runs async after server startup to eliminate cold-start latency for clients
+    import('./services/premiumPdfService').then(({ warmupBrowserPool }) => {
+      warmupBrowserPool().catch(err => {
+        console.warn('⚠️ [STARTUP] Browser pool warmup failed:', err.message);
+      });
+    });
+    
     // Add error handler after all routes and Vite setup
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
       const status = err.status || err.statusCode || 500;
