@@ -1,0 +1,55 @@
+I’m attaching the signed Change Order PDF. Overall the flow works, but I noticed a few important issues that we should address to make the dual signature system fully solid and consistent.
+
+1️⃣ Company profile data not fully captured
+
+It looks like the system is not capturing all Company Profile fields in the signed document.
+
+The company email is missing.
+
+Please verify that all required company profile data is consistently injected into the PDF and signature metadata.
+
+2️⃣ Duplicate signature fields issue
+
+There appears to be a duplication of signature fields:
+
+The original PDF template already includes designated signature areas.
+
+The dual signature system does not seem to detect these existing fields.
+
+As a result, the system injects additional signature fields, causing duplication in the final signed document.
+
+We need one of the following (preferred approach is detection):
+
+Detect and reuse existing signature placeholders in the PDF, or
+
+Ensure the system does not inject new signature fields when placeholders already exist.
+
+3️⃣ Digital Certificate of Authenticity inconsistency
+
+The Digital Certificate of Authenticity generated for this document is different from other contracts.
+
+It’s acceptable for templates to vary slightly, but the certificate format should remain consistent across all documents.
+
+We need a unified structure to avoid confusion and maintain professional/legal consistency.
+
+4️⃣ Client signature link performance issue
+
+The client signature link takes too long to load before the client can review and sign the document.
+
+This can negatively impact the signing experience.
+
+Please review latency, preloading, or blocking operations before the document is rendered to the client.
+
+Goal
+
+The objective is:
+
+Clean, non-duplicated signatures
+
+Complete and consistent company data
+
+A unified authenticity certificate across all contracts
+
+Fast, reliable access for client signing
+
+Please review these items and let me know your proposed fixes before implementing.

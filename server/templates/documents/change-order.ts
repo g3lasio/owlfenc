@@ -285,6 +285,7 @@ function generateChangeOrderHTML(data: TemplateData, branding: ContractorBrandin
         <div><strong>${contractorName}</strong></div>
         ${contractorAddress ? `<div>${contractorAddress}</div>` : ''}
         ${contractorPhone ? `<div>Phone: ${contractorPhone}</div>` : ''}
+        ${contractorEmail ? `<div>Email: ${contractorEmail}</div>` : ''}
         ${contractorLicense ? `<div>License No.: ${contractorLicense}</div>` : ''}
     </div>
 </div>
