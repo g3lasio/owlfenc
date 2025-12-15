@@ -593,13 +593,25 @@ class PremiumPdfService {
     console.log(`  - Signature-line divs replaced: ${signatureLineCount}`);
     console.log(`  - Date-line spans replaced: ${dateLineCount}`);
 
-    // Only add verification footer if signatures were successfully embedded
-    if (
-      modifiedHTML.includes("EXECUTION") ||
-      (modifiedHTML.includes("CONTRACTOR") && modifiedHTML.includes("CLIENT"))
-    ) {
+    // Determine if signatures were successfully embedded via placeholder replacement
+    // If ANY replacement strategy embedded at least 1 signature, the template had placeholders
+    // and we should NOT add the fallback section (supports both single and dual signature templates)
+    const signaturesEmbeddedViaPlaceholders = 
+      signatureLineCount >= 1 ||   // Template had .signature-line placeholders
+      signSpaceCount >= 1 ||       // Template had .sign-space placeholders
+      replacementCount >= 1;       // Template had "Digital signature on file" text
+
+    // Also check for EXECUTION section (legacy contracts) or existing signature-section class
+    const hasExecutionSection = modifiedHTML.includes("EXECUTION");
+    const hasSignatureSection = modifiedHTML.includes('class="signature-section"') || 
+                                modifiedHTML.includes("signature-grid");
+
+    if (signaturesEmbeddedViaPlaceholders || hasExecutionSection || hasSignatureSection) {
       console.log(
-        "✅ [SIGNATURE-DEBUG] Signatures embedded successfully, returning modified HTML",
+        `✅ [SIGNATURE-DEBUG] Signatures embedded successfully via ${
+          signaturesEmbeddedViaPlaceholders ? 'placeholder replacement' : 
+          hasSignatureSection ? 'existing signature section' : 'EXECUTION section'
+        }, returning modified HTML`,
       );
       return modifiedHTML;
     } else {
@@ -679,10 +691,10 @@ class PremiumPdfService {
     const issuer = data.contractorCertificate?.issuer || data.clientCertificate?.issuer || 'Chyrris Technology Corp';
     
     const verificationSeal = `
-      <div style="page-break-before: always; margin-top: 40px; padding: 25px; border: 3px solid #1e40af; border-radius: 12px; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); font-family: 'Arial', sans-serif;">
+      <div style="page-break-before: always; margin-top: 40px; padding: 25px; border: 3px solid #1a365d; border-radius: 12px; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); font-family: 'Arial', sans-serif;">
         <div style="text-align: center; margin-bottom: 20px;">
-          <div style="display: inline-block; background: #1e40af; color: white; padding: 8px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; letter-spacing: 1px;">
-            🔐 DIGITAL VERIFICATION CERTIFICATE
+          <div style="display: inline-block; background: #1a365d; color: white; padding: 10px 30px; border-radius: 4px; font-size: 16px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase;">
+            DIGITAL CERTIFICATE OF AUTHENTICITY
           </div>
         </div>
         
@@ -692,16 +704,16 @@ class PremiumPdfService {
         </div>
         
         <div style="display: flex; gap: 20px; margin-bottom: 20px;">
-          <div style="flex: 1; background: white; padding: 15px; border-radius: 8px; border: 1px solid #93c5fd;">
-            <h4 style="margin: 0 0 12px 0; color: #1e40af; font-size: 13px; border-bottom: 2px solid #1e40af; padding-bottom: 5px;">📋 CONTRACTOR SIGNATURE</h4>
+          <div style="flex: 1; background: white; padding: 15px; border-radius: 8px; border: 1px solid #1a365d;">
+            <h4 style="margin: 0 0 12px 0; color: #1a365d; font-size: 12px; border-bottom: 1px solid #1a365d; padding-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">CONTRACTOR SIGNATURE</h4>
             <p style="margin: 4px 0; font-size: 11px;"><strong>Name:</strong> ${data.contractorSignature.name}</p>
             <p style="margin: 4px 0; font-size: 11px;"><strong>Signed:</strong> ${formatDate(data.contractorSignature.signedAt)}</p>
             <p style="margin: 4px 0; font-size: 11px;"><strong>IP Address:</strong> ${contractorIp}</p>
             <p style="margin: 4px 0; font-size: 11px;"><strong>Device:</strong> ${contractorDevice}</p>
             <p style="margin: 4px 0; font-size: 10px; color: #64748b;"><strong>Cert ID:</strong> ${contractorCertId}...</p>
           </div>
-          <div style="flex: 1; background: white; padding: 15px; border-radius: 8px; border: 1px solid #93c5fd;">
-            <h4 style="margin: 0 0 12px 0; color: #1e40af; font-size: 13px; border-bottom: 2px solid #1e40af; padding-bottom: 5px;">📋 CLIENT SIGNATURE</h4>
+          <div style="flex: 1; background: white; padding: 15px; border-radius: 8px; border: 1px solid #1a365d;">
+            <h4 style="margin: 0 0 12px 0; color: #1a365d; font-size: 12px; border-bottom: 1px solid #1a365d; padding-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">CLIENT SIGNATURE</h4>
             <p style="margin: 4px 0; font-size: 11px;"><strong>Name:</strong> ${data.clientSignature.name}</p>
             <p style="margin: 4px 0; font-size: 11px;"><strong>Signed:</strong> ${formatDate(data.clientSignature.signedAt)}</p>
             <p style="margin: 4px 0; font-size: 11px;"><strong>IP Address:</strong> ${clientIp}</p>
@@ -710,8 +722,8 @@ class PremiumPdfService {
           </div>
         </div>
         
-        <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid #93c5fd; margin-bottom: 15px;">
-          <h4 style="margin: 0 0 10px 0; color: #1e40af; font-size: 12px;">🔒 DOCUMENT INTEGRITY</h4>
+        <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid #1a365d; margin-bottom: 15px;">
+          <h4 style="margin: 0 0 10px 0; color: #1a365d; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">DOCUMENT INTEGRITY</h4>
           <div style="display: flex; gap: 15px; font-size: 10px;">
             <div style="flex: 1;">
               <p style="margin: 3px 0; color: #64748b;"><strong>Document Hash (SHA-256):</strong></p>

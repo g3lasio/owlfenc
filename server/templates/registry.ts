@@ -101,6 +101,9 @@ export interface ContractTemplate {
   status: TemplateStatus;
   templateVersion: string;
   signatureType: SignatureType;
+  /** If true, the template HTML already includes signature placeholders (.signature-line, .date-line)
+   *  and the PDF service should NOT inject a fallback signature section */
+  includesSignaturePlaceholders?: boolean;
   requiredFields: string[];
   optionalFields: string[];
   priority: number;
