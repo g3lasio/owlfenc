@@ -275,54 +275,39 @@ router.post('/enhance-change-order', verifyFirebaseAuth, async (req: Request, re
       ? `New completion date: ${newCompletionDate}` 
       : 'No timeline changes';
 
-    const systemPrompt = `You are a legal document specialist for construction contracts. Your task is to transform a contractor's brief notes into a professional, legally-sound Change Order description.
+    const systemPrompt = `You are a legal document specialist for construction contracts. Your task is to understand the contractor's notes and reformulate them into clear, professional bullet points.
 
 CRITICAL RULES:
-1. ALWAYS OUTPUT IN ENGLISH - regardless of the input language (Spanish, etc.), your entire response MUST be in professional English
-2. DO NOT copy the contractor's text verbatim - you must REWRITE and REPHRASE everything into professional legal language
-3. If input is in Spanish or another language, TRANSLATE it to English while enhancing it professionally
-4. DO NOT invent any materials, quantities, dates, or conditions that are not in the original text
-5. ONLY reorganize, clarify, translate, and legally formalize the existing information
-6. Maintain factual accuracy - if something is unclear, phrase it generally rather than inventing details
-7. Use professional legal language suitable for a contract amendment
-8. Connect scope change → cost impact → timeline impact logically
+1. ALWAYS OUTPUT IN ENGLISH - regardless of the input language (Spanish, etc.)
+2. DO NOT copy or repeat ANY of the contractor's original words - you must completely REFORMULATE the message in your own professional words
+3. Your job is to UNDERSTAND what the contractor meant and EXPLAIN IT DIFFERENTLY using clear, professional language
+4. DO NOT invent any materials, quantities, dates, or conditions that are not implied in the original text
+5. If something is unclear, omit it rather than guessing or adding details
+6. Focus only on reformulating the existing information - never add extra scope or conditions
 
-CRITICAL FORMATTING RULES:
-- Output PLAIN TEXT ONLY - NO markdown formatting whatsoever
-- Do NOT use ## headers, ** bold **, * italics *, or any other markdown syntax
-- Do NOT use bullet points with - or *
-- Write in flowing professional paragraphs only
-- The output will be inserted directly into a PDF document, so it must be clean plain text
+OUTPUT FORMAT:
+- Use bullet points (plain dash - followed by text)
+- Each bullet should be a clear, concise statement
+- No headers, no markdown formatting (no ##, **, etc.)
+- No introductory sentences - start directly with bullet points
+- 3-6 bullet points maximum
+- Each bullet explains one aspect of what the contractor intended to communicate
 
-OUTPUT FORMAT (plain text paragraphs, NO markdown):
-Write a single, cohesive professional paragraph that covers:
-1. A brief summary of what change was requested by the Client
-2. The specific scope of work being modified
-3. The financial impact of this change
-4. Any schedule impact (or confirmation of no schedule impact)
-5. Confirmation that all other contract terms remain unchanged
+Remember: You are explaining "what the contractor meant to say" in professional terms, NOT repeating their words.`;
 
-Keep it concise but legally precise. One to three paragraphs maximum.`;
-
-    const userPrompt = `Transform this contractor's change description into a professional Change Order document.
+    const userPrompt = `Read and understand the contractor's notes below. Then reformulate what they meant to say using professional bullet points.
 
 CRITICAL REQUIREMENTS:
-1. Output PLAIN TEXT ONLY - absolutely NO markdown (no ##, **, -, etc.)
-2. TRANSLATE everything to professional English (input may be in Spanish)
-3. REWRITE in professional legal language - do NOT copy verbatim
-4. Write 1-3 flowing paragraphs, not bullet points or headers
+1. DO NOT use any of the contractor's original words - completely rephrase in your own words
+2. Output should be in English only (translate if input is in Spanish or other language)
+3. Start directly with bullet points (using - dash)
+4. Only include information that is present or clearly implied in the original notes
+5. DO NOT add any extra details, materials, conditions, or scope not mentioned
 
-ORIGINAL CONTRACTOR NOTES (may be in Spanish - translate to English):
+CONTRACTOR'S ORIGINAL NOTES:
 "${originalText}"
 
-CONTEXT:
-- Financial Impact: ${costType === 'addition' ? 'Addition' : 'Credit'} of $${additionalCost.toLocaleString()}
-${originalContract?.originalTotal ? `- Original Contract Value: $${originalContract.originalTotal.toLocaleString()}` : ''}
-- Timeline: ${timelineText}
-${originalContract?.clientName ? `- Client: ${originalContract.clientName}` : ''}
-${originalContract?.projectType ? `- Project Type: ${originalContract.projectType}` : ''}
-
-Write a professional description that attributes the change to the Client's request, explains the scope modification, states the cost impact, and confirms schedule impact (or no impact). Output clean plain text paragraphs only.`;
+Your task: Understand the message and explain "what the contractor meant to say" using 3-6 clear, professional bullet points. Do not repeat their words, do not add anything they didn't mention.`;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o",
