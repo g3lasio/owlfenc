@@ -1,0 +1,93 @@
+After reviewing the current Step 0 layout and categories, the structure is correct, but we are still missing several key documents that contractors expect to see. Even if not implemented yet, these should be visible as Coming Soon to complete the legal picture and reinforce confidence in the platform.
+
+Below is what I recommend adding by category, with justification.
+
+1️⃣ CONTRACTS – Missing (Coming Soon)
+
+These are core contract types used daily by contractors. Not having them listed makes the system feel incomplete.
+
+Add as Coming Soon:
+
+Lump Sum / Fixed Price Contract
+Most common contract type in residential and commercial projects.
+
+Time & Materials (T&M) Contract
+Essential for repairs, emergency work, and undefined scopes.
+
+Cost-Plus Contract
+Used in large remodels and projects with evolving scope.
+
+Unit Price Contract
+Critical for fencing, paving, and repetitive work priced per unit.
+
+Why these matter:
+Contractors think in these terms. Seeing them listed immediately signals that the system understands real-world contracting.
+
+2️⃣ AMENDMENTS – Minor but Important Addition
+
+Current list is good (Change Order, Addendum, Work Order), but one more document would strengthen legal coverage.
+
+Add as Coming Soon:
+
+Scope Clarification Notice
+Used to document clarifications without changing price or timeline.
+Extremely useful in dispute prevention.
+
+3️⃣ SUBCONTRACTS – Must Be Expanded (Coming Soon)
+
+Right now, Subcontracts feel underrepresented.
+
+Add as Coming Soon:
+
+General Subcontractor Agreement
+
+Roofing Subcontract
+
+Electrical Subcontract
+
+Plumbing Subcontract
+
+HVAC Subcontract
+
+Concrete Subcontract
+
+Framing Subcontract
+
+Drywall Subcontract
+
+Painting Subcontract
+
+Landscaping Subcontract
+
+Why this matters:
+Contractors manage work by trade. Listing these creates immediate trust and shows the platform is built for real construction workflows.
+
+Guiding Principle
+
+Not everything needs to be active immediately, but everything that is essential should be visible.
+
+Coming Soon items:
+
+Educate users
+
+Communicate roadmap
+
+Prevent future UX rework
+
+Increase perceived platform value
+
+Constraints
+
+No logic changes required
+
+Registry + UI only
+
+Mark all as coming_soon
+
+No impact on existing flows
+
+Goal
+
+Step 0 should feel like a complete legal control panel, not a partial generator.
+
+Please add these documents as Coming Soon under their respective categories and confirm once updated.

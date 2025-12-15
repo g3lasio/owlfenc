@@ -59,6 +59,19 @@ import {
   ChevronDown,
   Archive,
   ArchiveRestore,
+  Calculator,
+  Boxes,
+  Building,
+  MessageSquare,
+  Home,
+  Zap,
+  Droplets,
+  Wind,
+  Square,
+  Frame,
+  LayoutGrid,
+  Paintbrush,
+  TreePine,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -4031,18 +4044,43 @@ export default function SimpleContractGenerator() {
               ];
               
               // All documents with "coming-soon" as a status within their category
-              // Commercial Contract moved to "contracts" category
+              // Complete legal control panel - all essential documents visible
               const allDocuments = [
+                // ═══════════════════════════════════════════════════════════════
+                // CONTRACTS - Core contract types contractors use daily
+                // ═══════════════════════════════════════════════════════════════
                 { id: 'independent-contractor', name: 'Independent Contractor', description: 'New contract from estimate or scratch', category: 'contracts', status: 'active', icon: FileCheck, color: 'cyan' },
+                { id: 'lump-sum-contract', name: 'Lump Sum / Fixed Price', description: 'Fixed price for defined scope of work', category: 'contracts', status: 'coming-soon', icon: DollarSign, color: 'green' },
+                { id: 'time-materials-contract', name: 'Time & Materials (T&M)', description: 'Hourly labor + materials cost', category: 'contracts', status: 'coming-soon', icon: Clock, color: 'blue' },
+                { id: 'cost-plus-contract', name: 'Cost-Plus Contract', description: 'Cost plus markup for evolving scope', category: 'contracts', status: 'coming-soon', icon: Calculator, color: 'purple' },
+                { id: 'unit-price-contract', name: 'Unit Price Contract', description: 'Priced per unit (fencing, paving, etc.)', category: 'contracts', status: 'coming-soon', icon: Boxes, color: 'amber' },
+                { id: 'commercial-contract', name: 'Commercial Contract', description: 'Commercial project agreement', category: 'contracts', status: 'coming-soon', icon: Building, color: 'emerald' },
+                { id: 'lien-waiver-partial', name: 'Partial Lien Waiver', description: 'Release lien for partial payment', category: 'contracts', status: 'coming-soon', icon: Shield, color: 'green' },
+                { id: 'lien-waiver-final', name: 'Final Lien Waiver', description: 'Release lien upon final payment', category: 'contracts', status: 'coming-soon', icon: Shield, color: 'green' },
+                { id: 'warranty-agreement', name: 'Warranty Agreement', description: 'Warranty terms and conditions', category: 'contracts', status: 'coming-soon', icon: CheckCircle, color: 'teal' },
+                { id: 'certificate-completion', name: 'Certificate of Completion', description: 'Project completion certification', category: 'contracts', status: 'coming-soon', icon: FileCheck, color: 'indigo' },
+                
+                // ═══════════════════════════════════════════════════════════════
+                // AMENDMENTS - Modify existing contracts
+                // ═══════════════════════════════════════════════════════════════
                 { id: 'change-order', name: 'Change Order', description: 'Modify scope, cost, or timeline', category: 'amendments', status: 'active', requiresContract: true, icon: Edit2, color: 'orange' },
                 { id: 'contract-addendum', name: 'Contract Addendum', description: 'Add terms to existing contract', category: 'amendments', status: 'coming-soon', requiresContract: true, icon: FileText, color: 'yellow' },
                 { id: 'work-order', name: 'Work Order', description: 'Authorize specific work tasks', category: 'amendments', status: 'coming-soon', requiresContract: true, icon: Wrench, color: 'blue' },
-                { id: 'lien-waiver-partial', name: 'Partial Lien Waiver', description: 'Release lien for partial payment', category: 'contracts', status: 'coming-soon', icon: Shield, color: 'green' },
-                { id: 'lien-waiver-final', name: 'Final Lien Waiver', description: 'Release lien upon final payment', category: 'contracts', status: 'coming-soon', icon: Shield, color: 'green' },
-                { id: 'subcontract-agreement', name: 'Subcontract Agreement', description: 'Agreement with subcontractors', category: 'subcontracts', status: 'coming-soon', icon: Truck, color: 'purple' },
-                { id: 'commercial-contract', name: 'Commercial Contract', description: 'Commercial project agreement', category: 'contracts', status: 'coming-soon', icon: DollarSign, color: 'emerald' },
-                { id: 'warranty-agreement', name: 'Warranty Agreement', description: 'Warranty terms and conditions', category: 'contracts', status: 'coming-soon', icon: CheckCircle, color: 'teal' },
-                { id: 'certificate-completion', name: 'Certificate of Completion', description: 'Project completion certification', category: 'contracts', status: 'coming-soon', icon: FileCheck, color: 'indigo' },
+                { id: 'scope-clarification', name: 'Scope Clarification Notice', description: 'Document clarifications without price change', category: 'amendments', status: 'coming-soon', requiresContract: true, icon: MessageSquare, color: 'cyan' },
+                
+                // ═══════════════════════════════════════════════════════════════
+                // SUBCONTRACTS - Trade-specific agreements
+                // ═══════════════════════════════════════════════════════════════
+                { id: 'general-subcontract', name: 'General Subcontractor', description: 'Standard subcontractor agreement', category: 'subcontracts', status: 'coming-soon', icon: Truck, color: 'purple' },
+                { id: 'roofing-subcontract', name: 'Roofing Subcontract', description: 'Roofing trade agreement', category: 'subcontracts', status: 'coming-soon', icon: Home, color: 'red' },
+                { id: 'electrical-subcontract', name: 'Electrical Subcontract', description: 'Electrical trade agreement', category: 'subcontracts', status: 'coming-soon', icon: Zap, color: 'yellow' },
+                { id: 'plumbing-subcontract', name: 'Plumbing Subcontract', description: 'Plumbing trade agreement', category: 'subcontracts', status: 'coming-soon', icon: Droplets, color: 'blue' },
+                { id: 'hvac-subcontract', name: 'HVAC Subcontract', description: 'HVAC trade agreement', category: 'subcontracts', status: 'coming-soon', icon: Wind, color: 'cyan' },
+                { id: 'concrete-subcontract', name: 'Concrete Subcontract', description: 'Concrete trade agreement', category: 'subcontracts', status: 'coming-soon', icon: Square, color: 'gray' },
+                { id: 'framing-subcontract', name: 'Framing Subcontract', description: 'Framing trade agreement', category: 'subcontracts', status: 'coming-soon', icon: Frame, color: 'amber' },
+                { id: 'drywall-subcontract', name: 'Drywall Subcontract', description: 'Drywall trade agreement', category: 'subcontracts', status: 'coming-soon', icon: LayoutGrid, color: 'slate' },
+                { id: 'painting-subcontract', name: 'Painting Subcontract', description: 'Painting trade agreement', category: 'subcontracts', status: 'coming-soon', icon: Paintbrush, color: 'pink' },
+                { id: 'landscaping-subcontract', name: 'Landscaping Subcontract', description: 'Landscaping trade agreement', category: 'subcontracts', status: 'coming-soon', icon: TreePine, color: 'green' },
               ];
               
               // Filter shows ALL documents in a category (active + coming-soon)
