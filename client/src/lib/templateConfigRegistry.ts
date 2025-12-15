@@ -52,6 +52,14 @@ export interface FieldGroup {
   fields: FieldDescriptor[];
 }
 
+/**
+ * Signature requirements for templates
+ * - 'dual': Requires both contractor and client signatures (e.g., Independent Contractor Agreement, Change Order)
+ * - 'single': Requires only one signature (e.g., Lien Waiver, Certificate of Completion)
+ * - 'none': No signature required
+ */
+export type SignatureRequirement = 'dual' | 'single' | 'none';
+
 export interface TemplateUIConfig {
   templateId: string;
   title: string;
@@ -60,6 +68,11 @@ export interface TemplateUIConfig {
   helpText: string;
   groups: FieldGroup[];
   zodSchema: z.ZodSchema<any>;
+  /**
+   * Defines signature requirements for this template.
+   * Templates control their own legal behavior - the engine executes it.
+   */
+  signatureRequirement: SignatureRequirement;
 }
 
 export interface TemplateConfigEntry {
@@ -94,6 +107,42 @@ class TemplateConfigRegistry {
   needsDynamicConfig(templateId: string): boolean {
     return !this.isLegacyTemplate(templateId) && this.hasConfig(templateId);
   }
+
+  /**
+   * Get signature requirement for a template.
+   * Legacy templates (independent-contractor) default to 'dual'.
+   * Returns 'none' for unregistered templates.
+   */
+  getSignatureRequirement(templateId: string): SignatureRequirement {
+    // Legacy Independent Contractor uses dual signature
+    if (this.isLegacyTemplate(templateId)) {
+      return 'dual';
+    }
+    
+    // Get from registered config
+    const config = this.getUIConfig(templateId);
+    if (config?.signatureRequirement) {
+      return config.signatureRequirement;
+    }
+    
+    // Default for unknown templates
+    return 'none';
+  }
+
+  /**
+   * Check if a template requires dual signature
+   */
+  requiresDualSignature(templateId: string): boolean {
+    return this.getSignatureRequirement(templateId) === 'dual';
+  }
+
+  /**
+   * Check if a template requires any signature
+   */
+  requiresSignature(templateId: string): boolean {
+    const requirement = this.getSignatureRequirement(templateId);
+    return requirement === 'dual' || requirement === 'single';
+  }
 }
 
 export const templateConfigRegistry = new TemplateConfigRegistry();
@@ -114,6 +163,7 @@ templateConfigRegistry.register({
     subtitle: 'Modify scope, cost, or timeline of an existing contract',
     icon: 'FileEdit',
     helpText: 'A Change Order formally documents modifications to an existing contract. It requires both parties to sign.',
+    signatureRequirement: 'dual', // Both contractor and client must sign
     groups: [
       {
         id: 'financial-impact',

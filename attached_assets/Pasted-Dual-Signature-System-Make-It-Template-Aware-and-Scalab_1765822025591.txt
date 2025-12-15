@@ -1,0 +1,123 @@
+Dual Signature System – Make It Template-Aware and Scalable
+
+The next step is to extend the dual signature system to the Change Order Agreement, and make sure the signature flow is template-aware, not hardcoded to the Independent Contractor Agreement.
+
+Important context:
+
+The dual signature flow already works perfectly for the Independent Contractor Agreement.
+
+The PDF generator is solid and should remain untouched.
+
+This is not a refactor request, this is an extension and generalization of an already working system.
+
+OBJECTIVE
+
+The signature system must automatically adapt based on the document selected by the user, not the document type being assumed by the code.
+
+The Change Order Agreement requires dual signature by design:
+
+Client
+
+Contractor
+
+Just like the Independent Contractor Agreement.
+
+REQUIRED BEHAVIOR
+1️⃣ Signature requirements must be driven by the template
+
+Each template must explicitly define its signature requirements, for example:
+
+Independent Contractor Agreement → Dual Signature
+
+Change Order Agreement → Dual Signature
+
+Lien Waiver (Partial/Final) → Single Signature
+
+Certificate of Completion → Single Signature
+
+Future templates → Defined in registry
+
+This should be controlled at the template level, not in UI conditionals.
+
+2️⃣ Signature flow must remain unchanged internally
+
+Do NOT modify:
+
+Signature URL generation logic
+
+Token handling
+
+Validation logic
+
+Security or encryption flow
+
+The only change should be:
+
+Which parties are required to sign, based on the selected template.
+
+3️⃣ Change Order must follow the same execution guarantees
+
+For Change Order:
+
+Signature links must be generated only after PDF generation succeeds
+
+Both parties must sign before the document is marked as fully executed
+
+The system must track:
+
+Client signed
+
+Contractor signed
+
+Fully executed state
+
+Same guarantees, same robustness.
+
+4️⃣ UI behavior
+
+“Start Signature Protocol” should:
+
+Respect the template’s signature requirements
+
+Show correct status for each signer
+
+No duplicated UI logic per document
+
+One unified signature flow that adapts dynamically
+
+ARCHITECTURAL DIRECTION (IMPORTANT)
+
+The system should evolve toward this rule:
+
+Templates define legal behavior.
+The engine executes it.
+
+Not:
+
+“If document === independent contractor then dual sign”.
+
+This is critical for scalability.
+
+CONSTRAINTS
+
+Do NOT alter the PDF generator
+
+Do NOT break Independent Contractor Agreement signatures
+
+Do NOT introduce template-specific hacks
+
+This must scale cleanly to all future documents
+
+END GOAL
+
+Any document selected by the user:
+
+Generates the correct PDF
+
+Enforces the correct number of signatures
+
+Uses the same secure, battle-tested signing engine
+
+Once this is in place, the Legal Defense module becomes truly modular and future-proof.
+
+Proceed with this approach and confirm once the Change Order Agreement supports full dual signature execution end-to-end.

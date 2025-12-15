@@ -230,7 +230,9 @@ router.post('/initiate-public', async (req, res) => {
       deliveryMethods, 
       contractData, 
       securityFeatures,
-      userId: providedUserId 
+      userId: providedUserId,
+      templateId, // ✅ Template-aware: Support for Change Order and future templates
+      signatureRequirement // ✅ Template-driven signature requirements
     } = req.body;
 
     // Validate required fields

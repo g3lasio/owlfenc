@@ -3418,13 +3418,41 @@ export default function SimpleContractGenerator() {
   ]);
 
   // Simplified Signature Protocol Handler - Generate signature links for both parties
+  // ✅ TEMPLATE-AWARE: Works with Independent Contractor Agreement, Change Order, and future templates
   const handleStartSignatureProtocol = useCallback(async () => {
-    if (!selectedProject || !currentUser?.uid || !contractHTML) {
+    // Determine if this is a Change Order or similar dynamic template
+    const isChangeOrder = documentFlowType === 'change-order';
+    const templateId = isChangeOrder ? 'change-order' : 'independent-contractor';
+    
+    // Validate based on template type
+    if (isChangeOrder) {
+      // Change Order uses contractData from the original contract
+      if (!contractData || !currentUser?.uid || !contractHTML) {
+        toast({
+          title: "Error",
+          description: "Change Order must be generated before starting signature protocol",
+          variant: "destructive",
+        });
+        return;
+      }
+    } else {
+      // Independent Contractor uses selectedProject
+      if (!selectedProject || !currentUser?.uid || !contractHTML) {
+        toast({
+          title: "Error",
+          description: "Contract must be generated before starting signature protocol",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    // Check signature requirements from template registry
+    const signatureRequirement = templateConfigRegistry.getSignatureRequirement(templateId);
+    if (signatureRequirement === 'none') {
       toast({
-        title: "Error",
-        description:
-          "Contract must be generated before starting signature protocol",
-        variant: "destructive",
+        title: "Info",
+        description: "This document type does not require signatures",
       });
       return;
     }
@@ -3434,39 +3462,58 @@ export default function SimpleContractGenerator() {
     setDeliveryStatus("Generating signature links...");
 
     try {
-      // ✅ SIMPLIFIED AUTH: No need to get tokens manually!
-      // Session cookie handles authentication automatically
+      // ✅ TEMPLATE-AWARE: Build contract data based on document type
+      // For Change Orders, use data from the linked contract
+      const clientName = isChangeOrder 
+        ? (contractData?.client?.name || contractData?.clientName || "Client Name")
+        : (editableData.clientName || selectedProject?.clientName || "Client Name");
+      
+      const clientEmail = isChangeOrder
+        ? (contractData?.client?.email || contractData?.clientEmail || "")
+        : (editableData.clientEmail || selectedProject?.clientEmail || "");
+      
+      const clientPhone = isChangeOrder
+        ? (contractData?.client?.phone || contractData?.clientPhone || "")
+        : (editableData.clientPhone || selectedProject?.clientPhone || "");
+      
+      const clientAddress = isChangeOrder
+        ? (contractData?.client?.address || contractData?.clientAddress || "")
+        : (editableData.clientAddress || selectedProject?.clientAddress || "");
+      
+      const projectDescription = isChangeOrder
+        ? `Change Order - ${contractData?.project?.description || contractData?.projectDescription || "Scope Modification"}`
+        : (selectedProject?.projectDescription || selectedProject?.projectType || "Construction Project");
+      
+      const totalAmount = isChangeOrder
+        ? (contractData?.financials?.total || contractData?.totalAmount || 0)
+        : getCorrectProjectTotal(selectedProject!);
       
       // Prepare contract data for signature protocol
       const secureDeliveryPayload = {
         userId: currentUser.uid,
         contractHTML: contractHTML,
+        templateId, // ✅ Include templateId for backend awareness
+        signatureRequirement, // ✅ Include signature requirement
         deliveryMethods: { email: false, sms: false, whatsapp: false },
         contractData: {
-          contractorName:
-            profile?.company || profile?.ownerName || "Contractor Name",
+          contractorName: profile?.company || profile?.ownerName || "Contractor Name",
           contractorEmail: profile?.email || currentUser.email || "",
           contractorPhone: profile?.phone || profile?.mobilePhone || "",
           contractorCompany: profile?.company || "Company Name",
-          clientName: editableData.clientName || selectedProject.clientName,
-          clientEmail:
-            editableData.clientEmail || selectedProject.clientEmail || "",
-          clientPhone:
-            editableData.clientPhone || selectedProject.clientPhone || "",
-          clientAddress:
-            editableData.clientAddress || selectedProject.clientAddress || "",
-          projectDescription:
-            selectedProject.projectDescription ||
-            selectedProject.projectType ||
-            "Construction Project",
-          totalAmount: getCorrectProjectTotal(selectedProject),
-          startDate:
-            editableData.startDate || new Date().toISOString().split("T")[0],
-          completionDate:
-            editableData.completionDate ||
-            new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-              .toISOString()
-              .split("T")[0],
+          clientName,
+          clientEmail,
+          clientPhone,
+          clientAddress,
+          projectDescription,
+          totalAmount,
+          startDate: editableData.startDate || new Date().toISOString().split("T")[0],
+          completionDate: editableData.completionDate ||
+            new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+          // Change Order specific data
+          ...(isChangeOrder && contractData?.linkedContractId && {
+            linkedContractId: contractData.linkedContractId,
+            isChangeOrder: true,
+          }),
         },
         securityFeatures: {
           encryption: "256-bit SSL",
@@ -3549,6 +3596,8 @@ export default function SimpleContractGenerator() {
     editableData,
     getCorrectProjectTotal,
     toast,
+    documentFlowType, // ✅ Added for template-aware signature protocol
+    contractData, // ✅ Added for Change Order support
   ]);
 
   // Share functionality for signature links
