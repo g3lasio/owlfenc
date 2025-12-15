@@ -110,7 +110,7 @@ const COMPLETED_STATUSES = ['completed', 'both_signed'];
 // Template-aware helper: Check if contract is in "Progress" bucket
 function isInProgressBucket(contract: NormalizedContract): boolean {
   const status = contract.status;
-  const requiredSigners = contract.requiredSigners || inferRequiredSigners(contract.templateId);
+  const requiredSigners = getEffectiveRequiredSigners(contract);
   
   // If already completed by template-aware logic, not in progress
   if (isContractCompleted(contract)) {

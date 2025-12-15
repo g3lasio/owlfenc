@@ -40,7 +40,7 @@ function getSignerStatusInfo(contract: ContractHistoryEntry): {
   color: string;
   isComplete: boolean;
 } {
-  const requiredSigners = contract.requiredSigners || inferRequiredSigners(contract.templateId);
+  const requiredSigners = inferRequiredSigners(contract.templateId, contract.requiredSigners);
   const status = contract.status;
   
   if (requiredSigners === 'none') {
@@ -202,8 +202,7 @@ export function ContractHistoryPanel({ children, onEditContract }: ContractHisto
   // Get signer status indicators based on contract status and signature requirements
   const getSignerStatus = (contract: ContractHistoryEntry): { contractor: boolean; client: boolean; required: SignatureRequirement } => {
     const status = contract.status;
-    const templateId = (contract as any).templateId || 'independent-contractor';
-    const required = (contract as any).requiredSigners || inferRequiredSigners(templateId);
+    const required = inferRequiredSigners(contract.templateId, contract.requiredSigners);
     
     let contractor = false;
     let client = false;
