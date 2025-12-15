@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
-import { contractHistoryService, ContractHistoryEntry } from '@/services/contractHistoryService';
+import { contractHistoryService, ContractHistoryEntry, SignatureRequirement } from '@/services/contractHistoryService';
 import { auth } from '@/lib/firebase';
 import { useMemo } from 'react';
 
@@ -9,9 +9,85 @@ interface NormalizedContract extends ContractHistoryEntry {
   isArchived?: boolean;
   archivedAt?: Date;
   archivedReason?: string;
+  // Template-aware fields
+  templateId?: string;
+  requiredSigners?: SignatureRequirement;
   // Compatibility fields for legacy UI
   totalAmount?: number;
   completionDate?: Date | string | null;
+}
+
+// Template display names for UI chips
+const TEMPLATE_DISPLAY_NAMES: Record<string, string> = {
+  'independent-contractor': 'ICA',
+  'change-order': 'Change Order',
+  'contract-addendum': 'Addendum',
+  'work-order': 'Work Order',
+  'lien-waiver-partial': 'Partial Lien Waiver',
+  'lien-waiver-final': 'Final Lien Waiver',
+  'certificate-completion': 'Completion Cert',
+  'warranty-agreement': 'Warranty',
+};
+
+// Helper to get display name for template
+export function getTemplateDisplayName(templateId?: string): string {
+  if (!templateId) return 'ICA'; // Legacy fallback
+  return TEMPLATE_DISPLAY_NAMES[templateId] || templateId;
+}
+
+// Signature requirement mapping from templateId
+const TEMPLATE_SIGNATURE_MAP: Record<string, SignatureRequirement> = {
+  'independent-contractor': 'dual',
+  'change-order': 'dual',
+  'contract-addendum': 'dual',
+  'work-order': 'dual',
+  'lien-waiver-partial': 'single',
+  'lien-waiver-final': 'single',
+  'certificate-completion': 'single',
+  'warranty-agreement': 'dual',
+};
+
+// Helper to infer requiredSigners from templateId (for legacy documents)
+// ✅ FIX: Check explicit requiredSigners first, then templateId, then fallback
+export function inferRequiredSigners(templateId?: string, explicitRequiredSigners?: SignatureRequirement): SignatureRequirement {
+  // First priority: explicit requiredSigners field
+  if (explicitRequiredSigners && ['none', 'single', 'dual'].includes(explicitRequiredSigners)) {
+    return explicitRequiredSigners;
+  }
+  // Second priority: infer from templateId
+  if (templateId && TEMPLATE_SIGNATURE_MAP[templateId]) {
+    return TEMPLATE_SIGNATURE_MAP[templateId];
+  }
+  // Default fallback for legacy contracts (pre-multi-template era)
+  return 'dual';
+}
+
+// ✅ Helper to get effective required signers from a contract (handles all edge cases)
+function getEffectiveRequiredSigners(contract: NormalizedContract): SignatureRequirement {
+  return inferRequiredSigners(contract.templateId, contract.requiredSigners);
+}
+
+// Template-aware completion check
+export function isContractCompleted(contract: NormalizedContract): boolean {
+  const status = contract.status;
+  const requiredSigners = getEffectiveRequiredSigners(contract);
+  
+  // If status is explicitly 'completed' or 'both_signed', it's completed
+  if (status === 'completed' || status === 'both_signed') {
+    return true;
+  }
+  
+  // For single-signer templates, 'contractor_signed' or 'client_signed' means completed
+  if (requiredSigners === 'single') {
+    return status === 'contractor_signed' || status === 'client_signed';
+  }
+  
+  // For 'none' signature requirement, check if PDF/doc was generated (has pdfUrl or permanentUrl)
+  if (requiredSigners === 'none') {
+    return !!(contract.pdfUrl || contract.permanentUrl);
+  }
+  
+  return false;
 }
 
 interface ContractsStore {
@@ -27,8 +103,60 @@ interface ContractsStore {
 }
 
 const DRAFT_STATUSES = ['draft'];
+// Note: IN_PROGRESS_STATUSES is now template-aware - single-signer templates may complete earlier
 const IN_PROGRESS_STATUSES = ['in_progress', 'contractor_signed', 'client_signed', 'processing', 'error'];
 const COMPLETED_STATUSES = ['completed', 'both_signed'];
+
+// Template-aware helper: Check if contract is in "Progress" bucket
+function isInProgressBucket(contract: NormalizedContract): boolean {
+  const status = contract.status;
+  const requiredSigners = contract.requiredSigners || inferRequiredSigners(contract.templateId);
+  
+  // If already completed by template-aware logic, not in progress
+  if (isContractCompleted(contract)) {
+    return false;
+  }
+  
+  // Draft status is never in progress
+  if (DRAFT_STATUSES.includes(status)) {
+    return false;
+  }
+  
+  // Check if step 3 was reached (signature links/tokens created)
+  const hasSignatureLinks = !!(contract.contractorSignUrl || contract.clientSignUrl || contract.shareableLink);
+  
+  // If no signature links yet but not draft, still consider as progress (processing, error states)
+  if (['processing', 'error'].includes(status)) {
+    return true;
+  }
+  
+  // If it has signature-related status, it's in progress (unless completed above)
+  return IN_PROGRESS_STATUSES.includes(status) && hasSignatureLinks;
+}
+
+// Template-aware helper: Check if contract is in "Drafts" bucket  
+function isDraftBucket(contract: NormalizedContract): boolean {
+  const status = contract.status;
+  
+  // Explicit draft status
+  if (DRAFT_STATUSES.includes(status)) {
+    return true;
+  }
+  
+  // Stopped at step 2: has contract data but no PDF/doc generated yet
+  // This handles the case where template was selected but generation not completed
+  if (status === 'in_progress') {
+    const hasPdf = !!(contract.pdfUrl || contract.permanentUrl);
+    const hasSignatureLinks = !!(contract.contractorSignUrl || contract.clientSignUrl);
+    
+    // No PDF and no signature links = draft (stopped at step 2)
+    if (!hasPdf && !hasSignatureLinks) {
+      return true;
+    }
+  }
+  
+  return false;
+}
 
 export function useContractsStore(): ContractsStore {
   const { user } = useAuth();
@@ -171,19 +299,20 @@ export function useContractsStore(): ContractsStore {
   };
 
   // Memoized selectors for each tab
-  // ✅ CRITICAL FIX: For drafts, apply additional deduplication by composite key (clientName + projectType)
+  // ✅ TEMPLATE-AWARE: Drafts are contracts stopped at step 2 (no PDF/doc generated)
+  // ✅ CRITICAL FIX: Apply additional deduplication by composite key (clientName + projectType)
   // This handles legacy duplicates created by autosave race conditions
-  // ✅ NEW: Also exclude drafts that have a completed/in-progress version (same client + project)
+  // ✅ Also exclude drafts that have a completed/in-progress version (same client + project)
   const drafts = useMemo(() => {
-    const rawDrafts = contracts.filter(c => !c.isArchived && DRAFT_STATUSES.includes(c.status));
+    // ✅ Template-aware: Use isDraftBucket instead of simple status check
+    const rawDrafts = contracts.filter(c => !c.isArchived && isDraftBucket(c));
     
     // Build set of composite keys for VISIBLE completed and in-progress contracts
-    // ✅ FIX: Exclude archived contracts - a draft should remain visible if the only completed version is archived
-    // ✅ FIX: Only add keys when BOTH clientName and projectType are non-empty to avoid false positives
+    // ✅ Template-aware: Use isContractCompleted and isInProgressBucket
     const completedOrInProgressKeys = new Set<string>();
     contracts.forEach(c => {
-      // Must be non-archived and in completed/in-progress status
-      if (!c.isArchived && (COMPLETED_STATUSES.includes(c.status) || IN_PROGRESS_STATUSES.includes(c.status))) {
+      // Must be non-archived and in completed/in-progress bucket (template-aware)
+      if (!c.isArchived && (isContractCompleted(c) || isInProgressBucket(c))) {
         const normalizedClientName = (c.clientName || '').trim().toLowerCase();
         const normalizedProjectType = (c.projectType || '').trim().toLowerCase();
         
@@ -252,16 +381,21 @@ export function useContractsStore(): ContractsStore {
     return uniqueDrafts;
   }, [contracts]);
 
+  // ✅ Template-aware "In Progress" bucket
+  // Progress: step 3 reached + signature links/tokens created, but not yet completed per template requirements
   const inProgress = useMemo(
-    () => contracts.filter(c => !c.isArchived && IN_PROGRESS_STATUSES.includes(c.status)),
+    () => contracts.filter(c => !c.isArchived && isInProgressBucket(c)),
     [contracts]
   );
 
+  // ✅ Template-aware "Completed" bucket  
+  // Completed: all required signers completed based on template requirements (dual vs single)
   const completed = useMemo(
-    () => contracts.filter(c => !c.isArchived && COMPLETED_STATUSES.includes(c.status)),
+    () => contracts.filter(c => !c.isArchived && isContractCompleted(c)),
     [contracts]
   );
 
+  // Archived: soft-delete bucket (archivedAt), never removed
   const archived = useMemo(
     () => contracts.filter(c => c.isArchived === true),
     [contracts]

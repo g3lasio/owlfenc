@@ -6,8 +6,9 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useToast } from '@/hooks/use-toast';
-import { contractHistoryService, ContractHistoryEntry } from '@/services/contractHistoryService';
+import { contractHistoryService, ContractHistoryEntry, SignatureRequirement } from '@/services/contractHistoryService';
 import { auth } from '@/lib/firebase';
+import { getTemplateDisplayName, inferRequiredSigners } from '@/hooks/useContractsStore';
 import { User as FirebaseUser, onAuthStateChanged } from 'firebase/auth';
 import { 
   Server, 
@@ -30,6 +31,55 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { Users, User, FileCheck } from 'lucide-react';
+
+// Template-aware signer status helper
+function getSignerStatusInfo(contract: ContractHistoryEntry): { 
+  label: string; 
+  icon: React.ReactNode; 
+  color: string;
+  isComplete: boolean;
+} {
+  const requiredSigners = contract.requiredSigners || inferRequiredSigners(contract.templateId);
+  const status = contract.status;
+  
+  if (requiredSigners === 'none') {
+    const hasDoc = !!(contract.pdfUrl || contract.permanentUrl);
+    return {
+      label: hasDoc ? 'Generated' : 'Pending',
+      icon: <FileCheck className="h-3 w-3" />,
+      color: hasDoc ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-gray-500/10 text-gray-400 border-gray-500/20',
+      isComplete: hasDoc
+    };
+  }
+  
+  if (requiredSigners === 'single') {
+    const signed = status === 'contractor_signed' || status === 'client_signed' || status === 'completed' || status === 'both_signed';
+    return {
+      label: signed ? '1/1 Signed' : '0/1 Pending',
+      icon: <User className="h-3 w-3" />,
+      color: signed ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
+      isComplete: signed
+    };
+  }
+  
+  // Dual signature
+  const contractorSigned = status === 'contractor_signed' || status === 'both_signed' || status === 'completed';
+  const clientSigned = status === 'client_signed' || status === 'both_signed' || status === 'completed';
+  const count = (contractorSigned ? 1 : 0) + (clientSigned ? 1 : 0);
+  const isComplete = count === 2;
+  
+  return {
+    label: `${count}/2 Signed`,
+    icon: <Users className="h-3 w-3" />,
+    color: isComplete 
+      ? 'bg-green-500/10 text-green-400 border-green-500/20' 
+      : count > 0 
+        ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+        : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
+    isComplete
+  };
+}
 
 interface ContractHistoryPanelProps {
   children: React.ReactNode;
@@ -130,6 +180,44 @@ export function ContractHistoryPanel({ children, onEditContract }: ContractHisto
       default:
         return 'bg-gray-500/10 text-gray-400 border-gray-500/20';
     }
+  };
+
+  // Get template chip color based on template type
+  const getTemplateChipColor = (templateId?: string): string => {
+    if (!templateId || templateId === 'independent-contractor') {
+      return 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30';
+    }
+    const colorMap: Record<string, string> = {
+      'change-order': 'bg-orange-500/20 text-orange-400 border-orange-500/30',
+      'contract-addendum': 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+      'work-order': 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
+      'lien-waiver-partial': 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+      'lien-waiver-final': 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+      'certificate-completion': 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+      'warranty-agreement': 'bg-rose-500/20 text-rose-400 border-rose-500/30',
+    };
+    return colorMap[templateId] || 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+  };
+
+  // Get signer status indicators based on contract status and signature requirements
+  const getSignerStatus = (contract: ContractHistoryEntry): { contractor: boolean; client: boolean; required: SignatureRequirement } => {
+    const status = contract.status;
+    const templateId = (contract as any).templateId || 'independent-contractor';
+    const required = (contract as any).requiredSigners || inferRequiredSigners(templateId);
+    
+    let contractor = false;
+    let client = false;
+    
+    if (status === 'completed' || status === 'both_signed') {
+      contractor = true;
+      client = required === 'dual' ? true : false;
+    } else if (status === 'contractor_signed') {
+      contractor = true;
+    } else if (status === 'client_signed') {
+      client = true;
+    }
+    
+    return { contractor, client, required };
   };
 
   const downloadContract = async (contract: ContractHistoryEntry) => {
@@ -254,14 +342,45 @@ export function ContractHistoryPanel({ children, onEditContract }: ContractHisto
                   <div key={contract.id} className="bg-slate-800/50 border border-cyan-500/20 hover:border-cyan-400/40 rounded-lg p-2 transition-all duration-300">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
                           {getStatusIcon(contract.status)}
                           <span className="font-medium text-white text-sm truncate">
                             {contract.clientName}
                           </span>
+                          {/* Template Type Chip */}
+                          <Badge 
+                            variant="outline" 
+                            className={`text-[10px] ${getTemplateChipColor((contract as any).templateId)} px-1 py-0 h-4`}
+                            data-testid={`template-chip-${contract.id}`}
+                          >
+                            {getTemplateDisplayName((contract as any).templateId)}
+                          </Badge>
                           <Badge className={`text-xs ${getStatusColor(contract.status)} px-1.5 py-0.5`}>
                             {contract.status}
                           </Badge>
+                          {/* Signer Status Indicators */}
+                          {(() => {
+                            const signerStatus = getSignerStatus(contract);
+                            if (signerStatus.required === 'none') return null;
+                            return (
+                              <div className="flex items-center gap-0.5 text-[10px]" data-testid={`signer-status-${contract.id}`}>
+                                <span 
+                                  className={`px-1 rounded ${signerStatus.contractor ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-500'}`}
+                                  title={signerStatus.contractor ? 'Contractor signed' : 'Contractor pending'}
+                                >
+                                  C{signerStatus.contractor ? '✓' : '○'}
+                                </span>
+                                {signerStatus.required === 'dual' && (
+                                  <span 
+                                    className={`px-1 rounded ${signerStatus.client ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-500'}`}
+                                    title={signerStatus.client ? 'Client signed' : 'Client pending'}
+                                  >
+                                    Cl{signerStatus.client ? '✓' : '○'}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
                         
                         <div className="grid grid-cols-2 gap-1 text-xs text-gray-400">

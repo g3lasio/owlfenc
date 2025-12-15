@@ -1,6 +1,9 @@
 import { collection, addDoc, getDocs, query, where, orderBy, updateDoc, doc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
+// Template-aware signature requirements
+export type SignatureRequirement = 'none' | 'single' | 'dual';
+
 export interface ContractHistoryEntry {
   id?: string;
   userId: string;
@@ -10,6 +13,9 @@ export interface ContractHistoryEntry {
   status: 'draft' | 'in_progress' | 'completed' | 'processing' | 'error' | 'contractor_signed' | 'client_signed' | 'both_signed';
   createdAt: Date;
   updatedAt: Date;
+  // Template-aware fields (Phase: Multi-Template Support)
+  templateId?: string; // e.g., 'independent-contractor', 'change-order', 'lien-waiver-partial'
+  requiredSigners?: SignatureRequirement; // 'none' | 'single' | 'dual'
   // Links para firma dual
   contractorSignUrl?: string;
   clientSignUrl?: string;
@@ -159,6 +165,23 @@ class ContractHistoryService {
       return 0;
     };
 
+    // ✅ Template-aware: Infer requiredSigners from templateId or fallback to legacy dual signature
+    const inferRequiredSigners = (templateId?: string): SignatureRequirement => {
+      if (!templateId) return 'dual'; // Legacy contracts default to dual
+      // Map template IDs to their signature requirements
+      const signatureMap: Record<string, SignatureRequirement> = {
+        'independent-contractor': 'dual',
+        'change-order': 'dual',
+        'contract-addendum': 'dual',
+        'work-order': 'dual',
+        'lien-waiver-partial': 'single',
+        'lien-waiver-final': 'single',
+        'certificate-completion': 'single',
+        'warranty-agreement': 'dual',
+      };
+      return signatureMap[templateId] || 'dual';
+    };
+
     return {
       id,
       userId: data.userId,
@@ -168,6 +191,9 @@ class ContractHistoryService {
       status: data.status || 'draft',
       createdAt: data.createdAt?.toDate() || new Date(),
       updatedAt: data.updatedAt?.toDate() || new Date(),
+      // Template-aware fields with fallback to legacy defaults
+      templateId: data.templateId || 'independent-contractor',
+      requiredSigners: data.requiredSigners || inferRequiredSigners(data.templateId),
       contractorSignUrl: data.contractorSignUrl,
       clientSignUrl: data.clientSignUrl,
       shareableLink: data.shareableLink,

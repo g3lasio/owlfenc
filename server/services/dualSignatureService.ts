@@ -799,7 +799,7 @@ export class DualSignatureService {
           if (contract.templateId) {
             try {
               const { templateRegistry } = await import('../templates/registry');
-              const template = templateRegistry.getTemplate(contract.templateId);
+              const template = templateRegistry.get(contract.templateId);
               if (template) {
                 templateOptions = {
                   signatureType: template.signatureType,
@@ -1088,7 +1088,7 @@ export class DualSignatureService {
           console.log(`📋 [TEMPLATE-AWARE] Loading template metadata for: ${contract.templateId}`);
           try {
             const { templateRegistry } = await import('../templates/registry');
-            const template = templateRegistry.getTemplate(contract.templateId);
+            const template = templateRegistry.get(contract.templateId);
             if (template) {
               templateOptions = {
                 signatureType: template.signatureType,
@@ -1582,6 +1582,10 @@ export class DualSignatureService {
       }
 
       const contract = contractDoc.data();
+      if (!contract) {
+        console.error("❌ [DUAL-SIGNATURE] Contract data is undefined:", contractId);
+        return;
+      }
 
       // FIXED: Use correct data structure from database
       const contractData = contract.contractData as any;
@@ -1996,163 +2000,6 @@ export class DualSignatureService {
             </p>
           </div>
         </body>
-      </html>
-    `;
-  }
-
-  /**
-   * Generar email HTML para el contratista
-   */
-  private generateContractorEmailHTML(params: {
-    contractorName: string;
-    clientName: string;
-    projectDescription: string;
-    totalAmount: number;
-    signUrl: string;
-    contractId: string;
-  }): string {
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Contract Ready for Signature</title>
-      </head>
-      <body style="font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px; background-color: #f4f4f4;">
-        <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-
-          <!-- Header -->
-          <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #2563eb; margin-bottom: 10px;">🔒 Contract Ready for Signature</h1>
-            <p style="color: #64748b; font-size: 16px;">Your client's contract is ready for your review and signature</p>
-          </div>
-
-          <!-- Greeting -->
-          <div style="margin-bottom: 25px;">
-            <h2 style="color: #1e293b; margin-bottom: 15px;">Hello ${params.contractorName},</h2>
-            <p style="color: #475569; font-size: 16px;">
-              Your contract with <strong>${params.clientName}</strong> has been generated and is ready for your signature.
-            </p>
-          </div>
-
-          <!-- Project Details -->
-          <div style="background: #f8fafc; border-left: 4px solid #3b82f6; padding: 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
-            <h3 style="color: #1e293b; margin-top: 0; margin-bottom: 15px;">📋 Project Details</h3>
-            <ul style="list-style: none; padding: 0; margin: 0;">
-              <li style="margin-bottom: 8px;"><strong>Client:</strong> ${params.clientName}</li>
-              <li style="margin-bottom: 8px;"><strong>Project:</strong> ${params.projectDescription}</li>
-              <li style="margin-bottom: 8px;"><strong>Total Amount:</strong> $${params.totalAmount.toLocaleString()}</li>
-              <li style="margin-bottom: 8px;"><strong>Contract ID:</strong> ${params.contractId}</li>
-              <li style="margin-bottom: 8px;"><strong>Status:</strong> <span style="background: #fbbf24; color: #92400e; padding: 2px 8px; border-radius: 12px; font-size: 12px;">Awaiting Your Signature</span></li>
-            </ul>
-          </div>
-
-          <!-- Action Button -->
-          <div style="text-align: center; margin: 35px 0;">
-            <a href="${params.signUrl}" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; text-decoration: none; padding: 15px 35px; border-radius: 8px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);">
-              🖊️ Review & Sign Contract
-            </a>
-          </div>
-
-          <!-- Instructions -->
-          <div style="background: #ecfdf5; border: 1px solid #6ee7b7; padding: 20px; border-radius: 8px; margin: 25px 0;">
-            <h4 style="color: #065f46; margin-top: 0; margin-bottom: 10px;">📝 Next Steps:</h4>
-            <ol style="color: #047857; margin: 0; padding-left: 20px;">
-              <li style="margin-bottom: 5px;">Click the "Review & Sign Contract" button above</li>
-              <li style="margin-bottom: 5px;">Review the complete contract terms</li>
-              <li style="margin-bottom: 5px;">Sign digitally using your finger or mouse</li>
-              <li style="margin-bottom: 5px;">Your client will receive notification to sign as well</li>
-              <li>Once both parties sign, you'll both receive the completed contract</li>
-            </ol>
-          </div>
-
-          <!-- Footer -->
-          <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 14px;">
-            <p><strong>Powered by Owl Fenc Legal Defense System</strong></p>
-            <p>Secure • Fast • Legally Binding • Professional</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-  }
-
-  /**
-   * Generar email HTML para el cliente
-   */
-  private generateClientEmailHTML(params: {
-    clientName: string;
-    contractorName: string;
-    contractorCompany: string;
-    projectDescription: string;
-    totalAmount: number;
-    signUrl: string;
-    contractId: string;
-  }): string {
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Contract for Review and Signature</title>
-      </head>
-      <body style="font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px; background-color: #f4f4f4;">
-        <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-
-          <!-- Header -->
-          <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #059669; margin-bottom: 10px;">📋 Contract for Review and Signature</h1>
-            <p style="color: #64748b; font-size: 16px;">Your project contract from ${params.contractorCompany}</p>
-          </div>
-
-          <!-- Greeting -->
-          <div style="margin-bottom: 25px;">
-            <h2 style="color: #1e293b; margin-bottom: 15px;">Dear ${params.clientName},</h2>
-            <p style="color: #475569; font-size: 16px;">
-              <strong>${params.contractorCompany}</strong> has prepared your project contract and it's ready for your review and signature.
-            </p>
-          </div>
-
-          <!-- Project Details -->
-          <div style="background: #f0fdf4; border-left: 4px solid #10b981; padding: 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
-            <h3 style="color: #1e293b; margin-top: 0; margin-bottom: 15px;">🏗️ Your Project Details</h3>
-            <ul style="list-style: none; padding: 0; margin: 0;">
-              <li style="margin-bottom: 8px;"><strong>Contractor:</strong> ${params.contractorName} (${params.contractorCompany})</li>
-              <li style="margin-bottom: 8px;"><strong>Project:</strong> ${params.projectDescription}</li>
-              <li style="margin-bottom: 8px;"><strong>Total Investment:</strong> $${params.totalAmount.toLocaleString()}</li>
-              <li style="margin-bottom: 8px;"><strong>Contract ID:</strong> ${params.contractId}</li>
-              <li style="margin-bottom: 8px;"><strong>Status:</strong> <span style="background: #fcd34d; color: #92400e; padding: 2px 8px; border-radius: 12px; font-size: 12px;">Awaiting Your Signature</span></li>
-            </ul>
-          </div>
-
-          <!-- Action Button -->
-          <div style="text-align: center; margin: 35px 0;">
-            <a href="${params.signUrl}" style="background: linear-gradient(135deg, #10b981, #047857); color: white; text-decoration: none; padding: 15px 35px; border-radius: 8px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);">
-              📝 Review & Sign Contract
-            </a>
-          </div>
-
-          <!-- Legal Notice -->
-          <div style="background: #fef3c7; border: 1px solid #fbbf24; padding: 20px; border-radius: 8px; margin: 25px 0;">
-            <h4 style="color: #92400e; margin-top: 0; margin-bottom: 10px;">⚖️ Important Legal Information:</h4>
-            <ul style="color: #a16207; margin: 0; padding-left: 20px; font-size: 14px;">
-              <li style="margin-bottom: 5px;">This is a legally binding contract once signed by both parties</li>
-              <li style="margin-bottom: 5px;">Please read all terms carefully before signing</li>
-              <li style="margin-bottom: 5px;">Digital signatures are legally equivalent to handwritten signatures</li>
-              <li style="margin-bottom: 5px;">You'll receive a copy of the completed contract once both parties sign</li>
-              <li>Contact ${params.contractorName} if you have any questions about the terms</li>
-            </ul>
-          </div>
-
-          <!-- Footer -->
-          <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 14px;">
-            <p><strong>Secure Digital Contract System</strong></p>
-            <p>Protected • Encrypted • Legally Compliant</p>
-          </div>
-        </div>
-      </body>
       </html>
     `;
   }
