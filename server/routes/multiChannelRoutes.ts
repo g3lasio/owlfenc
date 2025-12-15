@@ -27,7 +27,8 @@ router.post('/initiate', requireAuth, async (req, res) => {
       contractHTML, 
       deliveryMethods, 
       contractData, 
-      securityFeatures 
+      securityFeatures,
+      templateId // ✅ Template-aware: Capture templateId for signature handling
     } = req.body;
 
     // ✅ SIMPLIFIED: User is already authenticated via session cookie
@@ -116,7 +117,8 @@ router.post('/initiate', requireAuth, async (req, res) => {
         verification: true,
         auditTrail: true,
         timeStamps: true
-      }
+      },
+      templateId, // ✅ Template-aware: Pass templateId for signature handling
     });
 
     console.log('✅ [MULTI-CHANNEL API] Delivery completed successfully');
@@ -281,7 +283,8 @@ router.post('/initiate-public', async (req, res) => {
         verification: true,
         auditTrail: true,
         timeStamps: true
-      }
+      },
+      templateId, // ✅ Template-aware: Pass templateId for signature handling
     });
 
     console.log('✅ [MULTI-CHANNEL PUBLIC] Links generated successfully');

@@ -45,6 +45,8 @@ interface SecureDeliveryPayload {
     auditTrail: boolean;
     timeStamps: boolean;
   };
+  /** Template ID for template-aware signature handling */
+  templateId?: string;
 }
 
 interface DeliveryResult {
@@ -268,7 +270,8 @@ class MultiChannelDeliveryService {
       const dualSignatureRequest = {
         userId: payload.userId,
         contractHTML: payload.contractHTML,
-        contractData: payload.contractData
+        contractData: payload.contractData,
+        templateId: payload.templateId, // ✅ Template-aware: Pass templateId for signature handling
       };
       
       console.log('💾 [MULTI-CHANNEL] Saving contract to database...');

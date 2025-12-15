@@ -231,6 +231,10 @@ class PremiumPdfService {
       issuer?: string;
     };
     contractId?: string;
+    templateOptions?: {
+      signatureType?: 'none' | 'single' | 'dual';
+      includesSignaturePlaceholders?: boolean;
+    };
   }): Promise<Buffer> {
     let browser;
     const executablePath =
@@ -256,11 +260,12 @@ class PremiumPdfService {
     try {
       const page = await browser.newPage();
 
-      // Create enhanced HTML with embedded signatures
+      // Create enhanced HTML with embedded signatures (template-aware)
       let enhancedHTML = this.embedSignaturesInHTML(
         data.contractHTML,
         data.contractorSignature,
         data.clientSignature,
+        data.templateOptions,
       );
       
       // Add digital verification seal if audit/certificate data is available
@@ -335,7 +340,21 @@ class PremiumPdfService {
   }
 
   /**
+   * Template-aware signature options for intelligent signature injection
+   */
+  public static TemplateSignatureOptions = {
+    signatureType: 'dual' as 'none' | 'single' | 'dual',
+    includesSignaturePlaceholders: false,
+  };
+
+  /**
    * Embed signatures directly into contract HTML
+   * 
+   * Template-aware behavior:
+   * - signatureType 'none': Returns HTML unchanged (no signatures needed)
+   * - signatureType 'single': Only injects contractor signature (e.g., Lien Waivers)
+   * - signatureType 'dual': Injects both contractor and client signatures (default)
+   * - includesSignaturePlaceholders: If true, only replaces placeholders, never adds fallback section
    */
   private embedSignaturesInHTML(
     contractHTML: string,
@@ -351,7 +370,22 @@ class PremiumPdfService {
       typedName?: string;
       signedAt: Date;
     },
+    templateOptions?: {
+      signatureType?: 'none' | 'single' | 'dual';
+      includesSignaturePlaceholders?: boolean;
+    },
   ): string {
+    // ✅ TEMPLATE-AWARE: Use metadata-first logic
+    const signatureType = templateOptions?.signatureType ?? 'dual';
+    const hasPlaceholders = templateOptions?.includesSignaturePlaceholders ?? false;
+
+    console.log(`📋 [SIGNATURE-TEMPLATE] Using template options: signatureType=${signatureType}, includesSignaturePlaceholders=${hasPlaceholders}`);
+
+    // If template requires no signatures, return HTML unchanged
+    if (signatureType === 'none') {
+      console.log('⏭️ [SIGNATURE-TEMPLATE] signatureType=none, skipping all signature injection');
+      return contractHTML;
+    }
     // Helper function to create signature image with enhanced base64 handling
     const createSignatureImage = (
       signatureData: string,
@@ -593,6 +627,12 @@ class PremiumPdfService {
     console.log(`  - Signature-line divs replaced: ${signatureLineCount}`);
     console.log(`  - Date-line spans replaced: ${dateLineCount}`);
 
+    // ✅ TEMPLATE-AWARE: If template declares it has placeholders, trust that and never add fallback
+    if (hasPlaceholders) {
+      console.log('✅ [SIGNATURE-TEMPLATE] Template has includesSignaturePlaceholders=true, skipping fallback injection');
+      return modifiedHTML;
+    }
+
     // Determine if signatures were successfully embedded via placeholder replacement
     // If ANY replacement strategy embedded at least 1 signature, the template had placeholders
     // and we should NOT add the fallback section (supports both single and dual signature templates)
@@ -616,15 +656,17 @@ class PremiumPdfService {
       return modifiedHTML;
     } else {
       // Fallback: add signature section at the end if EXECUTION section not found
-      console.log("⚠️ [SIGNATURE-DEBUG] Adding fallback signature section");
+      // ✅ TEMPLATE-AWARE: Respect signatureType when generating fallback
+      console.log(`⚠️ [SIGNATURE-DEBUG] Adding fallback signature section (signatureType=${signatureType})`);
       // ✅ FIXED: Use parseDateSafe for robust date handling
       const contractorDateObj = parseDateSafe(contractorSignature.signedAt, 'CONTRACTOR fallback');
-      const clientDateObj = parseDateSafe(clientSignature.signedAt, 'CLIENT fallback');
-      const signatureSection = `
-        <div style="margin-top: 40px; page-break-inside: avoid; border-top: 2px solid #000; padding-top: 20px;">
-          <h3 style="text-align: center; margin-bottom: 30px;">DIGITAL SIGNATURES</h3>
-          <div style="display: flex; justify-content: space-between; gap: 40px;">
-            <div style="flex: 1; text-align: center; border: 2px solid #000; padding: 20px;">
+      
+      if (signatureType === 'single') {
+        // Single signature: Contractor only (e.g., Lien Waivers)
+        const signatureSection = `
+          <div style="margin-top: 40px; page-break-inside: avoid; border-top: 2px solid #000; padding-top: 20px;">
+            <h3 style="text-align: center; margin-bottom: 30px;">DIGITAL SIGNATURE</h3>
+            <div style="max-width: 400px; margin: 0 auto; text-align: center; border: 2px solid #000; padding: 20px;">
               <h4>CONTRACTOR</h4>
               <div style="margin: 20px 0; min-height: 60px; border-bottom: 2px solid #000; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 10px;">
                 ${contractorSigImage}
@@ -632,18 +674,37 @@ class PremiumPdfService {
               <p><strong>${contractorSignature.name}</strong></p>
               <p>Date: ${contractorDateObj.toLocaleDateString()}</p>
             </div>
-            <div style="flex: 1; text-align: center; border: 2px solid #000; padding: 20px;">
-              <h4>CLIENT</h4>
-              <div style="margin: 20px 0; min-height: 60px; border-bottom: 2px solid #000; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 10px;">
-                ${clientSigImage}
+          </div>
+        `;
+        return modifiedHTML + signatureSection;
+      } else {
+        // Dual signature: Contractor + Client (default)
+        const clientDateObj = parseDateSafe(clientSignature.signedAt, 'CLIENT fallback');
+        const signatureSection = `
+          <div style="margin-top: 40px; page-break-inside: avoid; border-top: 2px solid #000; padding-top: 20px;">
+            <h3 style="text-align: center; margin-bottom: 30px;">DIGITAL SIGNATURES</h3>
+            <div style="display: flex; justify-content: space-between; gap: 40px;">
+              <div style="flex: 1; text-align: center; border: 2px solid #000; padding: 20px;">
+                <h4>CONTRACTOR</h4>
+                <div style="margin: 20px 0; min-height: 60px; border-bottom: 2px solid #000; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 10px;">
+                  ${contractorSigImage}
+                </div>
+                <p><strong>${contractorSignature.name}</strong></p>
+                <p>Date: ${contractorDateObj.toLocaleDateString()}</p>
               </div>
-              <p><strong>${clientSignature.name}</strong></p>
-              <p>Date: ${clientDateObj.toLocaleDateString()}</p>
+              <div style="flex: 1; text-align: center; border: 2px solid #000; padding: 20px;">
+                <h4>CLIENT</h4>
+                <div style="margin: 20px 0; min-height: 60px; border-bottom: 2px solid #000; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 10px;">
+                  ${clientSigImage}
+                </div>
+                <p><strong>${clientSignature.name}</strong></p>
+                <p>Date: ${clientDateObj.toLocaleDateString()}</p>
+              </div>
             </div>
           </div>
-        </div>
-      `;
-      return modifiedHTML + signatureSection;
+        `;
+        return modifiedHTML + signatureSection;
+      }
     }
   }
 
@@ -861,12 +922,16 @@ class PremiumPdfService {
   }
 
   /**
-   * Integrar firmas en el HTML del contrato
+   * Integrar firmas en el HTML del contrato (template-aware)
    */
   private integrateSignatures(
     contractHTML: string,
     contractorSignature: any,
     clientSignature: any,
+    templateOptions?: {
+      signatureType?: 'none' | 'single' | 'dual';
+      includesSignaturePlaceholders?: boolean;
+    },
   ): string {
     try {
       console.log(
@@ -879,6 +944,7 @@ class PremiumPdfService {
         contractHTML,
         contractorSignature,
         clientSignature,
+        templateOptions,
       );
     } catch (error: any) {
       console.error("❌ [PDF-SIGNATURES] Error integrating signatures:", error);

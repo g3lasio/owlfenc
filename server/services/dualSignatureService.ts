@@ -39,6 +39,8 @@ export interface InitiateDualSignatureRequest {
     startDate?: string;
     completionDate?: string;
   };
+  /** Template ID for template-aware signature handling (e.g., 'change-order', 'lien-waiver-partial') */
+  templateId?: string;
 }
 
 export interface SignatureSubmission {
@@ -171,7 +173,10 @@ export class DualSignatureService {
         signedPdfPath: null,
         emailSent: false,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
+        
+        // ✅ Template-aware: Store templateId for signature handling during completion
+        templateId: request.templateId || null,
       };
 
       await firebaseDb
@@ -734,6 +739,7 @@ export class DualSignatureService {
       if (contract.contractHtml && contract.contractorSigned && contract.clientSigned) {
         try {
           console.log("🔄 [DUAL-SIGNATURE] Regenerating SIGNED PDF with signatures (fallback 3)...");
+          console.log(`📋 [TEMPLATE-DEBUG] Contract templateId from Firebase: ${contract.templateId || 'NOT SET'}`);
           const PremiumPdfService = (await import("./premiumPdfService")).default;
           const pdfService = new PremiumPdfService();
           
@@ -747,6 +753,29 @@ export class DualSignatureService {
             if (typeof ts === 'string') return new Date(ts);
             return new Date();
           };
+          
+          // ✅ TEMPLATE-AWARE: Load template metadata for regeneration
+          // NOTE: contract.templateId comes from Firebase document (stored during initiation)
+          let templateOptions: {
+            signatureType?: 'none' | 'single' | 'dual';
+            includesSignaturePlaceholders?: boolean;
+          } | undefined;
+          
+          if (contract.templateId) {
+            try {
+              const { templateRegistry } = await import('../templates/registry');
+              const template = templateRegistry.getTemplate(contract.templateId);
+              if (template) {
+                templateOptions = {
+                  signatureType: template.signatureType,
+                  includesSignaturePlaceholders: template.includesSignaturePlaceholders ?? false,
+                };
+                console.log(`📋 [TEMPLATE-AWARE] Regenerating with template metadata: ${contract.templateId}`);
+              }
+            } catch (templateError: any) {
+              console.warn(`⚠️ [TEMPLATE-AWARE] Failed to load template for regeneration: ${templateError.message}`);
+            }
+          }
           
           // Generate PDF with signatures integrated (same as completeContract)
           const pdfBuffer = await pdfService.generateContractWithSignatures({
@@ -768,6 +797,7 @@ export class DualSignatureService {
             contractorCertificate: contract.contractorCertificate,
             clientCertificate: contract.clientCertificate,
             contractId: contractId,
+            templateOptions, // ✅ TEMPLATE-AWARE: Pass template metadata
           });
           
           console.log("✅ [DUAL-SIGNATURE] SIGNED PDF regenerated successfully with signatures");
@@ -1010,6 +1040,33 @@ export class DualSignatureService {
         console.log('✅ [DATE-DEBUG] Converted contractor signedAt:', contractorSignedDate.toISOString());
         console.log('✅ [DATE-DEBUG] Converted client signedAt:', clientSignedDate.toISOString());
 
+        // ✅ TEMPLATE-AWARE: Load template metadata for intelligent signature handling
+        let templateOptions: {
+          signatureType?: 'none' | 'single' | 'dual';
+          includesSignaturePlaceholders?: boolean;
+        } | undefined;
+        
+        if (contract.templateId) {
+          console.log(`📋 [TEMPLATE-AWARE] Loading template metadata for: ${contract.templateId}`);
+          try {
+            const { templateRegistry } = await import('../templates/registry');
+            const template = templateRegistry.getTemplate(contract.templateId);
+            if (template) {
+              templateOptions = {
+                signatureType: template.signatureType,
+                includesSignaturePlaceholders: template.includesSignaturePlaceholders ?? false,
+              };
+              console.log(`✅ [TEMPLATE-AWARE] Template metadata loaded: signatureType=${templateOptions.signatureType}, hasPlaceholders=${templateOptions.includesSignaturePlaceholders}`);
+            } else {
+              console.log(`⚠️ [TEMPLATE-AWARE] Template not found in registry: ${contract.templateId}, using default dual signature`);
+            }
+          } catch (templateError: any) {
+            console.warn(`⚠️ [TEMPLATE-AWARE] Failed to load template metadata: ${templateError.message}, using default dual signature`);
+          }
+        } else {
+          console.log('📋 [TEMPLATE-AWARE] No templateId stored, using default dual signature behavior');
+        }
+
         // Generate PDF with signatures integrated and digital verification seal
         pdfBuffer = await pdfService.generateContractWithSignatures({
           contractHTML: contract.contractHtml || "",
@@ -1036,6 +1093,7 @@ export class DualSignatureService {
           contractorCertificate: contract.contractorCertificate,
           clientCertificate: contract.clientCertificate,
           contractId: contractId,
+          templateOptions, // ✅ TEMPLATE-AWARE: Pass template metadata for intelligent signature injection
         });
 
         console.log("✅ [DUAL-SIGNATURE] PDF generated successfully");
