@@ -12,8 +12,7 @@ export interface FeatureFlags {
   changeOrderTemplate: boolean;
   contractAddendumTemplate: boolean;
   workOrderTemplate: boolean;
-  lienWaiverPartialTemplate: boolean;
-  lienWaiverFinalTemplate: boolean;
+  lienWaiverTemplate: boolean;
   certificateCompletionTemplate: boolean;
   warrantyAgreementTemplate: boolean;
 }
@@ -25,8 +24,7 @@ const defaultFlags: FeatureFlags = {
   changeOrderTemplate: true,
   contractAddendumTemplate: true,
   workOrderTemplate: true,
-  lienWaiverPartialTemplate: true,
-  lienWaiverFinalTemplate: true,
+  lienWaiverTemplate: true,
   certificateCompletionTemplate: true,
   warrantyAgreementTemplate: true,
 };
@@ -46,8 +44,7 @@ class FeatureFlagService {
       changeOrderTemplate: this.parseEnvFlag('FF_CHANGE_ORDER_TEMPLATE', defaultFlags.changeOrderTemplate),
       contractAddendumTemplate: this.parseEnvFlag('FF_CONTRACT_ADDENDUM_TEMPLATE', defaultFlags.contractAddendumTemplate),
       workOrderTemplate: this.parseEnvFlag('FF_WORK_ORDER_TEMPLATE', defaultFlags.workOrderTemplate),
-      lienWaiverPartialTemplate: this.parseEnvFlag('FF_LIEN_WAIVER_PARTIAL_TEMPLATE', defaultFlags.lienWaiverPartialTemplate),
-      lienWaiverFinalTemplate: this.parseEnvFlag('FF_LIEN_WAIVER_FINAL_TEMPLATE', defaultFlags.lienWaiverFinalTemplate),
+      lienWaiverTemplate: this.parseEnvFlag('FF_LIEN_WAIVER_TEMPLATE', defaultFlags.lienWaiverTemplate),
       certificateCompletionTemplate: this.parseEnvFlag('FF_CERTIFICATE_COMPLETION_TEMPLATE', defaultFlags.certificateCompletionTemplate),
       warrantyAgreementTemplate: this.parseEnvFlag('FF_WARRANTY_AGREEMENT_TEMPLATE', defaultFlags.warrantyAgreementTemplate),
     };
@@ -79,8 +76,7 @@ class FeatureFlagService {
       'change-order': 'changeOrderTemplate',
       'contract-addendum': 'contractAddendumTemplate',
       'work-order': 'workOrderTemplate',
-      'lien-waiver-partial': 'lienWaiverPartialTemplate',
-      'lien-waiver-final': 'lienWaiverFinalTemplate',
+      'lien-waiver': 'lienWaiverTemplate',
       'certificate-completion': 'certificateCompletionTemplate',
       'warranty-agreement': 'warrantyAgreementTemplate',
     };

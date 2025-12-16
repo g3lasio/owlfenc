@@ -68,11 +68,12 @@ export interface TemplateData {
     deliverables: string[];
   };
   lienWaiver?: {
+    waiverType: 'partial' | 'final';
     paymentAmount: number;
     paymentDate: string;
     paymentPeriod?: string;
-    throughDate: string;
-    isFinal: boolean;
+    throughDate?: string;
+    isFinal?: boolean;
     remainingBalance?: number;
     paymentMethod?: 'check' | 'ach' | 'wire' | 'other';
     paymentReference?: string;

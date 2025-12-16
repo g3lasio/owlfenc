@@ -1,30 +1,38 @@
 /**
- * Partial Lien Waiver Template - Premium Legal Edition
- * Version 2.1 - Jurisdiction-Aware
+ * Unified Lien Waiver Template - Premium Legal Edition
+ * Version 3.0 - Unified Partial/Final with Jurisdiction-Awareness
  * 
- * Generic Partial Lien Waiver with strong, lender-friendly language.
- * Automatically adapts legal language based on project jurisdiction.
- * Designed to pass lender review without hesitation.
+ * Single template handling both Partial (Progress) and Final lien waivers.
+ * Automatically adapts legal language based on:
+ * - Waiver Type: partial (conditional) vs final (unconditional)
+ * - Jurisdiction: State-specific statutory forms where required
  * 
  * Single signature: Contractor/Claimant only
+ * 
+ * Waiver Types:
+ * - PARTIAL: Conditional release for progress payments, requires throughDate
+ * - FINAL: Unconditional full release upon final payment
  * 
  * State Support:
  * - GENERIC: Default for most states (strong, lender-friendly)
  * - STATUTORY: CA, TX, AZ, NV (state-mandated language)
- * - SEMI-STRUCTURED: FL, GA, NC, SC, TN (generic + state notice)
+ * - SEMI_STRUCTURED: FL, GA, NC, SC, TN (generic + state notice)
  */
 
 import { templateRegistry, TemplateData, ContractorBranding } from '../registry';
 import { formatDate, formatCurrency } from '../shared/baseLayout';
 import { 
   detectJurisdictionForLienWaiver, 
-  getLienWaiverOverlay, 
+  getLienWaiverOverlay,
+  getFinalLienWaiverOverlay,
   validateStatutoryRequirements,
   type LienWaiverOverlayData,
   type OverlayType
 } from '../overlays/lienWaiverOverlays';
 
-function generatePartialLienWaiverHTML(data: TemplateData, branding: ContractorBranding): string {
+type WaiverType = 'partial' | 'final';
+
+function generateUnifiedLienWaiverHTML(data: TemplateData, branding: ContractorBranding): string {
   const contractorName = branding.companyName || data.contractor.name || 'Contractor';
   const contractorAddress = branding.address || data.contractor.address || '';
   const contractorLicense = branding.licenseNumber || data.contractor.license || '';
@@ -34,14 +42,18 @@ function generatePartialLienWaiverHTML(data: TemplateData, branding: ContractorB
   const currentDate = formatDate();
   
   const lienWaiver = data.lienWaiver || {
-    paymentAmount: data.financials.total * 0.3,
+    paymentAmount: data.financials.total,
     paymentDate: currentDate,
-    paymentPeriod: 'Progress Payment',
+    paymentPeriod: 'Payment',
     throughDate: currentDate,
+    waiverType: 'partial' as WaiverType,
     isFinal: false,
-    remainingBalance: data.financials.total * 0.7,
+    remainingBalance: 0,
   };
 
+  const waiverType: WaiverType = lienWaiver.waiverType || (lienWaiver.isFinal ? 'final' : 'partial');
+  const isFinalWaiver = waiverType === 'final';
+  
   const throughDate = lienWaiver.throughDate || currentDate;
   const ownerName = lienWaiver.ownerName || data.client.name;
   const payingParty = lienWaiver.payingParty || data.client.name;
@@ -51,7 +63,6 @@ function generatePartialLienWaiverHTML(data: TemplateData, branding: ContractorB
   const paymentRefText = lienWaiver.paymentReference ? ` (Ref: ${lienWaiver.paymentReference})` : '';
 
   // Jurisdiction Detection - Automatic, no user input required
-  // Extracts state from addresses for fallback chain: project → contract → company → GENERIC
   const STATE_NAME_MAP: Record<string, string> = {
     'california': 'CA', 'texas': 'TX', 'arizona': 'AZ', 'nevada': 'NV',
     'florida': 'FL', 'georgia': 'GA', 'north carolina': 'NC', 'south carolina': 'SC',
@@ -72,14 +83,12 @@ function generatePartialLienWaiverHTML(data: TemplateData, branding: ContractorB
     if (!address) return undefined;
     const normalizedAddress = address.toLowerCase();
     
-    // Check full state names first
     for (const [stateName, stateCode] of Object.entries(STATE_NAME_MAP)) {
       if (normalizedAddress.includes(stateName)) {
         return stateCode;
       }
     }
     
-    // Common patterns: "City, ST 12345" or "City, State" or just "CA"
     const stateMatch = address.match(/,\s*([A-Z]{2})\s*\d{5}/i) || 
                       address.match(/,\s*([A-Z]{2})$/i) ||
                       address.match(/\b([A-Z]{2})\b/);
@@ -88,11 +97,15 @@ function generatePartialLienWaiverHTML(data: TemplateData, branding: ContractorB
 
   const jurisdiction = detectJurisdictionForLienWaiver({
     projectLocation: data.project.location,
-    contractLocation: data.client.address || undefined, // Contract/client location as second priority
+    contractLocation: data.client.address || undefined,
     companyState: branding.address ? extractStateFromBrandingAddress(branding.address) : undefined
   });
   
-  const overlay = getLienWaiverOverlay(jurisdiction.stateCode);
+  // Get appropriate overlay based on waiver type
+  const overlay = isFinalWaiver 
+    ? getFinalLienWaiverOverlay(jurisdiction.stateCode)
+    : getLienWaiverOverlay(jurisdiction.stateCode);
+    
   const isStatutory = overlay.overlayType === 'STATUTORY';
   const isSemiStructured = overlay.overlayType === 'SEMI_STRUCTURED';
   
@@ -102,7 +115,7 @@ function generatePartialLienWaiverHTML(data: TemplateData, branding: ContractorB
       claimantName: contractorName,
       ownerName: ownerName,
       projectLocation: data.project.location,
-      throughDate: formatDate(throughDate),
+      throughDate: isFinalWaiver ? 'N/A - Final Payment' : formatDate(throughDate),
       paymentAmount: formatCurrency(lienWaiver.paymentAmount)
     });
     
@@ -119,30 +132,50 @@ function generatePartialLienWaiverHTML(data: TemplateData, branding: ContractorB
     ownerName: ownerName,
     customerName: payingParty,
     projectLocation: data.project.location,
-    throughDate: formatDate(throughDate),
+    throughDate: isFinalWaiver ? 'Final Payment - All Work' : formatDate(throughDate),
     paymentAmount: formatCurrency(lienWaiver.paymentAmount),
     paymentReference: lienWaiver.paymentReference,
     paymentMethod: paymentMethodText,
-    exceptions: lienWaiver.exceptions,
-    documentDate: currentDate
+    exceptions: isFinalWaiver ? undefined : lienWaiver.exceptions,
+    documentDate: currentDate,
+    isFinal: isFinalWaiver
   };
 
-  // Generate jurisdiction-specific legal body - ALL overlays now use the overlay's waiverBodyHTML
-  // STATUTORY: Full state-specific language
-  // SEMI_STRUCTURED: Generic + state compliance notice
-  // GENERIC: Base lender-friendly language
   const overlayLegalBody = overlay.waiverBodyHTML(overlayData);
   
-  // Jurisdiction badge for document header
+  // Document titles and badges based on waiver type
+  const documentTitle = isFinalWaiver 
+    ? 'Unconditional Waiver and Release'
+    : 'Conditional Waiver and Release';
+  const documentSubtitle = isFinalWaiver 
+    ? 'Upon Final Payment'
+    : 'Upon Progress Payment';
+  const typeBadgeText = isFinalWaiver ? 'Final Lien Waiver' : 'Partial Lien Waiver';
+  const typeBadgeColor = isFinalWaiver ? '#059669' : '#3b82f6';
+  
+  // Jurisdiction badge
   const jurisdictionBadge = jurisdiction.stateCode !== 'GENERIC' 
     ? `<div class="jurisdiction-badge" style="display: inline-block; margin-left: 12px; padding: 3px 10px; background: ${isStatutory ? '#fef3c7' : '#dbeafe'}; border: 1px solid ${isStatutory ? '#f59e0b' : '#3b82f6'}; font-size: 8pt; text-transform: uppercase; letter-spacing: 0.5px; color: ${isStatutory ? '#92400e' : '#1e40af'}; border-radius: 3px;">${jurisdiction.stateName}${isStatutory ? ' Statutory Form' : ''}</div>`
     : '';
+
+  // Payment box header text
+  const paymentBoxHeader = isFinalWaiver ? 'Final Payment Amount' : 'Progress Payment Amount';
+  
+  // Legal notice text based on waiver type
+  const legalNoticeText = isFinalWaiver
+    ? `This document waives and releases ALL lien, stop payment notice, and payment bond rights 
+       for all labor, services, equipment, and materials furnished to this project. This is a 
+       complete and final release effective upon receipt of the stated payment.`
+    : `This document waives the claimant's lien, stop payment notice, and payment bond rights 
+       through the date specified below, effective only upon actual receipt and clearance of the 
+       stated payment. Rights for work or materials furnished after the through date are expressly 
+       reserved. Before any recipient relies on this document, verification of payment is recommended.`;
 
   return `<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Conditional Waiver and Release Upon Progress Payment</title>
+    <title>${documentTitle} ${documentSubtitle}</title>
     <style>
         @page {
             size: 8.5in 11in;
@@ -166,7 +199,7 @@ function generatePartialLienWaiverHTML(data: TemplateData, branding: ContractorB
             text-align: center;
             padding-bottom: 20px;
             margin-bottom: 20px;
-            border-bottom: 3px double #2c3e50;
+            border-bottom: 3px double ${isFinalWaiver ? '#059669' : '#2c3e50'};
         }
         .document-title {
             font-size: 16pt;
@@ -179,7 +212,7 @@ function generatePartialLienWaiverHTML(data: TemplateData, branding: ContractorB
         .document-subtitle {
             font-size: 12pt;
             font-weight: bold;
-            color: #34495e;
+            color: ${isFinalWaiver ? '#059669' : '#34495e'};
             text-transform: uppercase;
             letter-spacing: 1px;
         }
@@ -187,18 +220,32 @@ function generatePartialLienWaiverHTML(data: TemplateData, branding: ContractorB
             display: inline-block;
             margin-top: 10px;
             padding: 4px 16px;
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
+            background: ${isFinalWaiver ? '#ecfdf5' : '#f8f9fa'};
+            border: 1px solid ${isFinalWaiver ? '#059669' : '#dee2e6'};
             font-size: 9pt;
             text-transform: uppercase;
             letter-spacing: 1px;
-            color: #6c757d;
+            color: ${isFinalWaiver ? '#059669' : '#6c757d'};
         }
+        ${isFinalWaiver ? `
+        .final-release-badge {
+            display: inline-block;
+            margin-left: 8px;
+            padding: 4px 12px;
+            background: #059669;
+            color: white;
+            font-size: 8pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-radius: 3px;
+        }
+        ` : ''}
         
         /* Legal Notice Box */
         .legal-notice {
-            border: 2px solid #c0392b;
-            background: linear-gradient(to bottom, #fdf2f2, #fff);
+            border: 2px solid ${isFinalWaiver ? '#059669' : '#c0392b'};
+            background: linear-gradient(to bottom, ${isFinalWaiver ? '#ecfdf5' : '#fdf2f2'}, #fff);
             padding: 12px 16px;
             margin: 18px 0;
         }
@@ -206,7 +253,7 @@ function generatePartialLienWaiverHTML(data: TemplateData, branding: ContractorB
             font-size: 10pt;
             font-weight: bold;
             text-transform: uppercase;
-            color: #c0392b;
+            color: ${isFinalWaiver ? '#059669' : '#c0392b'};
             letter-spacing: 1px;
             margin-bottom: 6px;
         }
@@ -251,11 +298,11 @@ function generatePartialLienWaiverHTML(data: TemplateData, branding: ContractorB
         /* Payment Amount Box */
         .payment-box {
             margin: 24px 0;
-            border: 2px solid #2c3e50;
-            background: #f8f9fa;
+            border: 2px solid ${isFinalWaiver ? '#059669' : '#2c3e50'};
+            background: ${isFinalWaiver ? '#f0fdf4' : '#f8f9fa'};
         }
         .payment-box-header {
-            background: #2c3e50;
+            background: ${isFinalWaiver ? '#059669' : '#2c3e50'};
             color: white;
             padding: 10px 16px;
             font-size: 10pt;
@@ -271,7 +318,7 @@ function generatePartialLienWaiverHTML(data: TemplateData, branding: ContractorB
         .payment-amount {
             font-size: 22pt;
             font-weight: bold;
-            color: #2c3e50;
+            color: ${isFinalWaiver ? '#059669' : '#2c3e50'};
             margin: 8px 0;
         }
         .payment-through-date {
@@ -280,8 +327,9 @@ function generatePartialLienWaiverHTML(data: TemplateData, branding: ContractorB
             margin-top: 8px;
         }
         .payment-through-date strong {
-            color: #2c3e50;
+            color: ${isFinalWaiver ? '#059669' : '#2c3e50'};
         }
+        ${!isFinalWaiver ? `
         .remaining-balance {
             margin-top: 12px;
             padding-top: 12px;
@@ -289,6 +337,16 @@ function generatePartialLienWaiverHTML(data: TemplateData, branding: ContractorB
             font-size: 10pt;
             color: #666;
         }
+        ` : `
+        .final-payment-note {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #059669;
+            font-size: 11pt;
+            font-weight: bold;
+            color: #059669;
+        }
+        `}
         
         /* Legal Body */
         .legal-body {
@@ -309,14 +367,14 @@ function generatePartialLienWaiverHTML(data: TemplateData, branding: ContractorB
             margin: 24px 0;
             padding: 16px;
             background: #f8f9fa;
-            border-left: 4px solid #2c3e50;
+            border-left: 4px solid ${isFinalWaiver ? '#059669' : '#2c3e50'};
         }
         .conditional-header {
             font-size: 11pt;
             font-weight: bold;
             text-transform: uppercase;
             letter-spacing: 1px;
-            color: #2c3e50;
+            color: ${isFinalWaiver ? '#059669' : '#2c3e50'};
             margin-bottom: 12px;
         }
         .conditional-item {
@@ -330,18 +388,18 @@ function generatePartialLienWaiverHTML(data: TemplateData, branding: ContractorB
             width: 18px;
             height: 18px;
             min-width: 18px;
-            border: 1.5px solid #2c3e50;
+            border: 1.5px solid ${isFinalWaiver ? '#059669' : '#2c3e50'};
             background: #fff;
             margin-right: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 11pt;
-            color: #2c3e50;
+            color: ${isFinalWaiver ? '#059669' : '#2c3e50'};
             font-weight: bold;
         }
         
-        /* Exceptions Section */
+        /* Exceptions Section (Partial only) */
         .exceptions-section {
             margin: 20px 0;
             padding: 14px;
@@ -365,6 +423,34 @@ function generatePartialLienWaiverHTML(data: TemplateData, branding: ContractorB
             font-style: italic;
         }
         
+        /* Final Waiver Declarations */
+        .declarations-section {
+            margin: 24px 0;
+            padding: 16px;
+            background: #f0fdf4;
+            border: 1px solid #059669;
+            border-radius: 4px;
+        }
+        .declarations-header {
+            font-size: 11pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #059669;
+            margin-bottom: 12px;
+        }
+        .declaration-item {
+            display: flex;
+            align-items: flex-start;
+            margin: 8px 0;
+            font-size: 10pt;
+            line-height: 1.5;
+        }
+        .declaration-check {
+            color: #059669;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
         /* Signature Section */
         .signature-section {
             margin-top: 36px;
@@ -375,9 +461,9 @@ function generatePartialLienWaiverHTML(data: TemplateData, branding: ContractorB
             font-weight: bold;
             text-transform: uppercase;
             letter-spacing: 1px;
-            color: #2c3e50;
+            color: ${isFinalWaiver ? '#059669' : '#2c3e50'};
             padding-bottom: 8px;
-            border-bottom: 2px solid #2c3e50;
+            border-bottom: 2px solid ${isFinalWaiver ? '#059669' : '#2c3e50'};
             margin-bottom: 20px;
         }
         .signature-block {
@@ -444,21 +530,19 @@ function generatePartialLienWaiverHTML(data: TemplateData, branding: ContractorB
 <body>
 
 <div class="document-header">
-    <div class="document-title">Conditional Waiver and Release</div>
-    <div class="document-subtitle">Upon Progress Payment</div>
+    <div class="document-title">${documentTitle}</div>
+    <div class="document-subtitle">${documentSubtitle}</div>
     <div style="display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px;">
-        <div class="document-type-badge">Partial Lien Waiver</div>
+        <div class="document-type-badge">${typeBadgeText}</div>
+        ${isFinalWaiver ? '<span class="final-release-badge">✓ Full Release</span>' : ''}
         ${jurisdictionBadge}
     </div>
 </div>
 
 <div class="legal-notice">
-    <div class="legal-notice-header">Notice to Property Owner and Paying Party</div>
+    <div class="legal-notice-header">${isFinalWaiver ? 'Final Release Notice' : 'Notice to Property Owner and Paying Party'}</div>
     <div class="legal-notice-text">
-        This document waives the claimant's lien, stop payment notice, and payment bond rights 
-        through the date specified below, effective only upon actual receipt and clearance of the 
-        stated payment. Rights for work or materials furnished after the through date are expressly 
-        reserved. Before any recipient relies on this document, verification of payment is recommended.
+        ${legalNoticeText}
     </div>
 </div>
 
@@ -490,18 +574,24 @@ function generatePartialLienWaiverHTML(data: TemplateData, branding: ContractorB
 </div>
 
 <div class="payment-box">
-    <div class="payment-box-header">Progress Payment Amount</div>
+    <div class="payment-box-header">${paymentBoxHeader}</div>
     <div class="payment-box-content">
         <div class="payment-amount">${formatCurrency(lienWaiver.paymentAmount)}</div>
+        ${isFinalWaiver ? `
+        <div class="final-payment-note">
+            FULL AND FINAL PAYMENT FOR ALL WORK PERFORMED
+        </div>
+        ` : `
         <div class="payment-through-date">
             For labor, services, equipment, and materials furnished through <strong>${formatDate(throughDate)}</strong>
         </div>
+        `}
         ${lienWaiver.paymentReference ? `
         <div style="font-size: 9pt; color: #666; margin-top: 6px;">
             Payment Reference: ${paymentMethodText}${paymentRefText}
         </div>
         ` : ''}
-        ${lienWaiver.remainingBalance !== undefined && lienWaiver.remainingBalance > 0 ? `
+        ${!isFinalWaiver && lienWaiver.remainingBalance !== undefined && lienWaiver.remainingBalance > 0 ? `
         <div class="remaining-balance">
             Remaining Contract Balance: <strong>${formatCurrency(lienWaiver.remainingBalance)}</strong>
         </div>
@@ -509,10 +599,34 @@ function generatePartialLienWaiverHTML(data: TemplateData, branding: ContractorB
     </div>
 </div>
 
-<!-- JURISDICTION-AWARE LEGAL BODY: ${overlay.overlayType} - ${jurisdiction.stateName} -->
-<!-- Note: All overlays (GENERIC, SEMI_STRUCTURED, STATUTORY) contain complete self-contained content -->
-<!-- including conditional language, reservations, exceptions, and legal notices -->
+<!-- JURISDICTION-AWARE LEGAL BODY: ${overlay.overlayType} - ${jurisdiction.stateName} - ${waiverType.toUpperCase()} -->
 ${overlayLegalBody}
+
+${isFinalWaiver ? `
+<div class="declarations-section">
+    <div class="declarations-header">Claimant Declarations</div>
+    <div class="declaration-item">
+        <span class="declaration-check">✓</span>
+        <span>All work has been completed in accordance with the contract documents.</span>
+    </div>
+    <div class="declaration-item">
+        <span class="declaration-check">✓</span>
+        <span>All materials and labor have been fully paid for by the Claimant.</span>
+    </div>
+    <div class="declaration-item">
+        <span class="declaration-check">✓</span>
+        <span>All subcontractors and suppliers have been paid in full.</span>
+    </div>
+    <div class="declaration-item">
+        <span class="declaration-check">✓</span>
+        <span>There are no outstanding claims or disputes related to this project.</span>
+    </div>
+    <div class="declaration-item">
+        <span class="declaration-check">✓</span>
+        <span>This constitutes full and final payment for all work performed.</span>
+    </div>
+</div>
+` : ''}
 
 <div class="signature-section">
     <div class="signature-header">Claimant Signature</div>
@@ -551,14 +665,14 @@ ${overlayLegalBody}
 }
 
 templateRegistry.register({
-  id: 'lien-waiver-partial',
-  name: 'lien-waiver-partial',
-  displayName: 'Partial Lien Waiver',
-  description: 'Conditional waiver releasing lien rights for progress payments received. Automatically adapts to state-specific requirements.',
+  id: 'lien-waiver',
+  name: 'lien-waiver',
+  displayName: 'Lien Waiver',
+  description: 'Conditional or unconditional waiver releasing lien rights. Supports both progress payments (partial) and final payments. Automatically adapts to state-specific requirements.',
   category: 'document',
   subcategory: 'legal',
   status: 'active',
-  templateVersion: '2.1',
+  templateVersion: '3.0',
   signatureType: 'single',
   includesSignaturePlaceholders: true,
   supportsJurisdictionOverlay: true,
@@ -568,9 +682,10 @@ templateRegistry.register({
     'project.location',
     'financials.total',
     'lienWaiver.paymentAmount',
-    'lienWaiver.throughDate',
+    'lienWaiver.waiverType',
   ],
   optionalFields: [
+    'lienWaiver.throughDate',
     'lienWaiver.paymentDate',
     'lienWaiver.remainingBalance',
     'lienWaiver.paymentMethod',
@@ -581,5 +696,5 @@ templateRegistry.register({
   ],
   priority: 40,
   icon: 'FileCheck',
-  generateHTML: generatePartialLienWaiverHTML,
+  generateHTML: generateUnifiedLienWaiverHTML,
 });

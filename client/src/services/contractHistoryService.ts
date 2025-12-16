@@ -14,7 +14,7 @@ export interface ContractHistoryEntry {
   createdAt: Date;
   updatedAt: Date;
   // Template-aware fields (Phase: Multi-Template Support)
-  templateId?: string; // e.g., 'independent-contractor', 'change-order', 'lien-waiver-partial'
+  templateId?: string; // e.g., 'independent-contractor', 'change-order', 'lien-waiver'
   requiredSigners?: SignatureRequirement; // 'none' | 'single' | 'dual'
   // Links para firma dual
   contractorSignUrl?: string;
@@ -174,8 +174,7 @@ class ContractHistoryService {
         'change-order': 'dual',
         'contract-addendum': 'dual',
         'work-order': 'dual',
-        'lien-waiver-partial': 'single',
-        'lien-waiver-final': 'single',
+        'lien-waiver': 'single',
         'certificate-completion': 'single',
         'warranty-agreement': 'dual',
       };

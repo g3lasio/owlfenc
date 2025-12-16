@@ -23,8 +23,7 @@ const TEMPLATE_DISPLAY_NAMES: Record<string, string> = {
   'change-order': 'Change Order',
   'contract-addendum': 'Addendum',
   'work-order': 'Work Order',
-  'lien-waiver-partial': 'Partial Lien Waiver',
-  'lien-waiver-final': 'Final Lien Waiver',
+  'lien-waiver': 'Lien Waiver',
   'certificate-completion': 'Completion Cert',
   'warranty-agreement': 'Warranty',
 };
@@ -41,8 +40,7 @@ const TEMPLATE_SIGNATURE_MAP: Record<string, SignatureRequirement> = {
   'change-order': 'dual',
   'contract-addendum': 'dual',
   'work-order': 'dual',
-  'lien-waiver-partial': 'single',
-  'lien-waiver-final': 'single',
+  'lien-waiver': 'single',
   'certificate-completion': 'single',
   'warranty-agreement': 'dual',
 };

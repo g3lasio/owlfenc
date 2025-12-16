@@ -147,30 +147,55 @@ class TemplateConfigRegistry {
 
 export const templateConfigRegistry = new TemplateConfigRegistry();
 
-// ===== Partial Lien Waiver Configuration =====
-const partialLienWaiverSchema = z.object({
-  throughDate: z.string().min(1, 'Through date is required'),
+// ===== Unified Lien Waiver Configuration =====
+// Supports both Partial (Progress Payment) and Final (Full Release) waivers
+const lienWaiverSchema = z.object({
+  waiverType: z.enum(['partial', 'final']),
   paymentAmount: z.number().min(0.01, 'Payment amount must be greater than 0'),
+  throughDate: z.string().optional(),
   paymentMethod: z.enum(['check', 'ach', 'wire', 'other']).optional(),
   paymentReference: z.string().optional(),
   ownerName: z.string().optional(),
   payingParty: z.string().optional(),
   exceptions: z.string().optional(),
-});
+}).refine(
+  (data) => data.waiverType !== 'partial' || (data.throughDate && data.throughDate.length > 0),
+  { message: 'Through date is required for Partial Lien Waivers', path: ['throughDate'] }
+);
 
 templateConfigRegistry.register({
   config: {
-    templateId: 'lien-waiver-partial',
-    title: 'Partial Lien Waiver Configuration',
-    subtitle: 'Conditional waiver for progress payment received',
+    templateId: 'lien-waiver',
+    title: 'Lien Waiver Configuration',
+    subtitle: 'Release lien rights for payment received',
     icon: 'FileCheck',
-    helpText: 'A Partial Lien Waiver releases your lien rights only through the specified date and only after payment is received. This protects your rights for future work.',
+    helpText: 'A Lien Waiver releases your lien rights in exchange for payment. Choose Partial for progress payments (conditional release) or Final for complete project payment (full release).',
     signatureRequirement: 'single',
     groups: [
       {
+        id: 'waiver-type',
+        title: 'Waiver Type',
+        description: 'Select the type of lien waiver',
+        icon: 'FileCheck',
+        fields: [
+          {
+            id: 'waiverType',
+            label: 'Waiver Type',
+            type: 'select',
+            required: true,
+            defaultValue: 'partial',
+            options: [
+              { value: 'partial', label: 'Partial (Progress Payment) - Conditional release through date' },
+              { value: 'final', label: 'Final (Full Payment) - Complete unconditional release' },
+            ],
+            helpText: 'Partial releases rights through a specific date. Final releases ALL rights upon final payment.',
+          },
+        ],
+      },
+      {
         id: 'payment-details',
         title: 'Payment Details',
-        description: 'Progress payment being waived',
+        description: 'Payment being waived',
         icon: 'DollarSign',
         fields: [
           {
@@ -178,7 +203,7 @@ templateConfigRegistry.register({
             label: 'Payment Amount',
             type: 'currency',
             placeholder: '0.00',
-            helpText: 'The progress payment amount for which lien rights are being waived',
+            helpText: 'The payment amount for which lien rights are being waived',
             required: true,
             validation: {
               min: 0.01,
@@ -188,8 +213,9 @@ templateConfigRegistry.register({
             id: 'throughDate',
             label: 'Through Date',
             type: 'date',
-            helpText: 'Lien rights are waived for work performed through this date only',
-            required: true,
+            helpText: 'Lien rights are waived for work performed through this date only (required for Partial)',
+            required: false,
+            showIf: { field: 'waiverType', value: 'partial' },
           },
         ],
       },
@@ -249,10 +275,11 @@ templateConfigRegistry.register({
       },
       {
         id: 'exceptions',
-        title: 'Exceptions',
+        title: 'Exceptions (Partial Only)',
         description: 'Any exceptions to this waiver',
         icon: 'AlertTriangle',
         collapsed: true,
+        showIf: { field: 'waiverType', value: 'partial' },
         fields: [
           {
             id: 'exceptions',
@@ -265,26 +292,28 @@ templateConfigRegistry.register({
         ],
       },
     ],
-    zodSchema: partialLienWaiverSchema,
+    zodSchema: lienWaiverSchema,
   },
   transformToTemplateData: (formData: any, baseData: any) => {
     const totalContractValue = baseData.financials?.total || 0;
     const paymentAmount = formData.paymentAmount || 0;
-    const remainingBalance = Math.max(0, totalContractValue - paymentAmount);
+    const isFinal = formData.waiverType === 'final';
+    const remainingBalance = isFinal ? 0 : Math.max(0, totalContractValue - paymentAmount);
     
     return {
       ...baseData,
       lienWaiver: {
+        waiverType: formData.waiverType,
         paymentAmount: paymentAmount,
         paymentDate: new Date().toISOString(),
-        throughDate: formData.throughDate,
-        isFinal: false,
+        throughDate: isFinal ? undefined : formData.throughDate,
+        isFinal: isFinal,
         remainingBalance: remainingBalance,
         paymentMethod: formData.paymentMethod,
         paymentReference: formData.paymentReference,
         ownerName: formData.ownerName,
         payingParty: formData.payingParty,
-        exceptions: formData.exceptions,
+        exceptions: isFinal ? undefined : formData.exceptions,
       },
     };
   },

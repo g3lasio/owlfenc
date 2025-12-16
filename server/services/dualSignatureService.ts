@@ -60,7 +60,7 @@ export interface InitiateDualSignatureRequest {
     startDate?: string;
     completionDate?: string;
   };
-  /** Template ID for template-aware signature handling (e.g., 'change-order', 'lien-waiver-partial') */
+  /** Template ID for template-aware signature handling (e.g., 'change-order', 'lien-waiver') */
   templateId?: string;
 }
 

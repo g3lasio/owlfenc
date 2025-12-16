@@ -191,8 +191,7 @@ export function ContractHistoryPanel({ children, onEditContract }: ContractHisto
       'change-order': 'bg-orange-500/20 text-orange-400 border-orange-500/30',
       'contract-addendum': 'bg-purple-500/20 text-purple-400 border-purple-500/30',
       'work-order': 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
-      'lien-waiver-partial': 'bg-amber-500/20 text-amber-400 border-amber-500/30',
-      'lien-waiver-final': 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+      'lien-waiver': 'bg-amber-500/20 text-amber-400 border-amber-500/30',
       'certificate-completion': 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
       'warranty-agreement': 'bg-rose-500/20 text-rose-400 border-rose-500/30',
     };

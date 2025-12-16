@@ -4065,8 +4065,7 @@ export default function SimpleContractGenerator() {
                 { id: 'cost-plus-contract', name: 'Cost-Plus Contract', description: 'Cost plus markup for evolving scope', category: 'contracts', status: 'coming-soon', icon: Calculator, color: 'purple' },
                 { id: 'unit-price-contract', name: 'Unit Price Contract', description: 'Priced per unit (fencing, paving, etc.)', category: 'contracts', status: 'coming-soon', icon: Boxes, color: 'amber' },
                 { id: 'commercial-contract', name: 'Commercial Contract', description: 'Commercial project agreement', category: 'contracts', status: 'coming-soon', icon: Building, color: 'emerald' },
-                { id: 'lien-waiver-partial', name: 'Partial Lien Waiver', description: 'Release lien for partial payment', category: 'contracts', status: 'active', icon: Shield, color: 'green' },
-                { id: 'lien-waiver-final', name: 'Final Lien Waiver', description: 'Release lien upon final payment', category: 'contracts', status: 'coming-soon', icon: Shield, color: 'green' },
+                { id: 'lien-waiver', name: 'Lien Waiver', description: 'Release lien rights (Partial or Final)', category: 'contracts', status: 'active', icon: Shield, color: 'green' },
                 { id: 'warranty-agreement', name: 'Warranty Agreement', description: 'Warranty terms and conditions', category: 'contracts', status: 'coming-soon', icon: CheckCircle, color: 'teal' },
                 { id: 'certificate-completion', name: 'Certificate of Completion', description: 'Project completion certification', category: 'contracts', status: 'coming-soon', icon: FileCheck, color: 'indigo' },
                 

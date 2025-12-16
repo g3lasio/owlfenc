@@ -18,8 +18,7 @@ import './documents/independent-contractor';
 import './documents/change-order';
 import './documents/contract-addendum';
 import './documents/work-order';
-import './documents/lien-waiver-partial';
-import './documents/lien-waiver-final';
+import './documents/lien-waiver';
 import './documents/certificate-completion';
 import './documents/warranty-agreement';
 

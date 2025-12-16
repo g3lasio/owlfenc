@@ -26,20 +26,24 @@ export interface LienWaiverOverlay {
   statutoryReference?: string;
 }
 
+export type WaiverType = 'partial' | 'final';
+
 export interface LienWaiverOverlayData {
+  waiverType?: WaiverType;
   claimantName: string;
   claimantAddress?: string;
   claimantLicense?: string;
   ownerName: string;
   customerName: string;
   projectLocation: string;
-  throughDate: string;
+  throughDate?: string;
   paymentAmount: string;
   paymentAmountWords?: string;
   paymentReference?: string;
   paymentMethod?: string;
   exceptions?: string;
   documentDate: string;
+  isFinal?: boolean;
 }
 
 const formatCurrency = (amount: number): string => {
@@ -614,7 +618,7 @@ export function detectJurisdictionForLienWaiver(context: JurisdictionContext): {
 }
 
 /**
- * Get the appropriate legal overlay for a state
+ * Get the appropriate legal overlay for a state (Partial/Progress Payment)
  */
 export function getLienWaiverOverlay(stateCode: string): LienWaiverOverlay {
   const overlay = OVERLAY_REGISTRY.get(stateCode.toUpperCase());
@@ -626,6 +630,90 @@ export function getLienWaiverOverlay(stateCode: string): LienWaiverOverlay {
   
   console.log(`📜 [LIEN-WAIVER-OVERLAY] No specific overlay for ${stateCode}, using GENERIC`);
   return GENERIC_OVERLAY;
+}
+
+/**
+ * GENERIC FINAL OVERLAY - Default for final/unconditional lien waivers
+ * Strong, lender-friendly language with unconditional full release
+ */
+const GENERIC_FINAL_OVERLAY: LienWaiverOverlay = {
+  stateCode: 'GENERIC',
+  stateName: 'Generic (All States)',
+  overlayType: 'GENERIC',
+  waiverBodyHTML: (data) => `
+    <div class="waiver-body">
+      <h3 style="text-align: center; color: #059669; margin-bottom: 24px; font-size: 18px; text-transform: uppercase; letter-spacing: 1px;">
+        UNCONDITIONAL WAIVER AND RELEASE ON FINAL PAYMENT
+      </h3>
+      
+      <div class="legal-recitals" style="margin-bottom: 24px;">
+        <p style="margin-bottom: 16px; text-align: justify; line-height: 1.7;">
+          <strong>KNOW ALL PERSONS BY THESE PRESENTS</strong> that the undersigned Claimant, 
+          <strong>${data.claimantName}</strong>${data.claimantLicense ? ` (License No. ${data.claimantLicense})` : ''}, 
+          having furnished labor, services, equipment, or materials for the improvement of certain real property 
+          commonly known as <strong>${data.projectLocation}</strong>, hereby provides this Unconditional Waiver 
+          and Release on Final Payment in accordance with applicable law.
+        </p>
+      </div>
+
+      <div class="payment-acknowledgment" style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 6px; padding: 20px; margin-bottom: 24px;">
+        <h4 style="margin: 0 0 12px 0; color: #059669; font-size: 14px;">FINAL PAYMENT IDENTIFICATION</h4>
+        <table style="width: 100%; font-size: 13px;">
+          <tr>
+            <td style="padding: 6px 0; color: #166534; width: 40%;">Property Owner:</td>
+            <td style="padding: 6px 0; font-weight: 600;">${data.ownerName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #166534;">Payment From:</td>
+            <td style="padding: 6px 0; font-weight: 600;">${data.customerName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #166534;">Final Payment Amount:</td>
+            <td style="padding: 6px 0; font-weight: 600; color: #059669; font-size: 16px;">${data.paymentAmount}</td>
+          </tr>
+          ${data.paymentReference ? `
+          <tr>
+            <td style="padding: 6px 0; color: #166534;">Payment Reference:</td>
+            <td style="padding: 6px 0;">${data.paymentReference}</td>
+          </tr>
+          ` : ''}
+        </table>
+      </div>
+
+      <div class="unconditional-release" style="margin-bottom: 24px;">
+        <h4 style="color: #059669; font-size: 14px; margin-bottom: 12px; text-transform: uppercase;">Unconditional Full Release</h4>
+        <p style="text-align: justify; line-height: 1.7; margin-bottom: 16px;">
+          The undersigned has been paid in full for all labor, services, equipment, or materials 
+          furnished to <strong>${data.customerName}</strong> on the job of <strong>${data.ownerName}</strong> 
+          located at <strong>${data.projectLocation}</strong>.
+        </p>
+        <p style="text-align: justify; line-height: 1.7; background: #ecfdf5; border-left: 4px solid #059669; padding: 16px; margin-bottom: 16px;">
+          <strong>FULL RELEASE:</strong> The undersigned hereby unconditionally waives and releases any mechanic's lien, 
+          stop payment notice, or any right against any labor and material bond on the above-described job. This release 
+          covers the final payment for ALL labor, services, equipment, or materials furnished to this job.
+        </p>
+      </div>
+
+      <div class="legal-notice" style="background: #fef3c7; border: 1px solid #fcd34d; border-radius: 6px; padding: 16px; margin-bottom: 24px; font-size: 12px; color: #92400e;">
+        <p style="margin: 0; line-height: 1.6;">
+          <strong>WARNING:</strong> This is an unconditional waiver and release. Upon execution and delivery, 
+          it is effective to release lien, stop payment notice, and payment bond rights whether or not you 
+          have been paid. Before signing this waiver, the claimant should verify that payment has been received.
+        </p>
+      </div>
+    </div>
+  `
+};
+
+/**
+ * Get the appropriate legal overlay for Final Lien Waiver
+ * Currently returns generic final overlay - statutory final forms can be added later
+ */
+export function getFinalLienWaiverOverlay(stateCode: string): LienWaiverOverlay {
+  // For now, all states use the generic final overlay
+  // State-specific statutory final waivers can be added to a FINAL_OVERLAY_REGISTRY later
+  console.log(`📜 [LIEN-WAIVER-OVERLAY] Using GENERIC FINAL overlay (${stateCode})`);
+  return GENERIC_FINAL_OVERLAY;
 }
 
 /**
