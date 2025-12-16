@@ -510,11 +510,11 @@ templateRegistry.register({
     'contractor.name',
     'project.location',
     'financials.total',
+    'lienWaiver.paymentAmount',
+    'lienWaiver.throughDate',
   ],
   optionalFields: [
-    'lienWaiver.paymentAmount',
     'lienWaiver.paymentDate',
-    'lienWaiver.throughDate',
     'lienWaiver.remainingBalance',
     'lienWaiver.paymentMethod',
     'lienWaiver.paymentReference',
