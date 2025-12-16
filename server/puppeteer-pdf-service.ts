@@ -87,7 +87,7 @@ export class PuppeteerPdfService {
       });
 
       const pdfBuffer = await page.pdf({
-        width: "1200",
+        format: 'Letter',
         margin: {
           top: "0.75in",
           right: "0.75in",
@@ -95,7 +95,7 @@ export class PuppeteerPdfService {
           left: "0.75in",
         },
         printBackground: true,
-        preferCSSPageSize: true,
+        preferCSSPageSize: false,
         displayHeaderFooter: false,
       });
 
@@ -770,9 +770,7 @@ export class PuppeteerPdfService {
       await page.evaluateHandle('document.fonts.ready');
 
       const pdfBuffer = await page.pdf({
-        format: 'A4',
-        width: '8.5in',
-        height: '11in',
+        format: 'Letter',
         margin: {
           top: "0.5in",
           right: "0.5in",
@@ -782,7 +780,6 @@ export class PuppeteerPdfService {
         printBackground: true,
         preferCSSPageSize: false,
         displayHeaderFooter: false,
-        scale: 1.0,
       });
 
       console.log(`✅ PDF generated from HTML - Size: ${pdfBuffer.length} bytes`);
