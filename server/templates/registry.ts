@@ -109,6 +109,9 @@ export interface ContractTemplate {
   /** If true, the template HTML already includes signature placeholders (.signature-line, .date-line)
    *  and the PDF service should NOT inject a fallback signature section */
   includesSignaturePlaceholders?: boolean;
+  /** If true, the template supports automatic jurisdiction detection and state-specific legal overlays.
+   *  The template will automatically adapt its legal language based on project location. */
+  supportsJurisdictionOverlay?: boolean;
   requiredFields: string[];
   optionalFields: string[];
   priority: number;

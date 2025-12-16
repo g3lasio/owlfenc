@@ -1,15 +1,28 @@
 /**
  * Partial Lien Waiver Template - Premium Legal Edition
- * Version 2.0
+ * Version 2.1 - Jurisdiction-Aware
  * 
  * Generic Partial Lien Waiver with strong, lender-friendly language.
+ * Automatically adapts legal language based on project jurisdiction.
  * Designed to pass lender review without hesitation.
  * 
  * Single signature: Contractor/Claimant only
+ * 
+ * State Support:
+ * - GENERIC: Default for most states (strong, lender-friendly)
+ * - STATUTORY: CA, TX, AZ, NV (state-mandated language)
+ * - SEMI-STRUCTURED: FL, GA, NC, SC, TN (generic + state notice)
  */
 
 import { templateRegistry, TemplateData, ContractorBranding } from '../registry';
 import { formatDate, formatCurrency } from '../shared/baseLayout';
+import { 
+  detectJurisdictionForLienWaiver, 
+  getLienWaiverOverlay, 
+  validateStatutoryRequirements,
+  type LienWaiverOverlayData,
+  type OverlayType
+} from '../overlays/lienWaiverOverlays';
 
 function generatePartialLienWaiverHTML(data: TemplateData, branding: ContractorBranding): string {
   const contractorName = branding.companyName || data.contractor.name || 'Contractor';
@@ -36,6 +49,54 @@ function generatePartialLienWaiverHTML(data: TemplateData, branding: ContractorB
                             lienWaiver.paymentMethod === 'wire' ? 'wire transfer' :
                             lienWaiver.paymentMethod === 'check' ? 'check' : 'payment';
   const paymentRefText = lienWaiver.paymentReference ? ` (Ref: ${lienWaiver.paymentReference})` : '';
+
+  // Jurisdiction Detection - Automatic, no user input required
+  const jurisdiction = detectJurisdictionForLienWaiver({
+    projectLocation: data.project.location,
+    companyState: branding.address ? undefined : undefined // Can be extended to extract from branding
+  });
+  
+  const overlay = getLienWaiverOverlay(jurisdiction.stateCode);
+  const isStatutory = overlay.overlayType === 'STATUTORY';
+  
+  // Validate statutory requirements if applicable
+  if (isStatutory) {
+    const validation = validateStatutoryRequirements(jurisdiction.stateCode, {
+      claimantName: contractorName,
+      ownerName: ownerName,
+      projectLocation: data.project.location,
+      throughDate: formatDate(throughDate),
+      paymentAmount: formatCurrency(lienWaiver.paymentAmount)
+    });
+    
+    if (!validation.valid) {
+      console.warn(`⚠️ [LIEN-WAIVER] Statutory validation failed for ${jurisdiction.stateCode}:`, validation.missingFields);
+    }
+  }
+
+  // Prepare overlay data for state-specific content
+  const overlayData: LienWaiverOverlayData = {
+    claimantName: contractorName,
+    claimantAddress: contractorAddress,
+    claimantLicense: contractorLicense,
+    ownerName: ownerName,
+    customerName: payingParty,
+    projectLocation: data.project.location,
+    throughDate: formatDate(throughDate),
+    paymentAmount: formatCurrency(lienWaiver.paymentAmount),
+    paymentReference: lienWaiver.paymentReference,
+    paymentMethod: paymentMethodText,
+    exceptions: lienWaiver.exceptions,
+    documentDate: currentDate
+  };
+
+  // Generate jurisdiction-specific legal body for STATUTORY states
+  const statutoryLegalBody = isStatutory ? overlay.waiverBodyHTML(overlayData) : null;
+  
+  // Jurisdiction badge for document header
+  const jurisdictionBadge = jurisdiction.stateCode !== 'GENERIC' 
+    ? `<div class="jurisdiction-badge" style="display: inline-block; margin-left: 12px; padding: 3px 10px; background: ${isStatutory ? '#fef3c7' : '#dbeafe'}; border: 1px solid ${isStatutory ? '#f59e0b' : '#3b82f6'}; font-size: 8pt; text-transform: uppercase; letter-spacing: 0.5px; color: ${isStatutory ? '#92400e' : '#1e40af'}; border-radius: 3px;">${jurisdiction.stateName}${isStatutory ? ' Statutory Form' : ''}</div>`
+    : '';
 
   return `<!DOCTYPE html>
 <html>
@@ -345,7 +406,10 @@ function generatePartialLienWaiverHTML(data: TemplateData, branding: ContractorB
 <div class="document-header">
     <div class="document-title">Conditional Waiver and Release</div>
     <div class="document-subtitle">Upon Progress Payment</div>
-    <div class="document-type-badge">Partial Lien Waiver</div>
+    <div style="display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px;">
+        <div class="document-type-badge">Partial Lien Waiver</div>
+        ${jurisdictionBadge}
+    </div>
 </div>
 
 <div class="legal-notice">
@@ -405,6 +469,11 @@ function generatePartialLienWaiverHTML(data: TemplateData, branding: ContractorB
     </div>
 </div>
 
+${isStatutory ? `
+<!-- STATUTORY FORM: ${jurisdiction.stateName} -->
+${statutoryLegalBody}
+` : `
+<!-- GENERIC/SEMI-STRUCTURED FORM -->
 <div class="legal-body">
     <p class="legal-paragraph">
         Upon receipt of ${paymentMethodText} from <strong>${payingParty}</strong> in the amount of 
@@ -430,6 +499,12 @@ function generatePartialLienWaiverHTML(data: TemplateData, branding: ContractorB
         through the date stated above.
     </p>
 </div>
+
+${overlay.overlayType === 'SEMI_STRUCTURED' && overlay.stateNotice ? `
+<div class="state-compliance-notice" style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 4px; padding: 10px 14px; margin: 16px 0; text-align: center;">
+    <span style="font-size: 9pt; color: #1e40af;"><strong>STATE COMPLIANCE:</strong> ${overlay.stateNotice}</span>
+</div>
+` : ''}
 
 <div class="conditional-section">
     <div class="conditional-header">Conditions and Reservations</div>
@@ -457,6 +532,7 @@ function generatePartialLienWaiverHTML(data: TemplateData, branding: ContractorB
         ${lienWaiver.exceptions ? lienWaiver.exceptions : '<span class="no-exceptions">None</span>'}
     </div>
 </div>
+`}
 
 <div class="signature-section">
     <div class="signature-header">Claimant Signature</div>
@@ -498,13 +574,14 @@ templateRegistry.register({
   id: 'lien-waiver-partial',
   name: 'lien-waiver-partial',
   displayName: 'Partial Lien Waiver',
-  description: 'Conditional waiver releasing lien rights for progress payments received',
+  description: 'Conditional waiver releasing lien rights for progress payments received. Automatically adapts to state-specific requirements.',
   category: 'document',
   subcategory: 'legal',
   status: 'active',
-  templateVersion: '2.0',
+  templateVersion: '2.1',
   signatureType: 'single',
   includesSignaturePlaceholders: true,
+  supportsJurisdictionOverlay: true,
   requiredFields: [
     'client.name',
     'contractor.name',
