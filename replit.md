@@ -65,17 +65,22 @@ This AI-powered platform automates legal document and permit management for cont
   - **Template-Aware Signature System**: Signature infrastructure respects per-template configuration via `signatureType` ('none', 'single', 'dual') and `includesSignaturePlaceholders` properties.
     - **Pipeline Flow**: Routes capture `templateId` → `multiChannelDeliveryService` passes to `dualSignatureService` → stored in Firebase with contract → loaded from registry during PDF generation (completion and download regeneration).
     - **Signature Logic**: 'none' skips all injection, 'single' injects contractor-only, 'dual' (default) injects both signatures. Templates with `includesSignaturePlaceholders: true` only replace existing placeholders.
-    - **Current Templates**: `change-order.ts` has built-in placeholders; `lien-waiver-partial.ts` (v2.0 Premium) and `lien-waiver-final.ts` use single signature with built-in placeholders; others use dual signature.
-- **Partial Lien Waiver (Premium v2.1 - Jurisdiction-Aware)**: Generic lender-friendly conditional waiver for progress payments with automatic state-specific legal adaptation.
-  - **Core Features**: Premium legal styling, conditional language tied to payment receipt, clear through-date scope, single contractor signature, optional payment reference/exceptions fields.
-  - **Jurisdiction Overlay System**: Automatic detection of applicable state law from project location with fallback chain (project → contract/client → company → GENERIC).
-    - **GENERIC**: Default for most states with strong, lender-friendly language.
-    - **STATUTORY**: CA, TX, AZ, NV - State-mandated language with proper legal citations (e.g., California Civil Code §8132).
-    - **SEMI-STRUCTURED**: FL, GA, NC, SC, TN - Generic form with state compliance notice.
-  - **Jurisdiction Badge**: Visual indicator in document header showing which state's law applies (e.g., "California Statutory Form").
-  - **Files**: `lien-waiver-partial.ts`, `lienWaiverOverlays.ts`, `jurisdictionDetector.ts`.
-  - **Registry Property**: Templates can declare `supportsJurisdictionOverlay: true` for automatic overlay application.
-  - **Unified Digital Certificate Format**: "DIGITAL CERTIFICATE OF AUTHENTICITY" header with consistent dark blue (#1a365d) color scheme across `legalSealService` and `premiumPdfService`.
+    - **Current Templates**: `change-order.ts` has built-in placeholders; `lien-waiver.ts` (v3.0 Unified) uses single signature; others use dual signature.
+- **Unified Lien Waiver System (v3.0 - Jurisdiction-Aware)**: Single unified template supporting both Partial (conditional progress payment) and Final (unconditional full release) waivers.
+  - **Architecture**: One template (`lien-waiver.ts`) with internal `waiverType` variation ('partial' | 'final'). Eliminates template duplication and matches real contractor workflow.
+  - **Waiver Types**:
+    - **Partial**: Conditional release through specific date. Requires `throughDate`. Supports exceptions field.
+    - **Final**: Unconditional full release of all lien rights. No `throughDate` required.
+  - **Frontend Config**: `templateConfigRegistry.ts` exposes waiverType selector with conditional field visibility (throughDate only for partial).
+  - **Jurisdiction Overlay System**: Automatic detection of applicable state law with fallback chain (project → contract/client → company → GENERIC).
+    - **Partial Overlays**: GENERIC, STATUTORY (CA, TX, AZ, NV), SEMI-STRUCTURED (FL, GA, NC, SC, TN).
+    - **Final Overlays**: GENERIC_FINAL with unconditional release language. State-specific final forms can be added to FINAL_OVERLAY_REGISTRY.
+    - Uses `getLienWaiverOverlay()` for partial, `getFinalLienWaiverOverlay()` for final.
+  - **Jurisdiction Badge**: Visual indicator showing applicable state law (e.g., "California Statutory Form").
+  - **Files**: `lien-waiver.ts`, `lienWaiverOverlays.ts`, `jurisdictionDetector.ts`.
+  - **Registry**: Single `templateId: 'lien-waiver'` replaces separate partial/final entries.
+  - **Feature Flag**: `FF_LIEN_WAIVER_TEMPLATE` (replaces separate partial/final flags).
+  - **Unified Digital Certificate Format**: "DIGITAL CERTIFICATE OF AUTHENTICITY" header with consistent dark blue (#1a365d) color scheme.
 - **Unified Data Source Architecture**: All project and estimate data now uses a single source of truth (the 'estimates' Firestore collection), removing dual-writes and ensuring consistency.
 - **AutoClean AI Data Pipeline**: Automatic, invisible contact data cleaning system integrated into FirebaseOnlyStorage.getClients(). Uses heuristic detection (phone/email/address patterns, concatenated data splitting) with OpenAI GPT-4o-mini fallback for low-confidence cases. Corrections are persisted asynchronously in batches of 25. No user intervention required - users only see clean data.
 - **Intelligent Import Pipeline V2**: 5-phase architecture for CSV/Excel import with automatic data corruption handling.
