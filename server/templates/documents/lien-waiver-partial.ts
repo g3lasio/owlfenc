@@ -510,37 +510,9 @@ function generatePartialLienWaiverHTML(data: TemplateData, branding: ContractorB
 </div>
 
 <!-- JURISDICTION-AWARE LEGAL BODY: ${overlay.overlayType} - ${jurisdiction.stateName} -->
+<!-- Note: All overlays (GENERIC, SEMI_STRUCTURED, STATUTORY) contain complete self-contained content -->
+<!-- including conditional language, reservations, exceptions, and legal notices -->
 ${overlayLegalBody}
-
-${overlay.overlayType === 'GENERIC' ? `
-<!-- CONDITIONAL SECTION (Generic forms only - overlays handle their own formatting) -->
-<div class="conditional-section">
-    <div class="conditional-header">Conditions and Reservations</div>
-    <div class="conditional-item">
-        <span class="conditional-check">✓</span>
-        <span>This waiver is CONDITIONAL and takes effect only upon actual receipt and clearance of the stated payment.</span>
-    </div>
-    <div class="conditional-item">
-        <span class="conditional-check">✓</span>
-        <span>All lien rights for work, services, or materials furnished AFTER ${formatDate(throughDate)} are expressly RESERVED.</span>
-    </div>
-    <div class="conditional-item">
-        <span class="conditional-check">✓</span>
-        <span>This waiver does not release retention amounts, disputed claims, or pending modifications.</span>
-    </div>
-    <div class="conditional-item">
-        <span class="conditional-check">✓</span>
-        <span>Recipients should independently verify payment before relying on this document.</span>
-    </div>
-</div>
-
-<div class="exceptions-section">
-    <div class="exceptions-header">Exceptions (if any)</div>
-    <div class="exceptions-content">
-        ${lienWaiver.exceptions ? lienWaiver.exceptions : '<span class="no-exceptions">None</span>'}
-    </div>
-</div>
-` : ''}
 
 <div class="signature-section">
     <div class="signature-header">Claimant Signature</div>

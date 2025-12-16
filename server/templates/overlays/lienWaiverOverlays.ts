@@ -530,7 +530,12 @@ const createSemiStructuredOverlay = (stateCode: string, stateName: string): Lien
         </p>
       </div>
     `;
-    return genericHTML.replace('</div>\n  $', stateNotice + '</div>');
+    // Insert state notice before the closing </div> of waiver-body to keep HTML structure valid
+    const lastDivClose = genericHTML.lastIndexOf('</div>');
+    if (lastDivClose !== -1) {
+      return genericHTML.slice(0, lastDivClose) + stateNotice + genericHTML.slice(lastDivClose);
+    }
+    return genericHTML + stateNotice;
   }
 });
 
