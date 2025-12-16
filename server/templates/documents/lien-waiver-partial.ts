@@ -51,13 +51,50 @@ function generatePartialLienWaiverHTML(data: TemplateData, branding: ContractorB
   const paymentRefText = lienWaiver.paymentReference ? ` (Ref: ${lienWaiver.paymentReference})` : '';
 
   // Jurisdiction Detection - Automatic, no user input required
+  // Extracts state from addresses for fallback chain: project → contract → company → GENERIC
+  const STATE_NAME_MAP: Record<string, string> = {
+    'california': 'CA', 'texas': 'TX', 'arizona': 'AZ', 'nevada': 'NV',
+    'florida': 'FL', 'georgia': 'GA', 'north carolina': 'NC', 'south carolina': 'SC',
+    'tennessee': 'TN', 'new york': 'NY', 'new jersey': 'NJ', 'pennsylvania': 'PA',
+    'ohio': 'OH', 'illinois': 'IL', 'michigan': 'MI', 'washington': 'WA',
+    'oregon': 'OR', 'colorado': 'CO', 'massachusetts': 'MA', 'virginia': 'VA',
+    'maryland': 'MD', 'connecticut': 'CT', 'utah': 'UT', 'louisiana': 'LA',
+    'alabama': 'AL', 'kentucky': 'KY', 'missouri': 'MO', 'minnesota': 'MN',
+    'wisconsin': 'WI', 'indiana': 'IN', 'iowa': 'IA', 'kansas': 'KS',
+    'arkansas': 'AR', 'mississippi': 'MS', 'oklahoma': 'OK', 'new mexico': 'NM',
+    'nebraska': 'NE', 'idaho': 'ID', 'montana': 'MT', 'wyoming': 'WY',
+    'hawaii': 'HI', 'alaska': 'AK', 'maine': 'ME', 'vermont': 'VT',
+    'new hampshire': 'NH', 'rhode island': 'RI', 'delaware': 'DE',
+    'west virginia': 'WV', 'north dakota': 'ND', 'south dakota': 'SD'
+  };
+
+  const extractStateFromBrandingAddress = (address: string): string | undefined => {
+    if (!address) return undefined;
+    const normalizedAddress = address.toLowerCase();
+    
+    // Check full state names first
+    for (const [stateName, stateCode] of Object.entries(STATE_NAME_MAP)) {
+      if (normalizedAddress.includes(stateName)) {
+        return stateCode;
+      }
+    }
+    
+    // Common patterns: "City, ST 12345" or "City, State" or just "CA"
+    const stateMatch = address.match(/,\s*([A-Z]{2})\s*\d{5}/i) || 
+                      address.match(/,\s*([A-Z]{2})$/i) ||
+                      address.match(/\b([A-Z]{2})\b/);
+    return stateMatch ? stateMatch[1].toUpperCase() : undefined;
+  };
+
   const jurisdiction = detectJurisdictionForLienWaiver({
     projectLocation: data.project.location,
-    companyState: branding.address ? undefined : undefined // Can be extended to extract from branding
+    contractLocation: data.client.address || undefined, // Contract/client location as second priority
+    companyState: branding.address ? extractStateFromBrandingAddress(branding.address) : undefined
   });
   
   const overlay = getLienWaiverOverlay(jurisdiction.stateCode);
   const isStatutory = overlay.overlayType === 'STATUTORY';
+  const isSemiStructured = overlay.overlayType === 'SEMI_STRUCTURED';
   
   // Validate statutory requirements if applicable
   if (isStatutory) {
@@ -90,8 +127,11 @@ function generatePartialLienWaiverHTML(data: TemplateData, branding: ContractorB
     documentDate: currentDate
   };
 
-  // Generate jurisdiction-specific legal body for STATUTORY states
-  const statutoryLegalBody = isStatutory ? overlay.waiverBodyHTML(overlayData) : null;
+  // Generate jurisdiction-specific legal body - ALL overlays now use the overlay's waiverBodyHTML
+  // STATUTORY: Full state-specific language
+  // SEMI_STRUCTURED: Generic + state compliance notice
+  // GENERIC: Base lender-friendly language
+  const overlayLegalBody = overlay.waiverBodyHTML(overlayData);
   
   // Jurisdiction badge for document header
   const jurisdictionBadge = jurisdiction.stateCode !== 'GENERIC' 
@@ -469,43 +509,11 @@ function generatePartialLienWaiverHTML(data: TemplateData, branding: ContractorB
     </div>
 </div>
 
-${isStatutory ? `
-<!-- STATUTORY FORM: ${jurisdiction.stateName} -->
-${statutoryLegalBody}
-` : `
-<!-- GENERIC/SEMI-STRUCTURED FORM -->
-<div class="legal-body">
-    <p class="legal-paragraph">
-        Upon receipt of ${paymentMethodText} from <strong>${payingParty}</strong> in the amount of 
-        <strong>${formatCurrency(lienWaiver.paymentAmount)}</strong> payable to <strong>${contractorName}</strong>, 
-        and when such payment has been properly received, endorsed (if applicable), and cleared by the 
-        financial institution upon which it is drawn, this document shall become effective to waive 
-        and release any mechanic's lien, stop payment notice, or bond right the undersigned has or 
-        may have on the job of <strong>${ownerName}</strong> located at <strong>${data.project.location}</strong>.
-    </p>
-    
-    <p class="legal-paragraph">
-        <strong>Extent of Waiver:</strong> This release covers only a progress payment for labor, 
-        services, equipment, or materials furnished to that job through <strong>${formatDate(throughDate)}</strong> 
-        only, and does not cover any of the following: (1) retention, whether withheld or not; 
-        (2) pending change orders, modifications, or additional work; (3) disputed claims; or 
-        (4) any items furnished after that date.
-    </p>
-    
-    <p class="legal-paragraph">
-        The undersigned warrants that it has already paid or will use the funds received under 
-        this progress payment to promptly pay in full all of its laborers, subcontractors, 
-        materialmen, and suppliers for all work, materials, equipment, and services provided 
-        through the date stated above.
-    </p>
-</div>
+<!-- JURISDICTION-AWARE LEGAL BODY: ${overlay.overlayType} - ${jurisdiction.stateName} -->
+${overlayLegalBody}
 
-${overlay.overlayType === 'SEMI_STRUCTURED' && overlay.stateNotice ? `
-<div class="state-compliance-notice" style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 4px; padding: 10px 14px; margin: 16px 0; text-align: center;">
-    <span style="font-size: 9pt; color: #1e40af;"><strong>STATE COMPLIANCE:</strong> ${overlay.stateNotice}</span>
-</div>
-` : ''}
-
+${overlay.overlayType === 'GENERIC' ? `
+<!-- CONDITIONAL SECTION (Generic forms only - overlays handle their own formatting) -->
 <div class="conditional-section">
     <div class="conditional-header">Conditions and Reservations</div>
     <div class="conditional-item">
@@ -532,7 +540,7 @@ ${overlay.overlayType === 'SEMI_STRUCTURED' && overlay.stateNotice ? `
         ${lienWaiver.exceptions ? lienWaiver.exceptions : '<span class="no-exceptions">None</span>'}
     </div>
 </div>
-`}
+` : ''}
 
 <div class="signature-section">
     <div class="signature-header">Claimant Signature</div>
