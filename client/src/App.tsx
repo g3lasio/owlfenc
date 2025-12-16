@@ -2,53 +2,62 @@ import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
-import NotFound from "@/pages/not-found";
-import AppLayout from "@/components/layout/AppLayout";
-import Home from "@/pages/Home";
-import Projects from "@/pages/Projects";
-import Clients from "./pages/Clients";
-import NuevoClientes from "./pages/NuevoClientes";
-import Materials from "./pages/Materials";
-import EstimatesWizard from "./pages/EstimatesWizard";
-import ChatInterface from "@/components/chat/ChatInterface";
-import Profile from "@/pages/Profile";
-import PropertyOwnershipVerifier from "@/pages/PropertyOwnershipVerifier";
-import PermitAdvisor from "@/pages/PermitAdvisor";
-import OwlFunding from "@/pages/OwlFunding";
-import AboutOwlFence from "@/pages/AboutOwlFence";
-import AboutMervin from "@/pages/AboutMervin";
-import LegalPolicy from "@/pages/LegalPolicy";
-import Mervin from "@/pages/Mervin";
-import PrivacyPolicy from "@/pages/PrivacyPolicy";
-import TermsOfService from "@/pages/TermsOfService";
-import PricingSettings from "@/pages/PricingSettings";
-import Subscription from "@/pages/Subscription";
-import SubscriptionTest from "@/pages/SubscriptionTest";
+import { Suspense, lazy } from 'react';
 
-import Billing from "./pages/Billing";
-import ProjectPayments from "@/pages/ProjectPayments";
-import Invoices from "@/pages/Invoices";
+// 🚀 CRITICAL: Only import essential components statically
+import ContractSignature from './pages/ContractSignature';
+import SharedEstimate from './pages/SharedEstimate';
 
-import EstimatesDashboard from "@/pages/EstimatesDashboard";
-import EstimateGenerator from "@/pages/EstimateGenerator";
-import MisEstimados from "@/pages/MisEstimados";
-import AuthPage from "@/pages/Login"; // Renombrado el import aunque el archivo sigue siendo Login.tsx
-import Signup from "@/pages/Signup";
-import RecuperarPassword from "@/pages/RecuperarPassword";
-import ResetPassword from "@/pages/ResetPassword";
-import EmailLinkCallback from "@/pages/EmailLinkCallback";
-import EmailVerificationCallback from "@/pages/EmailVerificationCallback";
-import CyberpunkContractGenerator from "@/pages/CyberpunkContractGenerator";
-import { setupGlobalErrorHandlers } from "@/lib/error-handlers";
+// 🔄 LAZY LOAD: All other pages load on-demand to improve initial load time
+const NotFound = lazy(() => import("@/pages/not-found"));
+const AppLayout = lazy(() => import("@/components/layout/AppLayout"));
+const Home = lazy(() => import("@/pages/Home"));
+const Projects = lazy(() => import("@/pages/Projects"));
+const Clients = lazy(() => import("./pages/Clients"));
+const NuevoClientes = lazy(() => import("./pages/NuevoClientes"));
+const Materials = lazy(() => import("./pages/Materials"));
+const EstimatesWizard = lazy(() => import("./pages/EstimatesWizard"));
+// ChatInterface is loaded through ChatProvider, not directly imported here
+const Profile = lazy(() => import("@/pages/Profile"));
+const PropertyOwnershipVerifier = lazy(() => import("@/pages/PropertyOwnershipVerifier"));
+const PermitAdvisor = lazy(() => import("@/pages/PermitAdvisor"));
+const OwlFunding = lazy(() => import("@/pages/OwlFunding"));
+const AboutOwlFence = lazy(() => import("@/pages/AboutOwlFence"));
+const AboutMervin = lazy(() => import("@/pages/AboutMervin"));
+const LegalPolicy = lazy(() => import("@/pages/LegalPolicy"));
+const Mervin = lazy(() => import("@/pages/Mervin"));
+const PrivacyPolicy = lazy(() => import("@/pages/PrivacyPolicy"));
+const TermsOfService = lazy(() => import("@/pages/TermsOfService"));
+const PricingSettings = lazy(() => import("@/pages/PricingSettings"));
+const Subscription = lazy(() => import("@/pages/Subscription"));
+const SubscriptionTest = lazy(() => import("@/pages/SubscriptionTest"));
+const Billing = lazy(() => import("./pages/Billing"));
+const ProjectPayments = lazy(() => import("@/pages/ProjectPayments"));
+const Invoices = lazy(() => import("@/pages/Invoices"));
+const EstimatesDashboard = lazy(() => import("@/pages/EstimatesDashboard"));
+const EstimateGenerator = lazy(() => import("@/pages/EstimateGenerator"));
+const MisEstimados = lazy(() => import("@/pages/MisEstimados"));
+const AuthPage = lazy(() => import("@/pages/Login"));
+const Signup = lazy(() => import("@/pages/Signup"));
+const RecuperarPassword = lazy(() => import("@/pages/RecuperarPassword"));
+const ResetPassword = lazy(() => import("@/pages/ResetPassword"));
+const EmailLinkCallback = lazy(() => import("@/pages/EmailLinkCallback"));
+const EmailVerificationCallback = lazy(() => import("@/pages/EmailVerificationCallback"));
+const CyberpunkContractGenerator = lazy(() => import("@/pages/CyberpunkContractGenerator"));
+const LegalContractEngineFixed = lazy(() => import("@/pages/LegalContractEngineFixed"));
+const UnifiedContractManager = lazy(() => import("@/pages/UnifiedContractManager"));
+const SmartContractWizard = lazy(() => import("@/pages/SmartContractWizard"));
+const AITestingPage = lazy(() => import("@/pages/AITestingPage"));
+const DeepSearchDemo = lazy(() => import("@/pages/DeepSearchDemo"));
+const PermissionsDemo = lazy(() => import("@/pages/PermissionsDemo"));
+const AuthDiagnostic = lazy(() => import('./pages/AuthDiagnostic'));
+const SimpleContractGenerator = lazy(() => import('./pages/SimpleContractGenerator'));
+const WebAuthnPopup = lazy(() => import('./pages/WebAuthnPopup'));
+const HelpCenter = lazy(() => import('./pages/help/HelpCenter'));
+const HelpArticle = lazy(() => import('./pages/help/HelpArticle'));
+const GetSupport = lazy(() => import('./pages/help/GetSupport'));
 
-
-import LegalContractEngineFixed from "@/pages/LegalContractEngineFixed";
-import UnifiedContractManager from "@/pages/UnifiedContractManager";
-import SmartContractWizard from "@/pages/SmartContractWizard";
-import AITestingPage from "@/pages/AITestingPage";
-import DeepSearchDemo from "@/pages/DeepSearchDemo";
-import PermissionsDemo from "@/pages/PermissionsDemo";
-// import { AuthTest } from "@/pages/AuthTest"; // LEGACY: No longer used
+// Context providers - load statically as they're needed early
 import { AuthSessionProvider } from "@/components/auth/AuthSessionProvider";
 import { useAuth } from "@/hooks/use-auth";
 import { LanguageProvider } from "@/contexts/LanguageContext";
@@ -56,16 +65,6 @@ import { SidebarProvider } from "@/contexts/SidebarContext";
 import { PermissionProvider } from "@/contexts/PermissionContext";
 import { ChatProvider } from "@/contexts/ChatContext";
 import { PageContextProvider } from "@/contexts/PageContext";
-import AuthDiagnostic from './pages/AuthDiagnostic';
-import { lazy } from 'react';
-import SimpleContractGenerator from './pages/SimpleContractGenerator';
-import ContractSignature from './pages/ContractSignature';
-import SharedEstimate from './pages/SharedEstimate';
-import WebAuthnPopup from './pages/WebAuthnPopup';
-import HelpCenter from './pages/help/HelpCenter';
-import HelpArticle from './pages/help/HelpArticle';
-import GetSupport from './pages/help/GetSupport';
-
 
 import { Redirect, useLocation } from "wouter";
 import { useState, useEffect } from "react";
@@ -73,13 +72,19 @@ import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { PaymentBlockModal } from "@/components/subscription/PaymentBlockModal";
 
-// 🔧 FIX: Global error handler for unhandled promises - DESHABILITADO TEMPORALMENTE
-// setupGlobalErrorHandlers(); // ❌ COMENTADO: Estaba silenciando errores legítimos del agente
-
 // 🔧 STRIPE ERROR HANDLER
 window.addEventListener('stripe-load-error', (event: any) => {
   console.warn('🔧 [STRIPE-ERROR] Stripe loading failed, payments disabled:', event.detail?.error);
 });
+
+// Loading spinner component for lazy-loaded pages
+function PageLoadingSpinner() {
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+    </div>
+  );
+}
 
 // Componente para páginas protegidas
 type ProtectedRouteProps = {
@@ -135,9 +140,6 @@ function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
     };
   }, [user, loading]);
 
-  // ⚠️ TEMPORARY DISABLE: Guard de selección de plan desactivado para debugging
-  // TODO: Re-implementar cuando se solucione el problema de carga
-  
   // Show loading spinner while auth is not stable OR while checking suspension status
   if (loading || !authStable || isSuspensionLoading) {
     return (
@@ -173,7 +175,9 @@ function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
   // Renderiza el componente si el usuario está autenticado y no está suspendido (o está en página de suscripción)
   return (
     <>
-      <Component />
+      <Suspense fallback={<PageLoadingSpinner />}>
+        <Component />
+      </Suspense>
       {/* Mostrar modal informativo si está suspendido pero en página de suscripción */}
       {isSuspended && isOnSubscriptionPage && (
         <PaymentBlockModal
@@ -189,6 +193,7 @@ function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
 
 
 // 🔒 ISOLATED PUBLIC ROUTES - No authentication or layout needed
+// These routes load INSTANTLY without waiting for the main app bundle
 function PublicOnlyRouter() {
   return (
     <Switch>
@@ -213,6 +218,7 @@ function MainAppRouter() {
         <SidebarProvider>
           <PageContextProvider>
             <ChatProvider>
+            <Suspense fallback={<PageLoadingSpinner />}>
             <AppLayout>
             <Switch>
               {/* Root redirects to login - main app requires authentication */}
@@ -235,22 +241,22 @@ function MainAppRouter() {
               </Route>
 
               {/* Auth & Account - Public Routes */}
-              <Route path="/login" component={() => <AuthPage />} />
-              <Route path="/signup" component={Signup} />
-              <Route path="/recuperar-password" component={RecuperarPassword} />
-              <Route path="/forgot-password" component={RecuperarPassword} />
-              <Route path="/reset-password" component={ResetPassword} />
-              <Route path="/login/email-link-callback" component={EmailLinkCallback} />
-              <Route path="/email-verification-callback" component={EmailVerificationCallback} />
-              <Route path="/webauthn-popup" component={WebAuthnPopup} />
-              <Route path="/auth-diagnostic" component={AuthDiagnostic} />
+              <Route path="/login" component={() => <Suspense fallback={<PageLoadingSpinner />}><AuthPage /></Suspense>} />
+              <Route path="/signup" component={() => <Suspense fallback={<PageLoadingSpinner />}><Signup /></Suspense>} />
+              <Route path="/recuperar-password" component={() => <Suspense fallback={<PageLoadingSpinner />}><RecuperarPassword /></Suspense>} />
+              <Route path="/forgot-password" component={() => <Suspense fallback={<PageLoadingSpinner />}><RecuperarPassword /></Suspense>} />
+              <Route path="/reset-password" component={() => <Suspense fallback={<PageLoadingSpinner />}><ResetPassword /></Suspense>} />
+              <Route path="/login/email-link-callback" component={() => <Suspense fallback={<PageLoadingSpinner />}><EmailLinkCallback /></Suspense>} />
+              <Route path="/email-verification-callback" component={() => <Suspense fallback={<PageLoadingSpinner />}><EmailVerificationCallback /></Suspense>} />
+              <Route path="/webauthn-popup" component={() => <Suspense fallback={<PageLoadingSpinner />}><WebAuthnPopup /></Suspense>} />
+              <Route path="/auth-diagnostic" component={() => <Suspense fallback={<PageLoadingSpinner />}><AuthDiagnostic /></Suspense>} />
               
               {/* About & Legal - Public Routes */}
-              <Route path="/about-owlfenc" component={AboutOwlFence} />
-              <Route path="/about-mervin" component={AboutMervin} />
-              <Route path="/legal-policy" component={LegalPolicy} />
-              <Route path="/privacy-policy" component={PrivacyPolicy} />
-              <Route path="/terms-of-service" component={TermsOfService} />
+              <Route path="/about-owlfenc" component={() => <Suspense fallback={<PageLoadingSpinner />}><AboutOwlFence /></Suspense>} />
+              <Route path="/about-mervin" component={() => <Suspense fallback={<PageLoadingSpinner />}><AboutMervin /></Suspense>} />
+              <Route path="/legal-policy" component={() => <Suspense fallback={<PageLoadingSpinner />}><LegalPolicy /></Suspense>} />
+              <Route path="/privacy-policy" component={() => <Suspense fallback={<PageLoadingSpinner />}><PrivacyPolicy /></Suspense>} />
+              <Route path="/terms-of-service" component={() => <Suspense fallback={<PageLoadingSpinner />}><TermsOfService /></Suspense>} />
 
               {/* Dashboard - Protected Route (redirects unauthenticated users to /) */}
               <Route path="/home" component={() => <ProtectedRoute component={Home} />} />
@@ -386,9 +392,10 @@ function MainAppRouter() {
               </Route>
 
               {/* Página no encontrada */}
-              <Route component={NotFound} />
+              <Route component={() => <Suspense fallback={<PageLoadingSpinner />}><NotFound /></Suspense>} />
             </Switch>
           </AppLayout>
+          </Suspense>
           <Toaster />
           </ChatProvider>
           </PageContextProvider>
@@ -418,7 +425,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>
         {isIsolatedPublicRoute ? (
-          // 🔒 ISOLATED: Render public routes without any app context
+          // 🔒 ISOLATED: Render public routes without any app context - LOADS INSTANTLY
           <div className="isolated-public-app">
             <PublicOnlyRouter />
             <Toaster />
