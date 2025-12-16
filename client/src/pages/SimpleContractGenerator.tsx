@@ -3434,11 +3434,12 @@ export default function SimpleContractGenerator() {
   ]);
 
   // Simplified Signature Protocol Handler - Generate signature links for both parties
-  // ✅ TEMPLATE-AWARE: Works with Independent Contractor Agreement, Change Order, and future templates
+  // ✅ TEMPLATE-AWARE: Works with Independent Contractor Agreement, Change Order, Lien Waiver, and future templates
   const handleStartSignatureProtocol = useCallback(async () => {
-    // Determine if this is a Change Order or similar dynamic template
+    // 🔧 FIX: Use the actual documentFlowType instead of hardcoding to 'independent-contractor'
+    // This ensures single-signature templates like 'lien-waiver' are handled correctly
     const isChangeOrder = documentFlowType === 'change-order';
-    const templateId = isChangeOrder ? 'change-order' : 'independent-contractor';
+    const templateId = documentFlowType || 'independent-contractor'; // Use actual document type
     
     // Validate based on template type
     if (isChangeOrder) {
@@ -3542,6 +3543,9 @@ export default function SimpleContractGenerator() {
 
       console.log(
         "✅ [SIGNATURE-SIMPLE] Starting signature protocol (session-based auth)...",
+      );
+      console.log(
+        `📋 [SIGNATURE-TEMPLATE] Template ID: ${templateId}, Signature Requirement: ${signatureRequirement}`,
       );
 
       // ✅ CRITICAL FIX: Include Firebase token in Authorization header
