@@ -3296,6 +3296,9 @@ export default function SimpleContractGenerator() {
     setDualSignatureStatus("");
     setContractorSignUrl("");
     setClientSignUrl("");
+    // 🔧 CRITICAL FIX: Reset multi-channel state to allow fresh signature protocol
+    setIsMultiChannelActive(false);
+    setDeliveryStatus("");
     // Reset document type selector to default
     setSelectedDocumentType("independent-contractor");
   }, []);
@@ -3471,7 +3474,8 @@ export default function SimpleContractGenerator() {
     }
 
     setIsLoading(true);
-    setIsMultiChannelActive(true);
+    // 🔧 CRITICAL FIX: Do NOT set isMultiChannelActive here - only set it AFTER success
+    // Previously this caused the button to show "Links Generated" even when the API call failed
     setDeliveryStatus("Generating signature links...");
 
     try {
@@ -3583,6 +3587,12 @@ export default function SimpleContractGenerator() {
       setContractorSignUrl(result.contractorSignUrl || "");
       setClientSignUrl(result.clientSignUrl || "");
 
+      // 🔧 CRITICAL FIX: Only set isMultiChannelActive AFTER links are successfully generated
+      // This ensures the button shows "Links Generated" only when links actually exist
+      if (result.contractorSignUrl || result.clientSignUrl) {
+        setIsMultiChannelActive(true);
+      }
+      
       setDeliveryStatus("Signature links generated successfully");
 
       toast({
@@ -6359,15 +6369,19 @@ export default function SimpleContractGenerator() {
                         )}
 
                         {/* Simplified Start Button */}
+                        {/* 🔧 ROBUST CHECK: hasGeneratedLinks ensures we only show "Links Generated" when URLs actually exist */}
+                        {(() => {
+                          const hasGeneratedLinks = isMultiChannelActive && !!(contractorSignUrl || clientSignUrl);
+                          return (
                         <Button
                           onClick={handleStartSignatureProtocol}
                           disabled={
-                            isLoading || !contractHTML || isMultiChannelActive || (!isMasterContractor && !isTrialMaster && !isTrialUser)
+                            isLoading || !contractHTML || hasGeneratedLinks || (!isMasterContractor && !isTrialMaster && !isTrialUser)
                           }
                           className={`w-full py-3 font-medium transition-all relative ${
                             isLoading
                               ? "bg-yellow-600 text-black"
-                              : isMultiChannelActive
+                              : hasGeneratedLinks
                                 ? "bg-green-600 text-white"
                                 : !contractHTML
                                   ? "bg-gray-600 cursor-not-allowed text-gray-400"
@@ -6383,7 +6397,7 @@ export default function SimpleContractGenerator() {
                               <Loader2 className="h-4 w-4 animate-spin" />
                               <span>Generating...</span>
                             </div>
-                          ) : isMultiChannelActive ? (
+                          ) : hasGeneratedLinks ? (
                             <div className="flex items-center justify-center gap-2">
                               <CheckCircle className="h-4 w-4" />
                               <span>Links Generated</span>
@@ -6405,6 +6419,8 @@ export default function SimpleContractGenerator() {
                             </div>
                           )}
                         </Button>
+                          );
+                        })()}
 
                         {/* Premium Feature Notice */}
                         {!isMasterContractor && !isTrialMaster && !isTrialUser && (
