@@ -104,8 +104,9 @@ export class DualSignatureService {
   }
 
   /**
-   * Iniciar el proceso de firma dual
-   * Crea el contrato digital y envía enlaces únicos a ambas partes
+   * Iniciar el proceso de firma dual (o single según template)
+   * Crea el contrato digital y envía enlaces únicos a las partes correspondientes
+   * 🔧 Template-aware: Respects signatureType ('none' | 'single' | 'dual') from template registry
    */
   async initiateDualSignature(request: InitiateDualSignatureRequest): Promise<{
     success: boolean;
@@ -115,7 +116,7 @@ export class DualSignatureService {
     message: string;
   }> {
     try {
-      console.log("🚀 [DUAL-SIGNATURE] Starting dual signature workflow...");
+      console.log("🚀 [DUAL-SIGNATURE] Starting signature workflow...");
       console.log(
         "👤 [DUAL-SIGNATURE] Contractor:",
         request.contractData.contractorName
@@ -129,9 +130,22 @@ export class DualSignatureService {
         request.contractHTML?.length || 0
       );
       console.log(
-        "📄 [DUAL-SIGNATURE] Contract HTML preview:",
-        request.contractHTML?.substring(0, 200) || "No HTML content"
+        "📄 [DUAL-SIGNATURE] Template ID:",
+        request.templateId || "none (default dual)"
       );
+
+      // 🔧 TEMPLATE-AWARE: Determine signature type from template registry
+      let signatureMode: 'none' | 'single' | 'dual' = 'dual'; // Default to dual
+      if (request.templateId) {
+        const { templateRegistry } = await import('../templates/registry');
+        const template = templateRegistry.get(request.templateId);
+        if (template) {
+          signatureMode = template.signatureType;
+          console.log(`📋 [TEMPLATE-AWARE] Template '${request.templateId}' has signatureType: ${signatureMode}`);
+        } else {
+          console.log(`⚠️ [TEMPLATE-AWARE] Template '${request.templateId}' not found in registry, using default: dual`);
+        }
+      }
 
       // Generate unique contract ID
       const contractId = this.generateUniqueContractId();
@@ -142,12 +156,14 @@ export class DualSignatureService {
       const baseUrl = getBaseUrlWithoutRequest();
       console.log("🌍 [DUAL-SIGNATURE] Base URL for signature links:", baseUrl);
 
+      // 🔧 TEMPLATE-AWARE: Generate URLs based on signature mode
       const contractorSignUrl = `${baseUrl}/sign/${contractId}/contractor`;
-      const clientSignUrl = `${baseUrl}/sign/${contractId}/client`;
+      const clientSignUrl = signatureMode === 'dual' ? `${baseUrl}/sign/${contractId}/client` : null;
 
       console.log("🔗 [DUAL-SIGNATURE] Signature URLs generated:");
       console.log("🏗️ [DUAL-SIGNATURE] Contractor URL:", contractorSignUrl);
-      console.log("👥 [DUAL-SIGNATURE] Client URL:", clientSignUrl);
+      console.log(`👥 [DUAL-SIGNATURE] Client URL: ${clientSignUrl || 'N/A (single signature mode)'}`);
+      console.log(`📋 [DUAL-SIGNATURE] Signature mode: ${signatureMode}`);
 
       // ✅ FIREBASE-ONLY: Save contract to Firebase dualSignatureContracts collection
       // ⚡ PERFORMANCE: Using cached import (firebaseDb)
@@ -181,11 +197,12 @@ export class DualSignatureService {
         
         // Signature data
         contractorSigned: false,
-        clientSigned: false,
+        // 🔧 For single signature mode, client is pre-marked as "not required"
+        clientSigned: signatureMode === 'single' ? true : false, // Single mode: client signature not required
         contractorSignature: null,
         clientSignature: null,
         contractorSignedAt: null,
-        clientSignedAt: null,
+        clientSignedAt: signatureMode === 'single' ? new Date() : null, // Mark as "not applicable"
         contractorSignUrl,
         clientSignUrl,
         
@@ -197,8 +214,9 @@ export class DualSignatureService {
         createdAt: new Date(),
         updatedAt: new Date(),
         
-        // ✅ Template-aware: Store templateId for signature handling during completion
+        // ✅ Template-aware: Store templateId and signatureMode for signature handling during completion
         templateId: request.templateId || null,
+        signatureMode, // 🔧 Store for reference during completion flow
       };
 
       await db
@@ -220,10 +238,11 @@ export class DualSignatureService {
         status: 'in_progress', // ✅ FIXED: Match status with dualSignatureContracts
         contractorSignUrl,
         clientSignUrl,
-        shareableLink: clientSignUrl, // Para compatibilidad
+        shareableLink: clientSignUrl || contractorSignUrl, // 🔧 Fallback to contractor URL for single mode
         permanentUrl: null,
         createdAt: firebaseContract.createdAt,
         updatedAt: firebaseContract.updatedAt,
+        signatureMode, // 🔧 Store for reference
         contractData: {
           client: {
             name: request.contractData.clientName,
@@ -260,19 +279,33 @@ export class DualSignatureService {
         contractId
       );
 
-      // Send dual notifications
-      await this.sendDualNotifications({
-        contractId,
-        contractorName: request.contractData.contractorName,
-        contractorEmail: request.contractData.contractorEmail,
-        contractorCompany: request.contractData.contractorCompany,
-        clientName: request.contractData.clientName,
-        clientEmail: request.contractData.clientEmail,
-        projectDescription: request.contractData.projectDescription,
-        totalAmount: request.contractData.totalAmount,
-        contractorSignUrl,
-        clientSignUrl,
-      });
+      // 🔧 TEMPLATE-AWARE: Send notifications based on signature mode
+      if (signatureMode === 'single') {
+        // Single signature mode: only notify contractor
+        console.log("📧 [SINGLE-SIGNATURE] Sending notification only to contractor...");
+        await this.sendContractorOnlyNotification({
+          contractId,
+          contractorName: request.contractData.contractorName,
+          contractorEmail: request.contractData.contractorEmail,
+          contractorCompany: request.contractData.contractorCompany,
+          projectDescription: request.contractData.projectDescription,
+          contractorSignUrl,
+        });
+      } else {
+        // Dual signature mode: notify both parties
+        await this.sendDualNotifications({
+          contractId,
+          contractorName: request.contractData.contractorName,
+          contractorEmail: request.contractData.contractorEmail,
+          contractorCompany: request.contractData.contractorCompany,
+          clientName: request.contractData.clientName,
+          clientEmail: request.contractData.clientEmail,
+          projectDescription: request.contractData.projectDescription,
+          totalAmount: request.contractData.totalAmount,
+          contractorSignUrl,
+          clientSignUrl: clientSignUrl!,
+        });
+      }
 
       // Update email sent status in Firebase
       await db
@@ -284,16 +317,17 @@ export class DualSignatureService {
           updatedAt: new Date()
         });
 
+      const modeLabel = signatureMode === 'single' ? 'Single' : 'Dual';
       console.log(
-        "✅ [FIREBASE-ONLY] Dual signature workflow initiated successfully"
+        `✅ [FIREBASE-ONLY] ${modeLabel} signature workflow initiated successfully`
       );
 
       return {
         success: true,
         contractId,
         contractorSignUrl,
-        clientSignUrl,
-        message: `Dual signature workflow initiated. Contract ID: ${contractId}`,
+        clientSignUrl: clientSignUrl || undefined, // 🔧 Return undefined instead of null for API consistency
+        message: `${modeLabel} signature workflow initiated. Contract ID: ${contractId}`,
       };
     } catch (error: any) {
       console.error(
@@ -1752,6 +1786,104 @@ export class DualSignatureService {
         error
       );
     }
+  }
+
+  /**
+   * 🔧 SINGLE SIGNATURE MODE: Send notification only to contractor
+   * Used for documents like Lien Waivers that only require contractor signature
+   */
+  private async sendContractorOnlyNotification(params: {
+    contractId: string;
+    contractorName: string;
+    contractorEmail: string;
+    contractorCompany: string;
+    projectDescription: string;
+    contractorSignUrl: string;
+  }): Promise<void> {
+    try {
+      console.log("📧 [SINGLE-SIGNATURE] Sending contractor-only notification...");
+      console.log("📧 [EMAIL-DEBUG] Contractor email:", params.contractorEmail);
+
+      await this.emailService.sendContractEmail({
+        to: params.contractorEmail,
+        toName: params.contractorName,
+        contractorEmail: params.contractorEmail,
+        contractorName: params.contractorName,
+        contractorCompany: params.contractorCompany,
+        subject: `🔒 Document Ready for Your Signature - ${params.contractorCompany}`,
+        htmlContent: this.generateSingleSignatureEmailHTML({
+          contractorName: params.contractorName,
+          projectDescription: params.projectDescription,
+          signUrl: params.contractorSignUrl,
+          contractId: params.contractId,
+        }),
+      });
+
+      console.log("✅ [SINGLE-SIGNATURE] Contractor notification sent:", params.contractorEmail);
+    } catch (error: any) {
+      console.error(
+        "❌ [SINGLE-SIGNATURE] Error sending contractor notification:",
+        error
+      );
+    }
+  }
+
+  /**
+   * Generate HTML email for single-signature documents (like Lien Waivers)
+   */
+  private generateSingleSignatureEmailHTML(params: {
+    contractorName: string;
+    projectDescription: string;
+    signUrl: string;
+    contractId: string;
+  }): string {
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Document Ready for Signature</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="margin: 0; font-size: 24px;">📋 Document Ready for Signature</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Your signature is required to complete this document</p>
+          </div>
+
+          <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 10px 10px; border: 1px solid #e2e8f0;">
+            <h2 style="color: #1d4ed8; margin-top: 0;">Hello ${params.contractorName},</h2>
+
+            <p>A legal document has been prepared and is ready for your signature.</p>
+
+            <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #3b82f6; margin: 20px 0;">
+              <h3 style="margin: 0 0 10px 0; color: #1d4ed8;">📄 Document Details</h3>
+              <p><strong>Project:</strong> ${params.projectDescription}</p>
+              <p><strong>Document ID:</strong> ${params.contractId}</p>
+              <p><strong>Status:</strong> <span style="color: #f59e0b;">⏳ Awaiting Your Signature</span></p>
+            </div>
+
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${params.signUrl}" 
+                 style="display: inline-block; background: #3b82f6; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                🖊️ Sign Document Now
+              </a>
+            </div>
+
+            <div style="background: #dbeafe; padding: 15px; border-radius: 8px; border-left: 4px solid #3b82f6; margin: 20px 0;">
+              <p style="margin: 0; font-size: 14px;">
+                <strong>🔒 Secure Signing:</strong> This document will be digitally certified upon completion with a legal seal and audit trail.
+              </p>
+            </div>
+
+            <p style="color: #64748b; font-size: 12px; margin-top: 30px; text-align: center;">
+              Contract ID: ${params.contractId}<br>
+              This is an automated message from your document management system.
+            </p>
+          </div>
+        </body>
+      </html>
+    `;
   }
 
   /**
