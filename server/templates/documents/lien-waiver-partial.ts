@@ -1,21 +1,25 @@
 /**
- * Partial Lien Waiver Template
- * Version 1.0
+ * Partial Lien Waiver Template - Premium Legal Edition
+ * Version 2.0
+ * 
+ * Generic Partial Lien Waiver with strong, lender-friendly language.
+ * Designed to pass lender review without hesitation.
+ * 
+ * Single signature: Contractor/Claimant only
  */
 
 import { templateRegistry, TemplateData, ContractorBranding } from '../registry';
+import { formatDate, formatCurrency } from '../shared/baseLayout';
 
 function generatePartialLienWaiverHTML(data: TemplateData, branding: ContractorBranding): string {
   const contractorName = branding.companyName || data.contractor.name || 'Contractor';
   const contractorAddress = branding.address || data.contractor.address || '';
   const contractorLicense = branding.licenseNumber || data.contractor.license || '';
+  const contractorPhone = branding.phone || data.contractor.phone || '';
+  const contractorEmail = branding.email || data.contractor.email || '';
 
-  const currentDate = new Date().toLocaleDateString('en-US', { 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
-  });
-
+  const currentDate = formatDate();
+  
   const lienWaiver = data.lienWaiver || {
     paymentAmount: data.financials.total * 0.3,
     paymentDate: currentDate,
@@ -25,252 +29,465 @@ function generatePartialLienWaiverHTML(data: TemplateData, branding: ContractorB
     remainingBalance: data.financials.total * 0.7,
   };
 
+  const throughDate = lienWaiver.throughDate || currentDate;
+  const ownerName = lienWaiver.ownerName || data.client.name;
+  const payingParty = lienWaiver.payingParty || data.client.name;
+  const paymentMethodText = lienWaiver.paymentMethod === 'ach' ? 'ACH transfer' :
+                            lienWaiver.paymentMethod === 'wire' ? 'wire transfer' :
+                            lienWaiver.paymentMethod === 'check' ? 'check' : 'payment';
+  const paymentRefText = lienWaiver.paymentReference ? ` (Ref: ${lienWaiver.paymentReference})` : '';
+
   return `<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Partial Lien Waiver</title>
+    <title>Conditional Waiver and Release Upon Progress Payment</title>
     <style>
         @page {
             size: 8.5in 11in;
-            margin: 0.75in;
+            margin: 0.6in 0.75in;
         }
-        body {
-            font-family: 'Times New Roman', serif;
-            font-size: 12pt;
-            line-height: 1.5;
+        * {
             margin: 0;
             padding: 0;
-            color: #000;
+            box-sizing: border-box;
         }
-        .header-section {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .contract-title {
-            font-size: 18pt;
-            font-weight: bold;
-            text-transform: uppercase;
-            margin: 0 0 5px 0;
-        }
-        .subtitle {
-            font-size: 14pt;
-            color: #333;
-            border-bottom: 2px solid #333;
-            padding-bottom: 10px;
-        }
-        .warning-box {
-            border: 2px solid #d32f2f;
-            background: #ffebee;
-            padding: 15px;
-            margin: 20px 0;
-            text-align: center;
-        }
-        .warning-title {
-            font-weight: bold;
-            color: #d32f2f;
+        body {
+            font-family: 'Times New Roman', Georgia, serif;
             font-size: 11pt;
-            text-transform: uppercase;
+            line-height: 1.45;
+            color: #1a1a1a;
+            background: #fff;
         }
-        .warning-text {
-            font-size: 10pt;
-            color: #333;
-            margin-top: 5px;
+        
+        /* Premium Header */
+        .document-header {
+            text-align: center;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+            border-bottom: 3px double #2c3e50;
         }
-        .info-section {
-            margin: 25px 0;
-        }
-        .info-row {
-            display: flex;
-            margin: 10px 0;
-            border-bottom: 1px dotted #ccc;
-            padding-bottom: 5px;
-        }
-        .info-label {
-            width: 200px;
+        .document-title {
+            font-size: 16pt;
             font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #1a1a1a;
+            margin-bottom: 6px;
         }
-        .info-value {
-            flex: 1;
+        .document-subtitle {
+            font-size: 12pt;
+            font-weight: bold;
+            color: #34495e;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
-        .legal-text {
+        .document-type-badge {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 4px 16px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            font-size: 9pt;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #6c757d;
+        }
+        
+        /* Legal Notice Box */
+        .legal-notice {
+            border: 2px solid #c0392b;
+            background: linear-gradient(to bottom, #fdf2f2, #fff);
+            padding: 12px 16px;
+            margin: 18px 0;
+        }
+        .legal-notice-header {
+            font-size: 10pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #c0392b;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+        }
+        .legal-notice-text {
+            font-size: 9.5pt;
+            color: #333;
+            line-height: 1.5;
             text-align: justify;
-            margin: 20px 0;
+        }
+        
+        /* Summary Grid */
+        .summary-section {
+            margin: 22px 0;
+        }
+        .summary-grid {
+            display: table;
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .summary-row {
+            display: table-row;
+        }
+        .summary-label {
+            display: table-cell;
+            width: 180px;
+            padding: 8px 12px 8px 0;
+            font-weight: bold;
+            font-size: 10pt;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #34495e;
+            vertical-align: top;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        .summary-value {
+            display: table-cell;
+            padding: 8px 0;
+            font-size: 11pt;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        
+        /* Payment Amount Box */
+        .payment-box {
+            margin: 24px 0;
+            border: 2px solid #2c3e50;
+            background: #f8f9fa;
+        }
+        .payment-box-header {
+            background: #2c3e50;
+            color: white;
+            padding: 10px 16px;
+            font-size: 10pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+        .payment-box-content {
+            padding: 16px;
+            text-align: center;
+        }
+        .payment-amount {
+            font-size: 22pt;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 8px 0;
+        }
+        .payment-through-date {
+            font-size: 10pt;
+            color: #555;
+            margin-top: 8px;
+        }
+        .payment-through-date strong {
+            color: #2c3e50;
+        }
+        .remaining-balance {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px dashed #ccc;
+            font-size: 10pt;
+            color: #666;
+        }
+        
+        /* Legal Body */
+        .legal-body {
+            margin: 24px 0;
+        }
+        .legal-paragraph {
+            text-align: justify;
+            margin-bottom: 14px;
+            font-size: 11pt;
             line-height: 1.6;
         }
-        .amount-box {
-            border: 2px solid #333;
-            padding: 20px;
-            margin: 25px 0;
-            text-align: center;
+        .legal-paragraph strong {
+            color: #1a1a1a;
         }
-        .amount-label {
+        
+        /* Conditional Section */
+        .conditional-section {
+            margin: 24px 0;
+            padding: 16px;
+            background: #f8f9fa;
+            border-left: 4px solid #2c3e50;
+        }
+        .conditional-header {
             font-size: 11pt;
-            color: #555;
+            font-weight: bold;
             text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #2c3e50;
+            margin-bottom: 12px;
         }
-        .amount-value {
-            font-size: 20pt;
-            font-weight: bold;
-            margin: 10px 0;
-        }
-        .remaining-note {
-            font-size: 11pt;
-            color: #666;
-            margin-top: 10px;
-        }
-        .conditions-section {
-            margin: 25px 0;
-            padding: 15px;
-            background: #f5f5f5;
-        }
-        .conditions-title {
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        .condition-item {
+        .conditional-item {
+            display: flex;
+            align-items: flex-start;
             margin: 8px 0;
-            padding-left: 20px;
+            font-size: 10pt;
+            line-height: 1.5;
         }
+        .conditional-check {
+            width: 18px;
+            height: 18px;
+            min-width: 18px;
+            border: 1.5px solid #2c3e50;
+            background: #fff;
+            margin-right: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11pt;
+            color: #2c3e50;
+            font-weight: bold;
+        }
+        
+        /* Exceptions Section */
+        .exceptions-section {
+            margin: 20px 0;
+            padding: 14px;
+            border: 1px solid #e0e0e0;
+            background: #fafafa;
+        }
+        .exceptions-header {
+            font-size: 10pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            color: #555;
+        }
+        .exceptions-content {
+            font-size: 10pt;
+            min-height: 40px;
+            color: #333;
+        }
+        .no-exceptions {
+            color: #888;
+            font-style: italic;
+        }
+        
+        /* Signature Section */
         .signature-section {
-            margin-top: 40px;
+            margin-top: 36px;
             page-break-inside: avoid;
         }
+        .signature-header {
+            font-size: 11pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #2c3e50;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #2c3e50;
+            margin-bottom: 20px;
+        }
         .signature-block {
-            margin: 30px 0;
+            max-width: 400px;
+        }
+        .signer-company {
+            font-size: 11pt;
+            font-weight: bold;
+            color: #1a1a1a;
+            margin-bottom: 4px;
+        }
+        .signer-label {
+            font-size: 9pt;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         .signature-line {
-            border-bottom: 1px solid #000;
-            width: 300px;
-            height: 40px;
-            margin: 15px 0 5px 0;
+            border-bottom: 1px solid #1a1a1a;
+            height: 36px;
+            margin: 24px 0 4px 0;
         }
-        .signature-label {
-            margin: 3px 0;
-            font-size: 10pt;
+        .signature-fields {
+            margin-top: 20px;
         }
-        .notary-section {
-            margin-top: 40px;
-            padding: 20px;
-            border: 1px solid #ccc;
+        .signature-field-row {
+            display: flex;
+            margin: 10px 0;
+            align-items: baseline;
         }
-        .notary-title {
+        .signature-field-label {
+            width: 100px;
+            font-size: 9pt;
             font-weight: bold;
+            text-transform: uppercase;
+            color: #555;
+        }
+        .signature-field-line {
+            flex: 1;
+            border-bottom: 1px solid #999;
+            margin-left: 10px;
+        }
+        
+        /* Footer */
+        .document-footer {
+            margin-top: 40px;
+            padding-top: 16px;
+            border-top: 1px solid #ddd;
             text-align: center;
-            margin-bottom: 15px;
+        }
+        .footer-brand {
+            font-size: 8pt;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .footer-legal {
+            font-size: 7.5pt;
+            color: #aaa;
+            margin-top: 4px;
         }
     </style>
 </head>
 <body>
 
-<div class="header-section">
-    <h1 class="contract-title">PARTIAL LIEN WAIVER</h1>
-    <p class="subtitle">Conditional Waiver and Release Upon Progress Payment</p>
+<div class="document-header">
+    <div class="document-title">Conditional Waiver and Release</div>
+    <div class="document-subtitle">Upon Progress Payment</div>
+    <div class="document-type-badge">Partial Lien Waiver</div>
 </div>
 
-<div class="warning-box">
-    <div class="warning-title">⚠️ Important Notice</div>
-    <div class="warning-text">
-        This document waives the claimant's lien, stop payment notice, and payment bond rights to the extent and through the date specified below, 
-        effective only upon receipt of actual payment.
-    </div>
-</div>
-
-<div class="info-section">
-    <div class="info-row">
-        <span class="info-label">Property Owner:</span>
-        <span class="info-value">${data.client.name}</span>
-    </div>
-    <div class="info-row">
-        <span class="info-label">Property Address:</span>
-        <span class="info-value">${data.project.location}</span>
-    </div>
-    <div class="info-row">
-        <span class="info-label">Claimant (Contractor):</span>
-        <span class="info-value">${contractorName}</span>
-    </div>
-    ${contractorAddress ? `
-    <div class="info-row">
-        <span class="info-label">Contractor Address:</span>
-        <span class="info-value">${contractorAddress}</span>
-    </div>
-    ` : ''}
-    ${contractorLicense ? `
-    <div class="info-row">
-        <span class="info-label">License Number:</span>
-        <span class="info-value">${contractorLicense}</span>
-    </div>
-    ` : ''}
-    <div class="info-row">
-        <span class="info-label">Through Date:</span>
-        <span class="info-value">${lienWaiver.throughDate}</span>
+<div class="legal-notice">
+    <div class="legal-notice-header">Notice to Property Owner and Paying Party</div>
+    <div class="legal-notice-text">
+        This document waives the claimant's lien, stop payment notice, and payment bond rights 
+        through the date specified below, effective only upon actual receipt and clearance of the 
+        stated payment. Rights for work or materials furnished after the through date are expressly 
+        reserved. Before any recipient relies on this document, verification of payment is recommended.
     </div>
 </div>
 
-<div class="amount-box">
-    <div class="amount-label">Payment Amount Being Waived</div>
-    <div class="amount-value">$${lienWaiver.paymentAmount.toLocaleString()}</div>
-    <div class="remaining-note">
-        Remaining Contract Balance: $${(lienWaiver.remainingBalance || 0).toLocaleString()}
+<div class="summary-section">
+    <div class="summary-grid">
+        <div class="summary-row">
+            <span class="summary-label">Claimant</span>
+            <span class="summary-value">${contractorName}${contractorLicense ? ` (Lic. #${contractorLicense})` : ''}</span>
+        </div>
+        ${contractorAddress ? `
+        <div class="summary-row">
+            <span class="summary-label">Claimant Address</span>
+            <span class="summary-value">${contractorAddress}</span>
+        </div>
+        ` : ''}
+        <div class="summary-row">
+            <span class="summary-label">Customer / Paying Party</span>
+            <span class="summary-value">${payingParty}</span>
+        </div>
+        <div class="summary-row">
+            <span class="summary-label">Owner</span>
+            <span class="summary-value">${ownerName}</span>
+        </div>
+        <div class="summary-row">
+            <span class="summary-label">Job Location</span>
+            <span class="summary-value">${data.project.location}</span>
+        </div>
     </div>
 </div>
 
-<div class="legal-text">
-    <p>
-        Upon receipt of a check from <strong>${data.client.name}</strong> in the sum of 
-        <strong>$${lienWaiver.paymentAmount.toLocaleString()}</strong> payable to <strong>${contractorName}</strong>, 
-        and when the check has been properly endorsed and has been paid by the bank on which it is drawn, 
-        this document becomes effective to release any mechanic's lien, stop payment notice, or bond right 
-        the undersigned has on the job of <strong>${data.client.name}</strong> located at 
-        <strong>${data.project.location}</strong> to the following extent:
+<div class="payment-box">
+    <div class="payment-box-header">Progress Payment Amount</div>
+    <div class="payment-box-content">
+        <div class="payment-amount">${formatCurrency(lienWaiver.paymentAmount)}</div>
+        <div class="payment-through-date">
+            For labor, services, equipment, and materials furnished through <strong>${formatDate(throughDate)}</strong>
+        </div>
+        ${lienWaiver.paymentReference ? `
+        <div style="font-size: 9pt; color: #666; margin-top: 6px;">
+            Payment Reference: ${paymentMethodText}${paymentRefText}
+        </div>
+        ` : ''}
+        ${lienWaiver.remainingBalance !== undefined && lienWaiver.remainingBalance > 0 ? `
+        <div class="remaining-balance">
+            Remaining Contract Balance: <strong>${formatCurrency(lienWaiver.remainingBalance)}</strong>
+        </div>
+        ` : ''}
+    </div>
+</div>
+
+<div class="legal-body">
+    <p class="legal-paragraph">
+        Upon receipt of ${paymentMethodText} from <strong>${payingParty}</strong> in the amount of 
+        <strong>${formatCurrency(lienWaiver.paymentAmount)}</strong> payable to <strong>${contractorName}</strong>, 
+        and when such payment has been properly received, endorsed (if applicable), and cleared by the 
+        financial institution upon which it is drawn, this document shall become effective to waive 
+        and release any mechanic's lien, stop payment notice, or bond right the undersigned has or 
+        may have on the job of <strong>${ownerName}</strong> located at <strong>${data.project.location}</strong>.
     </p>
-    <p>
-        This release covers a progress payment for labor, services, equipment, or materials furnished to that job 
-        through <strong>${lienWaiver.throughDate}</strong> only and does not cover any retention, 
-        pending modifications and changes, or items furnished after that date.
+    
+    <p class="legal-paragraph">
+        <strong>Extent of Waiver:</strong> This release covers only a progress payment for labor, 
+        services, equipment, or materials furnished to that job through <strong>${formatDate(throughDate)}</strong> 
+        only, and does not cover any of the following: (1) retention, whether withheld or not; 
+        (2) pending change orders, modifications, or additional work; (3) disputed claims; or 
+        (4) any items furnished after that date.
+    </p>
+    
+    <p class="legal-paragraph">
+        The undersigned warrants that it has already paid or will use the funds received under 
+        this progress payment to promptly pay in full all of its laborers, subcontractors, 
+        materialmen, and suppliers for all work, materials, equipment, and services provided 
+        through the date stated above.
     </p>
 </div>
 
-<div class="conditions-section">
-    <div class="conditions-title">CONDITIONS:</div>
-    <div class="condition-item">✓ This waiver is CONDITIONAL upon actual receipt and clearance of payment.</div>
-    <div class="condition-item">✓ Rights to lien for work performed AFTER ${lienWaiver.throughDate} are expressly RESERVED.</div>
-    <div class="condition-item">✓ This waiver does not cover retention amounts or pending change orders.</div>
-    <div class="condition-item">✓ Before any recipient of this document relies on it, said party should verify evidence of payment.</div>
+<div class="conditional-section">
+    <div class="conditional-header">Conditions and Reservations</div>
+    <div class="conditional-item">
+        <span class="conditional-check">✓</span>
+        <span>This waiver is CONDITIONAL and takes effect only upon actual receipt and clearance of the stated payment.</span>
+    </div>
+    <div class="conditional-item">
+        <span class="conditional-check">✓</span>
+        <span>All lien rights for work, services, or materials furnished AFTER ${formatDate(throughDate)} are expressly RESERVED.</span>
+    </div>
+    <div class="conditional-item">
+        <span class="conditional-check">✓</span>
+        <span>This waiver does not release retention amounts, disputed claims, or pending modifications.</span>
+    </div>
+    <div class="conditional-item">
+        <span class="conditional-check">✓</span>
+        <span>Recipients should independently verify payment before relying on this document.</span>
+    </div>
+</div>
+
+<div class="exceptions-section">
+    <div class="exceptions-header">Exceptions (if any)</div>
+    <div class="exceptions-content">
+        ${lienWaiver.exceptions ? lienWaiver.exceptions : '<span class="no-exceptions">None</span>'}
+    </div>
 </div>
 
 <div class="signature-section">
-    <p><strong>CLAIMANT'S SIGNATURE:</strong></p>
+    <div class="signature-header">Claimant Signature</div>
     
     <div class="signature-block">
+        <div class="signer-company">${contractorName}</div>
+        <div class="signer-label">Claimant / Contractor</div>
+        
         <div class="signature-line"></div>
-        <div class="signature-label"><strong>${contractorName}</strong></div>
-        <div class="signature-label">Authorized Signature</div>
-    </div>
-    
-    <div class="info-row">
-        <span class="info-label">Printed Name:</span>
-        <span class="info-value">_________________________________</span>
-    </div>
-    <div class="info-row">
-        <span class="info-label">Title:</span>
-        <span class="info-value">_________________________________</span>
-    </div>
-    <div class="info-row">
-        <span class="info-label">Date:</span>
-        <span class="info-value">${currentDate}</span>
+        <div class="signer-label">Authorized Signature</div>
+        
+        <div class="signature-fields">
+            <div class="signature-field-row">
+                <span class="signature-field-label">Print Name</span>
+                <span class="signature-field-line"></span>
+            </div>
+            <div class="signature-field-row">
+                <span class="signature-field-label">Title</span>
+                <span class="signature-field-line"></span>
+            </div>
+            <div class="signature-field-row">
+                <span class="signature-field-label">Date</span>
+                <span class="signature-field-line"></span>
+            </div>
+        </div>
     </div>
 </div>
 
-<div class="notary-section">
-    <div class="notary-title">NOTARY ACKNOWLEDGMENT (If Required)</div>
-    <p>State of _________________ County of _________________</p>
-    <p>On _____________, before me, _________________________________, Notary Public,</p>
-    <p>personally appeared _________________________________, who proved to me on the basis of satisfactory evidence to be the person(s) whose name(s) is/are subscribed to the within instrument and acknowledged to me that he/she/they executed the same in his/her/their authorized capacity(ies).</p>
-    <p style="margin-top: 30px;">
-        _________________________________ (Seal)<br>
-        Notary Public
-    </p>
+<div class="document-footer">
+    <div class="footer-brand">Powered by Mervin AI</div>
+    <div class="footer-legal">This document was generated using professional legal document automation.</div>
 </div>
 
 </body>
@@ -285,8 +502,9 @@ templateRegistry.register({
   category: 'document',
   subcategory: 'legal',
   status: 'active',
-  templateVersion: '1.0',
+  templateVersion: '2.0',
   signatureType: 'single',
+  includesSignaturePlaceholders: true,
   requiredFields: [
     'client.name',
     'contractor.name',
@@ -298,6 +516,11 @@ templateRegistry.register({
     'lienWaiver.paymentDate',
     'lienWaiver.throughDate',
     'lienWaiver.remainingBalance',
+    'lienWaiver.paymentMethod',
+    'lienWaiver.paymentReference',
+    'lienWaiver.exceptions',
+    'lienWaiver.ownerName',
+    'lienWaiver.payingParty',
   ],
   priority: 40,
   icon: 'FileCheck',

@@ -1,0 +1,219 @@
+Objective:
+Make the Partial Lien Waiver jurisdiction-aware, automatically adapting its legal language based on the project’s state, without creating separate templates or requiring user input.
+
+1️⃣ Core Rule (Non-Negotiable)
+
+The user must never select a state or version.
+The system detects jurisdiction automatically from the project or contract location.
+
+If the system cannot detect a state:
+
+Fallback to Generic Lien Waiver
+
+Log a warning (internal only)
+
+2️⃣ How the system determines jurisdiction
+
+Use this priority order:
+
+Project location state
+
+If missing → Linked contract location
+
+If missing → Company primary state
+
+Final fallback → GENERIC
+
+This logic must be centralized and reusable.
+
+3️⃣ Architecture: One Template, Multiple Legal Overlays
+Do NOT create multiple templates.
+
+Instead:
+
+templateId: partial-lien-waiver
+
+Add a legalOverlayResolver that injects the correct legal block at render time.
+
+Conceptually:
+
+Base Template (layout + summary + footer)
+        +
+State Legal Overlay (waiver text only)
+
+4️⃣ Legal Overlay Types
+
+The system should support three overlay types:
+
+🟢 GENERIC (Default)
+
+Used for states with flexible lien waiver rules.
+
+Characteristics:
+
+Strong, clean, lender-friendly language
+
+Conditional on receipt of payment
+
+Partial release “through date”
+
+Covers most states safely
+
+This is the default fallback.
+
+🟡 SEMI-STRUCTURED STATES
+
+States with common practices but no strict statutory form.
+
+Behavior:
+
+Use Generic text
+
+Add a state notice clause, e.g.:
+
+“This waiver is intended to comply with the laws of the State of Florida.”
+
+🔴 STATUTORY STATES (Strict)
+
+States that require specific statutory language.
+
+Behavior:
+
+Replace ONLY the waiver body text
+
+Keep:
+
+Header
+
+Summary block
+
+Footer
+
+Signature logic
+
+No UI change
+
+5️⃣ States to implement in Phase 2 (Initial Set)
+GENERIC (no special handling)
+
+Use Generic overlay for:
+
+Florida (FL)
+
+Georgia (GA)
+
+North Carolina (NC)
+
+South Carolina (SC)
+
+Tennessee (TN)
+
+Most Midwest & East Coast states
+
+STATUTORY – MUST BE HANDLED
+
+These should be explicitly detected and mapped:
+
+California (CA)
+
+Conditional Waiver and Release on Progress Payment
+
+Texas (TX)
+
+Conditional Waiver and Release on Progress Payment
+
+Arizona (AZ)
+
+Statutory waiver language
+
+Nevada (NV)
+
+Specific notice requirements
+
+These states must override the waiver body text with statutory-compliant language.
+
+6️⃣ Implementation Details (Important)
+Template Registry Additions
+
+Each template should define:
+
+{
+  "templateId": "partial-lien-waiver",
+  "signatureRequirement": "single",
+  "supportsJurisdictionOverlay": true
+}
+
+Overlay Resolver
+
+At render time:
+
+Detect jurisdiction
+
+Resolve overlay type
+
+Inject correct legal block
+
+Render final HTML
+
+Generate PDF
+
+Start signature protocol
+
+No branching in UI.
+No branching in user flow.
+
+7️⃣ Signature Rules (Do NOT change)
+
+Single signature: Contractor only
+
+Reuse existing signature engine
+
+No client signer
+
+No new signature logic
+
+8️⃣ Validation & Safety Checks
+
+Before generating PDF:
+
+Ensure required fields exist for statutory states
+
+If a required statutory field is missing:
+
+Block generation
+
+Show clear error to contractor
+
+Do NOT silently fallback
+
+9️⃣ Why this matters (Product Reasoning)
+
+This approach:
+
+Avoids 50 templates
+
+Keeps UX simple
+
+Builds lender trust
+
+Scales to Final Lien Waiver with minimal work
+
+Protects the contractor legally without confusing them
+
+10️⃣ End Result
+
+When this phase is done:
+
+Partial Lien Waiver works nationwide
+
+Automatically adapts to state law
+
+User never sees legal complexity
+
+Same system will support Final Lien Waiver
+
+No refactor later
+
+One-line Principle for the Team
+
+One document. One flow. Jurisdiction handled by the system, not the user.

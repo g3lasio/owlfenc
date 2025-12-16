@@ -71,9 +71,14 @@ export interface TemplateData {
     paymentAmount: number;
     paymentDate: string;
     paymentPeriod?: string;
-    throughDate?: string;
+    throughDate: string;
     isFinal: boolean;
     remainingBalance?: number;
+    paymentMethod?: 'check' | 'ach' | 'wire' | 'other';
+    paymentReference?: string;
+    exceptions?: string;
+    ownerName?: string;
+    payingParty?: string;
   };
   completion?: {
     completionDate: string;

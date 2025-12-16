@@ -147,6 +147,150 @@ class TemplateConfigRegistry {
 
 export const templateConfigRegistry = new TemplateConfigRegistry();
 
+// ===== Partial Lien Waiver Configuration =====
+const partialLienWaiverSchema = z.object({
+  throughDate: z.string().min(1, 'Through date is required'),
+  paymentAmount: z.number().min(0.01, 'Payment amount must be greater than 0'),
+  paymentMethod: z.enum(['check', 'ach', 'wire', 'other']).optional(),
+  paymentReference: z.string().optional(),
+  ownerName: z.string().optional(),
+  payingParty: z.string().optional(),
+  exceptions: z.string().optional(),
+});
+
+templateConfigRegistry.register({
+  config: {
+    templateId: 'lien-waiver-partial',
+    title: 'Partial Lien Waiver Configuration',
+    subtitle: 'Conditional waiver for progress payment received',
+    icon: 'FileCheck',
+    helpText: 'A Partial Lien Waiver releases your lien rights only through the specified date and only after payment is received. This protects your rights for future work.',
+    signatureRequirement: 'single',
+    groups: [
+      {
+        id: 'payment-details',
+        title: 'Payment Details',
+        description: 'Progress payment being waived',
+        icon: 'DollarSign',
+        fields: [
+          {
+            id: 'paymentAmount',
+            label: 'Payment Amount',
+            type: 'currency',
+            placeholder: '0.00',
+            helpText: 'The progress payment amount for which lien rights are being waived',
+            required: true,
+            validation: {
+              min: 0.01,
+            },
+          },
+          {
+            id: 'throughDate',
+            label: 'Through Date',
+            type: 'date',
+            helpText: 'Lien rights are waived for work performed through this date only',
+            required: true,
+          },
+        ],
+      },
+      {
+        id: 'payment-reference',
+        title: 'Payment Reference (Optional)',
+        description: 'Payment method and reference details',
+        icon: 'CreditCard',
+        collapsed: true,
+        fields: [
+          {
+            id: 'paymentMethod',
+            label: 'Payment Method',
+            type: 'select',
+            required: false,
+            options: [
+              { value: 'check', label: 'Check' },
+              { value: 'ach', label: 'ACH Transfer' },
+              { value: 'wire', label: 'Wire Transfer' },
+              { value: 'other', label: 'Other' },
+            ],
+          },
+          {
+            id: 'paymentReference',
+            label: 'Payment Reference Number',
+            type: 'text',
+            placeholder: 'Check #, ACH ref, etc.',
+            helpText: 'Optional reference number for the payment',
+            required: false,
+          },
+        ],
+      },
+      {
+        id: 'parties',
+        title: 'Party Details (Optional)',
+        description: 'Override party names if different from contract',
+        icon: 'Users',
+        collapsed: true,
+        fields: [
+          {
+            id: 'ownerName',
+            label: 'Property Owner',
+            type: 'text',
+            placeholder: 'Leave blank to use client name',
+            helpText: 'If different from the paying party',
+            required: false,
+          },
+          {
+            id: 'payingParty',
+            label: 'Paying Party / Customer',
+            type: 'text',
+            placeholder: 'Leave blank to use client name',
+            helpText: 'The party making the payment (if different from owner)',
+            required: false,
+          },
+        ],
+      },
+      {
+        id: 'exceptions',
+        title: 'Exceptions',
+        description: 'Any exceptions to this waiver',
+        icon: 'AlertTriangle',
+        collapsed: true,
+        fields: [
+          {
+            id: 'exceptions',
+            label: 'Exceptions (if any)',
+            type: 'textarea',
+            placeholder: 'List any exceptions to this waiver, or leave blank for none...',
+            helpText: 'Examples: disputed amounts, retention, pending change orders',
+            required: false,
+          },
+        ],
+      },
+    ],
+    zodSchema: partialLienWaiverSchema,
+  },
+  transformToTemplateData: (formData: any, baseData: any) => {
+    const totalContractValue = baseData.financials?.total || 0;
+    const paymentAmount = formData.paymentAmount || 0;
+    const remainingBalance = Math.max(0, totalContractValue - paymentAmount);
+    
+    return {
+      ...baseData,
+      lienWaiver: {
+        paymentAmount: paymentAmount,
+        paymentDate: new Date().toISOString(),
+        throughDate: formData.throughDate,
+        isFinal: false,
+        remainingBalance: remainingBalance,
+        paymentMethod: formData.paymentMethod,
+        paymentReference: formData.paymentReference,
+        ownerName: formData.ownerName,
+        payingParty: formData.payingParty,
+        exceptions: formData.exceptions,
+      },
+    };
+  },
+});
+
+// ===== Change Order Configuration =====
 const changeOrderSchema = z.object({
   changeDescription: z.string().min(10, 'Please describe what is being changed'),
   additionalCost: z.number(),
