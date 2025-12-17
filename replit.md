@@ -62,10 +62,16 @@ This AI-powered platform automates legal document and permit management for cont
   - **Automatic Draft Cleanup**: Smart filtering that hides drafts when a completed/in-progress version exists using composite key matching.
 - **Legal Seal Digital Certificate System**: Production-ready PDF-embedded digital certificates with legal compliance, unique folio generation, and a verification URL.
 - **Dual Signature Completion System**: Production-ready distributed completion workflow with atomic job creation, distributed locking, crash recovery, idempotency guarantees, and saga pattern implementation for robust asynchronous processing.
-  - **Template-Aware Signature System**: Signature infrastructure respects per-template configuration via `signatureType` ('none', 'single', 'dual') and `includesSignaturePlaceholders` properties.
-    - **Pipeline Flow**: Routes capture `templateId` → `multiChannelDeliveryService` passes to `dualSignatureService` → stored in Firebase with contract → loaded from registry during PDF generation (completion and download regeneration).
-    - **Signature Logic**: 'none' skips all injection, 'single' injects contractor-only, 'dual' (default) injects both signatures. Templates with `includesSignaturePlaceholders: true` only replace existing placeholders.
-    - **Current Templates**: `change-order.ts` has built-in placeholders; `lien-waiver.ts` (v3.0 Unified) uses single signature; others use dual signature.
+  - **Template-Driven Signature Engine (v2.0)**: Signature behavior determined entirely by template registry's `signatureType` property. No engine modifications needed for new templates.
+    - **Single Source of Truth**: `templateRegistry` in `server/templates/registry.ts` defines `signatureType` ('none', 'single', 'dual') for each template.
+    - **Fail-Fast Behavior**: If `templateId` is provided but not in registry, `dualSignatureService` returns error (prevents silent fallback to dual mode).
+    - **Pipeline Flow**: Routes validate `templateId` → `dualSignatureService` looks up registry → persists `signatureMode` in contract → `transactionalContractService` checks `signatureMode` for completion → `completionWorker` validates template-aware.
+    - **Completion Logic**:
+      - 'none': No signature workflow, PDF ready for download.
+      - 'single': Completes when contractor signs; client pre-marked as signed; `completionWorker` skips client validation.
+      - 'dual': Requires both parties; completion triggers when second party signs.
+    - **Current Templates**: `lien-waiver.ts` (single), `independent-contractor.ts` (dual), `change-order.ts` (dual with placeholders), others default to dual.
+    - **Extensibility**: Adding new template only requires `signatureType` definition in registry - no signature engine code changes.
 - **Unified Lien Waiver System (v3.0 - Jurisdiction-Aware)**: Single unified template supporting both Partial (conditional progress payment) and Final (unconditional full release) waivers.
   - **Architecture**: One template (`lien-waiver.ts`) with internal `waiverType` variation ('partial' | 'final'). Eliminates template duplication and matches real contractor workflow.
   - **Waiver Types**:
