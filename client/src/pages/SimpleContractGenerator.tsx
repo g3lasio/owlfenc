@@ -5065,6 +5065,192 @@ export default function SimpleContractGenerator() {
               </Card>
             )}
 
+            {/* Step 1: Contract Selection (Lien Waiver Flow) */}
+            {currentStep === 1 && documentFlowType === 'lien-waiver' && (
+              <Card className="bg-gray-900 border-gray-700">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-green-400">
+                    <Shield className="h-5 w-5" />
+                    Step 1: Select Contract for Lien Waiver
+                  </CardTitle>
+                  <p className="text-gray-400 text-sm mt-2">
+                    Choose the contract you want to release lien rights for
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  {/* Contract Search */}
+                  <div className="relative mb-6">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      placeholder="Search contracts by client name..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10 bg-gray-800 border-gray-600 text-white placeholder-gray-400"
+                      data-testid="input-lien-waiver-contract-search"
+                    />
+                  </div>
+
+                  {/* Contract List */}
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {contractsStore.isLoading ? (
+                      <div className="text-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-400 mx-auto"></div>
+                        <p className="mt-2 text-gray-400">Loading contracts...</p>
+                      </div>
+                    ) : (() => {
+                      // Filter completed and in-progress contracts for Lien Waiver
+                      const allContracts = [
+                        ...contractsStore.completed,
+                        ...contractsStore.inProgress,
+                      ].filter(contract => {
+                        if (!searchTerm.trim()) return true;
+                        const searchLower = searchTerm.toLowerCase();
+                        const clientName = (contract.clientName || '').toLowerCase();
+                        return clientName.includes(searchLower);
+                      });
+
+                      if (allContracts.length === 0) {
+                        return (
+                          <div className="text-center py-8 border border-dashed border-gray-600 rounded-lg">
+                            <FileText className="h-12 w-12 text-gray-500 mx-auto mb-3" />
+                            <p className="text-gray-400">No contracts found</p>
+                            <p className="text-gray-500 text-sm mt-1">
+                              You need to have at least one contract before creating a Lien Waiver
+                            </p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="mt-4 border-green-400 text-green-400 hover:bg-green-400 hover:text-black"
+                              onClick={() => {
+                                setDocumentFlowType('independent-contractor');
+                                setCurrentStep(0);
+                              }}
+                            >
+                              Create New Contract First
+                            </Button>
+                          </div>
+                        );
+                      }
+
+                      return allContracts.map((contract: any) => (
+                        <div
+                          key={contract.contractId || contract.id}
+                          className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                            selectedContract?.contractId === contract.contractId
+                              ? 'border-green-400 bg-green-400/10'
+                              : 'border-gray-700 hover:border-gray-600 hover:bg-gray-800'
+                          }`}
+                          onClick={() => setSelectedContract(contract)}
+                          data-testid={`lien-waiver-contract-item-${contract.contractId || contract.id}`}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-medium text-white">{contract.clientName}</h4>
+                                <Badge variant="outline" className={`text-xs ${
+                                  contract.status === 'completed' 
+                                    ? 'border-green-500 text-green-400' 
+                                    : 'border-blue-500 text-blue-400'
+                                }`}>
+                                  {contract.status === 'completed' ? 'Completed' : 'In Progress'}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-gray-400 mt-1">
+                                Contract #{(contract.contractId || contract.id || '').slice(-6)}
+                              </p>
+                              <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                                <span className="flex items-center gap-1">
+                                  <DollarSign className="h-3 w-3" />
+                                  ${(normalizeCurrency(contract.totalAmount) || 0).toLocaleString()}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="h-3 w-3" />
+                                  {contract.createdAt 
+                                    ? new Date(contract.createdAt.seconds ? contract.createdAt.seconds * 1000 : contract.createdAt).toLocaleDateString()
+                                    : 'N/A'
+                                  }
+                                </span>
+                              </div>
+                            </div>
+                            {selectedContract?.contractId === contract.contractId && (
+                              <CheckCircle className="h-5 w-5 text-green-400 flex-shrink-0" />
+                            )}
+                          </div>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+
+                  {/* Navigation Buttons */}
+                  <div className="flex justify-between mt-6 pt-4 border-t border-gray-700">
+                    <Button
+                      variant="outline"
+                      onClick={() => setCurrentStep(0)}
+                      className="border-gray-600 text-gray-300 hover:bg-gray-800"
+                      data-testid="button-lien-waiver-back-to-step-0"
+                    >
+                      Back
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        if (selectedContract) {
+                          // Prepare base data for DynamicTemplateConfigurator
+                          const clientData = selectedContract.contractData?.client || {};
+                          const financials = selectedContract.contractData?.financials || {};
+                          
+                          const contractCreatedAt = selectedContract.createdAt?.seconds 
+                            ? new Date(selectedContract.createdAt.seconds * 1000).toISOString()
+                            : selectedContract.createdAt instanceof Date 
+                              ? selectedContract.createdAt.toISOString()
+                              : typeof selectedContract.createdAt === 'string'
+                                ? selectedContract.createdAt
+                                : new Date().toISOString();
+                          
+                          const projectData = selectedContract.contractData?.project || {};
+                          const contractorData = selectedContract.contractData?.contractor || {};
+                          
+                          const baseData = {
+                            client: {
+                              name: selectedContract.clientName || clientData.name || '',
+                              address: clientData.address || '',
+                              email: clientData.email || '',
+                              phone: clientData.phone || '',
+                            },
+                            contractor: {
+                              name: contractorData.name || profile?.company || profile?.ownerName || 'Contractor Name',
+                              company: contractorData.company || profile?.company || 'Company Name',
+                              address: contractorData.address || profile?.address || '',
+                              phone: contractorData.phone || profile?.phone || '',
+                              email: contractorData.email || profile?.email || '',
+                              license: contractorData.license || (profile as any)?.licenseNumber || '',
+                            },
+                            project: {
+                              type: projectData.type || selectedContract.projectType || 'Construction',
+                              location: projectData.location || clientData.address || '',
+                            },
+                            financials: {
+                              total: normalizeCurrency(selectedContract.totalAmount) || normalizeCurrency(financials.total) || 0,
+                            },
+                            linkedContractId: selectedContract.contractId || selectedContract.id,
+                            signedDate: selectedContract.signedDate || contractCreatedAt,
+                            createdAt: contractCreatedAt,
+                          };
+                          setContractData(baseData);
+                          setCurrentStep(2);
+                        }
+                      }}
+                      disabled={!selectedContract}
+                      className="bg-green-500 text-black hover:bg-green-400 disabled:opacity-50"
+                      data-testid="button-lien-waiver-continue-to-step-2"
+                    >
+                      Continue to Configure Lien Waiver
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Step 2: Review & Generate (Independent Contractor Flow) */}
             {currentStep === 2 && selectedProject && documentFlowType === 'independent-contractor' && (
               <Card className="bg-gray-900 border-gray-700">
