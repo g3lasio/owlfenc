@@ -8,7 +8,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTr
 import { useToast } from '@/hooks/use-toast';
 import { contractHistoryService, ContractHistoryEntry, SignatureRequirement } from '@/services/contractHistoryService';
 import { auth } from '@/lib/firebase';
-import { getTemplateDisplayName, inferRequiredSigners } from '@/hooks/useContractsStore';
+import { getTemplateBadgeConfig, inferRequiredSigners, getDetailedTemplateId } from '@/hooks/useContractsStore';
 import { User as FirebaseUser, onAuthStateChanged } from 'firebase/auth';
 import { 
   Server, 
@@ -182,20 +182,11 @@ export function ContractHistoryPanel({ children, onEditContract }: ContractHisto
     }
   };
 
-  // Get template chip color based on template type
-  const getTemplateChipColor = (templateId?: string): string => {
-    if (!templateId || templateId === 'independent-contractor') {
-      return 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30';
-    }
-    const colorMap: Record<string, string> = {
-      'change-order': 'bg-orange-500/20 text-orange-400 border-orange-500/30',
-      'contract-addendum': 'bg-purple-500/20 text-purple-400 border-purple-500/30',
-      'work-order': 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
-      'lien-waiver': 'bg-amber-500/20 text-amber-400 border-amber-500/30',
-      'certificate-completion': 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
-      'warranty-agreement': 'bg-rose-500/20 text-rose-400 border-rose-500/30',
-    };
-    return colorMap[templateId] || 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+  // Get template badge info using centralized config (with lien waiver type detection)
+  const getTemplateBadge = (contract: ContractHistoryEntry) => {
+    const templateId = (contract as any).templateId;
+    const config = getTemplateBadgeConfig(templateId, contract.contractData);
+    return config;
   };
 
   // Get signer status indicators based on contract status and signature requirements
@@ -345,14 +336,19 @@ export function ContractHistoryPanel({ children, onEditContract }: ContractHisto
                           <span className="font-medium text-white text-sm truncate">
                             {contract.clientName}
                           </span>
-                          {/* Template Type Chip */}
-                          <Badge 
-                            variant="outline" 
-                            className={`text-[10px] ${getTemplateChipColor((contract as any).templateId)} px-1 py-0 h-4`}
-                            data-testid={`template-chip-${contract.id}`}
-                          >
-                            {getTemplateDisplayName((contract as any).templateId)}
-                          </Badge>
+                          {/* Document Type Badge - Clear visual identification */}
+                          {(() => {
+                            const badge = getTemplateBadge(contract);
+                            return (
+                              <Badge 
+                                variant="outline" 
+                                className={`text-[10px] ${badge.color} px-1.5 py-0 h-4 font-medium whitespace-nowrap`}
+                                data-testid={`template-badge-${contract.id}`}
+                              >
+                                {badge.label}
+                              </Badge>
+                            );
+                          })()}
                           <Badge className={`text-xs ${getStatusColor(contract.status)} px-1.5 py-0.5`}>
                             {contract.status}
                           </Badge>

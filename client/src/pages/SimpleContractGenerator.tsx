@@ -19,7 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
 import { usePermissions } from "@/contexts/PermissionContext";
-import { useContractsStore } from "@/hooks/useContractsStore";
+import { useContractsStore, getTemplateBadgeConfig } from "@/hooks/useContractsStore";
 import {
   Database,
   Eye,
@@ -7267,9 +7267,24 @@ export default function SimpleContractGenerator() {
                           >
                             <div className="flex items-center justify-between mb-3">
                               <div>
-                                <h3 className="font-bold text-white text-lg">
-                                  {contract.clientName}
-                                </h3>
+                                <div className="flex items-center gap-2 flex-wrap mb-1">
+                                  <h3 className="font-bold text-white text-lg">
+                                    {contract.clientName}
+                                  </h3>
+                                  {/* Document Type Badge */}
+                                  {(() => {
+                                    const badge = getTemplateBadgeConfig((contract as any).templateId, contract.contractData);
+                                    return (
+                                      <Badge
+                                        variant="outline"
+                                        className={`text-[10px] ${badge.color} px-1.5 py-0 h-5 font-medium whitespace-nowrap`}
+                                        data-testid={`template-badge-draft-${contract.id}`}
+                                      >
+                                        {badge.label}
+                                      </Badge>
+                                    );
+                                  })()}
+                                </div>
                                 <p className="text-cyan-400 font-semibold">
                                   $
                                   {(contract.totalAmount || 0).toLocaleString()}
@@ -7381,9 +7396,24 @@ export default function SimpleContractGenerator() {
                           >
                             <div className="flex items-center justify-between mb-3">
                               <div>
-                                <h3 className="font-bold text-white text-lg">
-                                  {contract.clientName}
-                                </h3>
+                                <div className="flex items-center gap-2 flex-wrap mb-1">
+                                  <h3 className="font-bold text-white text-lg">
+                                    {contract.clientName}
+                                  </h3>
+                                  {/* Document Type Badge */}
+                                  {(() => {
+                                    const badge = getTemplateBadgeConfig((contract as any).templateId, contract.contractData);
+                                    return (
+                                      <Badge
+                                        variant="outline"
+                                        className={`text-[10px] ${badge.color} px-1.5 py-0 h-5 font-medium whitespace-nowrap`}
+                                        data-testid={`template-badge-progress-${contract.id}`}
+                                      >
+                                        {badge.label}
+                                      </Badge>
+                                    );
+                                  })()}
+                                </div>
                                 <p className="text-yellow-400 font-semibold">
                                   $
                                   {(contract.totalAmount || 0).toLocaleString()}
@@ -7552,9 +7582,24 @@ export default function SimpleContractGenerator() {
                           >
                             <div className="flex items-center justify-between mb-3">
                               <div>
-                                <h3 className="font-bold text-white text-lg">
-                                  {contract.clientName}
-                                </h3>
+                                <div className="flex items-center gap-2 flex-wrap mb-1">
+                                  <h3 className="font-bold text-white text-lg">
+                                    {contract.clientName}
+                                  </h3>
+                                  {/* Document Type Badge */}
+                                  {(() => {
+                                    const badge = getTemplateBadgeConfig((contract as any).templateId, contract.contractData);
+                                    return (
+                                      <Badge
+                                        variant="outline"
+                                        className={`text-[10px] ${badge.color} px-1.5 py-0 h-5 font-medium whitespace-nowrap`}
+                                        data-testid={`template-badge-completed-${contract.contractId}`}
+                                      >
+                                        {badge.label}
+                                      </Badge>
+                                    );
+                                  })()}
+                                </div>
                                 <p className="text-green-400 font-semibold">
                                   $
                                   {(contract.totalAmount || 0).toLocaleString()}
@@ -7717,9 +7762,24 @@ export default function SimpleContractGenerator() {
                           >
                             <div className="flex items-center justify-between mb-3">
                               <div>
-                                <h3 className="font-bold text-white text-lg">
-                                  {contract.clientName}
-                                </h3>
+                                <div className="flex items-center gap-2 flex-wrap mb-1">
+                                  <h3 className="font-bold text-white text-lg">
+                                    {contract.clientName}
+                                  </h3>
+                                  {/* Document Type Badge */}
+                                  {(() => {
+                                    const badge = getTemplateBadgeConfig((contract as any).templateId, contract.contractData);
+                                    return (
+                                      <Badge
+                                        variant="outline"
+                                        className={`text-[10px] ${badge.color} px-1.5 py-0 h-5 font-medium whitespace-nowrap`}
+                                        data-testid={`template-badge-archived-${contract.contractId}`}
+                                      >
+                                        {badge.label}
+                                      </Badge>
+                                    );
+                                  })()}
+                                </div>
                                 <p className="text-purple-400 font-semibold">
                                   ${(contract.totalAmount || 0).toLocaleString()}
                                 </p>

@@ -19,19 +19,108 @@ interface NormalizedContract extends ContractHistoryEntry {
 
 // Template display names for UI chips
 const TEMPLATE_DISPLAY_NAMES: Record<string, string> = {
-  'independent-contractor': 'ICA',
+  'independent-contractor': 'Independent Contractor',
   'change-order': 'Change Order',
   'contract-addendum': 'Addendum',
   'work-order': 'Work Order',
   'lien-waiver': 'Lien Waiver',
+  'lien-waiver-partial': 'Lien Waiver – Partial',
+  'lien-waiver-final': 'Lien Waiver – Final',
   'certificate-completion': 'Completion Cert',
   'warranty-agreement': 'Warranty',
 };
 
+// Template badge configuration for consistent styling across UI
+export interface TemplateBadgeConfig {
+  label: string;
+  shortLabel: string;
+  color: string;
+  icon: string;
+}
+
+export const TEMPLATE_BADGE_CONFIGS: Record<string, TemplateBadgeConfig> = {
+  'independent-contractor': {
+    label: 'Independent Contractor',
+    shortLabel: 'ICA',
+    color: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30',
+    icon: 'FileText',
+  },
+  'change-order': {
+    label: 'Change Order',
+    shortLabel: 'CO',
+    color: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
+    icon: 'FileEdit',
+  },
+  'contract-addendum': {
+    label: 'Addendum',
+    shortLabel: 'ADD',
+    color: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+    icon: 'FilePlus',
+  },
+  'work-order': {
+    label: 'Work Order',
+    shortLabel: 'WO',
+    color: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
+    icon: 'Clipboard',
+  },
+  'lien-waiver': {
+    label: 'Lien Waiver',
+    shortLabel: 'LW',
+    color: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+    icon: 'FileCheck',
+  },
+  'lien-waiver-partial': {
+    label: 'Lien Waiver – Partial',
+    shortLabel: 'LW-P',
+    color: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+    icon: 'FileCheck',
+  },
+  'lien-waiver-final': {
+    label: 'Lien Waiver – Final',
+    shortLabel: 'LW-F',
+    color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+    icon: 'FileCheck2',
+  },
+  'certificate-completion': {
+    label: 'Completion Cert',
+    shortLabel: 'CC',
+    color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+    icon: 'Award',
+  },
+  'warranty-agreement': {
+    label: 'Warranty',
+    shortLabel: 'WAR',
+    color: 'bg-rose-500/20 text-rose-400 border-rose-500/30',
+    icon: 'Shield',
+  },
+};
+
 // Helper to get display name for template
 export function getTemplateDisplayName(templateId?: string): string {
-  if (!templateId) return 'ICA'; // Legacy fallback
+  if (!templateId) return 'Independent Contractor'; // Legacy fallback
   return TEMPLATE_DISPLAY_NAMES[templateId] || templateId;
+}
+
+// Helper to get detailed template ID including lien waiver type
+export function getDetailedTemplateId(templateId?: string, contractData?: any): string {
+  if (!templateId) return 'independent-contractor';
+  
+  // Check if this is a lien waiver and extract the type
+  if (templateId === 'lien-waiver') {
+    const waiverType = contractData?.lienWaiver?.waiverType || 
+                       contractData?.formFields?.waiverType ||
+                       contractData?.waiverType;
+    if (waiverType === 'partial') return 'lien-waiver-partial';
+    if (waiverType === 'final') return 'lien-waiver-final';
+  }
+  
+  return templateId;
+}
+
+// Helper to get template badge config (with lien waiver type detection)
+export function getTemplateBadgeConfig(templateId?: string, contractData?: any): TemplateBadgeConfig {
+  const detailedId = getDetailedTemplateId(templateId, contractData);
+  return TEMPLATE_BADGE_CONFIGS[detailedId] || TEMPLATE_BADGE_CONFIGS['independent-contractor'];
 }
 
 // Signature requirement mapping from templateId
@@ -106,51 +195,68 @@ const IN_PROGRESS_STATUSES = ['in_progress', 'contractor_signed', 'client_signed
 const COMPLETED_STATUSES = ['completed', 'both_signed'];
 
 // Template-aware helper: Check if contract is in "Progress" bucket
+// Progress = step 3+ reached (PDF generated OR signature links created) but not yet completed
 function isInProgressBucket(contract: NormalizedContract): boolean {
   const status = contract.status;
-  const requiredSigners = getEffectiveRequiredSigners(contract);
   
   // If already completed by template-aware logic, not in progress
   if (isContractCompleted(contract)) {
     return false;
   }
   
-  // Draft status is never in progress
-  if (DRAFT_STATUSES.includes(status)) {
+  // Never consider archived contracts as in progress
+  if (contract.isArchived) {
     return false;
   }
   
-  // Check if step 3 was reached (signature links/tokens created)
+  // Check if document generation or signature step was reached
+  const hasPdf = !!(contract.pdfUrl || contract.permanentUrl);
   const hasSignatureLinks = !!(contract.contractorSignUrl || contract.clientSignUrl || contract.shareableLink);
   
-  // If no signature links yet but not draft, still consider as progress (processing, error states)
-  if (['processing', 'error'].includes(status)) {
-    return true;
+  // ✅ Must have at least PDF or signature links to be in "Progress"
+  // Documents without either belong in "Drafts"
+  if (!hasPdf && !hasSignatureLinks) {
+    return false;
   }
   
-  // If it has signature-related status, it's in progress (unless completed above)
-  return IN_PROGRESS_STATUSES.includes(status) && hasSignatureLinks;
+  // If it has PDF or signature links and is not completed, it's in progress
+  // This covers: processing (with PDF), error (with PDF), contractor_signed, client_signed, etc.
+  return true;
 }
 
-// Template-aware helper: Check if contract is in "Drafts" bucket  
+// ✅ UNIVERSAL: Check if contract is in "Drafts" bucket
+// A draft is any document that:
+// - Has NOT generated a PDF
+// - Has NOT entered the signature step (no signature links)
+// This applies to ALL templates, regardless of status
 function isDraftBucket(contract: NormalizedContract): boolean {
   const status = contract.status;
   
-  // Explicit draft status
-  if (DRAFT_STATUSES.includes(status)) {
+  // Never consider completed contracts as drafts
+  if (isContractCompleted(contract)) {
+    return false;
+  }
+  
+  // Never consider archived contracts as drafts (they have their own bucket)
+  if (contract.isArchived) {
+    return false;
+  }
+  
+  // Check if document has been generated (PDF created)
+  const hasPdf = !!(contract.pdfUrl || contract.permanentUrl);
+  
+  // Check if signature step was reached (links created)
+  const hasSignatureLinks = !!(contract.contractorSignUrl || contract.clientSignUrl || contract.shareableLink);
+  
+  // ✅ UNIVERSAL RULE: No PDF AND no signature links = draft
+  // This applies regardless of status (draft, in_progress, processing, etc.)
+  if (!hasPdf && !hasSignatureLinks) {
     return true;
   }
   
-  // Stopped at step 2: has contract data but no PDF/doc generated yet
-  // This handles the case where template was selected but generation not completed
-  if (status === 'in_progress') {
-    const hasPdf = !!(contract.pdfUrl || contract.permanentUrl);
-    const hasSignatureLinks = !!(contract.contractorSignUrl || contract.clientSignUrl);
-    
-    // No PDF and no signature links = draft (stopped at step 2)
-    if (!hasPdf && !hasSignatureLinks) {
-      return true;
-    }
+  // Explicit draft status is always a draft (even if it somehow has links)
+  if (DRAFT_STATUSES.includes(status)) {
+    return true;
   }
   
   return false;
