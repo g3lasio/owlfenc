@@ -3514,7 +3514,7 @@ export default function SimpleContractGenerator() {
     if (usesContractData) {
       // Contract-based templates (change-order, lien-waiver, etc.) use contractData
       if (!contractData || !currentUser?.uid || !contractHTML) {
-        const templateName = templateConfigRegistry.getTemplateConfig(templateId)?.name || 'Document';
+        const templateName = templateConfigRegistry.getUIConfig(templateId)?.title || 'Document';
         toast({
           title: "Error",
           description: `${templateName} must be generated before starting signature protocol`,
@@ -3551,7 +3551,7 @@ export default function SimpleContractGenerator() {
 
     try {
       // ✅ REGISTRY-DRIVEN: Build contract data based on template's data source
-      const templateName = templateConfigRegistry.getTemplateConfig(templateId)?.name || 'Document';
+      const templateName = templateConfigRegistry.getUIConfig(templateId)?.title || 'Document';
       
       // Get client data from appropriate source
       const clientName = usesContractData 
