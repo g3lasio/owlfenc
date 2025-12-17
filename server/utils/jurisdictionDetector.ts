@@ -526,6 +526,59 @@ const STATE_INFO: Record<string, StateInfo> = {
 };
 
 /**
+ * Common California cities for jurisdiction detection fallback
+ */
+const CALIFORNIA_CITIES = new Set([
+  'HERCULES', 'OAKLAND', 'BERKELEY', 'SAN FRANCISCO', 'SAN JOSE', 'LOS ANGELES',
+  'SAN DIEGO', 'SACRAMENTO', 'FRESNO', 'LONG BEACH', 'ANAHEIM', 'SANTA ANA',
+  'RIVERSIDE', 'STOCKTON', 'IRVINE', 'CHULA VISTA', 'FREMONT', 'SAN BERNARDINO',
+  'MODESTO', 'FONTANA', 'MORENO VALLEY', 'GLENDALE', 'HUNTINGTON BEACH', 'SANTA CLARITA',
+  'GARDEN GROVE', 'OCEANSIDE', 'RANCHO CUCAMONGA', 'ONTARIO', 'SANTA ROSA', 'ELK GROVE',
+  'CORONA', 'LANCASTER', 'PALMDALE', 'SALINAS', 'POMONA', 'HAYWARD', 'ESCONDIDO',
+  'SUNNYVALE', 'TORRANCE', 'PASADENA', 'ORANGE', 'FULLERTON', 'THOUSAND OAKS',
+  'ROSEVILLE', 'CONCORD', 'SIMI VALLEY', 'SANTA CLARA', 'VICTORVILLE', 'VALLEJO',
+  'RICHMOND', 'EL MONTE', 'DOWNEY', 'COSTA MESA', 'INGLEWOOD', 'CARLSBAD',
+  'SAN BUENAVENTURA', 'FAIRFIELD', 'WEST COVINA', 'MURRIETA', 'VENTURA', 'BURBANK',
+  'ANTIOCH', 'DALY CITY', 'TEMECULA', 'EL CAJON', 'RIALTO', 'SAN MATEO', 'CLOVIS',
+  'COMPTON', 'JURUPA VALLEY', 'VISTA', 'SOUTH GATE', 'MISSION VIEJO', 'VACAVILLE',
+  'CARSON', 'HESPERIA', 'SANTA MARIA', 'REDDING', 'WESTMINSTER', 'SANTA MONICA',
+  'CHICO', 'NEWPORT BEACH', 'SAN LEANDRO', 'SAN MARCOS', 'WHITTIER', 'HAWTHORNE',
+  'CITRUS HEIGHTS', 'ALHAMBRA', 'TRACY', 'LIVERMORE', 'BUENA PARK', 'MENIFEE',
+  'HEMET', 'LAKEWOOD', 'MERCED', 'CHINO', 'INDIO', 'REDWOOD CITY', 'LAKE FOREST',
+  'NAPA', 'TUSTIN', 'BELLFLOWER', 'MOUNTAIN VIEW', 'CHINO HILLS', 'BALDWIN PARK',
+  'ALAMEDA', 'UPLAND', 'SAN RAMON', 'FOLSOM', 'PLEASANTON', 'LYNWOOD', 'UNION CITY',
+  'APPLE VALLEY', 'REDLANDS', 'TURLOCK', 'PERRIS', 'MANTECA', 'MILPITAS', 'REDONDO BEACH',
+  'DAVIS', 'CAMARILLO', 'YUBA CITY', 'RANCHO CORDOVA', 'PALO ALTO', 'YORBA LINDA',
+  'WALNUT CREEK', 'PITTSBURG', 'SOUTH SAN FRANCISCO', 'SAN CLEMENTE', 'LAGUNA NIGUEL',
+  'PICO RIVERA', 'MONTEBELLO', 'LODI', 'MADERA', 'SANTA CRUZ', 'LA HABRA', 'ENCINITAS',
+  'MONTEREY PARK', 'TULARE', 'CUPERTINO', 'GARDENA', 'NATIONAL CITY', 'ROCKLIN',
+  'PETALUMA', 'HUNTINGTON PARK', 'SAN RAFAEL', 'LA MESA', 'ARCADIA', 'FOUNTAIN VALLEY',
+  'DIAMOND BAR', 'WOODLAND', 'SANTEE', 'LAKE ELSINORE', 'PORTERVILLE', 'PARAMOUNT',
+  'EASTVALE', 'ROSEMEAD', 'HANFORD', 'HIGHLAND', 'NOVATO', 'DELANO', 'COLTON',
+  'VICTORVILLE', 'AZUSA', 'CERRITOS', 'COVINA', 'BRENTWOOD', 'DUBLIN', 'GILROY',
+  'PALM DESERT', 'ALISO VIEJO', 'CYPRESS', 'CATHEDRAL CITY', 'MARTINEZ', 'BEAUMONT',
+  'BELL GARDENS', 'WATSONVILLE', 'LA PUENTE', 'HOLLISTER', 'SARATOGA', 'LOS GATOS',
+  'CAMPBELL', 'BENICIA', 'MORGAN HILL', 'SAN PABLO', 'PACIFICA', 'CERES', 'OAKLEY',
+  'LOMPOC', 'COACHELLA', 'SAN BRUNO', 'MENLO PARK', 'MONROVIA', 'EL CENTRO', 'BRAWLEY'
+]);
+
+/**
+ * Common Texas cities for jurisdiction detection fallback
+ */
+const TEXAS_CITIES = new Set([
+  'HOUSTON', 'SAN ANTONIO', 'DALLAS', 'AUSTIN', 'FORT WORTH', 'EL PASO', 'ARLINGTON',
+  'CORPUS CHRISTI', 'PLANO', 'LAREDO', 'LUBBOCK', 'GARLAND', 'IRVING', 'AMARILLO',
+  'GRAND PRAIRIE', 'BROWNSVILLE', 'MCKINNEY', 'FRISCO', 'PASADENA', 'MESQUITE',
+  'KILLEEN', 'MCALLEN', 'CARROLLTON', 'MIDLAND', 'WACO', 'DENTON', 'ABILENE',
+  'ODESSA', 'BEAUMONT', 'ROUND ROCK', 'THE WOODLANDS', 'RICHARDSON', 'PEARLAND',
+  'LEWISVILLE', 'COLLEGE STATION', 'LEAGUE CITY', 'SUGAR LAND', 'TYLER', 'ALLEN',
+  'SAN ANGELO', 'EDINBURG', 'CONROE', 'MISSION', 'LONGVIEW', 'PHARR', 'BRYAN',
+  'BAYTOWN', 'NEW BRAUNFELS', 'PFLUGERVILLE', 'TEMPLE', 'MISSOURI CITY', 'NORTH RICHLAND HILLS',
+  'FLOWER MOUND', 'ROWLETT', 'HARLINGEN', 'PORT ARTHUR', 'GEORGETOWN', 'MANSFIELD',
+  'GRAPEVINE', 'WICHITA FALLS', 'CEDAR PARK', 'WYLIE', 'EULESS', 'BURLESON', 'KELLER'
+]);
+
+/**
  * Extract state code from address string
  */
 export function extractStateFromAddress(address: string): string | null {
@@ -553,6 +606,24 @@ export function extractStateFromAddress(address: string): string | null {
   for (const [stateName, stateCode] of Object.entries(stateMap)) {
     if (normalizedAddress.includes(stateName)) {
       return stateCode;
+    }
+  }
+  
+  // Check for known California cities
+  const caCities = Array.from(CALIFORNIA_CITIES);
+  for (let i = 0; i < caCities.length; i++) {
+    if (normalizedAddress.includes(caCities[i])) {
+      console.log(`📍 [JURISDICTION] Detected California from city: ${caCities[i]}`);
+      return 'CA';
+    }
+  }
+  
+  // Check for known Texas cities
+  const txCities = Array.from(TEXAS_CITIES);
+  for (let i = 0; i < txCities.length; i++) {
+    if (normalizedAddress.includes(txCities[i])) {
+      console.log(`📍 [JURISDICTION] Detected Texas from city: ${txCities[i]}`);
+      return 'TX';
     }
   }
   

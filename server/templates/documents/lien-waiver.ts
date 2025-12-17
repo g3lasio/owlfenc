@@ -111,16 +111,20 @@ function generateUnifiedLienWaiverHTML(data: TemplateData, branding: ContractorB
   
   // Validate statutory requirements if applicable
   if (isStatutory) {
-    const validation = validateStatutoryRequirements(jurisdiction.stateCode, {
-      claimantName: contractorName,
-      ownerName: ownerName,
-      projectLocation: data.project.location,
-      throughDate: isFinalWaiver ? 'N/A - Final Payment' : formatDate(throughDate),
-      paymentAmount: formatCurrency(lienWaiver.paymentAmount)
-    });
+    const validation = validateStatutoryRequirements(
+      jurisdiction.stateCode, 
+      {
+        claimantName: contractorName,
+        ownerName: ownerName,
+        projectLocation: data.project.location,
+        throughDate: isFinalWaiver ? 'N/A - Final Payment' : formatDate(throughDate),
+        paymentAmount: formatCurrency(lienWaiver.paymentAmount)
+      },
+      waiverType
+    );
     
     if (!validation.valid) {
-      console.warn(`⚠️ [LIEN-WAIVER] Statutory validation failed for ${jurisdiction.stateCode}:`, validation.missingFields);
+      console.warn(`⚠️ [LIEN-WAIVER] Statutory validation failed for ${jurisdiction.stateCode} (${waiverType}):`, validation.missingFields);
     }
   }
 
@@ -136,7 +140,7 @@ function generateUnifiedLienWaiverHTML(data: TemplateData, branding: ContractorB
     paymentAmount: formatCurrency(lienWaiver.paymentAmount),
     paymentReference: lienWaiver.paymentReference,
     paymentMethod: paymentMethodText,
-    exceptions: isFinalWaiver ? undefined : lienWaiver.exceptions,
+    exceptions: lienWaiver.exceptions,
     documentDate: currentDate,
     isFinal: isFinalWaiver
   };

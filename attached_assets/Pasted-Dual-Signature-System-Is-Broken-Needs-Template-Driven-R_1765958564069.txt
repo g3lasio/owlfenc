@@ -1,0 +1,121 @@
+Dual Signature System Is Broken – Needs Template-Driven Rebuild (Blocking Issue)
+
+We need to stop and address a core architectural issue before adding more contracts.
+
+Right now, the dual signature system is broken.
+
+What happened
+
+Independent Contractor Agreement dual signature was working correctly.
+
+When attempting to integrate Lien Waiver (single signature), the system logic was altered.
+
+This caused:
+
+Failure to generate signature links for Lien Waiver
+
+AND regression: ICA can no longer generate signature links
+
+This indicates the signature logic is coupled to flows/templates, instead of being a standalone engine.
+
+This is a blocking issue. We cannot continue adding contracts like this.
+
+Required Fix: Rebuild Dual Signature as a Template-Driven Engine
+Core Rule (non-negotiable)
+
+The signature system must not hardcode behavior per document.
+It must read signature rules from the template registry.
+
+Every template MUST explicitly declare:
+
+signatureRequirement:
+
+single
+
+dual
+
+none
+
+signers:
+
+contractor
+
+client
+
+(future roles later)
+
+Example:
+
+Independent Contractor Agreement → dual (client + contractor)
+
+Lien Waiver → single (contractor only)
+
+Future documents → defined in registry
+
+Signature Engine Responsibilities
+
+The signature engine should:
+
+Read template signature metadata
+
+Detect existing signature fields in the PDF (if present)
+
+Reuse those fields if they exist
+
+Inject fields ONLY if missing
+
+Generate the correct number of signature links
+
+Track signing status per signer
+
+Mark document as completed only when required signers are done
+
+No UI conditionals.
+No per-document hacks.
+
+Critical Requirement
+
+This engine must work for:
+
+Current 3 contracts
+
+AND future 30+ contracts
+
+Without touching the engine again
+
+If adding a new template requires modifying the signature engine, the system is wrong.
+
+Constraints
+
+Do NOT change the PDF generator
+
+Do NOT hardcode exceptions for Lien Waiver or ICA
+
+Do NOT “patch” the current bug
+
+This must be a system-level fix
+
+Immediate Ask
+
+Please:
+
+Roll back any breaking changes that affected ICA signing
+
+Isolate the signature engine
+
+Make it fully template-driven
+
+Validate with:
+
+ICA (dual)
+
+Lien Waiver (single)
+
+Only after this is stable can we safely continue adding contracts.
+
+Why this matters
+
+We are building a legal platform, not a demo.
+The signature system must be predictable, scalable, and precise.
+
+Let’s fix this correctly now, instead of fighting regressions later.

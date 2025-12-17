@@ -633,6 +633,192 @@ export function getLienWaiverOverlay(stateCode: string): LienWaiverOverlay {
 }
 
 /**
+ * CALIFORNIA FINAL STATUTORY OVERLAY
+ * Civil Code Section 8134 - Unconditional Waiver and Release Upon Final Payment
+ */
+const CALIFORNIA_FINAL_OVERLAY: LienWaiverOverlay = {
+  stateCode: 'CA',
+  stateName: 'California',
+  overlayType: 'STATUTORY',
+  statutoryReference: 'California Civil Code Section 8134',
+  requiredFields: ['claimantName', 'ownerName', 'projectLocation', 'paymentAmount'],
+  waiverBodyHTML: (data) => `
+    <div class="waiver-body statutory-form">
+      <div class="statutory-header" style="text-align: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #059669;">
+        <h3 style="color: #059669; margin: 0 0 8px 0; font-size: 18px; text-transform: uppercase; letter-spacing: 1px;">
+          UNCONDITIONAL WAIVER AND RELEASE UPON FINAL PAYMENT
+        </h3>
+        <p style="margin: 0; font-size: 12px; color: #64748b; font-style: italic;">
+          California Civil Code Section 8134
+        </p>
+      </div>
+
+      <div class="statutory-notice" style="background: #fef3c7; border: 2px solid #f59e0b; border-radius: 6px; padding: 16px; margin-bottom: 24px;">
+        <p style="margin: 0; font-size: 13px; line-height: 1.6; text-align: center; font-weight: 600; color: #92400e;">
+          NOTICE TO CLAIMANT: THIS DOCUMENT WAIVES AND RELEASES LIEN, STOP PAYMENT NOTICE, AND PAYMENT 
+          BOND RIGHTS UNCONDITIONALLY AND STATES THAT YOU HAVE BEEN PAID FOR GIVING UP THOSE RIGHTS. 
+          THIS DOCUMENT IS ENFORCEABLE AGAINST YOU IF YOU SIGN IT, EVEN IF YOU HAVE NOT BEEN PAID. 
+          IF YOU HAVE NOT BEEN PAID, USE A CONDITIONAL WAIVER AND RELEASE FORM.
+        </p>
+      </div>
+
+      <div class="form-fields" style="margin-bottom: 24px;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+          <tr>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; width: 35%; color: #64748b;">Name of Claimant:</td>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; font-weight: 600;">${data.claimantName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; color: #64748b;">Name of Customer:</td>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; font-weight: 600;">${data.customerName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; color: #64748b;">Job Location:</td>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; font-weight: 600;">${data.projectLocation}</td>
+          </tr>
+          <tr>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; color: #64748b;">Owner:</td>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; font-weight: 600;">${data.ownerName}</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="unconditional-statement" style="margin-bottom: 24px;">
+        <p style="text-align: justify; line-height: 1.8; margin-bottom: 16px;">
+          The claimant, <strong>${data.claimantName}</strong>, has been paid in full for all labor, services, 
+          equipment, and material furnished to <strong>${data.customerName}</strong> on the job of 
+          <strong>${data.ownerName}</strong> located at <strong>${data.projectLocation}</strong>.
+        </p>
+      </div>
+
+      <div class="payment-info" style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 6px; padding: 20px; margin-bottom: 24px;">
+        <table style="width: 100%; font-size: 14px;">
+          <tr>
+            <td style="padding: 8px 0; color: #166534; width: 35%;">Final Payment Amount:</td>
+            <td style="padding: 8px 0; font-weight: 600; font-size: 16px;">${data.paymentAmount}</td>
+          </tr>
+          ${data.paymentReference ? `
+          <tr>
+            <td style="padding: 8px 0; color: #166534;">Payment Reference:</td>
+            <td style="padding: 8px 0;">${data.paymentReference}</td>
+          </tr>
+          ` : ''}
+        </table>
+      </div>
+
+      <div class="waiver-statement" style="margin-bottom: 24px;">
+        <p style="text-align: justify; line-height: 1.8;">
+          The claimant unconditionally waives and releases any right to a mechanic's lien, stop payment notice, 
+          and any right against a labor and material bond on the job.
+        </p>
+      </div>
+
+      <div class="disputed-claims" style="margin-bottom: 24px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 16px;">
+        <table style="width: 100%; font-size: 14px;">
+          <tr>
+            <td style="padding: 10px 0; color: #64748b; width: 45%;">Amount of Disputed Claims:</td>
+            <td style="padding: 10px 0; font-weight: 600;">${data.exceptions || '$0.00 (None)'}</td>
+          </tr>
+        </table>
+        <p style="margin-top: 12px; font-size: 12px; color: #64748b; font-style: italic;">
+          This release does not cover the disputed claims listed above.
+        </p>
+      </div>
+    </div>
+  `
+};
+
+/**
+ * TEXAS FINAL STATUTORY OVERLAY
+ * Texas Property Code Section 53.284 - Unconditional Waiver and Release on Final Payment
+ */
+const TEXAS_FINAL_OVERLAY: LienWaiverOverlay = {
+  stateCode: 'TX',
+  stateName: 'Texas',
+  overlayType: 'STATUTORY',
+  statutoryReference: 'Texas Property Code Section 53.284',
+  requiredFields: ['claimantName', 'ownerName', 'projectLocation', 'paymentAmount'],
+  waiverBodyHTML: (data) => `
+    <div class="waiver-body statutory-form">
+      <div class="statutory-header" style="text-align: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #059669;">
+        <h3 style="color: #059669; margin: 0 0 8px 0; font-size: 18px; text-transform: uppercase; letter-spacing: 1px;">
+          UNCONDITIONAL WAIVER AND RELEASE ON FINAL PAYMENT
+        </h3>
+        <p style="margin: 0; font-size: 12px; color: #64748b; font-style: italic;">
+          Texas Property Code Section 53.284
+        </p>
+      </div>
+
+      <div class="statutory-notice" style="background: #fef3c7; border: 2px solid #f59e0b; border-radius: 6px; padding: 16px; margin-bottom: 24px;">
+        <p style="margin: 0; font-size: 13px; line-height: 1.6; text-align: center; font-weight: 600; color: #92400e;">
+          NOTICE: THIS DOCUMENT WAIVES AND RELEASES LIEN RIGHTS UNCONDITIONALLY AND STATES THAT YOU HAVE 
+          BEEN PAID FOR GIVING UP THOSE RIGHTS. THIS DOCUMENT IS ENFORCEABLE AGAINST YOU IF YOU SIGN IT, 
+          EVEN IF YOU HAVE NOT BEEN PAID. IF YOU HAVE NOT BEEN PAID, USE A CONDITIONAL RELEASE FORM.
+        </p>
+      </div>
+
+      <div class="form-fields" style="margin-bottom: 24px;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+          <tr>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; width: 35%; color: #64748b;">Project:</td>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; font-weight: 600;">${data.projectLocation}</td>
+          </tr>
+          <tr>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; color: #64748b;">Owner:</td>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; font-weight: 600;">${data.ownerName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; color: #64748b;">Claimant:</td>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; font-weight: 600;">${data.claimantName}</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="unconditional-statement" style="margin-bottom: 24px;">
+        <p style="text-align: justify; line-height: 1.8; margin-bottom: 16px;">
+          The undersigned claimant, <strong>${data.claimantName}</strong>, has been paid in full for all 
+          labor, services, equipment, or material furnished to the property of <strong>${data.ownerName}</strong> 
+          located at <strong>${data.projectLocation}</strong> and to <strong>${data.customerName}</strong> 
+          on the above referenced job.
+        </p>
+      </div>
+
+      <div class="payment-info" style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 6px; padding: 20px; margin-bottom: 24px;">
+        <table style="width: 100%; font-size: 14px;">
+          <tr>
+            <td style="padding: 8px 0; color: #166534; width: 35%;">Final Payment Amount:</td>
+            <td style="padding: 8px 0; font-weight: 600; font-size: 16px;">${data.paymentAmount}</td>
+          </tr>
+          ${data.paymentReference ? `
+          <tr>
+            <td style="padding: 8px 0; color: #166534;">Payment Reference:</td>
+            <td style="padding: 8px 0;">${data.paymentReference}</td>
+          </tr>
+          ` : ''}
+        </table>
+      </div>
+
+      <div class="full-release" style="margin-bottom: 24px;">
+        <p style="text-align: justify; line-height: 1.8; background: #ecfdf5; border-left: 4px solid #059669; padding: 16px; margin-bottom: 16px;">
+          <strong>UNCONDITIONAL RELEASE:</strong> The undersigned unconditionally waives and releases any 
+          mechanic's lien right, any right arising from a payment bond that complies with a statute or 
+          applicable legal requirements, any common law payment bond right, any claim for payment, and any 
+          rights under any similar ordinance, rule, or statute related to claim or payment rights for persons 
+          in the undersigned's position that the undersigned has on the above referenced job or property.
+        </p>
+      </div>
+
+      ${data.exceptions ? `
+      <div class="exceptions" style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 16px; margin-bottom: 24px;">
+        <h4 style="margin: 0 0 8px 0; color: #b91c1c; font-size: 13px;">EXCEPTIONS</h4>
+        <p style="margin: 0; font-size: 13px;">${data.exceptions}</p>
+      </div>
+      ` : ''}
+    </div>
+  `
+};
+
+/**
  * GENERIC FINAL OVERLAY - Default for final/unconditional lien waivers
  * Strong, lender-friendly language with unconditional full release
  */
@@ -706,24 +892,192 @@ const GENERIC_FINAL_OVERLAY: LienWaiverOverlay = {
 };
 
 /**
+ * ARIZONA FINAL STATUTORY OVERLAY
+ * Arizona Revised Statutes 33-1008 - Unconditional Waiver and Release on Final Payment
+ */
+const ARIZONA_FINAL_OVERLAY: LienWaiverOverlay = {
+  stateCode: 'AZ',
+  stateName: 'Arizona',
+  overlayType: 'STATUTORY',
+  statutoryReference: 'Arizona Revised Statutes 33-1008',
+  requiredFields: ['claimantName', 'ownerName', 'projectLocation', 'paymentAmount'],
+  waiverBodyHTML: (data) => `
+    <div class="waiver-body statutory-form">
+      <div class="statutory-header" style="text-align: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #059669;">
+        <h3 style="color: #059669; margin: 0 0 8px 0; font-size: 18px; text-transform: uppercase; letter-spacing: 1px;">
+          UNCONDITIONAL WAIVER AND RELEASE ON FINAL PAYMENT
+        </h3>
+        <p style="margin: 0; font-size: 12px; color: #64748b; font-style: italic;">
+          Arizona Revised Statutes Section 33-1008
+        </p>
+      </div>
+
+      <div class="statutory-notice" style="background: #fef3c7; border: 2px solid #f59e0b; border-radius: 6px; padding: 16px; margin-bottom: 24px;">
+        <p style="margin: 0; font-size: 13px; line-height: 1.6; text-align: center; font-weight: 600; color: #92400e;">
+          NOTICE: THIS DOCUMENT WAIVES AND RELEASES LIEN RIGHTS AND PAYMENT BOND RIGHTS UNCONDITIONALLY 
+          AND STATES THAT YOU HAVE BEEN PAID IN FULL. THIS DOCUMENT IS ENFORCEABLE AGAINST YOU IF YOU 
+          SIGN IT, EVEN IF YOU HAVE NOT BEEN PAID.
+        </p>
+      </div>
+
+      <div class="form-fields" style="margin-bottom: 24px; background: #f8fafc; border-radius: 6px; padding: 20px;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+          <tr>
+            <td style="padding: 10px 0; color: #64748b; width: 35%;">Claimant's Name:</td>
+            <td style="padding: 10px 0; font-weight: 600;">${data.claimantName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; color: #64748b;">Customer's Name:</td>
+            <td style="padding: 10px 0; font-weight: 600;">${data.customerName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; color: #64748b;">Owner's Name:</td>
+            <td style="padding: 10px 0; font-weight: 600;">${data.ownerName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; color: #64748b;">Job Description:</td>
+            <td style="padding: 10px 0; font-weight: 600;">${data.projectLocation}</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="unconditional-statement" style="margin-bottom: 24px;">
+        <p style="text-align: justify; line-height: 1.8; margin-bottom: 16px;">
+          The claimant, <strong>${data.claimantName}</strong>, has been paid in full for all labor, services, 
+          equipment, and material furnished to the customer on this job.
+        </p>
+      </div>
+
+      <div class="payment-info" style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 6px; padding: 20px; margin-bottom: 24px;">
+        <table style="width: 100%; font-size: 14px;">
+          <tr>
+            <td style="padding: 8px 0; color: #166534; width: 35%;">Final Payment Amount:</td>
+            <td style="padding: 8px 0; font-weight: 600; font-size: 16px;">${data.paymentAmount}</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="full-release" style="margin-bottom: 24px;">
+        <p style="text-align: justify; line-height: 1.8; background: #ecfdf5; border-left: 4px solid #059669; padding: 16px;">
+          The claimant unconditionally waives and releases all lien and payment bond rights for labor, 
+          services, equipment, and material furnished on this job.
+        </p>
+      </div>
+    </div>
+  `
+};
+
+/**
+ * NEVADA FINAL STATUTORY OVERLAY
+ * Nevada Revised Statutes 108.2457 - Unconditional Waiver and Release on Final Payment
+ */
+const NEVADA_FINAL_OVERLAY: LienWaiverOverlay = {
+  stateCode: 'NV',
+  stateName: 'Nevada',
+  overlayType: 'STATUTORY',
+  statutoryReference: 'Nevada Revised Statutes 108.2457',
+  requiredFields: ['claimantName', 'ownerName', 'projectLocation', 'paymentAmount'],
+  waiverBodyHTML: (data) => `
+    <div class="waiver-body statutory-form">
+      <div class="statutory-header" style="text-align: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #059669;">
+        <h3 style="color: #059669; margin: 0 0 8px 0; font-size: 18px; text-transform: uppercase; letter-spacing: 1px;">
+          UNCONDITIONAL WAIVER AND RELEASE ON FINAL PAYMENT
+        </h3>
+        <p style="margin: 0; font-size: 12px; color: #64748b; font-style: italic;">
+          Nevada Revised Statutes Section 108.2457
+        </p>
+      </div>
+
+      <div class="statutory-notice" style="background: #dbeafe; border: 2px solid #3b82f6; border-radius: 6px; padding: 16px; margin-bottom: 24px;">
+        <p style="margin: 0; font-size: 13px; line-height: 1.6; text-align: center; font-weight: 600; color: #1e40af;">
+          NOTICE: THIS IS AN UNCONDITIONAL WAIVER AND RELEASE. SIGNING IT AND ACKNOWLEDGING PAYMENT 
+          WAIVES ALL LIEN RIGHTS. READ IT CAREFULLY BEFORE SIGNING.
+        </p>
+      </div>
+
+      <div class="form-fields" style="margin-bottom: 24px;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+          <tr>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; width: 35%; color: #64748b;">Project:</td>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; font-weight: 600;">${data.projectLocation}</td>
+          </tr>
+          <tr>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; color: #64748b;">Owner:</td>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; font-weight: 600;">${data.ownerName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; color: #64748b;">Claimant:</td>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; font-weight: 600;">${data.claimantName}</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="unconditional-statement" style="margin-bottom: 24px;">
+        <p style="text-align: justify; line-height: 1.8; margin-bottom: 16px;">
+          The claimant, <strong>${data.claimantName}</strong>, has received final payment in full for all 
+          labor, services, equipment, and material furnished on the job of <strong>${data.ownerName}</strong> 
+          located at <strong>${data.projectLocation}</strong>.
+        </p>
+      </div>
+
+      <div class="payment-info" style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 6px; padding: 20px; margin-bottom: 24px;">
+        <table style="width: 100%; font-size: 14px;">
+          <tr>
+            <td style="padding: 8px 0; color: #166534; width: 35%;">Final Payment Amount:</td>
+            <td style="padding: 8px 0; font-weight: 600; font-size: 16px;">${data.paymentAmount}</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="full-release" style="margin-bottom: 24px;">
+        <p style="text-align: justify; line-height: 1.8; background: #ecfdf5; border-left: 4px solid #059669; padding: 16px;">
+          The claimant unconditionally waives and releases any and all lien rights and stop notice rights 
+          the claimant has for all labor, services, equipment, and material furnished on this job.
+        </p>
+      </div>
+    </div>
+  `
+};
+
+/**
+ * Final Overlay Registry - Maps state codes to final lien waiver overlays
+ */
+const FINAL_OVERLAY_REGISTRY: Map<string, LienWaiverOverlay> = new Map([
+  ['GENERIC', GENERIC_FINAL_OVERLAY],
+  ['CA', CALIFORNIA_FINAL_OVERLAY],
+  ['TX', TEXAS_FINAL_OVERLAY],
+  ['AZ', ARIZONA_FINAL_OVERLAY],
+  ['NV', NEVADA_FINAL_OVERLAY],
+]);
+
+/**
  * Get the appropriate legal overlay for Final Lien Waiver
- * Currently returns generic final overlay - statutory final forms can be added later
+ * Uses state-specific statutory forms for CA and TX, generic for others
  */
 export function getFinalLienWaiverOverlay(stateCode: string): LienWaiverOverlay {
-  // For now, all states use the generic final overlay
-  // State-specific statutory final waivers can be added to a FINAL_OVERLAY_REGISTRY later
-  console.log(`📜 [LIEN-WAIVER-OVERLAY] Using GENERIC FINAL overlay (${stateCode})`);
+  const overlay = FINAL_OVERLAY_REGISTRY.get(stateCode.toUpperCase());
+  
+  if (overlay) {
+    console.log(`📜 [LIEN-WAIVER-OVERLAY] Using ${overlay.overlayType} FINAL overlay for ${overlay.stateName}`);
+    return overlay;
+  }
+  
+  console.log(`📜 [LIEN-WAIVER-OVERLAY] No specific FINAL overlay for ${stateCode}, using GENERIC`);
   return GENERIC_FINAL_OVERLAY;
 }
 
 /**
  * Validate required fields for statutory states
+ * Supports both partial and final waiver types
  */
 export function validateStatutoryRequirements(
   stateCode: string, 
-  data: Partial<LienWaiverOverlayData>
+  data: Partial<LienWaiverOverlayData>,
+  waiverType: 'partial' | 'final' = 'partial'
 ): { valid: boolean; missingFields: string[] } {
-  const overlay = getLienWaiverOverlay(stateCode);
+  const overlay = waiverType === 'final' 
+    ? getFinalLienWaiverOverlay(stateCode)
+    : getLienWaiverOverlay(stateCode);
   
   if (overlay.overlayType !== 'STATUTORY' || !overlay.requiredFields) {
     return { valid: true, missingFields: [] };
