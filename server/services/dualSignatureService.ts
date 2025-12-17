@@ -135,17 +135,27 @@ export class DualSignatureService {
         request.templateId || "none (default dual)"
       );
 
-      // 🔧 TEMPLATE-AWARE: Determine signature type from template registry
-      let signatureMode: 'none' | 'single' | 'dual' = 'dual'; // Default to dual
+      // 🔧 TEMPLATE-DRIVEN: Determine signature type from template registry
+      // CRITICAL: This is the ONLY place signature mode should be determined - from template registry
+      let signatureMode: 'none' | 'single' | 'dual' = 'dual'; // Default to dual for backward compatibility
+      
       if (request.templateId) {
         const { templateRegistry } = await import('../templates/registry');
         const template = templateRegistry.get(request.templateId);
         if (template) {
           signatureMode = template.signatureType;
-          console.log(`📋 [TEMPLATE-AWARE] Template '${request.templateId}' has signatureType: ${signatureMode}`);
+          console.log(`📋 [TEMPLATE-DRIVEN] Template '${request.templateId}' has signatureType: ${signatureMode}`);
         } else {
-          console.log(`⚠️ [TEMPLATE-AWARE] Template '${request.templateId}' not found in registry, using default: dual`);
+          // 🚨 FAIL FAST: If templateId is explicitly provided but not found, this is a configuration error
+          // This prevents silent failures when new templates are added without proper registration
+          console.error(`❌ [TEMPLATE-DRIVEN] Template '${request.templateId}' not found in registry! This is a configuration error.`);
+          return {
+            success: false,
+            message: `Template '${request.templateId}' is not registered. Please add it to the template registry with the correct signatureType.`,
+          };
         }
+      } else {
+        console.log(`📋 [TEMPLATE-DRIVEN] No templateId provided, defaulting to dual signature mode`);
       }
 
       // ✅ GUARD: Templates with signatureType 'none' should not go through signature flow

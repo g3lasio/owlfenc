@@ -145,12 +145,36 @@ class TransactionalContractService {
         // Update within transaction
         transaction.update(contractRef, updateData);
 
-        // Check if both parties have now signed (using fresh data from transaction)
-        const otherPartySigned = party === 'contractor' 
-          ? contract.clientSigned 
-          : contract.contractorSigned;
+        // 🔧 TEMPLATE-DRIVEN: Check if signature requirements are met based on signatureMode
+        // signatureMode: 'single' = only contractor signature needed, 'dual' = both parties needed
+        const signatureMode = contract.signatureMode || 'dual'; // Default to dual for backward compatibility
+        console.log(`📋 [TEMPLATE-DRIVEN] Processing ${party} signature, signatureMode: ${signatureMode}`);
+        
+        let allRequiredSignaturesMet: boolean;
+        
+        if (signatureMode === 'single') {
+          // Single signature mode (e.g., lien waiver): completed ONLY when contractor signs
+          // In single mode, we require exactly the contractor signature, nothing else
+          if (party === 'contractor') {
+            // Contractor signing completes the contract
+            allRequiredSignaturesMet = true;
+            console.log(`📋 [TEMPLATE-DRIVEN] Single signature mode - contractor signed, contract complete`);
+          } else {
+            // Client signing in single mode - this shouldn't happen, but handle gracefully
+            // Block client from completing the contract
+            console.warn(`⚠️ [TEMPLATE-DRIVEN] Client attempted to sign single-signature contract - ignoring for completion`);
+            allRequiredSignaturesMet = false; // Client signature doesn't complete single-mode contracts
+          }
+        } else {
+          // Dual signature mode (e.g., ICA): both parties must sign
+          const otherPartySigned = party === 'contractor' 
+            ? contract.clientSigned 
+            : contract.contractorSigned;
+          allRequiredSignaturesMet = otherPartySigned;
+          console.log(`📋 [TEMPLATE-DRIVEN] Dual signature mode - ${party} signed, other party signed: ${otherPartySigned}`);
+        }
 
-        const bothSigned = otherPartySigned;
+        const bothSigned = allRequiredSignaturesMet;
 
         // ✅ CRITICAL FIX: Create completion job INSIDE transaction (atomic with signature)
         if (bothSigned) {

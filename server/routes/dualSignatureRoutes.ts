@@ -38,6 +38,8 @@ const initiateDualSignatureSchema = z.object({
     startDate: z.string().optional(),
     completionDate: z.string().optional(),
   }),
+  /** Template ID for template-driven signature handling (e.g., 'lien-waiver' → single, 'independent-contractor' → dual) */
+  templateId: z.string().optional(),
 });
 
 const signatureSubmissionSchema = z.object({

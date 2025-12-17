@@ -397,9 +397,12 @@ class CompletionWorker {
         return { isValid: false, errors, warnings };
       }
       
-      // ===== SIGNATURE VALIDATION =====
+      // ===== SIGNATURE VALIDATION (TEMPLATE-DRIVEN) =====
+      // signatureMode: 'single' = only contractor signature needed, 'dual' = both parties needed
+      const signatureMode = contract.signatureMode || 'dual'; // Default to dual for backward compatibility
+      console.log(`📋 [VALIDATION] Contract ${contractId} signatureMode: ${signatureMode}`);
       
-      // Contractor signature
+      // Contractor signature (always required)
       if (!contract.contractorSigned) {
         errors.push('Contractor has not signed');
       }
@@ -413,23 +416,27 @@ class CompletionWorker {
         errors.push('Contractor signature timestamp is missing');
       }
       
-      // Client signature
-      if (!contract.clientSigned) {
-        errors.push('Client has not signed');
-      }
-      if (!contract.clientSignature || contract.clientSignature.trim() === '') {
-        errors.push('Client signature data is missing or empty');
-      }
-      if (!contract.clientSignatureType) {
-        errors.push('Client signature type is missing');
-      }
-      if (!contract.clientSignedAt) {
-        errors.push('Client signature timestamp is missing');
+      // Client signature (only required for dual signature mode)
+      if (signatureMode === 'dual') {
+        if (!contract.clientSigned) {
+          errors.push('Client has not signed');
+        }
+        if (!contract.clientSignature || contract.clientSignature.trim() === '') {
+          errors.push('Client signature data is missing or empty');
+        }
+        if (!contract.clientSignatureType) {
+          errors.push('Client signature type is missing');
+        }
+        if (!contract.clientSignedAt) {
+          errors.push('Client signature timestamp is missing');
+        }
+      } else {
+        console.log(`📋 [VALIDATION] Single signature mode - skipping client signature validation`);
       }
       
-      // ===== CERTIFICATE VALIDATION =====
+      // ===== CERTIFICATE VALIDATION (TEMPLATE-DRIVEN) =====
       
-      // Contractor certificate
+      // Contractor certificate (always required)
       if (!contract.contractorCertificate) {
         errors.push('Contractor digital certificate is missing');
       } else {
@@ -444,17 +451,19 @@ class CompletionWorker {
         }
       }
       
-      // Client certificate
-      if (!contract.clientCertificate) {
-        errors.push('Client digital certificate is missing');
-      } else {
-        // Verify certificate hash matches actual signature
-        if (!contract.clientCertificate.signatureHash) {
-          errors.push('Client certificate signature hash is missing');
-        } else if (contract.clientSignature) {
-          const expectedHash = this.hashSignature(contract.clientSignature);
-          if (contract.clientCertificate.signatureHash !== expectedHash) {
-            errors.push('Client certificate signature hash does not match actual signature data');
+      // Client certificate (only required for dual signature mode)
+      if (signatureMode === 'dual') {
+        if (!contract.clientCertificate) {
+          errors.push('Client digital certificate is missing');
+        } else {
+          // Verify certificate hash matches actual signature
+          if (!contract.clientCertificate.signatureHash) {
+            errors.push('Client certificate signature hash is missing');
+          } else if (contract.clientSignature) {
+            const expectedHash = this.hashSignature(contract.clientSignature);
+            if (contract.clientCertificate.signatureHash !== expectedHash) {
+              errors.push('Client certificate signature hash does not match actual signature data');
+            }
           }
         }
       }
@@ -489,29 +498,31 @@ class CompletionWorker {
         errors.push('User ID is missing');
       }
       
-      // ===== TIMESTAMP VALIDATION =====
+      // ===== TIMESTAMP VALIDATION (TEMPLATE-DRIVEN) =====
+      const now = new Date();
+      const oneYearAgo = new Date();
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
       
-      if (contract.contractorSignedAt && contract.clientSignedAt) {
+      // Contractor timestamp validation (always required)
+      if (contract.contractorSignedAt) {
         const contractorTime = contract.contractorSignedAt.toDate ? 
           contract.contractorSignedAt.toDate() : new Date(contract.contractorSignedAt);
-        const clientTime = contract.clientSignedAt.toDate ? 
-          contract.clientSignedAt.toDate() : new Date(contract.clientSignedAt);
         
-        const now = new Date();
-        
-        // Check timestamps are not in the future
         if (contractorTime > now) {
           warnings.push('Contractor signature timestamp is in the future');
         }
-        if (clientTime > now) {
-          warnings.push('Client signature timestamp is in the future');
-        }
-        
-        // Check timestamps are not too old (> 1 year)
-        const oneYearAgo = new Date();
-        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
         if (contractorTime < oneYearAgo) {
           warnings.push('Contractor signature timestamp is more than 1 year old');
+        }
+      }
+      
+      // Client timestamp validation (only for dual signature mode)
+      if (signatureMode === 'dual' && contract.clientSignedAt) {
+        const clientTime = contract.clientSignedAt.toDate ? 
+          contract.clientSignedAt.toDate() : new Date(contract.clientSignedAt);
+        
+        if (clientTime > now) {
+          warnings.push('Client signature timestamp is in the future');
         }
         if (clientTime < oneYearAgo) {
           warnings.push('Client signature timestamp is more than 1 year old');
