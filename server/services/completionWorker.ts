@@ -22,7 +22,7 @@
  */
 
 import crypto from 'crypto';
-import { legalSealService, type LegalSealData } from './legalSealService';
+import { legalSealService, type LegalSealData, type CertificateSigner } from './legalSealService';
 
 // ===== COMPLETION STATES =====
 export enum CompletionState {
@@ -169,21 +169,48 @@ class CompletionWorker {
         return new Date();
       };
       
-      const signingMetadata = {
-        contractorName: contract.contractorName || 'N/A',
-        contractorIp: contract.contractorCertificate?.ipAddress || contract.contractorIpAddress || 'N/A',
-        contractorSignedAt: parseDate(contract.contractorSignedAt),
-        clientName: contract.clientName || 'N/A',
-        clientIp: contract.clientCertificate?.ipAddress || contract.clientIpAddress || finalSigningIp,
-        clientSignedAt: parseDate(contract.clientSignedAt),
-      };
+      // Step 2d: Build dynamic signers array based on signatureMode
+      // TEMPLATE-DRIVEN: The certificate renders ONLY the actual signers
+      // - 'none': No signers (informational documents)
+      // - 'single': Only contractor/authorized signer
+      // - 'dual': Both contractor and client
+      const signatureMode = contract.signatureMode || 'dual';
+      const signers: CertificateSigner[] = [];
       
-      // Step 2d: Append legal seal page using pdf-lib
+      // Build signers array based on template's signature requirements
+      if (signatureMode === 'single') {
+        // Single signature - only contractor (labeled as "AUTHORIZED SIGNER" for legal documents)
+        signers.push({
+          role: 'AUTHORIZED SIGNER',
+          name: contract.contractorName || 'N/A',
+          ip: contract.contractorCertificate?.ipAddress || contract.contractorIpAddress || 'N/A',
+          signedAt: parseDate(contract.contractorSignedAt),
+        });
+      } else if (signatureMode === 'dual') {
+        // Dual signature - both contractor and client
+        signers.push({
+          role: 'CONTRACTOR SIGNATURE',
+          name: contract.contractorName || 'N/A',
+          ip: contract.contractorCertificate?.ipAddress || contract.contractorIpAddress || 'N/A',
+          signedAt: parseDate(contract.contractorSignedAt),
+        });
+        signers.push({
+          role: 'CLIENT SIGNATURE',
+          name: contract.clientName || 'N/A',
+          ip: contract.clientCertificate?.ipAddress || contract.clientIpAddress || finalSigningIp,
+          signedAt: parseDate(contract.clientSignedAt),
+        });
+      }
+      // signatureMode === 'none': signers array remains empty (informational documents)
+      
+      console.log(`📋 [COMPLETION-WORKER] Building certificate with ${signers.length} signer(s) (signatureMode: ${signatureMode})`);
+      
+      // Step 2e: Append legal seal page using pdf-lib with dynamic signers
       pdfBuffer = await legalSealService.appendSealPage(
         initialPdfBuffer,
         folio,
         contractId,
-        signingMetadata
+        signers
       );
       
       await this.updateState(contractId, CompletionState.PDF_GENERATED);

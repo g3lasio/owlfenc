@@ -17,6 +17,24 @@ export interface LegalSealData {
   contractId: string;
 }
 
+/**
+ * Dynamic signer representation for template-driven certificates.
+ * The certificate renders ONLY the signers in this array.
+ */
+export interface CertificateSigner {
+  role: string; // e.g., "CONTRACTOR", "CLIENT", "AUTHORIZED SIGNER"
+  name: string;
+  ip: string;
+  signedAt: Date;
+}
+
+/**
+ * Signature mode determines how many signers are expected.
+ * - 'single': Only one signer (e.g., Lien Waiver - contractor only)
+ * - 'dual': Both parties must sign (e.g., Independent Contractor Agreement)
+ */
+export type SignatureMode = 'single' | 'dual';
+
 class LegalSealService {
   /**
    * Generate unique folio number
@@ -144,22 +162,17 @@ class LegalSealService {
   /**
    * Append legal seal page to PDF using pdf-lib
    * 
-   * Adds a dedicated seal page with folio, verification URL, and signing metadata.
-   * The hash is NOT embedded in the PDF to avoid self-reference paradox.
-   * Instead, the hash is calculated on the final PDF and stored server-side.
+   * TEMPLATE-DRIVEN: Renders ONLY the actual signers.
+   * - Single signature templates: One centered card
+   * - Dual signature templates: Two side-by-side cards
+   * 
+   * The certificate is a "source of authority" - it shows exactly what happened.
    */
   async appendSealPage(
     pdfBuffer: Buffer,
     folio: string,
     contractId: string,
-    signingMetadata: {
-      contractorName: string;
-      contractorIp: string;
-      contractorSignedAt: Date;
-      clientName: string;
-      clientIp: string;
-      clientSignedAt: Date;
-    }
+    signers: CertificateSigner[]
   ): Promise<Buffer> {
     try {
       const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib');
@@ -173,18 +186,29 @@ class LegalSealService {
       const page = pdfDoc.addPage([612, 792]); // Letter size
       const { width, height } = page.getSize();
       
-      // Colors
+      // Colors - Modern palette with subtle cyan accents
       const darkBlue = rgb(0.1, 0.21, 0.36);
+      const accentCyan = rgb(0.18, 0.55, 0.67); // Subtle cyan for accents
       const gray = rgb(0.29, 0.33, 0.39);
       const lightGray = rgb(0.4, 0.45, 0.5);
+      const cardBg = rgb(0.98, 0.99, 1.0);
       
-      // Draw header
+      // Draw header with subtle gradient effect (solid color approximation)
       page.drawRectangle({
         x: 40,
         y: height - 100,
         width: width - 80,
         height: 60,
         color: darkBlue,
+      });
+      
+      // Subtle accent line under header
+      page.drawRectangle({
+        x: 40,
+        y: height - 102,
+        width: width - 80,
+        height: 3,
+        color: accentCyan,
       });
       
       page.drawText('DIGITAL CERTIFICATE OF AUTHENTICITY', {
@@ -210,10 +234,13 @@ class LegalSealService {
         y: folioY,
         size: 14,
         font: helveticaBold,
-        color: gray,
+        color: accentCyan,
       });
       
-      page.drawText(`Contract ID: ${contractId.substring(0, 20)}...`, {
+      const contractIdDisplay = contractId.length > 25 
+        ? `${contractId.substring(0, 25)}...` 
+        : contractId;
+      page.drawText(`Contract ID: ${contractIdDisplay}`, {
         x: 50,
         y: folioY - 20,
         size: 10,
@@ -221,7 +248,7 @@ class LegalSealService {
         color: lightGray,
       });
       
-      // Draw signing info sections
+      // Draw signing info sections - DYNAMIC based on actual signers
       const formatDate = (date: Date): string => {
         return date.toLocaleString('en-US', {
           year: 'numeric',
@@ -233,100 +260,152 @@ class LegalSealService {
         });
       };
       
-      // Contractor section
-      const contractorY = folioY - 80;
-      page.drawRectangle({
-        x: 40,
-        y: contractorY - 80,
-        width: 250,
-        height: 100,
-        borderColor: darkBlue,
-        borderWidth: 1,
-      });
+      const cardTopY = folioY - 70;
+      const cardHeight = 110;
+      const cardWidth = 250;
       
-      page.drawText('CONTRACTOR SIGNATURE', {
-        x: 50,
-        y: contractorY,
-        size: 11,
-        font: helveticaBold,
-        color: darkBlue,
-      });
+      console.log(`📋 [LEGAL-SEAL] Rendering ${signers.length} signer(s) on certificate`);
       
-      page.drawText(`Name: ${signingMetadata.contractorName}`, {
-        x: 50,
-        y: contractorY - 20,
-        size: 10,
-        font: helvetica,
-        color: gray,
-      });
+      // Helper to draw a single signer card at a given position
+      const drawSignerCard = (signer: CertificateSigner, cardX: number, cardY: number) => {
+        // Card shadow
+        page.drawRectangle({
+          x: cardX + 2,
+          y: cardY - cardHeight - 2,
+          width: cardWidth,
+          height: cardHeight,
+          color: rgb(0.9, 0.9, 0.92),
+        });
+        
+        // Card background
+        page.drawRectangle({
+          x: cardX,
+          y: cardY - cardHeight,
+          width: cardWidth,
+          height: cardHeight,
+          color: cardBg,
+          borderColor: accentCyan,
+          borderWidth: 1.5,
+        });
+        
+        // Accent bar at top of card
+        page.drawRectangle({
+          x: cardX,
+          y: cardY - 3,
+          width: cardWidth,
+          height: 3,
+          color: accentCyan,
+        });
+        
+        page.drawText(signer.role, {
+          x: cardX + 15,
+          y: cardY - 25,
+          size: 11,
+          font: helveticaBold,
+          color: darkBlue,
+        });
+        
+        page.drawText(`Name: ${signer.name}`, {
+          x: cardX + 15,
+          y: cardY - 50,
+          size: 10,
+          font: helvetica,
+          color: gray,
+        });
+        
+        page.drawText(`IP: ${signer.ip}`, {
+          x: cardX + 15,
+          y: cardY - 67,
+          size: 9,
+          font: helvetica,
+          color: lightGray,
+        });
+        
+        page.drawText(`Signed: ${formatDate(signer.signedAt)}`, {
+          x: cardX + 15,
+          y: cardY - 84,
+          size: 9,
+          font: helvetica,
+          color: lightGray,
+        });
+      };
       
-      page.drawText(`IP: ${signingMetadata.contractorIp}`, {
-        x: 50,
-        y: contractorY - 35,
-        size: 9,
-        font: helvetica,
-        color: lightGray,
-      });
+      // Calculate layout positions based on signer count
+      let currentY = cardTopY;
       
-      page.drawText(`Signed: ${formatDate(signingMetadata.contractorSignedAt)}`, {
-        x: 50,
-        y: contractorY - 50,
-        size: 9,
-        font: helvetica,
-        color: lightGray,
-      });
+      if (signers.length === 0) {
+        // Zero signers - informational document (signatureType: 'none')
+        // Render compliance notice instead of signer cards
+        page.drawRectangle({
+          x: 40,
+          y: currentY - 60,
+          width: width - 80,
+          height: 50,
+          color: rgb(0.97, 0.98, 1.0),
+          borderColor: darkBlue,
+          borderWidth: 1,
+        });
+        
+        page.drawText('DOCUMENT RECORD', {
+          x: 50,
+          y: currentY - 20,
+          size: 11,
+          font: helveticaBold,
+          color: darkBlue,
+        });
+        
+        page.drawText('This document does not require signatures. It is provided for informational purposes.', {
+          x: 50,
+          y: currentY - 40,
+          size: 9,
+          font: helvetica,
+          color: gray,
+        });
+        
+        currentY -= 80;
+        
+      } else if (signers.length === 1) {
+        // Single signer - centered card
+        const cardX = (width - cardWidth) / 2;
+        drawSignerCard(signers[0], cardX, currentY);
+        currentY -= cardHeight + 20;
+        
+      } else if (signers.length === 2) {
+        // Two signers - side by side
+        const leftCardX = 40;
+        const rightCardX = 320;
+        
+        drawSignerCard(signers[0], leftCardX, currentY);
+        drawSignerCard(signers[1], rightCardX, currentY);
+        currentY -= cardHeight + 20;
+        
+      } else {
+        // 3+ signers - grid layout (2 per row)
+        for (let i = 0; i < signers.length; i += 2) {
+          const leftCardX = 40;
+          const rightCardX = 320;
+          
+          // Draw left card
+          drawSignerCard(signers[i], leftCardX, currentY);
+          
+          // Draw right card if exists
+          if (i + 1 < signers.length) {
+            drawSignerCard(signers[i + 1], rightCardX, currentY);
+          }
+          
+          currentY -= cardHeight + 15;
+        }
+      }
       
-      // Client section
-      page.drawRectangle({
-        x: 310,
-        y: contractorY - 80,
-        width: 250,
-        height: 100,
-        borderColor: darkBlue,
-        borderWidth: 1,
-      });
-      
-      page.drawText('CLIENT SIGNATURE', {
-        x: 320,
-        y: contractorY,
-        size: 11,
-        font: helveticaBold,
-        color: darkBlue,
-      });
-      
-      page.drawText(`Name: ${signingMetadata.clientName}`, {
-        x: 320,
-        y: contractorY - 20,
-        size: 10,
-        font: helvetica,
-        color: gray,
-      });
-      
-      page.drawText(`IP: ${signingMetadata.clientIp}`, {
-        x: 320,
-        y: contractorY - 35,
-        size: 9,
-        font: helvetica,
-        color: lightGray,
-      });
-      
-      page.drawText(`Signed: ${formatDate(signingMetadata.clientSignedAt)}`, {
-        x: 320,
-        y: contractorY - 50,
-        size: 9,
-        font: helvetica,
-        color: lightGray,
-      });
-      
-      // Verification section
-      const verifyY = contractorY - 140;
+      // Verification section - position below all signer cards
+      const verifyY = currentY - 30;
       page.drawRectangle({
         x: 40,
         y: verifyY - 60,
         width: width - 80,
         height: 70,
-        color: rgb(0.95, 0.95, 0.97),
-        borderColor: darkBlue,
+        color: rgb(0.97, 0.98, 1.0),
+        borderColor: accentCyan,
         borderWidth: 1,
       });
       
@@ -354,7 +433,7 @@ class LegalSealService {
         y: verifyY - 35,
         size: 9,
         font: helveticaBold,
-        color: darkBlue,
+        color: accentCyan,
       });
       
       page.drawText('Or scan the QR code at app.owlfenc.com/verify and enter the folio number.', {
@@ -365,29 +444,53 @@ class LegalSealService {
         color: lightGray,
       });
       
-      // Legal disclaimer footer
+      // Legal disclaimer footer - dynamic based on signer count
       const disclaimerY = 80;
-      page.drawText('This document was digitally signed by both parties. The signatures, timestamps, and IP', {
-        x: 50,
-        y: disclaimerY,
-        size: 9,
-        font: helvetica,
-        color: lightGray,
-      });
-      page.drawText('addresses above serve as legal evidence of consent. Document integrity is verified via', {
-        x: 50,
-        y: disclaimerY - 12,
-        size: 9,
-        font: helvetica,
-        color: lightGray,
-      });
-      page.drawText('SHA-256 hash stored in our secure database.', {
-        x: 50,
-        y: disclaimerY - 24,
-        size: 9,
-        font: helvetica,
-        color: lightGray,
-      });
+      
+      if (signers.length === 0) {
+        // Informational document disclaimer
+        page.drawText('This document is provided for informational purposes. Document integrity is verified via', {
+          x: 50,
+          y: disclaimerY,
+          size: 9,
+          font: helvetica,
+          color: lightGray,
+        });
+        page.drawText('SHA-256 hash stored in our secure database.', {
+          x: 50,
+          y: disclaimerY - 12,
+          size: 9,
+          font: helvetica,
+          color: lightGray,
+        });
+      } else {
+        // Signed document disclaimer
+        const signerCountText = signers.length === 1 
+          ? 'This document was digitally signed by the authorized party.' 
+          : `This document was digitally signed by ${signers.length === 2 ? 'both parties' : 'all parties'}.`;
+        
+        page.drawText(`${signerCountText} The signature(s), timestamp(s), and IP`, {
+          x: 50,
+          y: disclaimerY,
+          size: 9,
+          font: helvetica,
+          color: lightGray,
+        });
+        page.drawText('address(es) above serve as legal evidence of consent. Document integrity is verified via', {
+          x: 50,
+          y: disclaimerY - 12,
+          size: 9,
+          font: helvetica,
+          color: lightGray,
+        });
+        page.drawText('SHA-256 hash stored in our secure database.', {
+          x: 50,
+          y: disclaimerY - 24,
+          size: 9,
+          font: helvetica,
+          color: lightGray,
+        });
+      }
       
       page.drawText(`Generated: ${new Date().toISOString()}`, {
         x: 50,
@@ -399,7 +502,7 @@ class LegalSealService {
       
       // Save and return
       const finalPdfBytes = await pdfDoc.save();
-      console.log(`✅ [LEGAL-SEAL] Appended seal page to PDF (${pdfBuffer.length} → ${finalPdfBytes.length} bytes)`);
+      console.log(`✅ [LEGAL-SEAL] Appended seal page to PDF with ${signers.length} signer(s) (${pdfBuffer.length} → ${finalPdfBytes.length} bytes)`);
       
       return Buffer.from(finalPdfBytes);
       
@@ -407,6 +510,42 @@ class LegalSealService {
       console.error('❌ [LEGAL-SEAL] Error appending seal page:', error);
       throw new Error(`Failed to append seal page: ${error.message}`);
     }
+  }
+
+  /**
+   * LEGACY WRAPPER: Converts old dual-signature format to new dynamic format
+   * For backward compatibility with existing code that uses the old signature
+   */
+  async appendSealPageLegacy(
+    pdfBuffer: Buffer,
+    folio: string,
+    contractId: string,
+    signingMetadata: {
+      contractorName: string;
+      contractorIp: string;
+      contractorSignedAt: Date;
+      clientName: string;
+      clientIp: string;
+      clientSignedAt: Date;
+    }
+  ): Promise<Buffer> {
+    // Convert legacy format to new signer array format
+    const signers: CertificateSigner[] = [
+      {
+        role: 'CONTRACTOR SIGNATURE',
+        name: signingMetadata.contractorName,
+        ip: signingMetadata.contractorIp,
+        signedAt: signingMetadata.contractorSignedAt,
+      },
+      {
+        role: 'CLIENT SIGNATURE',
+        name: signingMetadata.clientName,
+        ip: signingMetadata.clientIp,
+        signedAt: signingMetadata.clientSignedAt,
+      },
+    ];
+    
+    return this.appendSealPage(pdfBuffer, folio, contractId, signers);
   }
 }
 
