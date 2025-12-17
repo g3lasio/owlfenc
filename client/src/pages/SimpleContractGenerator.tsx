@@ -2488,15 +2488,16 @@ export default function SimpleContractGenerator() {
   // Direct PDF download function - uses working PDF endpoint
   const handleDownloadPDF = useCallback(async () => {
     // ✅ FIXED: Resilient auth check for PDF download  
-    // For Change Orders, selectedProject might not exist but contractData.pdfBase64 does
+    // For Change Orders and Lien Waivers, selectedProject might not exist but contractData exists
     // For Independent Contractor, selectedProject is required
     const hasChangeOrderPdf = documentFlowType === 'change-order' && contractData?.pdfBase64;
+    const hasLienWaiverData = documentFlowType === 'lien-waiver' && contractData;
     const hasProject = !!selectedProject;
     const isAuthenticated = !!(currentUser?.uid || profile?.email);
     
-    // Early return if neither path is available
-    if (!hasChangeOrderPdf && !hasProject) {
-      console.log('❌ [PDF DOWNLOAD] No project or Change Order PDF available');
+    // Early return if no path is available
+    if (!hasChangeOrderPdf && !hasLienWaiverData && !hasProject) {
+      console.log('❌ [PDF DOWNLOAD] No project, Change Order PDF, or Lien Waiver data available');
       return;
     }
     
@@ -2578,6 +2579,84 @@ export default function SimpleContractGenerator() {
         // Generate filename
         const clientName = contractData.client?.name || contractData.clientInfo?.name || 'client';
         const fileName = contractData.filename || `Change-Order-${clientName.replace(/\s+/g, "_")}-${new Date().toISOString().split("T")[0]}.pdf`;
+        
+        // Handle PDF download
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        // Clean up
+        setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+        
+        // Success toast
+        toast({
+          title: "✅ PDF Downloaded",
+          description: "Check your downloads folder",
+        });
+        
+        setIsLoading(false);
+        return;
+      }
+      
+      // ✅ LIEN WAIVER FIX: Re-generate PDF with binary download mode
+      if (hasLienWaiverData && contractData) {
+        console.log('📄 [LIEN WAIVER] Downloading PDF via binary endpoint...');
+        
+        // Build contractor data from profile or contractData
+        const contractorForDownload = contractData.contractor || {
+          name: profile?.company || profile?.ownerName || "Company Name",
+          company: profile?.company || "Company Name",
+          address: `${profile?.address || ""} ${profile?.city || ""} ${profile?.state || ""} ${profile?.zipCode || ""}`.trim(),
+          phone: profile?.phone || profile?.mobilePhone || "",
+          email: profile?.email || "",
+          license: profile?.license || "",
+        };
+        
+        // Build the payload for lien waiver template
+        const downloadPayload = {
+          templateId: 'lien-waiver',
+          templateData: {
+            client: contractData.client || contractData.clientInfo,
+            contractor: contractorForDownload,
+            project: contractData.project,
+            financials: contractData.financials,
+            lienWaiver: contractData.lienWaiver,
+          },
+          linkedContractId: contractData.linkedContractId,
+        };
+        
+        // Fetch as raw binary blob
+        const response = await fetch('/api/generate-pdf?download=true', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${currentUser?.uid || ''}`,
+          },
+          body: JSON.stringify(downloadPayload),
+        });
+        
+        if (!response.ok) {
+          throw new Error(`PDF download failed: ${response.status}`);
+        }
+        
+        // Get blob directly from response
+        const blob = await response.blob();
+        
+        if (blob.size === 0) {
+          throw new Error('Downloaded PDF is empty');
+        }
+        
+        console.log(`✅ [LIEN WAIVER] PDF blob received: ${blob.size} bytes`);
+        
+        // Generate filename
+        const clientName = contractData.client?.name || contractData.clientInfo?.name || 'client';
+        const waiverType = contractData.lienWaiver?.waiverType || 'waiver';
+        const fileName = `Lien-Waiver-${waiverType}-${clientName.replace(/\s+/g, "_")}-${new Date().toISOString().split("T")[0]}.pdf`;
         
         // Handle PDF download
         const url = window.URL.createObjectURL(blob);
@@ -3439,15 +3518,17 @@ export default function SimpleContractGenerator() {
     // 🔧 FIX: Use the actual documentFlowType instead of hardcoding to 'independent-contractor'
     // This ensures single-signature templates like 'lien-waiver' are handled correctly
     const isChangeOrder = documentFlowType === 'change-order';
+    const isLienWaiver = documentFlowType === 'lien-waiver';
+    const usesContractData = isChangeOrder || isLienWaiver; // Both use contractData instead of selectedProject
     const templateId = documentFlowType || 'independent-contractor'; // Use actual document type
     
     // Validate based on template type
-    if (isChangeOrder) {
-      // Change Order uses contractData from the original contract
+    if (usesContractData) {
+      // Change Order and Lien Waiver use contractData from the generated document
       if (!contractData || !currentUser?.uid || !contractHTML) {
         toast({
           title: "Error",
-          description: "Change Order must be generated before starting signature protocol",
+          description: `${isLienWaiver ? 'Lien Waiver' : 'Change Order'} must be generated before starting signature protocol`,
           variant: "destructive",
         });
         return;
@@ -3481,28 +3562,31 @@ export default function SimpleContractGenerator() {
 
     try {
       // ✅ TEMPLATE-AWARE: Build contract data based on document type
-      // For Change Orders, use data from the linked contract
-      const clientName = isChangeOrder 
+      // For Change Orders and Lien Waivers, use data from contractData
+      // For Independent Contractor, use selectedProject
+      const clientName = usesContractData 
         ? (contractData?.client?.name || contractData?.clientName || "Client Name")
         : (editableData.clientName || selectedProject?.clientName || "Client Name");
       
-      const clientEmail = isChangeOrder
+      const clientEmail = usesContractData
         ? (contractData?.client?.email || contractData?.clientEmail || "")
         : (editableData.clientEmail || selectedProject?.clientEmail || "");
       
-      const clientPhone = isChangeOrder
+      const clientPhone = usesContractData
         ? (contractData?.client?.phone || contractData?.clientPhone || "")
         : (editableData.clientPhone || selectedProject?.clientPhone || "");
       
-      const clientAddress = isChangeOrder
+      const clientAddress = usesContractData
         ? (contractData?.client?.address || contractData?.clientAddress || "")
         : (editableData.clientAddress || selectedProject?.clientAddress || "");
       
       const projectDescription = isChangeOrder
         ? `Change Order - ${contractData?.project?.description || contractData?.projectDescription || "Scope Modification"}`
-        : (selectedProject?.projectDescription || selectedProject?.projectType || "Construction Project");
+        : isLienWaiver
+          ? `Lien Waiver - ${contractData?.project?.description || contractData?.projectDescription || "Property"}`
+          : (selectedProject?.projectDescription || selectedProject?.projectType || "Construction Project");
       
-      const totalAmount = isChangeOrder
+      const totalAmount = usesContractData
         ? (contractData?.financials?.total || contractData?.totalAmount || 0)
         : getCorrectProjectTotal(selectedProject!);
       
@@ -3531,6 +3615,11 @@ export default function SimpleContractGenerator() {
           ...(isChangeOrder && contractData?.linkedContractId && {
             linkedContractId: contractData.linkedContractId,
             isChangeOrder: true,
+          }),
+          // Lien Waiver specific data
+          ...(isLienWaiver && {
+            isLienWaiver: true,
+            waiverType: contractData?.lienWaiver?.waiverType || 'partial',
           }),
         },
         securityFeatures: {
@@ -5307,25 +5396,49 @@ export default function SimpleContractGenerator() {
                 </CardHeader>
                 <CardContent>
                   {/* PARALLEL ARCHITECTURE: Dynamic templates use DynamicTemplateConfigurator */}
-                  {templateConfigRegistry.needsDynamicConfig(selectedDocumentType) ? (
+                  {templateConfigRegistry.needsDynamicConfig(selectedDocumentType) ? (() => {
+                    // ✅ FIX: Lien waiver and change-order use contractData, not selectedProject
+                    const usesContractDataSource = documentFlowType === 'lien-waiver' || documentFlowType === 'change-order';
+                    const dataSource = usesContractDataSource ? contractData : selectedProject;
+                    const clientFromSource = usesContractDataSource 
+                      ? (contractData?.client || {})
+                      : { 
+                          name: selectedProject?.clientName, 
+                          email: selectedProject?.clientEmail, 
+                          phone: selectedProject?.clientPhone, 
+                          address: selectedProject?.address 
+                        };
+                    const projectFromSource = usesContractDataSource
+                      ? (contractData?.project || {})
+                      : {
+                          type: selectedProject?.projectType,
+                          description: selectedProject?.projectDescription || selectedProject?.title,
+                          location: selectedProject?.address,
+                        };
+                    const financialsFromSource = usesContractDataSource
+                      ? (contractData?.financials || {})
+                      : { total: selectedProject?.totalAmount };
+                    
+                    return (
                     <DynamicTemplateConfigurator
                       templateId={selectedDocumentType}
                       baseData={{
-                        project: selectedProject,
+                        project: dataSource,
                         client: {
-                          name: editableData.clientName || selectedProject?.clientName,
-                          email: editableData.clientEmail || selectedProject?.clientEmail,
-                          phone: editableData.clientPhone || selectedProject?.clientPhone,
-                          address: editableData.clientAddress || selectedProject?.address,
+                          name: editableData.clientName || clientFromSource.name,
+                          email: editableData.clientEmail || clientFromSource.email,
+                          phone: editableData.clientPhone || clientFromSource.phone,
+                          address: editableData.clientAddress || clientFromSource.address,
                         },
                         financials: {
-                          total: editableData.projectTotal || selectedProject?.totalAmount,
+                          total: editableData.projectTotal || financialsFromSource.total || 0,
                           milestones: editableData.paymentMilestones,
                         },
                         dates: {
                           startDate: editableData.startDate,
                           completionDate: editableData.completionDate,
                         },
+                        linkedContractId: contractData?.linkedContractId,
                       }}
                       onSubmit={async (transformedData) => {
                         console.log("📋 [DYNAMIC-CONFIG] Form submitted:", transformedData);
@@ -5336,12 +5449,12 @@ export default function SimpleContractGenerator() {
                             userId: currentUser?.uid,
                             templateId: selectedDocumentType,
                             client: {
-                              name: editableData.clientName || selectedProject?.clientName || '',
-                              address: editableData.clientAddress || selectedProject?.address || '',
-                              email: editableData.clientEmail || selectedProject?.clientEmail || '',
-                              phone: editableData.clientPhone || selectedProject?.clientPhone || '',
+                              name: editableData.clientName || clientFromSource.name || '',
+                              address: editableData.clientAddress || clientFromSource.address || '',
+                              email: editableData.clientEmail || clientFromSource.email || '',
+                              phone: editableData.clientPhone || clientFromSource.phone || '',
                             },
-                            contractor: {
+                            contractor: contractData?.contractor || {
                               name: profile?.company || profile?.ownerName || 'Contractor Name',
                               company: profile?.company || 'Company Name',
                               address: profile?.address || '',
@@ -5350,16 +5463,17 @@ export default function SimpleContractGenerator() {
                               license: (profile as any)?.licenseNumber || '',
                             },
                             project: {
-                              type: selectedProject?.projectType || 'Construction Project',
-                              description: selectedProject?.projectDescription || selectedProject?.title || '',
-                              location: editableData.clientAddress || selectedProject?.address || '',
+                              type: projectFromSource.type || 'Construction Project',
+                              description: projectFromSource.description || '',
+                              location: editableData.clientAddress || projectFromSource.location || clientFromSource.address || '',
                               startDate: editableData.startDate,
                               endDate: editableData.completionDate,
                             },
                             financials: {
-                              total: editableData.projectTotal || selectedProject?.totalAmount || 0,
+                              total: editableData.projectTotal || financialsFromSource.total || 0,
                               paymentMilestones: editableData.paymentMilestones,
                             },
+                            linkedContractId: contractData?.linkedContractId,
                             ...transformedData,
                           };
 
@@ -5409,7 +5523,8 @@ export default function SimpleContractGenerator() {
                       onBack={() => setCurrentStep(1)}
                       isSubmitting={isLoading}
                     />
-                  ) : (
+                  );
+                  })() : (
                   <div className="space-y-6">
                     {/* Contract Type Selector - Multi-Template System */}
                     {isDocumentTypeSelectorEnabled && (
