@@ -9,6 +9,14 @@ export type SignatureType = 'none' | 'single' | 'dual';
 export type TemplateCategory = 'contract' | 'document' | 'subcontract';
 export type TemplateStatus = 'active' | 'coming_soon' | 'deprecated';
 
+/**
+ * DataSource indicates where the template gets its base data from:
+ * - 'project': Uses selectedProject from estimates (e.g., Independent Contractor Agreement)
+ * - 'contract': Uses contractData from existing contract (e.g., Change Order, Lien Waiver)
+ * - 'scratch': Uses ad-hoc data entry without linking (future use)
+ */
+export type DataSource = 'project' | 'contract' | 'scratch';
+
 export interface ContractorBranding {
   companyName?: string;
   address?: string;
@@ -107,6 +115,12 @@ export interface ContractTemplate {
   status: TemplateStatus;
   templateVersion: string;
   signatureType: SignatureType;
+  /** 
+   * DataSource indicates where the template gets its base data from.
+   * Used by the PDF generator to route data correctly without hardcoded if/else chains.
+   * Defaults to 'project' for backward compatibility.
+   */
+  dataSource: DataSource;
   /** If true, the template HTML already includes signature placeholders (.signature-line, .date-line)
    *  and the PDF service should NOT inject a fallback signature section */
   includesSignaturePlaceholders?: boolean;
@@ -170,9 +184,11 @@ class TemplateRegistry {
     displayName: string;
     description: string;
     category: TemplateCategory;
+    subcategory?: string;
     status: TemplateStatus;
     templateVersion: string;
     signatureType: SignatureType;
+    dataSource: DataSource;
     icon?: string;
   }> {
     return this.getAll().map(t => ({
@@ -181,11 +197,20 @@ class TemplateRegistry {
       displayName: t.displayName,
       description: t.description,
       category: t.category,
+      subcategory: t.subcategory,
       status: t.status,
       templateVersion: t.templateVersion,
       signatureType: t.signatureType,
+      dataSource: t.dataSource,
       icon: t.icon,
     }));
+  }
+
+  /**
+   * Get the dataSource for a template - used by PDF generator for data routing
+   */
+  getDataSource(templateId: string): DataSource | undefined {
+    return this.get(templateId)?.dataSource;
   }
 }
 

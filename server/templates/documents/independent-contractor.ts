@@ -27,6 +27,7 @@ templateRegistry.register({
   status: 'active',
   templateVersion: '1.0',
   signatureType: 'dual',
+  dataSource: 'project',
   requiredFields: [
     'client.name',
     'client.address',

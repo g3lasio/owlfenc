@@ -372,6 +372,7 @@ templateRegistry.register({
   status: 'active',
   templateVersion: '1.0',
   signatureType: 'dual',
+  dataSource: 'contract',
   requiredFields: [
     'client.name',
     'client.address',

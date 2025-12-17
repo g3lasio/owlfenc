@@ -60,6 +60,14 @@ export interface FieldGroup {
  */
 export type SignatureRequirement = 'dual' | 'single' | 'none';
 
+/**
+ * DataSource indicates where the template gets its base data from:
+ * - 'project': Uses selectedProject from estimates (e.g., Independent Contractor Agreement)
+ * - 'contract': Uses contractData from existing contract (e.g., Change Order, Lien Waiver)
+ * - 'scratch': Uses ad-hoc data entry without linking (future use)
+ */
+export type DataSource = 'project' | 'contract' | 'scratch';
+
 export interface TemplateUIConfig {
   templateId: string;
   title: string;
@@ -73,6 +81,11 @@ export interface TemplateUIConfig {
    * Templates control their own legal behavior - the engine executes it.
    */
   signatureRequirement: SignatureRequirement;
+  /**
+   * DataSource indicates where the template gets its base data from.
+   * Used by the PDF generator and form to route data correctly.
+   */
+  dataSource: DataSource;
 }
 
 export interface TemplateConfigEntry {
@@ -143,6 +156,34 @@ class TemplateConfigRegistry {
     const requirement = this.getSignatureRequirement(templateId);
     return requirement === 'dual' || requirement === 'single';
   }
+
+  /**
+   * Get data source for a template.
+   * Legacy templates (independent-contractor) default to 'project'.
+   * Contract-based templates (change-order, lien-waiver) use 'contract'.
+   */
+  getDataSource(templateId: string): DataSource {
+    // Legacy Independent Contractor uses project data
+    if (this.isLegacyTemplate(templateId)) {
+      return 'project';
+    }
+    
+    // Get from registered config
+    const config = this.getUIConfig(templateId);
+    if (config?.dataSource) {
+      return config.dataSource;
+    }
+    
+    // Default for unknown templates - use project for safety
+    return 'project';
+  }
+
+  /**
+   * Check if a template uses contract data source
+   */
+  usesContractData(templateId: string): boolean {
+    return this.getDataSource(templateId) === 'contract';
+  }
 }
 
 export const templateConfigRegistry = new TemplateConfigRegistry();
@@ -171,6 +212,7 @@ templateConfigRegistry.register({
     icon: 'FileCheck',
     helpText: 'A Lien Waiver releases your lien rights in exchange for payment. Choose Partial for progress payments (conditional release) or Final for complete project payment (full release).',
     signatureRequirement: 'single',
+    dataSource: 'contract',
     groups: [
       {
         id: 'waiver-type',
@@ -336,7 +378,8 @@ templateConfigRegistry.register({
     subtitle: 'Modify scope, cost, or timeline of an existing contract',
     icon: 'FileEdit',
     helpText: 'A Change Order formally documents modifications to an existing contract. It requires both parties to sign.',
-    signatureRequirement: 'dual', // Both contractor and client must sign
+    signatureRequirement: 'dual',
+    dataSource: 'contract',
     groups: [
       {
         id: 'financial-impact',

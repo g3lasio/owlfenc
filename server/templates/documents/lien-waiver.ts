@@ -674,6 +674,7 @@ templateRegistry.register({
   status: 'active',
   templateVersion: '3.0',
   signatureType: 'single',
+  dataSource: 'contract',
   includesSignaturePlaceholders: true,
   supportsJurisdictionOverlay: true,
   requiredFields: [

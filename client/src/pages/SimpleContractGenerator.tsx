@@ -2485,19 +2485,104 @@ export default function SimpleContractGenerator() {
     [currentUser?.uid, toast],
   );
 
+  /**
+   * ✅ REGISTRY-DRIVEN PDF PAYLOAD BUILDER
+   * 
+   * Builds PDF payload based on template metadata from the registry.
+   * This eliminates hardcoded if/else chains and makes adding new templates easy.
+   * 
+   * Template architects just need to:
+   * 1. Register template with signatureType and dataSource in registry
+   * 2. Add template-specific data fields (changeOrder, lienWaiver, etc.)
+   * 3. This function automatically routes data correctly
+   */
+  const buildRegistryDrivenPdfPayload = useCallback((templateId: string) => {
+    const dataSource = templateConfigRegistry.getDataSource(templateId);
+    
+    // Build contractor data from profile (shared across all templates)
+    const contractorData = contractData?.contractor || {
+      name: profile?.company || profile?.ownerName || "Company Name",
+      company: profile?.company || "Company Name",
+      address: `${profile?.address || ""} ${profile?.city || ""} ${profile?.state || ""} ${profile?.zipCode || ""}`.trim(),
+      phone: profile?.phone || profile?.mobilePhone || "",
+      email: profile?.email || "",
+      license: profile?.license || "",
+    };
+    
+    // For contract-based templates (change-order, lien-waiver, work-order, etc.)
+    if (dataSource === 'contract' && contractData) {
+      const basePayload = {
+        templateId,
+        templateData: {
+          client: contractData.client || contractData.clientInfo,
+          contractor: contractorData,
+          project: contractData.project,
+          financials: contractData.financials,
+        },
+        linkedContractId: contractData.linkedContractId,
+      };
+      
+      // Add template-specific data dynamically using a registry-driven approach
+      const templateSpecificData: Record<string, any> = {
+        'change-order': contractData.changeOrder,
+        'lien-waiver': contractData.lienWaiver,
+        'work-order': contractData.workOrder,
+        'contract-addendum': contractData.addendum,
+        'certificate-completion': contractData.completion,
+        'warranty-agreement': contractData.warranty,
+      };
+      
+      const dataKey = templateId.replace(/-/g, ''); // e.g., 'change-order' -> 'changeorder'
+      const specificData = templateSpecificData[templateId];
+      if (specificData) {
+        // Use camelCase key for the template data (e.g., changeOrder, lienWaiver)
+        const camelCaseKey = templateId.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+        (basePayload.templateData as any)[camelCaseKey] = specificData;
+      }
+      
+      return { payload: basePayload, useBinaryEndpoint: true, dataSource: 'contract' };
+    }
+    
+    // For project-based templates (independent-contractor) 
+    // Return metadata indicating legacy flow should be used
+    return { payload: null, useBinaryEndpoint: false, dataSource };
+  }, [contractData, profile]);
+
+  /**
+   * Generate filename based on template and client data
+   */
+  const generatePdfFilename = useCallback((templateId: string, clientName: string) => {
+    const date = new Date().toISOString().split("T")[0];
+    const sanitizedClient = clientName.replace(/\s+/g, "_") || 'client';
+    
+    const templateNames: Record<string, string> = {
+      'change-order': 'Change-Order',
+      'lien-waiver': `Lien-Waiver-${contractData?.lienWaiver?.waiverType || 'waiver'}`,
+      'work-order': 'Work-Order',
+      'contract-addendum': 'Contract-Addendum',
+      'certificate-completion': 'Certificate-of-Completion',
+      'warranty-agreement': 'Warranty-Agreement',
+      'independent-contractor': 'Contract',
+    };
+    
+    const prefix = templateNames[templateId] || 'Document';
+    return `${prefix}-${sanitizedClient}-${date}.pdf`;
+  }, [contractData?.lienWaiver?.waiverType]);
+
   // Direct PDF download function - uses working PDF endpoint
   const handleDownloadPDF = useCallback(async () => {
-    // ✅ FIXED: Resilient auth check for PDF download  
-    // For Change Orders and Lien Waivers, selectedProject might not exist but contractData exists
-    // For Independent Contractor, selectedProject is required
-    const hasChangeOrderPdf = documentFlowType === 'change-order' && contractData?.pdfBase64;
-    const hasLienWaiverData = documentFlowType === 'lien-waiver' && contractData;
-    const hasProject = !!selectedProject;
+    // ✅ REGISTRY-DRIVEN: Use template registry for data routing
+    const dataSource = templateConfigRegistry.getDataSource(selectedDocumentType);
+    const usesContractData = dataSource === 'contract';
+    
+    // Validate data availability based on template's data source
+    const hasContractData = usesContractData && contractData;
+    const hasProjectData = !usesContractData && selectedProject;
     const isAuthenticated = !!(currentUser?.uid || profile?.email);
     
-    // Early return if no path is available
-    if (!hasChangeOrderPdf && !hasLienWaiverData && !hasProject) {
-      console.log('❌ [PDF DOWNLOAD] No project, Change Order PDF, or Lien Waiver data available');
+    // Early return if no data is available for the template type
+    if (!hasContractData && !hasProjectData) {
+      console.log(`❌ [PDF DOWNLOAD] No data available for template '${selectedDocumentType}' (dataSource: ${dataSource})`);
       return;
     }
     
@@ -2524,163 +2609,66 @@ export default function SimpleContractGenerator() {
     setIsLoading(true);
 
     try {
-      // ✅ CHANGE ORDER FIX: Re-generate PDF with binary download mode
-      if (hasChangeOrderPdf && contractData) {
-        console.log('📄 [CHANGE ORDER] Downloading PDF via binary endpoint...');
+      // ✅ REGISTRY-DRIVEN: Use unified payload builder for contract-based templates
+      if (hasContractData) {
+        const { payload, useBinaryEndpoint } = buildRegistryDrivenPdfPayload(selectedDocumentType);
         
-        // Build contractor data from profile (same as generation)
-        const contractorForDownload = contractData.contractor || {
-          name: profile?.company || profile?.ownerName || "Company Name",
-          company: profile?.company || "Company Name",
-          address: `${profile?.address || ""} ${profile?.city || ""} ${profile?.state || ""} ${profile?.zipCode || ""}`.trim(),
-          phone: profile?.phone || profile?.mobilePhone || "",
-          email: profile?.email || "",
-          license: profile?.license || "",
-        };
+        if (payload && useBinaryEndpoint) {
+          console.log(`📄 [${selectedDocumentType.toUpperCase()}] Downloading PDF via binary endpoint...`);
+          
+          // Fetch as raw binary blob
+          const response = await fetch('/api/generate-pdf?download=true', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${currentUser?.uid || ''}`,
+            },
+            body: JSON.stringify(payload),
+          });
         
-        // Build the same payload used during generation
-        // ✅ FIX: Force 'change-order' templateId for Change Order downloads
-        // This ensures the backend uses the correct template registry path
-        const downloadPayload = {
-          templateId: 'change-order',
-          templateData: {
-            client: contractData.client || contractData.clientInfo,
-            contractor: contractorForDownload,
-            project: contractData.project,
-            financials: contractData.financials,
-            changeOrder: contractData.changeOrder,
-          },
-          linkedContractId: contractData.linkedContractId,
-        };
-        
-        // Fetch as raw binary blob
-        const response = await fetch('/api/generate-pdf?download=true', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${currentUser?.uid || ''}`,
-          },
-          body: JSON.stringify(downloadPayload),
-        });
-        
-        if (!response.ok) {
-          throw new Error(`PDF download failed: ${response.status}`);
+          if (!response.ok) {
+            throw new Error(`PDF download failed: ${response.status}`);
+          }
+          
+          // Get blob directly from response
+          const blob = await response.blob();
+          
+          if (blob.size === 0) {
+            throw new Error('Downloaded PDF is empty');
+          }
+          
+          console.log(`✅ [${selectedDocumentType.toUpperCase()}] PDF blob received: ${blob.size} bytes`);
+          
+          // Generate filename using registry-driven helper
+          const clientName = contractData?.client?.name || contractData?.clientInfo?.name || 'client';
+          const fileName = generatePdfFilename(selectedDocumentType, clientName);
+          
+          // Handle PDF download
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = fileName;
+          a.style.display = 'none';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          
+          // Clean up
+          setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+          
+          // Success toast
+          toast({
+            title: "✅ PDF Downloaded",
+            description: "Check your downloads folder",
+          });
+          
+          setIsLoading(false);
+          return;
         }
-        
-        // Get blob directly from response
-        const blob = await response.blob();
-        
-        if (blob.size === 0) {
-          throw new Error('Downloaded PDF is empty');
-        }
-        
-        console.log(`✅ [CHANGE ORDER] PDF blob received: ${blob.size} bytes`);
-        
-        // Generate filename
-        const clientName = contractData.client?.name || contractData.clientInfo?.name || 'client';
-        const fileName = contractData.filename || `Change-Order-${clientName.replace(/\s+/g, "_")}-${new Date().toISOString().split("T")[0]}.pdf`;
-        
-        // Handle PDF download
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = fileName;
-        a.style.display = 'none';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        
-        // Clean up
-        setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-        
-        // Success toast
-        toast({
-          title: "✅ PDF Downloaded",
-          description: "Check your downloads folder",
-        });
-        
-        setIsLoading(false);
-        return;
       }
       
-      // ✅ LIEN WAIVER FIX: Re-generate PDF with binary download mode
-      if (hasLienWaiverData && contractData) {
-        console.log('📄 [LIEN WAIVER] Downloading PDF via binary endpoint...');
-        
-        // Build contractor data from profile or contractData
-        const contractorForDownload = contractData.contractor || {
-          name: profile?.company || profile?.ownerName || "Company Name",
-          company: profile?.company || "Company Name",
-          address: `${profile?.address || ""} ${profile?.city || ""} ${profile?.state || ""} ${profile?.zipCode || ""}`.trim(),
-          phone: profile?.phone || profile?.mobilePhone || "",
-          email: profile?.email || "",
-          license: profile?.license || "",
-        };
-        
-        // Build the payload for lien waiver template
-        const downloadPayload = {
-          templateId: 'lien-waiver',
-          templateData: {
-            client: contractData.client || contractData.clientInfo,
-            contractor: contractorForDownload,
-            project: contractData.project,
-            financials: contractData.financials,
-            lienWaiver: contractData.lienWaiver,
-          },
-          linkedContractId: contractData.linkedContractId,
-        };
-        
-        // Fetch as raw binary blob
-        const response = await fetch('/api/generate-pdf?download=true', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${currentUser?.uid || ''}`,
-          },
-          body: JSON.stringify(downloadPayload),
-        });
-        
-        if (!response.ok) {
-          throw new Error(`PDF download failed: ${response.status}`);
-        }
-        
-        // Get blob directly from response
-        const blob = await response.blob();
-        
-        if (blob.size === 0) {
-          throw new Error('Downloaded PDF is empty');
-        }
-        
-        console.log(`✅ [LIEN WAIVER] PDF blob received: ${blob.size} bytes`);
-        
-        // Generate filename
-        const clientName = contractData.client?.name || contractData.clientInfo?.name || 'client';
-        const waiverType = contractData.lienWaiver?.waiverType || 'waiver';
-        const fileName = `Lien-Waiver-${waiverType}-${clientName.replace(/\s+/g, "_")}-${new Date().toISOString().split("T")[0]}.pdf`;
-        
-        // Handle PDF download
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = fileName;
-        a.style.display = 'none';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        
-        // Clean up
-        setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-        
-        // Success toast
-        toast({
-          title: "✅ PDF Downloaded",
-          description: "Check your downloads folder",
-        });
-        
-        setIsLoading(false);
-        return;
-      }
-      
+      // ===== LEGACY FLOW: Independent Contractor (project-based) =====
+      // This template uses the more complex legacy flow with selectedProject data
       // IMMEDIATE FEEDBACK for Independent Contractor flow (requires API call)
       toast({
         title: "Generando PDF...",
@@ -3513,28 +3501,27 @@ export default function SimpleContractGenerator() {
   ]);
 
   // Simplified Signature Protocol Handler - Generate signature links for both parties
-  // ✅ TEMPLATE-AWARE: Works with Independent Contractor Agreement, Change Order, Lien Waiver, and future templates
+  // ✅ REGISTRY-DRIVEN: Uses templateConfigRegistry for template metadata
   const handleStartSignatureProtocol = useCallback(async () => {
-    // 🔧 FIX: Use the actual documentFlowType instead of hardcoding to 'independent-contractor'
-    // This ensures single-signature templates like 'lien-waiver' are handled correctly
-    const isChangeOrder = documentFlowType === 'change-order';
-    const isLienWaiver = documentFlowType === 'lien-waiver';
-    const usesContractData = isChangeOrder || isLienWaiver; // Both use contractData instead of selectedProject
-    const templateId = documentFlowType || 'independent-contractor'; // Use actual document type
+    // 🔧 REGISTRY-DRIVEN: Use registry to determine data source instead of hardcoded checks
+    const templateId = documentFlowType || 'independent-contractor';
+    const dataSource = templateConfigRegistry.getDataSource(templateId);
+    const usesContractData = dataSource === 'contract';
     
-    // Validate based on template type
+    // Validate based on template's data source
     if (usesContractData) {
-      // Change Order and Lien Waiver use contractData from the generated document
+      // Contract-based templates (change-order, lien-waiver, etc.) use contractData
       if (!contractData || !currentUser?.uid || !contractHTML) {
+        const templateName = templateConfigRegistry.getTemplateConfig(templateId)?.name || 'Document';
         toast({
           title: "Error",
-          description: `${isLienWaiver ? 'Lien Waiver' : 'Change Order'} must be generated before starting signature protocol`,
+          description: `${templateName} must be generated before starting signature protocol`,
           variant: "destructive",
         });
         return;
       }
     } else {
-      // Independent Contractor uses selectedProject
+      // Project-based templates (independent-contractor) use selectedProject
       if (!selectedProject || !currentUser?.uid || !contractHTML) {
         toast({
           title: "Error",
@@ -3561,9 +3548,10 @@ export default function SimpleContractGenerator() {
     setDeliveryStatus("Generating signature links...");
 
     try {
-      // ✅ TEMPLATE-AWARE: Build contract data based on document type
-      // For Change Orders and Lien Waivers, use data from contractData
-      // For Independent Contractor, use selectedProject
+      // ✅ REGISTRY-DRIVEN: Build contract data based on template's data source
+      const templateName = templateConfigRegistry.getTemplateConfig(templateId)?.name || 'Document';
+      
+      // Get client data from appropriate source
       const clientName = usesContractData 
         ? (contractData?.client?.name || contractData?.clientName || "Client Name")
         : (editableData.clientName || selectedProject?.clientName || "Client Name");
@@ -3580,11 +3568,10 @@ export default function SimpleContractGenerator() {
         ? (contractData?.client?.address || contractData?.clientAddress || "")
         : (editableData.clientAddress || selectedProject?.clientAddress || "");
       
-      const projectDescription = isChangeOrder
-        ? `Change Order - ${contractData?.project?.description || contractData?.projectDescription || "Scope Modification"}`
-        : isLienWaiver
-          ? `Lien Waiver - ${contractData?.project?.description || contractData?.projectDescription || "Property"}`
-          : (selectedProject?.projectDescription || selectedProject?.projectType || "Construction Project");
+      // ✅ REGISTRY-DRIVEN: Build project description based on template
+      const projectDescription = usesContractData
+        ? `${templateName} - ${contractData?.project?.description || contractData?.projectDescription || "Project"}`
+        : (selectedProject?.projectDescription || selectedProject?.projectType || "Construction Project");
       
       const totalAmount = usesContractData
         ? (contractData?.financials?.total || contractData?.totalAmount || 0)
@@ -3611,16 +3598,13 @@ export default function SimpleContractGenerator() {
           startDate: editableData.startDate || new Date().toISOString().split("T")[0],
           completionDate: editableData.completionDate ||
             new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-          // Change Order specific data
-          ...(isChangeOrder && contractData?.linkedContractId && {
-            linkedContractId: contractData.linkedContractId,
-            isChangeOrder: true,
-          }),
-          // Lien Waiver specific data
-          ...(isLienWaiver && {
-            isLienWaiver: true,
-            waiverType: contractData?.lienWaiver?.waiverType || 'partial',
-          }),
+          // ✅ TEMPLATE-SPECIFIC: Include template-specific metadata for backend
+          linkedContractId: contractData?.linkedContractId || null,
+          templateSpecificData: {
+            ...(templateId === 'lien-waiver' && {
+              waiverType: contractData?.lienWaiver?.waiverType || 'partial',
+            }),
+          },
         },
         securityFeatures: {
           encryption: "256-bit SSL",

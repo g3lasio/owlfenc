@@ -114,6 +114,7 @@ export class DualSignatureService {
     contractorSignUrl?: string;
     clientSignUrl?: string;
     message: string;
+    noSignatureRequired?: boolean; // For templates with signatureType 'none'
   }> {
     try {
       console.log("🚀 [DUAL-SIGNATURE] Starting signature workflow...");
@@ -145,6 +146,17 @@ export class DualSignatureService {
         } else {
           console.log(`⚠️ [TEMPLATE-AWARE] Template '${request.templateId}' not found in registry, using default: dual`);
         }
+      }
+
+      // ✅ GUARD: Templates with signatureType 'none' should not go through signature flow
+      // Return success=true with noSignatureRequired flag so frontend can handle gracefully
+      if (signatureMode === 'none') {
+        console.log(`✅ [SIGNATURE-GUARD] Template '${request.templateId}' has signatureType 'none' - no signature required`);
+        return {
+          success: true,
+          noSignatureRequired: true,
+          message: `This document type does not require signatures. PDF is ready for direct download.`,
+        };
       }
 
       // Generate unique contract ID
