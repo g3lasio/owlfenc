@@ -1,4 +1,5 @@
 import puppeteer, { Browser } from "puppeteer";
+import { getChromiumExecutablePath } from "../utils/chromiumResolver";
 
 // Production-aware logging helper
 const isProduction = process.env.NODE_ENV === 'production';
@@ -57,7 +58,7 @@ class BrowserPool {
 
   private async createBrowser(): Promise<Browser> {
     console.log("🚀 [BROWSER-POOL] Launching persistent browser instance...");
-    const executablePath = "/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium";
+    const executablePath = getChromiumExecutablePath();
     
     const browser = await puppeteer.launch({
       headless: true,
@@ -269,8 +270,7 @@ class PremiumPdfService {
     };
   }): Promise<Buffer> {
     let browser;
-    const executablePath =
-      "/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium";
+    const executablePath = getChromiumExecutablePath();
 
     browser = await puppeteer.launch({
       headless: true,
@@ -870,8 +870,7 @@ class PremiumPdfService {
     };
   }): Promise<Buffer> {
     let browser;
-    const executablePath =
-      "/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium";
+    const executablePath = getChromiumExecutablePath();
 
     try {
       console.log(
@@ -1821,8 +1820,7 @@ class PremiumPdfService {
     let browser;
     try {
       console.log("🚀 [PDF-FROM-HTML] Starting PDF generation from HTML...");
-      const executablePath =
-        "/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium";
+      const executablePath = getChromiumExecutablePath();
 
       browser = await puppeteer.launch({
         headless: true,

@@ -8,6 +8,7 @@
 import puppeteer from 'puppeteer';
 import fs from 'fs/promises';
 import path from 'path';
+import { getChromiumExecutablePath } from './utils/chromiumResolver';
 
 interface InvoiceData {
   company: {
@@ -77,8 +78,8 @@ export class InvoicePdfService {
     
     let browser;
     try {
-      // Use the confirmed Chromium executable path
-      const executablePath = '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium';
+      // Use dynamic Chromium path detection for dev/production compatibility
+      const executablePath = getChromiumExecutablePath();
       
       console.log('🔍 Using Chromium executable:', executablePath);
 

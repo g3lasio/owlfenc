@@ -4,6 +4,7 @@ import handlebars from "handlebars";
 import fs from "fs/promises";
 import { fileURLToPath } from "url";
 import { formatCurrency, roundToTwoDecimals, parseCurrency } from "./utils/currencyFormatter";
+import { getChromiumExecutablePath } from "./utils/chromiumResolver";
 
 interface EstimateData {
   company: {
@@ -51,8 +52,7 @@ export class PuppeteerPdfService {
     let browser;
 
     try {
-      const executablePath =
-        "/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium";
+      const executablePath = getChromiumExecutablePath();
 
       const html = await this.renderHtmlFromTemplate(data);
 
@@ -732,8 +732,7 @@ export class PuppeteerPdfService {
     let browser;
 
     try {
-      const executablePath =
-        "/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium";
+      const executablePath = getChromiumExecutablePath();
 
       browser = await puppeteer.launch({
         headless: true,
