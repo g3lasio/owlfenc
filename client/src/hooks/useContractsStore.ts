@@ -18,7 +18,9 @@ interface NormalizedContract extends ContractHistoryEntry {
 }
 
 // Template display names for UI chips
+// ✅ FIXED: Added 'unknown' for contracts without defined type
 const TEMPLATE_DISPLAY_NAMES: Record<string, string> = {
+  'unknown': 'Contract',
   'independent-contractor': 'Independent Contractor',
   'change-order': 'Change Order',
   'contract-addendum': 'Addendum',
@@ -39,6 +41,12 @@ export interface TemplateBadgeConfig {
 }
 
 export const TEMPLATE_BADGE_CONFIGS: Record<string, TemplateBadgeConfig> = {
+  'unknown': {
+    label: 'Contract',
+    shortLabel: 'DOC',
+    color: 'bg-slate-500/20 text-slate-400 border-slate-500/30',
+    icon: 'File',
+  },
   'independent-contractor': {
     label: 'Independent Contractor',
     shortLabel: 'ICA',
@@ -96,14 +104,28 @@ export const TEMPLATE_BADGE_CONFIGS: Record<string, TemplateBadgeConfig> = {
 };
 
 // Helper to get display name for template
+// ✅ FIXED: No longer assumes "Independent Contractor" for unknown templates
 export function getTemplateDisplayName(templateId?: string): string {
-  if (!templateId) return 'Independent Contractor'; // Legacy fallback
-  return TEMPLATE_DISPLAY_NAMES[templateId] || templateId;
+  if (!templateId) return 'Contract'; // Generic fallback for unknown types
+  return TEMPLATE_DISPLAY_NAMES[templateId] || 'Contract';
 }
 
 // Helper to get detailed template ID including lien waiver type
+// ✅ FIXED: Returns 'unknown' for missing templateId instead of assuming ICA
 export function getDetailedTemplateId(templateId?: string, contractData?: any): string {
-  if (!templateId) return 'independent-contractor';
+  // No templateId = unknown type, don't guess
+  if (!templateId) return 'unknown';
+  
+  // Verify it's a known template before returning it
+  const knownTemplates = [
+    'independent-contractor',
+    'change-order', 
+    'contract-addendum',
+    'work-order',
+    'lien-waiver',
+    'certificate-completion',
+    'warranty-agreement'
+  ];
   
   // Check if this is a lien waiver and extract the type
   if (templateId === 'lien-waiver') {
@@ -112,15 +134,23 @@ export function getDetailedTemplateId(templateId?: string, contractData?: any): 
                        contractData?.waiverType;
     if (waiverType === 'partial') return 'lien-waiver-partial';
     if (waiverType === 'final') return 'lien-waiver-final';
+    return 'lien-waiver'; // Generic lien waiver if type not specified
   }
   
-  return templateId;
+  // Only return templateId if it's a known type
+  if (knownTemplates.includes(templateId)) {
+    return templateId;
+  }
+  
+  // Unknown template type - return 'unknown' to avoid mislabeling
+  return 'unknown';
 }
 
 // Helper to get template badge config (with lien waiver type detection)
+// ✅ FIXED: Falls back to 'unknown' badge instead of assuming ICA
 export function getTemplateBadgeConfig(templateId?: string, contractData?: any): TemplateBadgeConfig {
   const detailedId = getDetailedTemplateId(templateId, contractData);
-  return TEMPLATE_BADGE_CONFIGS[detailedId] || TEMPLATE_BADGE_CONFIGS['independent-contractor'];
+  return TEMPLATE_BADGE_CONFIGS[detailedId] || TEMPLATE_BADGE_CONFIGS['unknown'];
 }
 
 // Signature requirement mapping from templateId
