@@ -7259,88 +7259,65 @@ export default function SimpleContractGenerator() {
                         </p>
                       </div>
                     ) : contractsStore.drafts.length > 0 ? (
-                      <div className="space-y-3">
+                      <div className="space-y-2">
                         {contractsStore.drafts.map((contract, index) => (
                           <div
                             key={contract.id || `draft-${index}`}
-                            className="bg-gray-800 border border-gray-600 rounded-lg p-4"
+                            className="bg-gray-800/80 border border-gray-700 rounded-md p-2.5 hover:border-cyan-500/50 transition-colors"
                           >
-                            <div className="flex items-center justify-between mb-3">
-                              <div>
-                                <div className="flex items-center gap-2 flex-wrap mb-1">
-                                  <h3 className="font-bold text-white text-lg">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <h3 className="font-semibold text-white text-sm">
                                     {contract.clientName}
                                   </h3>
-                                  {/* Document Type Badge */}
                                   {(() => {
                                     const badge = getTemplateBadgeConfig((contract as any).templateId, contract.contractData);
                                     return (
                                       <Badge
                                         variant="outline"
-                                        className={`text-[10px] ${badge.color} px-1.5 py-0 h-5 font-medium whitespace-nowrap`}
+                                        className={`text-[9px] ${badge.color} px-1 py-0 h-4 font-medium whitespace-nowrap`}
                                         data-testid={`template-badge-draft-${contract.id}`}
                                       >
                                         {badge.label}
                                       </Badge>
                                     );
                                   })()}
+                                  <span className="text-cyan-400 font-semibold text-sm">
+                                    ${(contract.totalAmount || 0).toLocaleString()}
+                                  </span>
                                 </div>
-                                <p className="text-cyan-400 font-semibold">
-                                  $
-                                  {(contract.totalAmount || 0).toLocaleString()}
-                                </p>
-                                <p className="text-gray-400 text-sm">
-                                  {contract.projectType ||
-                                    "Draft Contract"}
+                                <p className="text-gray-500 text-xs truncate">
+                                  {contract.projectType || "Draft Contract"}
                                 </p>
                               </div>
-                              <Badge className="bg-yellow-600 text-black">
-                                <Clock className="h-3 w-3 mr-1" />
+                              <Badge className="bg-yellow-600/90 text-black text-[10px] px-1.5 py-0 h-5 shrink-0">
+                                <Clock className="h-2.5 w-2.5 mr-0.5" />
                                 DRAFT
                               </Badge>
                             </div>
 
-                            {/* Actions - Mobile Responsive */}
-                            <div className="bg-cyan-900/30 border border-cyan-700 rounded-lg p-3">
-                              <h4 className="text-cyan-400 font-semibold text-sm mb-3">
-                                Draft Actions:
-                              </h4>
-                              {/* Mobile: Stacked Buttons */}
-                              <div className="flex flex-col sm:flex-row gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() =>
-                                    loadContractFromHistory(contract)
-                                  }
-                                  className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black text-xs w-full sm:w-auto"
-                                  data-testid={`button-resume-${contract.id}`}
-                                >
-                                  <Edit2 className="h-3 w-3 mr-1" />
-                                  Resume Editing
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() =>
-                                    loadContractFromHistory(contract)
-                                  }
-                                  className="border-gray-400 text-gray-400 hover:bg-gray-400 hover:text-black text-xs w-full sm:w-auto"
-                                >
-                                  <Eye className="h-3 w-3 mr-1" />
-                                  View Details
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => archiveContract(contract.id || contract.contractId || '', 'user_action')}
-                                  className="border-purple-400 text-purple-400 hover:bg-purple-400 hover:text-black text-xs w-full sm:w-auto"
-                                  data-testid={`button-archive-${contract.id || contract.contractId}`}
-                                >
-                                  <Archive className="h-3 w-3 mr-1" />
-                                  Archive
-                                </Button>
-                              </div>
+                            {/* Compact Actions */}
+                            <div className="flex gap-1.5 mt-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => loadContractFromHistory(contract)}
+                                className="border-cyan-500/60 text-cyan-400 hover:bg-cyan-500 hover:text-black text-[10px] h-7 px-2 flex-1"
+                                data-testid={`button-resume-${contract.id}`}
+                              >
+                                <Edit2 className="h-3 w-3 mr-1" />
+                                Resume
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => archiveContract(contract.id || contract.contractId || '', 'user_action')}
+                                className="border-purple-500/60 text-purple-400 hover:bg-purple-500 hover:text-black text-[10px] h-7 px-2"
+                                data-testid={`button-archive-${contract.id || contract.contractId}`}
+                              >
+                                <Archive className="h-3 w-3" />
+                              </Button>
                             </div>
                           </div>
                         ))}
@@ -7388,138 +7365,113 @@ export default function SimpleContractGenerator() {
                         </p>
                       </div>
                     ) : contractsStore.inProgress.length > 0 ? (
-                      <div className="space-y-3">
+                      <div className="space-y-2">
                         {contractsStore.inProgress.map((contract, index) => (
                           <div
                             key={contract.id || `contract-${index}`}
-                            className="bg-gray-800 border border-gray-600 rounded-lg p-4"
+                            className="bg-gray-800/80 border border-gray-700 rounded-md p-2.5 hover:border-yellow-500/50 transition-colors"
                           >
-                            <div className="flex items-center justify-between mb-3">
-                              <div>
-                                <div className="flex items-center gap-2 flex-wrap mb-1">
-                                  <h3 className="font-bold text-white text-lg">
+                            {/* Compact Header */}
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <h3 className="font-semibold text-white text-sm">
                                     {contract.clientName}
                                   </h3>
-                                  {/* Document Type Badge */}
                                   {(() => {
                                     const badge = getTemplateBadgeConfig((contract as any).templateId, contract.contractData);
                                     return (
                                       <Badge
                                         variant="outline"
-                                        className={`text-[10px] ${badge.color} px-1.5 py-0 h-5 font-medium whitespace-nowrap`}
+                                        className={`text-[9px] ${badge.color} px-1 py-0 h-4 font-medium whitespace-nowrap`}
                                         data-testid={`template-badge-progress-${contract.id}`}
                                       >
                                         {badge.label}
                                       </Badge>
                                     );
                                   })()}
+                                  <span className="text-yellow-400 font-semibold text-sm">
+                                    ${(contract.totalAmount || 0).toLocaleString()}
+                                  </span>
                                 </div>
-                                <p className="text-yellow-400 font-semibold">
-                                  $
-                                  {(contract.totalAmount || 0).toLocaleString()}
-                                </p>
                               </div>
-                              <Badge className="bg-yellow-600 text-black">
+                              <Badge className="bg-yellow-600/90 text-black text-[10px] px-1.5 py-0 h-5 shrink-0">
                                 IN PROGRESS
                               </Badge>
                             </div>
 
-                            {/* Signature Status */}
-                            <div className="bg-gray-700 rounded-lg p-3 mb-3">
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <span className="text-gray-300 text-sm">
-                                    Contractor:
-                                  </span>
-                                  <Badge
-                                    className={`ml-2 text-xs ${
-                                      contract.status === 'contractor_signed' || contract.status === 'both_signed' || contract.status === 'completed'
-                                        ? "bg-green-600 text-white"
-                                        : "bg-red-600 text-white"
-                                    }`}
-                                  >
-                                    {contract.status === 'contractor_signed' || contract.status === 'both_signed' || contract.status === 'completed'
-                                      ? "SIGNED"
-                                      : "PENDING"}
-                                  </Badge>
-                                </div>
-                                <div>
-                                  <span className="text-gray-300 text-sm">
-                                    Client:
-                                  </span>
-                                  <Badge
-                                    className={`ml-2 text-xs ${
-                                      contract.status === 'client_signed' || contract.status === 'both_signed' || contract.status === 'completed'
-                                        ? "bg-green-600 text-white"
-                                        : "bg-red-600 text-white"
-                                    }`}
-                                  >
-                                    {contract.status === 'client_signed' || contract.status === 'both_signed' || contract.status === 'completed'
-                                      ? "SIGNED"
-                                      : "PENDING"}
-                                  </Badge>
-                                </div>
+                            {/* Compact Signature Status */}
+                            <div className="flex items-center gap-3 mt-2 text-xs">
+                              <div className="flex items-center gap-1">
+                                <span className="text-gray-400">Contractor:</span>
+                                <Badge
+                                  className={`text-[9px] px-1 py-0 h-4 ${
+                                    contract.status === 'contractor_signed' || contract.status === 'both_signed' || contract.status === 'completed'
+                                      ? "bg-green-600 text-white"
+                                      : "bg-red-600/80 text-white"
+                                  }`}
+                                >
+                                  {contract.status === 'contractor_signed' || contract.status === 'both_signed' || contract.status === 'completed'
+                                    ? "✓"
+                                    : "PENDING"}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <span className="text-gray-400">Client:</span>
+                                <Badge
+                                  className={`text-[9px] px-1 py-0 h-4 ${
+                                    contract.status === 'client_signed' || contract.status === 'both_signed' || contract.status === 'completed'
+                                      ? "bg-green-600 text-white"
+                                      : "bg-red-600/80 text-white"
+                                  }`}
+                                >
+                                  {contract.status === 'client_signed' || contract.status === 'both_signed' || contract.status === 'completed'
+                                    ? "✓"
+                                    : "PENDING"}
+                                </Badge>
                               </div>
                             </div>
 
-                            {/* Direct Signature Links */}
-                            <div className="bg-blue-900/30 border border-blue-700 rounded-lg p-3">
-                              <h4 className="text-blue-400 font-semibold text-sm mb-2">
-                                Direct Signature Links:
-                              </h4>
-                              {/* Mobile-Responsive Signature Links */}
-                              <div className="space-y-3">
-                                <div className="space-y-2">
-                                  <span className="text-gray-300 text-sm block">
-                                    Contractor Link:
-                                  </span>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => {
-                                      if (contract.contractorSignUrl) {
-                                        openUrl(contract.contractorSignUrl);
-                                      } else {
-                                        toast({
-                                          title: "Link Not Available",
-                                          description:
-                                            "Contractor signature link not found",
-                                          variant: "destructive",
-                                        });
-                                      }
-                                    }}
-                                    className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black text-xs w-full"
-                                  >
-                                    <ExternalLink className="h-3 w-3 mr-1" />
-                                    Open Contractor Link
-                                  </Button>
-                                </div>
-                                <div className="space-y-2">
-                                  <span className="text-gray-300 text-sm block">
-                                    Client Link:
-                                  </span>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => {
-                                      if (contract.clientSignUrl) {
-                                        openUrl(contract.clientSignUrl);
-                                      } else {
-                                        toast({
-                                          title: "Link Not Available",
-                                          description:
-                                            "Client signature link not found",
-                                          variant: "destructive",
-                                        });
-                                      }
-                                    }}
-                                    className="border-green-400 text-green-400 hover:bg-green-400 hover:text-black text-xs w-full"
-                                  >
-                                    <ExternalLink className="h-3 w-3 mr-1" />
-                                    Open Client Link
-                                  </Button>
-                                </div>
-                              </div>
+                            {/* Compact Signature Links - Wrap on mobile */}
+                            <div className="grid grid-cols-2 gap-1.5 mt-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  if (contract.contractorSignUrl) {
+                                    openUrl(contract.contractorSignUrl);
+                                  } else {
+                                    toast({
+                                      title: "Link Not Available",
+                                      description: "Contractor signature link not found",
+                                      variant: "destructive",
+                                    });
+                                  }
+                                }}
+                                className="border-cyan-500/60 text-cyan-400 hover:bg-cyan-500 hover:text-black text-[10px] h-7 px-2"
+                              >
+                                <ExternalLink className="h-3 w-3 mr-1" />
+                                Contractor Link
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  if (contract.clientSignUrl) {
+                                    openUrl(contract.clientSignUrl);
+                                  } else {
+                                    toast({
+                                      title: "Link Not Available",
+                                      description: "Client signature link not found",
+                                      variant: "destructive",
+                                    });
+                                  }
+                                }}
+                                className="border-green-500/60 text-green-400 hover:bg-green-500 hover:text-black text-[10px] h-7 px-2"
+                              >
+                                <ExternalLink className="h-3 w-3 mr-1" />
+                                Client Link
+                              </Button>
                             </div>
                           </div>
                         ))}
@@ -7574,140 +7526,88 @@ export default function SimpleContractGenerator() {
                         </p>
                       </div>
                     ) : contractsStore.completed.length > 0 ? (
-                      <div className="space-y-3">
+                      <div className="space-y-2">
                         {contractsStore.completed.map((contract, index) => (
                           <div
                             key={contract.contractId || `completed-${index}`}
-                            className="bg-gray-800 border border-gray-600 rounded-lg p-4"
+                            className="bg-gray-800/80 border border-gray-700 rounded-md p-2.5 hover:border-green-500/50 transition-colors"
                           >
-                            <div className="flex items-center justify-between mb-3">
-                              <div>
-                                <div className="flex items-center gap-2 flex-wrap mb-1">
-                                  <h3 className="font-bold text-white text-lg">
+                            {/* Compact Header */}
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <h3 className="font-semibold text-white text-sm">
                                     {contract.clientName}
                                   </h3>
-                                  {/* Document Type Badge */}
                                   {(() => {
                                     const badge = getTemplateBadgeConfig((contract as any).templateId, contract.contractData);
                                     return (
                                       <Badge
                                         variant="outline"
-                                        className={`text-[10px] ${badge.color} px-1.5 py-0 h-5 font-medium whitespace-nowrap`}
+                                        className={`text-[9px] ${badge.color} px-1 py-0 h-4 font-medium whitespace-nowrap`}
                                         data-testid={`template-badge-completed-${contract.contractId}`}
                                       >
                                         {badge.label}
                                       </Badge>
                                     );
                                   })()}
+                                  <span className="text-green-400 font-semibold text-sm">
+                                    ${(contract.totalAmount || 0).toLocaleString()}
+                                  </span>
                                 </div>
-                                <p className="text-green-400 font-semibold">
-                                  $
-                                  {(contract.totalAmount || 0).toLocaleString()}
-                                </p>
+                                <div className="flex items-center gap-2 mt-0.5 text-[10px] text-gray-500 flex-wrap">
+                                  <span className="font-mono">{contract.contractId}</span>
+                                  {contract.completionDate && (
+                                    <span>• {new Date(contract.completionDate).toLocaleDateString()}</span>
+                                  )}
+                                </div>
                               </div>
-                              <Badge className="bg-green-600 text-white">
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                COMPLETED
+                              <Badge className="bg-green-600/90 text-white text-[10px] px-1.5 py-0 h-5 shrink-0">
+                                <Shield className="h-2.5 w-2.5 mr-0.5" />
+                                SIGNED
                               </Badge>
                             </div>
 
-                            {/* Contract Actions */}
-                            <div className="space-y-3">
-                              {/* PDF Status and Actions - Always show as ready */}
-                              <div className="border rounded-lg p-3 bg-green-900/30 border-green-700">
-                                <div className="flex items-center justify-between mb-2">
-                                  <h4 className="font-semibold text-sm text-green-400">
-                                    Signed PDF with Digital Seal:
-                                  </h4>
-                                  <Badge className="text-xs bg-green-600 text-white">
-                                    <Shield className="h-3 w-3 mr-1" />
-                                    DIGITALLY SIGNED
-                                  </Badge>
-                                </div>
-
-                                {/* Mobile-Responsive Action Buttons */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() =>
-                                      downloadSignedPdf(
-                                        contract.contractId,
-                                        contract.clientName,
-                                      )
-                                    }
-                                    className="border-green-400 text-green-400 hover:bg-green-400 hover:text-black text-xs w-full"
-                                    data-testid={`button-download-${contract.contractId}`}
-                                  >
-                                    <Download className="h-3 w-3 mr-1" />
-                                    Download
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() =>
-                                      viewContract(
-                                        contract.contractId,
-                                        contract.clientName,
-                                      )
-                                    }
-                                    className="border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-black text-xs w-full"
-                                  >
-                                    <Eye className="h-3 w-3 mr-1" />
-                                    View Contract
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() =>
-                                      shareContract(
-                                        contract.contractId,
-                                        contract.clientName,
-                                      )
-                                    }
-                                    className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black text-xs w-full"
-                                  >
-                                    <Share2 className="h-3 w-3 mr-1" />
-                                    Share
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => archiveContract(contract.id || contract.contractId || '', 'user_action')}
-                                    className="border-purple-400 text-purple-400 hover:bg-purple-400 hover:text-black text-xs w-full"
-                                    data-testid={`button-archive-${contract.id || contract.contractId}`}
-                                  >
-                                    <Archive className="h-3 w-3 mr-1" />
-                                    Archive
-                                  </Button>
-                                </div>
-                              </div>
-
-                              {/* Contract Details - Mobile Responsive */}
-                              <div className="bg-gray-700 rounded-lg p-3">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                                  <div className="space-y-1">
-                                    <span className="text-gray-400 block">
-                                      Contract ID:
-                                    </span>
-                                    <p className="text-gray-200 font-mono text-xs break-all">
-                                      {contract.contractId}
-                                    </p>
-                                  </div>
-                                  <div className="space-y-1">
-                                    <span className="text-gray-400 block">
-                                      Completion Date:
-                                    </span>
-                                    <p className="text-gray-200">
-                                      {contract.completionDate
-                                        ? new Date(
-                                            contract.completionDate,
-                                          ).toLocaleDateString()
-                                        : "N/A"}
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
+                            {/* Compact Action Buttons - Wrap on mobile */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mt-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => downloadSignedPdf(contract.contractId, contract.clientName)}
+                                className="border-green-500/60 text-green-400 hover:bg-green-500 hover:text-black text-[10px] h-7 px-2"
+                                data-testid={`button-download-${contract.contractId}`}
+                              >
+                                <Download className="h-3 w-3 mr-1" />
+                                Download
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => viewContract(contract.contractId, contract.clientName)}
+                                className="border-blue-500/60 text-blue-400 hover:bg-blue-500 hover:text-black text-[10px] h-7 px-2"
+                              >
+                                <Eye className="h-3 w-3 mr-1" />
+                                View
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => shareContract(contract.contractId, contract.clientName)}
+                                className="border-cyan-500/60 text-cyan-400 hover:bg-cyan-500 hover:text-black text-[10px] h-7 px-2"
+                              >
+                                <Share2 className="h-3 w-3 mr-1" />
+                                Share
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => archiveContract(contract.id || contract.contractId || '', 'user_action')}
+                                className="border-purple-500/60 text-purple-400 hover:bg-purple-500 hover:text-black text-[10px] h-7 px-2"
+                                data-testid={`button-archive-${contract.id || contract.contractId}`}
+                              >
+                                <Archive className="h-3 w-3 mr-1" />
+                                Archive
+                              </Button>
                             </div>
                           </div>
                         ))}
@@ -7754,91 +7654,58 @@ export default function SimpleContractGenerator() {
                         </p>
                       </div>
                     ) : contractsStore.archived.length > 0 ? (
-                      <div className="space-y-3">
+                      <div className="space-y-2">
                         {contractsStore.archived.map((contract, index) => (
                           <div
                             key={contract.contractId || `archived-${index}`}
-                            className="bg-gray-800 border border-purple-600/50 rounded-lg p-4 opacity-75"
+                            className="bg-gray-800/60 border border-purple-600/30 rounded-md p-2.5 opacity-80 hover:opacity-100 hover:border-purple-500/50 transition-all"
                           >
-                            <div className="flex items-center justify-between mb-3">
-                              <div>
-                                <div className="flex items-center gap-2 flex-wrap mb-1">
-                                  <h3 className="font-bold text-white text-lg">
+                            {/* Compact Header */}
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <h3 className="font-semibold text-white text-sm">
                                     {contract.clientName}
                                   </h3>
-                                  {/* Document Type Badge */}
                                   {(() => {
                                     const badge = getTemplateBadgeConfig((contract as any).templateId, contract.contractData);
                                     return (
                                       <Badge
                                         variant="outline"
-                                        className={`text-[10px] ${badge.color} px-1.5 py-0 h-5 font-medium whitespace-nowrap`}
+                                        className={`text-[9px] ${badge.color} px-1 py-0 h-4 font-medium whitespace-nowrap`}
                                         data-testid={`template-badge-archived-${contract.contractId}`}
                                       >
                                         {badge.label}
                                       </Badge>
                                     );
                                   })()}
+                                  <span className="text-purple-400 font-semibold text-sm">
+                                    ${(contract.totalAmount || 0).toLocaleString()}
+                                  </span>
                                 </div>
-                                <p className="text-purple-400 font-semibold">
-                                  ${(contract.totalAmount || 0).toLocaleString()}
-                                </p>
+                                <div className="flex items-center gap-2 mt-0.5 text-[10px] text-gray-500 flex-wrap">
+                                  <span className="font-mono">{contract.contractId}</span>
+                                  {contract.archivedAt && (
+                                    <span>• Archived {new Date(contract.archivedAt).toLocaleDateString()}</span>
+                                  )}
+                                  {contract.archivedReason && (
+                                    <span className="capitalize">• {contract.archivedReason.replace(/_/g, ' ')}</span>
+                                  )}
+                                </div>
                               </div>
-                              <Badge className="bg-purple-600 text-white">
-                                <Archive className="h-3 w-3 mr-1" />
+                              <Badge className="bg-purple-600/80 text-white text-[10px] px-1.5 py-0 h-5 shrink-0">
+                                <Archive className="h-2.5 w-2.5 mr-0.5" />
                                 ARCHIVED
                               </Badge>
                             </div>
 
-                            <div className="space-y-3">
-                              {/* Archived Details */}
-                              <div className="bg-gray-700 rounded-lg p-3">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                                  <div className="space-y-1">
-                                    <span className="text-gray-400 block">
-                                      Contract ID:
-                                    </span>
-                                    <p className="text-gray-200 font-mono text-xs break-all">
-                                      {contract.contractId}
-                                    </p>
-                                  </div>
-                                  <div className="space-y-1">
-                                    <span className="text-gray-400 block">
-                                      Archived Date:
-                                    </span>
-                                    <p className="text-gray-200">
-                                      {contract.archivedAt
-                                        ? new Date(contract.archivedAt).toLocaleDateString()
-                                        : "N/A"}
-                                    </p>
-                                  </div>
-                                  <div className="space-y-1">
-                                    <span className="text-gray-400 block">
-                                      Original Status:
-                                    </span>
-                                    <p className="text-gray-200 capitalize">
-                                      {contract.status || "N/A"}
-                                    </p>
-                                  </div>
-                                  {contract.archivedReason && (
-                                    <div className="space-y-1">
-                                      <span className="text-gray-400 block">
-                                        Reason:
-                                      </span>
-                                      <p className="text-gray-200 capitalize">
-                                        {contract.archivedReason.replace(/_/g, ' ')}
-                                      </p>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-
-                              {/* Restore Button */}
+                            {/* Compact Restore Button */}
+                            <div className="mt-2">
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => unarchiveContract(contract.id || contract.contractId || '')}
-                                className="border-purple-400 text-purple-400 hover:bg-purple-400 hover:text-black text-xs w-full"
+                                className="border-purple-500/60 text-purple-400 hover:bg-purple-500 hover:text-black text-[10px] h-7 px-2 w-full"
                                 data-testid={`button-restore-${contract.id || contract.contractId}`}
                               >
                                 <ArchiveRestore className="h-3 w-3 mr-1" />
