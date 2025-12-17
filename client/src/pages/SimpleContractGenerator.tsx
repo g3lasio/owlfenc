@@ -6546,6 +6546,85 @@ export default function SimpleContractGenerator() {
               </Card>
             )}
 
+            {/* Step 2: Lien Waiver Configuration (Lien Waiver Flow) */}
+            {currentStep === 2 && documentFlowType === 'lien-waiver' && contractData && (
+              <Card className="bg-gray-900 border-gray-700">
+                <CardContent className="pt-6">
+                  <DynamicTemplateConfigurator
+                    templateId="lien-waiver"
+                    baseData={contractData}
+                    onSubmit={async (transformedData) => {
+                      setIsLoading(true);
+                      try {
+                        const token = await auth.currentUser?.getIdToken(false).catch(() => null);
+                        
+                        const response = await fetch('/api/generate-pdf', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                          },
+                          body: JSON.stringify({
+                            templateId: 'lien-waiver',
+                            templateData: transformedData,
+                            linkedContractId: contractData.linkedContractId,
+                          }),
+                        });
+
+                        if (!response.ok) {
+                          throw new Error('Failed to generate Lien Waiver');
+                        }
+
+                        const result = await response.json();
+                        
+                        if (result.success) {
+                          console.log('✅ [LIEN-WAIVER] PDF generated successfully:', {
+                            templateId: result.templateId,
+                            contractId: result.contractId,
+                            pdfSize: result.pdfSize,
+                            hasHtml: !!result.html,
+                          });
+                          
+                          if (result.html) {
+                            setContractHTML(result.html);
+                          }
+                          
+                          setIsContractReady(true);
+                          setGeneratedContract(result.contractId || result.templateId);
+                          setContractData({
+                            ...contractData,
+                            ...transformedData,
+                            pdfBase64: result.pdfBase64,
+                            filename: result.filename,
+                          });
+                          
+                          setCurrentStep(3);
+                          
+                          toast({
+                            title: "Lien Waiver Generated",
+                            description: "Your Lien Waiver has been created successfully",
+                          });
+                        } else {
+                          throw new Error(result.error || 'PDF generation failed');
+                        }
+                      } catch (error) {
+                        console.error('Error generating Lien Waiver:', error);
+                        toast({
+                          title: "Error",
+                          description: "Failed to generate Lien Waiver. Please try again.",
+                          variant: "destructive",
+                        });
+                      } finally {
+                        setIsLoading(false);
+                      }
+                    }}
+                    onBack={() => setCurrentStep(1)}
+                    isSubmitting={isLoading}
+                  />
+                </CardContent>
+              </Card>
+            )}
+
             {/* Step 3: Complete */}
             {currentStep === 3 && (
               <Card className="bg-gray-900 border-gray-700">
