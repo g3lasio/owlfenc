@@ -147,7 +147,7 @@ export default function SimpleContractGenerator() {
   // Document Flow Type: determines which flow to use
   // 'independent-contractor' = legacy flow (project → configure → generate)
   // 'change-order' = new flow (contract → DynamicTemplateConfigurator → generate)
-  const [documentFlowType, setDocumentFlowType] = useState<'independent-contractor' | 'change-order'>('independent-contractor');
+  const [documentFlowType, setDocumentFlowType] = useState<'independent-contractor' | 'change-order' | 'lien-waiver'>('independent-contractor');
   
   // Selected existing contract for Change Order flow
   const [selectedContract, setSelectedContract] = useState<any>(null);
@@ -4115,10 +4115,13 @@ export default function SimpleContractGenerator() {
               
               const handleDocSelect = (doc: typeof allDocuments[0]) => {
                 if (doc.status === 'coming-soon') return;
+                // 🔧 Set documentFlowType for ALL active template types
                 if (doc.id === 'independent-contractor') {
                   setDocumentFlowType('independent-contractor');
                 } else if (doc.id === 'change-order') {
                   setDocumentFlowType('change-order');
+                } else if (doc.id === 'lien-waiver') {
+                  setDocumentFlowType('lien-waiver');
                 }
                 setSelectedDocumentType(doc.id);
                 setCurrentStep(1);
@@ -4195,7 +4198,8 @@ export default function SimpleContractGenerator() {
                           const IconComponent = doc.icon;
                           const isDisabled = doc.status === 'coming-soon';
                           const isSelected = (doc.id === 'independent-contractor' && documentFlowType === 'independent-contractor') ||
-                                           (doc.id === 'change-order' && documentFlowType === 'change-order');
+                                           (doc.id === 'change-order' && documentFlowType === 'change-order') ||
+                                           (doc.id === 'lien-waiver' && documentFlowType === 'lien-waiver');
                           return (
                             <button
                               key={doc.id}
