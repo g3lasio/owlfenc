@@ -3398,9 +3398,11 @@ export default function SimpleContractGenerator() {
 
     try {
       // Prepare contract data for dual signature
+      // 🔧 TEMPLATE-DRIVEN: Include templateId so backend knows which signature mode to use
       const dualSignaturePayload = {
         userId: currentUser.uid,
         contractHTML: contractHTML,
+        templateId: selectedDocumentType, // Critical: Tells backend which signature mode to use (single/dual/none)
         contractData: {
           contractorName:
             profile?.company || profile?.ownerName || "Contractor Name",
@@ -3430,7 +3432,7 @@ export default function SimpleContractGenerator() {
       };
 
       console.log(
-        "🖊️ [DUAL-SIGNATURE] Initiating dual signature workflow:",
+        `🖊️ [DUAL-SIGNATURE] Initiating ${selectedDocumentType} signature workflow (template-driven):`,
         dualSignaturePayload,
       );
 
