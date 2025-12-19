@@ -1,10 +1,9 @@
-import puppeteer from "puppeteer";
 import path from "path";
 import handlebars from "handlebars";
 import fs from "fs/promises";
 import { fileURLToPath } from "url";
 import { formatCurrency, roundToTwoDecimals, parseCurrency } from "./utils/currencyFormatter";
-import { getChromiumExecutablePath } from "./utils/chromiumResolver";
+import { launchBrowser } from "./utils/chromiumResolver";
 
 interface EstimateData {
   company: {
@@ -52,26 +51,9 @@ export class PuppeteerPdfService {
     let browser;
 
     try {
-      const executablePath = getChromiumExecutablePath();
-
       const html = await this.renderHtmlFromTemplate(data);
 
-      browser = await puppeteer.launch({
-        headless: true,
-        executablePath,
-        args: [
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-          "--disable-dev-shm-usage",
-          "--disable-accelerated-2d-canvas",
-          "--no-first-run",
-          "--no-zygote",
-          "--single-process",
-          "--disable-gpu",
-          "--disable-extensions",
-          "--disable-plugins",
-        ],
-      });
+      browser = await launchBrowser();
 
       const page = await browser.newPage();
 
@@ -732,24 +714,7 @@ export class PuppeteerPdfService {
     let browser;
 
     try {
-      const executablePath = getChromiumExecutablePath();
-
-      browser = await puppeteer.launch({
-        headless: true,
-        executablePath,
-        args: [
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-          "--disable-dev-shm-usage",
-          "--disable-accelerated-2d-canvas",
-          "--no-first-run",
-          "--no-zygote",
-          "--single-process",
-          "--disable-gpu",
-          "--disable-extensions",
-          "--disable-plugins",
-        ],
-      });
+      browser = await launchBrowser();
 
       const page = await browser.newPage();
 

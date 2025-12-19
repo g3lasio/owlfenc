@@ -1,6 +1,5 @@
-import puppeteer from "puppeteer";
 import { Buffer } from "buffer";
-import { getChromiumExecutablePath } from "./utils/chromiumResolver";
+import { launchBrowser } from "./utils/chromiumResolver";
 
 export class EnhancedPdfService {
   private static instance: EnhancedPdfService;
@@ -27,28 +26,7 @@ export class EnhancedPdfService {
     let browser;
 
     try {
-      const executablePath = getChromiumExecutablePath();
-
-      browser = await puppeteer.launch({
-        headless: true,
-        executablePath,
-        args: [
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-          "--disable-dev-shm-usage",
-          "--disable-accelerated-2d-canvas",
-          "--no-first-run",
-          "--no-zygote",
-          "--single-process",
-          "--disable-gpu",
-          "--disable-extensions",
-          "--disable-plugins",
-          "--disable-features=VizDisplayCompositor",
-          "--disable-background-timer-throttling",
-          "--disable-renderer-backgrounding",
-          "--disable-backgrounding-occluded-windows",
-        ],
-      });
+      browser = await launchBrowser();
 
       const page = await browser.newPage();
 

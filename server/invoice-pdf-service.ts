@@ -5,10 +5,9 @@
  * directly with Puppeteer, specifically designed for invoices.
  */
 
-import puppeteer from 'puppeteer';
 import fs from 'fs/promises';
 import path from 'path';
-import { getChromiumExecutablePath } from './utils/chromiumResolver';
+import { launchBrowser } from './utils/chromiumResolver';
 
 interface InvoiceData {
   company: {
@@ -78,28 +77,8 @@ export class InvoicePdfService {
     
     let browser;
     try {
-      // Use dynamic Chromium path detection for dev/production compatibility
-      const executablePath = getChromiumExecutablePath();
-      
-      console.log('🔍 Using Chromium executable:', executablePath);
-
-      // Launch browser
-      browser = await puppeteer.launch({
-        headless: true,
-        executablePath,
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-accelerated-2d-canvas',
-          '--no-first-run',
-          '--no-zygote',
-          '--single-process',
-          '--disable-gpu',
-          '--disable-extensions',
-          '--disable-plugins'
-        ]
-      });
+      console.log('🔍 Launching browser for Invoice PDF...');
+      browser = await launchBrowser();
 
       const page = await browser.newPage();
       

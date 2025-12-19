@@ -1,5 +1,5 @@
 import puppeteer, { Browser } from "puppeteer";
-import { getChromiumExecutablePath } from "../utils/chromiumResolver";
+import { getChromiumExecutablePath, launchBrowser } from "../utils/chromiumResolver";
 
 // Production-aware logging helper
 const isProduction = process.env.NODE_ENV === 'production';
@@ -58,22 +58,8 @@ class BrowserPool {
 
   private async createBrowser(): Promise<Browser> {
     console.log("🚀 [BROWSER-POOL] Launching persistent browser instance...");
-    const executablePath = getChromiumExecutablePath();
-    
-    const browser = await puppeteer.launch({
-      headless: true,
-      executablePath,
+    const browser = await launchBrowser({
       args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-accelerated-2d-canvas",
-        "--no-first-run",
-        "--no-zygote",
-        "--single-process",
-        "--disable-gpu",
-        "--disable-extensions",
-        "--disable-plugins",
         "--disable-background-networking",
         "--disable-default-apps",
         "--disable-sync",
@@ -83,7 +69,6 @@ class BrowserPool {
         "--no-default-browser-check",
       ],
     });
-    
     console.log("✅ [BROWSER-POOL] Browser launched successfully");
     return browser;
   }
@@ -270,24 +255,8 @@ class PremiumPdfService {
     };
   }): Promise<Buffer> {
     let browser;
-    const executablePath = getChromiumExecutablePath();
 
-    browser = await puppeteer.launch({
-      headless: true,
-      executablePath,
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-accelerated-2d-canvas",
-        "--no-first-run",
-        "--no-zygote",
-        "--single-process",
-        "--disable-gpu",
-        "--disable-extensions",
-        "--disable-plugins",
-      ],
-    });
+    browser = await launchBrowser();
 
     try {
       const page = await browser.newPage();
@@ -870,7 +839,6 @@ class PremiumPdfService {
     };
   }): Promise<Buffer> {
     let browser;
-    const executablePath = getChromiumExecutablePath();
 
     try {
       console.log(
@@ -885,22 +853,7 @@ class PremiumPdfService {
       );
 
       // Launch browser and generate PDF
-      browser = await puppeteer.launch({
-        headless: true,
-        executablePath,
-        args: [
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-          "--disable-dev-shm-usage",
-          "--disable-accelerated-2d-canvas",
-          "--no-first-run",
-          "--no-zygote",
-          "--single-process",
-          "--disable-gpu",
-          "--disable-extensions",
-          "--disable-plugins",
-        ],
-      });
+      browser = await launchBrowser();
 
       const page = await browser.newPage();
       
@@ -1820,24 +1773,7 @@ class PremiumPdfService {
     let browser;
     try {
       console.log("🚀 [PDF-FROM-HTML] Starting PDF generation from HTML...");
-      const executablePath = getChromiumExecutablePath();
-
-      browser = await puppeteer.launch({
-        headless: true,
-        executablePath,
-        args: [
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-          "--disable-dev-shm-usage",
-          "--disable-accelerated-2d-canvas",
-          "--no-first-run",
-          "--no-zygote",
-          "--single-process",
-          "--disable-gpu",
-          "--disable-extensions",
-          "--disable-plugins",
-        ],
-      });
+      browser = await launchBrowser();
 
       const page = await browser.newPage();
 
