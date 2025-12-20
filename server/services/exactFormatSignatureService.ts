@@ -176,13 +176,25 @@ export class ExactFormatSignatureService {
         height: 1123 // A4 height in pixels at 96dpi
       });
 
-      // Load HTML content and wait for all resources
+      // Load HTML content (use domcontentloaded to avoid external resource timeouts)
       await page.setContent(signedHTML, { 
-        waitUntil: ['networkidle0', 'domcontentloaded']
+        waitUntil: 'domcontentloaded',
+        timeout: 30000
       });
 
-      // Allow additional time for fonts and styling to load
-      await page.waitForTimeout(2000);
+      // Wait for all images to load
+      await page.evaluate(() => {
+        return Promise.all(
+          Array.from(document.images, (img) => {
+            if (img.complete) return Promise.resolve();
+            return new Promise((resolve) => {
+              img.addEventListener("load", resolve);
+              img.addEventListener("error", resolve);
+              setTimeout(resolve, 3000);
+            });
+          })
+        );
+      });
 
       // Generate PDF with exact settings to match HTML layout
       const pdfBuffer = await page.pdf({

@@ -37,22 +37,38 @@ export class EnhancedPdfService {
         deviceScaleFactor: 1,
       });
 
-      // Enhanced content loading with error handling
-      console.log("📄 [ENHANCED-PDF] Setting page content...");
-      await page.setContent(html, {
-        waitUntil: ["networkidle0", "domcontentloaded", "load"],
-        timeout: 45000,
+      // Block external resources that cause timeouts in production
+      await page.setRequestInterception(true);
+      page.on('request', (request) => {
+        const url = request.url();
+        if (url.includes('fonts.googleapis.com') || url.includes('fonts.gstatic.com')) {
+          request.abort();
+        } else {
+          request.continue();
+        }
       });
 
-      // Wait for fonts and CSS to fully load
-      console.log("🎨 [ENHANCED-PDF] Waiting for styles to load...");
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      // Ensure all fonts are loaded
-      await page.evaluate(() => document.fonts.ready);
-      
-      // Wait for any CSS transitions/animations to complete
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Enhanced content loading with error handling (avoid networkidle0 timeout)
+      console.log("📄 [ENHANCED-PDF] Setting page content...");
+      await page.setContent(html, {
+        waitUntil: "domcontentloaded",
+        timeout: 30000,
+      });
+
+      // Wait for all images to load
+      console.log("🎨 [ENHANCED-PDF] Waiting for images to load...");
+      await page.evaluate(() => {
+        return Promise.all(
+          Array.from(document.images, (img) => {
+            if (img.complete) return Promise.resolve();
+            return new Promise((resolve) => {
+              img.addEventListener("load", resolve);
+              img.addEventListener("error", resolve);
+              setTimeout(resolve, 3000);
+            });
+          })
+        );
+      });
 
       // Validate content is properly rendered
       const contentHeight = await page.evaluate(() => document.body.scrollHeight);

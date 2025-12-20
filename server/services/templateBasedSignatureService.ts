@@ -111,9 +111,24 @@ export class TemplateBasedSignatureService {
       
       const page = await browser.newPage();
       
-      // Set the HTML content
+      // Set the HTML content (use domcontentloaded to avoid external resource timeouts)
       await page.setContent(finalHtml, {
-        waitUntil: 'networkidle0',
+        waitUntil: 'domcontentloaded',
+        timeout: 30000,
+      });
+      
+      // Wait for all images to load
+      await page.evaluate(() => {
+        return Promise.all(
+          Array.from(document.images, (img) => {
+            if (img.complete) return Promise.resolve();
+            return new Promise((resolve) => {
+              img.addEventListener("load", resolve);
+              img.addEventListener("error", resolve);
+              setTimeout(resolve, 3000);
+            });
+          })
+        );
       });
       
       // Generate PDF with exact settings

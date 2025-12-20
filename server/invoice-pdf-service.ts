@@ -93,10 +93,24 @@ export class InvoicePdfService {
       const htmlContent = await this.generateHtmlContent(data);
       console.log('📄 HTML content generated, length:', htmlContent.length);
 
-      // Load HTML content
+      // Load HTML content (use domcontentloaded to avoid external resource timeouts)
       await page.setContent(htmlContent, {
-        waitUntil: ['load', 'domcontentloaded', 'networkidle0'],
+        waitUntil: 'domcontentloaded',
         timeout: 30000
+      });
+
+      // Wait for all images to load
+      await page.evaluate(() => {
+        return Promise.all(
+          Array.from(document.images, (img) => {
+            if (img.complete) return Promise.resolve();
+            return new Promise((resolve) => {
+              img.addEventListener("load", resolve);
+              img.addEventListener("error", resolve);
+              setTimeout(resolve, 3000);
+            });
+          })
+        );
       });
 
       // Generate PDF

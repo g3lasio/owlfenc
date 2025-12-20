@@ -42,17 +42,36 @@ export async function createPdfWithExactHtmlLayout(
       deviceScaleFactor: 2,
     });
     
-    // Inject the HTML content
+    // Block external resources that cause timeouts in production
+    await page.setRequestInterception(true);
+    page.on('request', (request) => {
+      const url = request.url();
+      if (url.includes('fonts.googleapis.com') || url.includes('fonts.gstatic.com')) {
+        request.abort();
+      } else {
+        request.continue();
+      }
+    });
+
+    // Inject the HTML content (use domcontentloaded to avoid external resource timeouts)
     await page.setContent(htmlContent, {
-      waitUntil: ['networkidle0', 'domcontentloaded'],
+      waitUntil: 'domcontentloaded',
       timeout: 30000,
     });
     
-    // Wait for any fonts to load
-    await page.evaluateHandle('document.fonts.ready');
-    
-    // Additional wait to ensure all rendering is complete
-    await page.waitForTimeout(1000);
+    // Wait for all images to load
+    await page.evaluate(() => {
+      return Promise.all(
+        Array.from(document.images, (img) => {
+          if (img.complete) return Promise.resolve();
+          return new Promise((resolve) => {
+            img.addEventListener("load", resolve);
+            img.addEventListener("error", resolve);
+            setTimeout(resolve, 3000);
+          });
+        })
+      );
+    });
     
     // Generate PDF with settings that preserve the exact layout
     const pdfBuffer = await page.pdf({

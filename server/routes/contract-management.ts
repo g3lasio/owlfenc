@@ -186,8 +186,22 @@ router.post('/generate-pdf', verifyFirebaseAuth, async (req, res) => {
       </html>
     `;
 
-    // Set content and generate PDF
-    await page.setContent(fullHtml, { waitUntil: 'networkidle0' });
+    // Set content and generate PDF (use domcontentloaded to avoid external resource timeouts)
+    await page.setContent(fullHtml, { waitUntil: 'domcontentloaded', timeout: 30000 });
+
+    // Wait for all images to load
+    await page.evaluate(() => {
+      return Promise.all(
+        Array.from(document.images, (img) => {
+          if (img.complete) return Promise.resolve();
+          return new Promise((resolve) => {
+            img.addEventListener("load", resolve);
+            img.addEventListener("error", resolve);
+            setTimeout(resolve, 3000);
+          });
+        })
+      );
+    });
 
     const pdfBuffer = await page.pdf({
       format: 'A4',

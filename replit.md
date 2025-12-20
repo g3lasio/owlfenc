@@ -53,6 +53,7 @@ This AI-powered platform automates legal document and permit management for cont
 - **Legal Defense Access Control System**: Enterprise-grade subscription-based access control.
   - **CONTRACT_GUARD Pattern**: Unified middleware protecting all contract generation endpoints, enforcing plan limits and usage counting at the generation point.
 - **PDF Digital Signature System**: Premium PDF service with robust signature embedding and dual signature workflow.
+  - **PDF Generation Strategy (Dec 2025)**: All PDF services use `waitUntil: 'domcontentloaded'` instead of `networkidle0` to prevent timeout from external Google Fonts. Request interception blocks `fonts.googleapis.com` and `fonts.gstatic.com`. Explicit image loading wait (`Promise.all` on `document.images`) with 3s per-image timeout ensures logos/images render before PDF generation.
 - **Stripe Integration**: Production-ready subscription system with health guardrails and Price ID registry.
 - **Stripe Express Contractor Payments**: Production-ready Stripe Express Connect integration for contractor payment processing with enterprise-grade security hardening.
 - **Automated Email Systems**: Welcome Email System and Payment Failure Blocking System, both utilizing Resend.

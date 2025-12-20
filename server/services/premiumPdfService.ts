@@ -1780,10 +1780,22 @@ class PremiumPdfService {
       // Set viewport for consistent rendering
       await page.setViewport({ width: 1200, height: 1600 });
 
-      // Set content with proper error handling
+      // Block external resources that cause timeouts in production
+      await page.setRequestInterception(true);
+      page.on('request', (request) => {
+        const url = request.url();
+        // Block external fonts and unnecessary resources to prevent timeouts
+        if (url.includes('fonts.googleapis.com') || url.includes('fonts.gstatic.com')) {
+          request.abort();
+        } else {
+          request.continue();
+        }
+      });
+
+      // Set content with faster loading strategy (avoid networkidle0 timeout)
       await page.setContent(htmlContent, {
-        waitUntil: "networkidle0",
-        timeout: 60000,
+        waitUntil: "domcontentloaded",
+        timeout: 30000,
       });
 
       // Wait for any images to load

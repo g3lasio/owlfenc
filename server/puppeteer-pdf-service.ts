@@ -63,8 +63,9 @@ export class PuppeteerPdfService {
         deviceScaleFactor: 2,
       });
 
+      // Use domcontentloaded instead of networkidle0 to avoid external resource timeouts
       await page.setContent(html, {
-        waitUntil: ["networkidle0", "domcontentloaded"],
+        waitUntil: "domcontentloaded",
         timeout: 30000,
       });
 
@@ -718,20 +719,46 @@ export class PuppeteerPdfService {
 
       const page = await browser.newPage();
 
+      // Block external resources that cause timeouts in production
+      await page.setRequestInterception(true);
+      page.on('request', (request) => {
+        const resourceType = request.resourceType();
+        const url = request.url();
+        // Block external fonts and unnecessary resources to prevent timeouts
+        if (resourceType === 'font' && !url.startsWith('data:')) {
+          request.abort();
+        } else if (url.includes('fonts.googleapis.com') || url.includes('fonts.gstatic.com')) {
+          request.abort();
+        } else {
+          request.continue();
+        }
+      });
+
       await page.setViewport({
         width: 1200,
         height: 1600,
         deviceScaleFactor: 2,
       });
 
+      // Use domcontentloaded instead of networkidle0 to avoid external resource timeouts
       await page.setContent(html, {
-        waitUntil: ["networkidle0", "domcontentloaded"],
+        waitUntil: "domcontentloaded",
         timeout: 30000,
       });
 
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      await page.evaluateHandle('document.fonts.ready');
+      // Wait for all images to load (with per-image timeout)
+      await page.evaluate(() => {
+        return Promise.all(
+          Array.from(document.images, (img) => {
+            if (img.complete) return Promise.resolve();
+            return new Promise((resolve) => {
+              img.addEventListener("load", resolve);
+              img.addEventListener("error", resolve);
+              setTimeout(resolve, 3000); // 3 second max per image
+            });
+          })
+        );
+      });
 
       const pdfBuffer = await page.pdf({
         format: 'Letter',
