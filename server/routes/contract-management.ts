@@ -9,7 +9,9 @@ import { contracts } from '../../shared/schema';
 import { verifyFirebaseAuth } from '../middleware/firebase-auth';
 import { userMappingService } from '../services/userMappingService';
 import { eq } from 'drizzle-orm';
-import { browserPool } from '../services/premiumPdfService';
+import PremiumPdfService from '../services/premiumPdfService';
+
+const premiumPdfService = PremiumPdfService.getInstance();
 
 const router = Router();
 
@@ -79,7 +81,7 @@ router.post('/save', verifyFirebaseAuth, async (req, res) => {
 });
 
 // Generate PDF from contract HTML
-// 🚀 PRODUCTION OPTIMIZED: Uses browser pool for instant PDF generation
+// 🚀 PRODUCTION OPTIMIZED: Uses PremiumPdfService with browser pool
 // Eliminates cold-start latency by reusing persistent browser instance
 router.post('/generate-pdf', verifyFirebaseAuth, async (req, res) => {
   const startTime = Date.now();
@@ -106,144 +108,80 @@ router.post('/generate-pdf', verifyFirebaseAuth, async (req, res) => {
       return res.status(500).json({ error: 'Error creando mapeo de usuario' });
     }
     console.log(`🔐 [SECURITY] Generating PDF for REAL user_id: ${userId}`);
-    console.log(`🚀 [BROWSER-POOL-PDF] Starting optimized PDF generation with browser pool...`);
+    console.log(`🚀 [CONTRACT-PDF] Starting optimized PDF generation via PremiumPdfService...`);
 
-    // Use browser pool for instant PDF generation (no cold-start)
-    const browser = await browserPool.getBrowser();
-    const page = await browser.newPage();
+    // Detect if HTML is already a complete document or just a fragment
+    const isCompleteDocument = contractHtml.trim().toLowerCase().startsWith('<!doctype') || 
+                               contractHtml.trim().toLowerCase().startsWith('<html');
     
-    try {
-      // Set viewport for consistent rendering
-      await page.setViewport({ width: 1200, height: 1600 });
+    // Use the HTML as-is if it's already complete, otherwise wrap it
+    const fullHtml = isCompleteDocument ? contractHtml : `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Construction Contract</title>
+        <style>
+          body {
+            font-family: 'Times New Roman', serif;
+            line-height: 1.6;
+            color: #000;
+            max-width: 8.5in;
+            margin: 0 auto;
+            padding: 0.5in;
+            background: white;
+          }
+          img { max-width: 100%; height: auto; }
+          @media print {
+            body { margin: 0; }
+            .page-break { page-break-before: always; }
+          }
+        </style>
+      </head>
+      <body>
+        ${contractHtml}
+      </body>
+      </html>
+    `;
 
-      // Block external resources that cause timeouts in production
-      await page.setRequestInterception(true);
-      page.on('request', (request) => {
-        const url = request.url();
-        if (url.includes('fonts.googleapis.com') || url.includes('fonts.gstatic.com')) {
-          request.abort();
-        } else {
-          request.continue();
-        }
-      });
+    // Use PremiumPdfService with browser pool (no cold-start)
+    const pdfBuffer = await premiumPdfService.generatePdfFromHtml(fullHtml, {
+      format: 'A4',
+      margin: {
+        top: '0.75in',
+        right: '0.75in',
+        bottom: '0.75in',
+        left: '0.75in'
+      },
+      displayHeaderFooter: true,
+      headerTemplate: `
+        <div style="font-size: 10px; text-align: center; width: 100%; margin: 0 0.75in;">
+          <span>Construction Contract - ${contractData?.clientName || 'Client'}</span>
+        </div>
+      `,
+      footerTemplate: `
+        <div style="font-size: 10px; text-align: center; width: 100%; margin: 0 0.75in;">
+          <span>Page <span class="pageNumber"></span> of <span class="totalPages"></span></span>
+        </div>
+      `
+    });
 
-      // Create complete HTML document for PDF generation
-      const fullHtml = `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Construction Contract</title>
-          <style>
-            body {
-              font-family: 'Times New Roman', serif;
-              line-height: 1.6;
-              color: #000;
-              max-width: 8.5in;
-              margin: 0 auto;
-              padding: 1in;
-              background: white;
-            }
-            .contract-header {
-              text-align: center;
-              margin-bottom: 2em;
-              border-bottom: 2px solid #000;
-              padding-bottom: 1em;
-            }
-            .contract-header h1 {
-              font-size: 24px;
-              font-weight: bold;
-              margin: 0;
-              text-transform: uppercase;
-            }
-            .section-header {
-              font-size: 18px;
-              font-weight: bold;
-              margin: 1.5em 0 0.5em 0;
-              text-transform: uppercase;
-              border-bottom: 1px solid #000;
-              padding-bottom: 0.2em;
-            }
-            .signature-block {
-              margin-top: 3em;
-              border: 1px solid #000;
-              padding: 1em;
-            }
-            @media print {
-              body { margin: 0; }
-              .page-break { page-break-before: always; }
-            }
-          </style>
-        </head>
-        <body>
-          ${contractHtml}
-        </body>
-        </html>
-      `;
+    const totalTime = Date.now() - startTime;
+    console.log(`✅ [CONTRACT-PDF] PDF generated in ${totalTime}ms (target: <3000ms)`);
 
-      // Set content with fast loading strategy
-      await page.setContent(fullHtml, {
-        waitUntil: 'domcontentloaded',
-        timeout: 15000,
-      });
+    // Set response headers for PDF download
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+    res.setHeader('X-Generation-Time-Ms', totalTime.toString());
 
-      // Wait for images with short timeout
-      await page.evaluate(() => {
-        return Promise.all(
-          Array.from(document.images, (img) => {
-            if (img.complete) return Promise.resolve();
-            return new Promise((resolve) => {
-              img.addEventListener("load", resolve);
-              img.addEventListener("error", resolve);
-              setTimeout(resolve, 2000);
-            });
-          })
-        );
-      });
-
-      const pdfBuffer = await page.pdf({
-        format: 'A4',
-        printBackground: true,
-        margin: {
-          top: '0.75in',
-          right: '0.75in',
-          bottom: '0.75in',
-          left: '0.75in'
-        },
-        displayHeaderFooter: true,
-        headerTemplate: `
-          <div style="font-size: 10px; text-align: center; width: 100%; margin: 0 0.75in;">
-            <span>Construction Contract - ${contractData?.clientName || 'Client'}</span>
-          </div>
-        `,
-        footerTemplate: `
-          <div style="font-size: 10px; text-align: center; width: 100%; margin: 0 0.75in;">
-            <span>Page <span class="pageNumber"></span> of <span class="totalPages"></span></span>
-          </div>
-        `
-      });
-
-      const totalTime = Date.now() - startTime;
-      console.log(`✅ [BROWSER-POOL-PDF] PDF generated in ${totalTime}ms (target: <3000ms)`);
-
-      // Set response headers for PDF download
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-      res.setHeader('Content-Length', pdfBuffer.length);
-      res.setHeader('X-Generation-Time-Ms', totalTime.toString());
-
-      // Send PDF buffer
-      res.send(pdfBuffer);
-
-    } finally {
-      // Close the page but NOT the browser (it's pooled)
-      await page.close();
-    }
+    // Send PDF buffer
+    res.send(pdfBuffer);
 
   } catch (error) {
     const totalTime = Date.now() - startTime;
-    console.error(`❌ [BROWSER-POOL-PDF] Generation failed after ${totalTime}ms:`, error);
+    console.error(`❌ [CONTRACT-PDF] Generation failed after ${totalTime}ms:`, error);
     res.status(500).json({ 
       error: 'Failed to generate PDF',
       details: error instanceof Error ? error.message : 'Unknown error'

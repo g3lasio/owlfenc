@@ -1766,16 +1766,38 @@ class PremiumPdfService {
   /**
    * Generate PDF from HTML content
    */
+  /**
+   * 🚀 PRODUCTION OPTIMIZED: Uses browser pool for instant PDF generation
+   * Eliminates cold-start latency by reusing persistent browser instance
+   * Includes per-page timeout and crash recovery for production reliability
+   */
   async generatePdfFromHtml(
     htmlContent: string,
     options: any = {},
   ): Promise<Buffer> {
-    let browser;
+    const startTime = Date.now();
+    const PAGE_TIMEOUT = 30000; // 30 second timeout per page
+    let page: any = null;
+    let browser: any = null;
+    
     try {
-      console.log("🚀 [PDF-FROM-HTML] Starting PDF generation from HTML...");
-      browser = await launchBrowser();
-
-      const page = await browser.newPage();
+      console.log("🚀 [PDF-FROM-HTML] Starting optimized PDF generation with browser pool...");
+      
+      // Use pooled browser for instant access (no cold-start)
+      browser = await browserPool.getBrowser();
+      
+      // Verify browser is connected, otherwise it may have crashed
+      if (!browser.isConnected()) {
+        console.warn("⚠️ [PDF-FROM-HTML] Browser disconnected, forcing pool reset...");
+        await browserPool.closeBrowser();
+        browser = await browserPool.getBrowser();
+      }
+      
+      page = await browser.newPage();
+      
+      // Set page-level timeout for crash recovery
+      page.setDefaultTimeout(PAGE_TIMEOUT);
+      page.setDefaultNavigationTimeout(PAGE_TIMEOUT);
 
       // Set viewport for consistent rendering
       await page.setViewport({ width: 1200, height: 1600 });
@@ -1795,18 +1817,18 @@ class PremiumPdfService {
       // Set content with faster loading strategy (avoid networkidle0 timeout)
       await page.setContent(htmlContent, {
         waitUntil: "domcontentloaded",
-        timeout: 30000,
+        timeout: 15000,
       });
 
-      // Wait for any images to load
+      // Wait for any images to load with short timeout
       await page.evaluate(() => {
         return Promise.all(
           Array.from(document.images, (img) => {
             if (img.complete) return Promise.resolve();
-            return new Promise((resolve, reject) => {
+            return new Promise((resolve) => {
               img.addEventListener("load", resolve);
               img.addEventListener("error", resolve); // Don't fail on image errors
-              setTimeout(resolve, 5000); // Timeout after 5 seconds
+              setTimeout(resolve, 2000); // Timeout after 2 seconds
             });
           }),
         );
@@ -1830,10 +1852,10 @@ class PremiumPdfService {
       };
 
       const pdfBuffer = await page.pdf(pdfOptions);
+      const duration = Date.now() - startTime;
 
       console.log(
-        "✅ [PDF-FROM-HTML] PDF generated successfully, size:",
-        pdfBuffer.length,
+        `✅ [PDF-FROM-HTML] PDF generated in ${duration}ms, size: ${pdfBuffer.length} bytes`,
       );
 
       // Validate PDF buffer
@@ -1855,14 +1877,16 @@ class PremiumPdfService {
 
       return finalBuffer;
     } catch (error: any) {
+      const duration = Date.now() - startTime;
       console.error(
-        "❌ [PDF-FROM-HTML] Error generating PDF from HTML:",
+        `❌ [PDF-FROM-HTML] Error generating PDF after ${duration}ms:`,
         error,
       );
       throw new Error(`Failed to generate PDF from HTML: ${error.message}`);
     } finally {
-      if (browser) {
-        await browser.close();
+      // Close the page but NOT the browser (it's pooled)
+      if (page) {
+        await page.close();
       }
     }
   }
