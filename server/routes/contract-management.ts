@@ -1,14 +1,15 @@
 /**
  * Contract Management Routes - Save contracts and generate PDFs
+ * OPTIMIZED: Uses browser pool for fast PDF generation in production
  */
 
 import { Router } from 'express';
-import puppeteer from 'puppeteer';
 import { db } from '../db';
 import { contracts } from '../../shared/schema';
 import { verifyFirebaseAuth } from '../middleware/firebase-auth';
 import { userMappingService } from '../services/userMappingService';
 import { eq } from 'drizzle-orm';
+import { browserPool } from '../services/premiumPdfService';
 
 const router = Router();
 
@@ -78,9 +79,10 @@ router.post('/save', verifyFirebaseAuth, async (req, res) => {
 });
 
 // Generate PDF from contract HTML
-// 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth para proteger generación de PDFs
+// 🚀 PRODUCTION OPTIMIZED: Uses browser pool for instant PDF generation
+// Eliminates cold-start latency by reusing persistent browser instance
 router.post('/generate-pdf', verifyFirebaseAuth, async (req, res) => {
-  let browser;
+  const startTime = Date.now();
   
   try {
     const { contractHtml, contractData, fileName = 'contract.pdf' } = req.body;
@@ -104,145 +106,148 @@ router.post('/generate-pdf', verifyFirebaseAuth, async (req, res) => {
       return res.status(500).json({ error: 'Error creando mapeo de usuario' });
     }
     console.log(`🔐 [SECURITY] Generating PDF for REAL user_id: ${userId}`);
+    console.log(`🚀 [BROWSER-POOL-PDF] Starting optimized PDF generation with browser pool...`);
 
-    // Launch Puppeteer
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
-
+    // Use browser pool for instant PDF generation (no cold-start)
+    const browser = await browserPool.getBrowser();
     const page = await browser.newPage();
+    
+    try {
+      // Set viewport for consistent rendering
+      await page.setViewport({ width: 1200, height: 1600 });
 
-    // Create complete HTML document for PDF generation
-    const fullHtml = `
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Construction Contract</title>
-        <style>
-          body {
-            font-family: 'Times New Roman', serif;
-            line-height: 1.6;
-            color: #000;
-            max-width: 8.5in;
-            margin: 0 auto;
-            padding: 1in;
-            background: white;
-          }
-          .contract-header {
-            text-align: center;
-            margin-bottom: 2em;
-            border-bottom: 2px solid #000;
-            padding-bottom: 1em;
-          }
-          .contract-header h1 {
-            font-size: 24px;
-            font-weight: bold;
-            margin: 0;
-            text-transform: uppercase;
-          }
-          .parties-section {
-            margin: 2em 0;
-          }
-          .section-header {
-            font-size: 18px;
-            font-weight: bold;
-            margin: 1.5em 0 0.5em 0;
-            text-transform: uppercase;
-            border-bottom: 1px solid #000;
-            padding-bottom: 0.2em;
-          }
-          .notice-block {
-            border: 2px solid #000;
-            padding: 1em;
-            margin: 1em 0;
-            background-color: #f9f9f9;
-          }
-          .signature-block {
-            margin-top: 3em;
-            border: 1px solid #000;
-            padding: 1em;
-          }
-          .signature-area {
-            border-bottom: 1px solid #000;
-            height: 2em;
-            margin: 1em 0;
-          }
-          .legal-text {
-            font-size: 12px;
-            margin: 0.5em 0;
-          }
-          @media print {
-            body { margin: 0; }
-            .page-break { page-break-before: always; }
-          }
-        </style>
-      </head>
-      <body>
-        ${contractHtml}
-      </body>
-      </html>
-    `;
+      // Block external resources that cause timeouts in production
+      await page.setRequestInterception(true);
+      page.on('request', (request) => {
+        const url = request.url();
+        if (url.includes('fonts.googleapis.com') || url.includes('fonts.gstatic.com')) {
+          request.abort();
+        } else {
+          request.continue();
+        }
+      });
 
-    // Set content and generate PDF (use domcontentloaded to avoid external resource timeouts)
-    await page.setContent(fullHtml, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      // Create complete HTML document for PDF generation
+      const fullHtml = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Construction Contract</title>
+          <style>
+            body {
+              font-family: 'Times New Roman', serif;
+              line-height: 1.6;
+              color: #000;
+              max-width: 8.5in;
+              margin: 0 auto;
+              padding: 1in;
+              background: white;
+            }
+            .contract-header {
+              text-align: center;
+              margin-bottom: 2em;
+              border-bottom: 2px solid #000;
+              padding-bottom: 1em;
+            }
+            .contract-header h1 {
+              font-size: 24px;
+              font-weight: bold;
+              margin: 0;
+              text-transform: uppercase;
+            }
+            .section-header {
+              font-size: 18px;
+              font-weight: bold;
+              margin: 1.5em 0 0.5em 0;
+              text-transform: uppercase;
+              border-bottom: 1px solid #000;
+              padding-bottom: 0.2em;
+            }
+            .signature-block {
+              margin-top: 3em;
+              border: 1px solid #000;
+              padding: 1em;
+            }
+            @media print {
+              body { margin: 0; }
+              .page-break { page-break-before: always; }
+            }
+          </style>
+        </head>
+        <body>
+          ${contractHtml}
+        </body>
+        </html>
+      `;
 
-    // Wait for all images to load
-    await page.evaluate(() => {
-      return Promise.all(
-        Array.from(document.images, (img) => {
-          if (img.complete) return Promise.resolve();
-          return new Promise((resolve) => {
-            img.addEventListener("load", resolve);
-            img.addEventListener("error", resolve);
-            setTimeout(resolve, 3000);
-          });
-        })
-      );
-    });
+      // Set content with fast loading strategy
+      await page.setContent(fullHtml, {
+        waitUntil: 'domcontentloaded',
+        timeout: 15000,
+      });
 
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: {
-        top: '1in',
-        right: '1in',
-        bottom: '1in',
-        left: '1in'
-      },
-      displayHeaderFooter: true,
-      headerTemplate: `
-        <div style="font-size: 10px; text-align: center; width: 100%; margin: 0 1in;">
-          <span>Construction Contract - ${contractData?.clientName || 'Client Name'}</span>
-        </div>
-      `,
-      footerTemplate: `
-        <div style="font-size: 10px; text-align: center; width: 100%; margin: 0 1in;">
-          <span>Page <span class="pageNumber"></span> of <span class="totalPages"></span> - Generated on ${new Date().toLocaleDateString()}</span>
-        </div>
-      `
-    });
+      // Wait for images with short timeout
+      await page.evaluate(() => {
+        return Promise.all(
+          Array.from(document.images, (img) => {
+            if (img.complete) return Promise.resolve();
+            return new Promise((resolve) => {
+              img.addEventListener("load", resolve);
+              img.addEventListener("error", resolve);
+              setTimeout(resolve, 2000);
+            });
+          })
+        );
+      });
 
-    // Set response headers for PDF download
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-    res.setHeader('Content-Length', pdfBuffer.length);
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        margin: {
+          top: '0.75in',
+          right: '0.75in',
+          bottom: '0.75in',
+          left: '0.75in'
+        },
+        displayHeaderFooter: true,
+        headerTemplate: `
+          <div style="font-size: 10px; text-align: center; width: 100%; margin: 0 0.75in;">
+            <span>Construction Contract - ${contractData?.clientName || 'Client'}</span>
+          </div>
+        `,
+        footerTemplate: `
+          <div style="font-size: 10px; text-align: center; width: 100%; margin: 0 0.75in;">
+            <span>Page <span class="pageNumber"></span> of <span class="totalPages"></span></span>
+          </div>
+        `
+      });
 
-    // Send PDF buffer
-    res.send(pdfBuffer);
+      const totalTime = Date.now() - startTime;
+      console.log(`✅ [BROWSER-POOL-PDF] PDF generated in ${totalTime}ms (target: <3000ms)`);
+
+      // Set response headers for PDF download
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      res.setHeader('X-Generation-Time-Ms', totalTime.toString());
+
+      // Send PDF buffer
+      res.send(pdfBuffer);
+
+    } finally {
+      // Close the page but NOT the browser (it's pooled)
+      await page.close();
+    }
 
   } catch (error) {
-    console.error('PDF generation error:', error);
+    const totalTime = Date.now() - startTime;
+    console.error(`❌ [BROWSER-POOL-PDF] Generation failed after ${totalTime}ms:`, error);
     res.status(500).json({ 
       error: 'Failed to generate PDF',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
-  } finally {
-    if (browser) {
-      await browser.close();
-    }
   }
 });
 
