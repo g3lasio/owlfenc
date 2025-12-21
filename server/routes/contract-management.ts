@@ -185,10 +185,16 @@ router.post('/generate-pdf', verifyFirebaseAuth, async (req, res) => {
 
   } catch (error) {
     const totalTime = Date.now() - startTime;
-    console.error(`❌ [CONTRACT-PDF] Generation failed after ${totalTime}ms:`, error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : '';
+    console.error(`❌ [CONTRACT-PDF] Generation failed after ${totalTime}ms:`);
+    console.error(`❌ [CONTRACT-PDF] Error message: ${errorMessage}`);
+    console.error(`❌ [CONTRACT-PDF] Stack trace: ${errorStack}`);
     res.status(500).json({ 
       error: 'Failed to generate PDF',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: errorMessage,
+      timestamp: new Date().toISOString(),
+      durationMs: totalTime
     });
   }
 });

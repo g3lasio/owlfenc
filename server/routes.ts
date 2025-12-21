@@ -51,6 +51,7 @@ import { legalClausesAIService, LEGAL_CLAUSES_LIBRARY } from "./services/legalCl
 import { getCompanyConfig, getCompanyAddress } from "./config/company-config";
 import { registerPromptTemplateRoutes } from "./routes/prompt-templates";
 import { TRIAL_PLAN_ID, SUBSCRIPTION_PLAN_IDS } from "./constants/subscription";
+import { verifyFirebaseAuth } from "./middleware/firebase-auth";
 
 // 🗺️ FUNCIÓN HELPER PARA LEGAL COMPLIANCE NATIONWIDE
 async function getNationwideLegalCompliance(address: string) {
@@ -6069,25 +6070,14 @@ ENHANCED LEGAL CLAUSE:`;
     },
   );
 
-  // LEGACY ENDPOINT - MIGRADO AL SISTEMA UNIFICADO
-  app.get("/api/user/subscription", async (req: Request, res: Response) => {
+  // LEGACY ENDPOINT - MIGRADO AL SISTEMA UNIFICADO (con Firebase auth middleware)
+  app.get("/api/user/subscription", verifyFirebaseAuth, async (req: Request, res: Response) => {
     try {
-      console.warn("⚠️ [LEGACY] Endpoint /api/user/subscription - MIGRANDO a sistema unificado");
+      console.log("👤 [USER-SUBSCRIPTION] Endpoint con Firebase auth middleware");
       
-      // SISTEMA UNIFICADO: Obtener identidad usando servicio unificado
-      if (req.firebaseUser?.uid) {
-        // Usuario autenticado - usar Firebase UID
-        const unifiedUserId = req.firebaseUser.uid;
-        console.log(`👤 [USER-SUBSCRIPTION-UNIFIED] Getting subscription for Firebase UID: ${unifiedUserId}`);
-      } else {
-        // Fallback para compatibilidad temporal (será removido)
-        const email = (req.query.email as string) || "truthbackpack@gmail.com";
-        const legacyUserId = `user_${email.replace(/[@.]/g, "_")}`;
-        console.warn(`⚠️ [USER-SUBSCRIPTION-LEGACY] Usando ID legacy: ${legacyUserId}`);
-      }
-      
-      // SISTEMA UNIFICADO ROBUSTO: SOLO Firebase UID permitido
-      if (!req.firebaseUser?.uid) {
+      // Firebase UID ahora garantizado por middleware
+      const firebaseUid = req.firebaseUser?.uid;
+      if (!firebaseUid) {
         return res.status(401).json({
           success: false,
           error: "Firebase authentication required",
@@ -6095,8 +6085,9 @@ ENHANCED LEGAL CLAUSE:`;
         });
       }
       
-      const userId = req.firebaseUser.uid; // ÚNICA fuente de identidad
-      console.log(`👤 [USER-SUBSCRIPTION-UNIFIED] Getting subscription for Firebase UID: ${userId}`);
+      console.log(`👤 [USER-SUBSCRIPTION] Getting subscription for Firebase UID: ${firebaseUid}`);
+      
+      const userId = firebaseUid; // ÚNICA fuente de identidad
 
       // Get subscription from Firebase
       const subscription =

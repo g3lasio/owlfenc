@@ -37,19 +37,32 @@ class BrowserPool {
       return this.browser;
     }
 
+    // If browser exists but disconnected, clean it up
+    if (this.browser && !this.browser.isConnected()) {
+      console.log("⚠️ [BROWSER-POOL] Browser disconnected, cleaning up...");
+      this.browser = null;
+    }
+
     // If already initializing, wait for that promise
     if (this.isInitializing && this.initPromise) {
+      console.log("⏳ [BROWSER-POOL] Waiting for browser initialization...");
       return this.initPromise;
     }
 
     // Initialize new browser
     this.isInitializing = true;
-    this.initPromise = this.createBrowser();
+    console.log("🔄 [BROWSER-POOL] Starting new browser initialization...");
     
     try {
+      this.initPromise = this.createBrowser();
       this.browser = await this.initPromise;
       this.scheduleCleanup();
+      console.log("✅ [BROWSER-POOL] Browser ready for PDF generation");
       return this.browser;
+    } catch (error: any) {
+      console.error("❌ [BROWSER-POOL] Failed to create browser:", error.message);
+      this.browser = null;
+      throw error;
     } finally {
       this.isInitializing = false;
       this.initPromise = null;
@@ -857,29 +870,43 @@ class PremiumPdfService {
       signedAt: Date;
     };
   }): Promise<Buffer> {
-    let browser;
+    const startTime = Date.now();
+    let page: any = null;
+    let browser: any = null;
 
     try {
-      console.log(
-        "📄 [PDF-SIGNATURES] Starting PDF generation with integrated signatures...",
-      );
+      console.log("📄 [PDF-SIGNED] Starting optimized PDF generation with signatures...");
 
-      // Modify HTML to include actual signatures
       const htmlWithSignatures = this.integrateSignatures(
         data.contractHTML,
         data.contractorSignature,
         data.clientSignature,
       );
 
-      // Launch browser and generate PDF
-      browser = await launchBrowser();
-
-      const page = await browser.newPage();
+      browser = await browserPool.getBrowser();
       
-      // Set timeouts for page operations
+      if (!browser.isConnected()) {
+        console.warn("⚠️ [PDF-SIGNED] Browser disconnected, forcing pool reset...");
+        await browserPool.closeBrowser();
+        browser = await browserPool.getBrowser();
+      }
+
+      page = await browser.newPage();
       page.setDefaultTimeout(PAGE_LOAD_TIMEOUT);
+      page.setDefaultNavigationTimeout(PAGE_LOAD_TIMEOUT);
+
+      await page.setRequestInterception(true);
+      page.on('request', (request: any) => {
+        const url = request.url();
+        if (url.includes('fonts.googleapis.com') || url.includes('fonts.gstatic.com')) {
+          request.abort();
+        } else {
+          request.continue();
+        }
+      });
+
       await page.setContent(htmlWithSignatures, { 
-        waitUntil: "domcontentloaded", // Faster than networkidle0
+        waitUntil: "domcontentloaded",
         timeout: PAGE_LOAD_TIMEOUT 
       });
 
@@ -895,31 +922,25 @@ class PremiumPdfService {
         timeout: PDF_GENERATION_TIMEOUT,
       });
 
-      debugLog(
-        "✅ [PDF-SIGNATURES] PDF generated successfully with signatures, size:",
-        pdfBuffer.length,
-      );
+      const duration = Date.now() - startTime;
+      console.log(`✅ [PDF-SIGNED] Generated in ${duration}ms, size: ${pdfBuffer.length} bytes`);
 
-      // Ensure proper buffer handling
       const finalBuffer = Buffer.isBuffer(pdfBuffer)
         ? pdfBuffer
         : Buffer.from(pdfBuffer);
 
-      // Validate PDF
       if (finalBuffer.length === 0) {
         throw new Error("Generated signed PDF is empty");
       }
 
       return finalBuffer;
     } catch (error: any) {
-      console.error(
-        "❌ [PDF-SIGNATURES] Error generating PDF with signatures:",
-        error,
-      );
+      const duration = Date.now() - startTime;
+      console.error(`❌ [PDF-SIGNED] Error after ${duration}ms:`, error.message);
       throw new Error(`Failed to generate signed PDF: ${error.message}`);
     } finally {
-      if (browser) {
-        await browser.close();
+      if (page) {
+        await page.close();
       }
     }
   }
@@ -1897,10 +1918,9 @@ class PremiumPdfService {
       return finalBuffer;
     } catch (error: any) {
       const duration = Date.now() - startTime;
-      console.error(
-        `❌ [PDF-FROM-HTML] Error generating PDF after ${duration}ms:`,
-        error,
-      );
+      console.error(`❌ [PDF-FROM-HTML] Error generating PDF after ${duration}ms:`);
+      console.error(`❌ [PDF-FROM-HTML] Error message: ${error.message}`);
+      console.error(`❌ [PDF-FROM-HTML] Stack trace: ${error.stack || 'No stack trace'}`);
       throw new Error(`Failed to generate PDF from HTML: ${error.message}`);
     } finally {
       // Close the page but NOT the browser (it's pooled)
