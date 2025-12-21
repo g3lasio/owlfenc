@@ -254,14 +254,25 @@ class PremiumPdfService {
       includesSignaturePlaceholders?: boolean;
     };
   }): Promise<Buffer> {
-    let browser;
-
-    browser = await launchBrowser();
+    const startTime = Date.now();
+    let page: any = null;
+    let browser: any = null;
 
     try {
-      const page = await browser.newPage();
+      console.log("🚀 [PDF-SIGNATURES] Starting optimized signed PDF generation...");
+      
+      browser = await browserPool.getBrowser();
+      
+      if (!browser.isConnected()) {
+        console.warn("⚠️ [PDF-SIGNATURES] Browser disconnected, forcing pool reset...");
+        await browserPool.closeBrowser();
+        browser = await browserPool.getBrowser();
+      }
+      
+      page = await browser.newPage();
+      page.setDefaultTimeout(PAGE_LOAD_TIMEOUT);
+      page.setDefaultNavigationTimeout(PAGE_LOAD_TIMEOUT);
 
-      // Create enhanced HTML with embedded signatures (template-aware)
       let enhancedHTML = this.embedSignaturesInHTML(
         data.contractHTML,
         data.contractorSignature,
@@ -269,7 +280,6 @@ class PremiumPdfService {
         data.templateOptions,
       );
       
-      // Add digital verification seal if audit/certificate data is available
       if (data.contractorAudit || data.clientAudit || data.contractorCertificate || data.clientCertificate) {
         enhancedHTML = this.addDigitalVerificationSeal(enhancedHTML, {
           contractId: data.contractId,
@@ -282,17 +292,23 @@ class PremiumPdfService {
         });
       }
 
-      // Set timeouts and viewport for consistent rendering
-      page.setDefaultTimeout(PAGE_LOAD_TIMEOUT);
       await page.setViewport({ width: 1200, height: 1600 });
 
-      // Set content with production-ready timeout
+      await page.setRequestInterception(true);
+      page.on('request', (request: any) => {
+        const url = request.url();
+        if (url.includes('fonts.googleapis.com') || url.includes('fonts.gstatic.com')) {
+          request.abort();
+        } else {
+          request.continue();
+        }
+      });
+
       await page.setContent(enhancedHTML, {
-        waitUntil: "domcontentloaded", // Faster than networkidle0
+        waitUntil: "domcontentloaded",
         timeout: PAGE_LOAD_TIMEOUT,
       });
 
-      // Wait for signature images with short timeout
       await page.evaluate(() => {
         return Promise.all(
           Array.from(document.images, (img) => {
@@ -300,13 +316,12 @@ class PremiumPdfService {
             return new Promise((resolve) => {
               img.addEventListener("load", resolve);
               img.addEventListener("error", resolve);
-              setTimeout(resolve, 2000); // 2 second max per image
+              setTimeout(resolve, 2000);
             });
           }),
         );
       });
 
-      // Generate PDF with signatures and timeout
       const pdfBuffer = await page.pdf({
         format: "A4",
         printBackground: true,
@@ -319,24 +334,28 @@ class PremiumPdfService {
         timeout: PDF_GENERATION_TIMEOUT,
       });
 
+      const duration = Date.now() - startTime;
       console.log(
-        "✅ [PDF-SERVICE] Signed PDF generated successfully, size:",
-        pdfBuffer.length,
+        `✅ [PDF-SIGNATURES] Signed PDF generated in ${duration}ms, size: ${pdfBuffer.length} bytes`,
       );
 
-      // Ensure proper buffer handling
       const finalBuffer = Buffer.isBuffer(pdfBuffer)
         ? pdfBuffer
         : Buffer.from(pdfBuffer);
 
-      // Validate PDF
       if (finalBuffer.length === 0) {
         throw new Error("Generated PDF is empty");
       }
 
       return finalBuffer;
+    } catch (error: any) {
+      const duration = Date.now() - startTime;
+      console.error(`❌ [PDF-SIGNATURES] Error after ${duration}ms:`, error);
+      throw new Error(`Failed to generate signed PDF: ${error.message}`);
     } finally {
-      await browser.close();
+      if (page) {
+        await page.close();
+      }
     }
   }
 
@@ -1667,7 +1686,7 @@ class PremiumPdfService {
     <div class="section">
         <h3>3. TIMELINE</h3>
         <div class="clause">
-            Work shall commence on ${data.timeline.startDate || "TBD"} and be completed by ${data.timeline.endDate || data.timeline.completionDate || "TBD"}.
+            Work shall commence on ${data.timeline.startDate || "TBD"} and be completed by ${data.timeline.endDate || "TBD"}.
             ${data.timeline.estimatedDuration ? `Estimated duration: ${data.timeline.estimatedDuration}` : ""}
         </div>
     </div>
@@ -1804,7 +1823,7 @@ class PremiumPdfService {
 
       // Block external resources that cause timeouts in production
       await page.setRequestInterception(true);
-      page.on('request', (request) => {
+      page.on('request', (request: any) => {
         const url = request.url();
         // Block external fonts and unnecessary resources to prevent timeouts
         if (url.includes('fonts.googleapis.com') || url.includes('fonts.gstatic.com')) {
