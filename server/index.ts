@@ -101,6 +101,84 @@ app.get('/statusz', (_req, res) => res.status(200).json({status: 'ok'}));
 app.get('/health', (_req, res) => res.status(200).json({status: 'ok', service: 'owl-fence-ai'}));
 app.get('/api/health', (_req, res) => res.status(200).json({status: 'ok', service: 'owl-fence-ai', endpoint: 'api'}));
 
+// 🔧 PDF DEBUG ENDPOINT - NO AUTH - TEMPORARY for production diagnosis
+// TODO: Remove after debugging is complete
+app.get('/api/pdf-debug', async (_req, res) => {
+  const startTime = Date.now();
+  const diagnostics: any = {
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    nodeVersion: process.version,
+    platform: process.platform,
+    arch: process.arch,
+    browserPoolStatus: 'unknown',
+    chromiumInfo: null,
+    testResults: [],
+    errors: []
+  };
+
+  try {
+    const { browserPool } = await import('./services/premiumPdfService');
+    const { getChromiumInfo } = await import('./utils/chromiumResolver');
+    
+    diagnostics.chromiumInfo = getChromiumInfo();
+    diagnostics.browserPoolStatus = browserPool.isWarm() ? 'warm' : 'cold';
+    diagnostics.testResults.push({ step: 'init', success: true });
+
+    const browserGetStart = Date.now();
+    const browser = await browserPool.getBrowser();
+    diagnostics.testResults.push({ 
+      step: 'get_browser', 
+      success: true, 
+      durationMs: Date.now() - browserGetStart 
+    });
+
+    const isConnected = browser.isConnected();
+    diagnostics.testResults.push({ step: 'browser_connected', success: isConnected });
+    
+    if (!isConnected) throw new Error('Browser not connected');
+
+    const page = await browser.newPage();
+    diagnostics.testResults.push({ step: 'create_page', success: true });
+
+    await page.setContent('<html><body><h1>PDF Test</h1><p>Generated at ' + new Date().toISOString() + '</p></body></html>', { 
+      waitUntil: 'domcontentloaded',
+      timeout: 10000 
+    });
+    diagnostics.testResults.push({ step: 'set_content', success: true });
+
+    const pdfGenStart = Date.now();
+    const pdfBuffer = await page.pdf({ format: 'A4', timeout: 15000 });
+    diagnostics.testResults.push({ 
+      step: 'generate_pdf', 
+      success: true, 
+      durationMs: Date.now() - pdfGenStart,
+      pdfSize: pdfBuffer.length 
+    });
+
+    await page.close();
+
+    diagnostics.totalDurationMs = Date.now() - startTime;
+    diagnostics.success = true;
+    diagnostics.message = `PDF generation test PASSED in ${diagnostics.totalDurationMs}ms`;
+
+    console.log(`✅ [PDF-DEBUG] All tests passed in ${diagnostics.totalDurationMs}ms`);
+    res.json(diagnostics);
+
+  } catch (error: any) {
+    diagnostics.totalDurationMs = Date.now() - startTime;
+    diagnostics.success = false;
+    diagnostics.errors.push({
+      message: error.message,
+      stack: error.stack?.split('\n').slice(0, 15).join('\n'),
+      name: error.name
+    });
+    
+    console.error(`❌ [PDF-DEBUG] Test failed after ${diagnostics.totalDurationMs}ms:`, error.message);
+    res.status(500).json(diagnostics);
+  }
+});
+
 // 🚀 STRIPE CONNECT EXPRESS ENDPOINTS - BEFORE ALL MIDDLEWARE (NO AUTH REQUIRED)
 // These must be registered BEFORE validateApiKeys middleware to allow unauthenticated onboarding
 app.use(express.json({ limit: '10mb' })); // Enable JSON parsing for these endpoints only

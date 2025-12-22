@@ -15,9 +15,10 @@ const premiumPdfService = PremiumPdfService.getInstance();
 
 const router = Router();
 
-// 🔧 DEBUG ENDPOINT: Diagnose PDF generation issues in production
-// Returns detailed error information for authenticated admin users only
-router.get('/pdf-debug', verifyFirebaseAuth, async (req, res) => {
+// 🔧 PUBLIC DEBUG ENDPOINT: Diagnose PDF generation issues in production
+// NO AUTH REQUIRED - Returns detailed error for diagnosis
+// TODO: Remove or protect after debugging is complete
+router.get('/pdf-debug', async (req, res) => {
   const startTime = Date.now();
   const diagnostics: any = {
     timestamp: new Date().toISOString(),

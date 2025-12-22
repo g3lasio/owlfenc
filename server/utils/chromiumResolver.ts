@@ -2,9 +2,11 @@ import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import puppeteer from 'puppeteer';
+import puppeteerCore from 'puppeteer-core';
 
 let cachedPath: string | null = null;
 let detectionAttempted = false;
+let usingSparticuz = false;
 
 const KNOWN_PATHS = [
   '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium',
@@ -133,7 +135,7 @@ export function getChromiumExecutablePath(): string | undefined {
     return cachedPath;
   }
 
-  console.log('⚠️ [CHROMIUM] No executable found - Puppeteer will use bundled browser');
+  console.log('⚠️ [CHROMIUM] No local executable found - will use @sparticuz/chromium');
   return undefined;
 }
 
@@ -152,57 +154,73 @@ export async function launchBrowser(options: any = {}): Promise<any> {
     '--disable-background-timer-throttling',
     '--disable-backgrounding-occluded-windows',
     '--disable-renderer-backgrounding',
+    '--font-render-hinting=none',
   ];
-
-  const mergedArgs = Array.from(new Set([...baseArgs, ...(options.args || [])]));
 
   const executablePath = getChromiumExecutablePath();
   
-  const launchOptions = {
-    headless: true,
-    ...options,
-    args: mergedArgs,
-    ...(executablePath ? { executablePath } : {}),
-  };
+  if (executablePath) {
+    const mergedArgs = Array.from(new Set([...baseArgs, ...(options.args || [])]));
+    const launchOptions = {
+      headless: true,
+      ...options,
+      args: mergedArgs,
+      executablePath,
+    };
+
+    try {
+      console.log(`🚀 [BROWSER] Launching with local path: ${executablePath}`);
+      const browser = await puppeteer.launch(launchOptions);
+      console.log('✅ [BROWSER] Launched successfully with local Chromium');
+      usingSparticuz = false;
+      return browser;
+    } catch (error: any) {
+      console.log(`⚠️ [BROWSER] Local Chromium failed: ${error.message}`);
+      console.log('🔄 [BROWSER] Falling back to @sparticuz/chromium...');
+    }
+  }
 
   try {
-    console.log(`🚀 [BROWSER] Launching with path: ${executablePath || 'bundled'}`);
-    const browser = await puppeteer.launch(launchOptions);
-    console.log('✅ [BROWSER] Launched successfully');
-    return browser;
-  } catch (firstError: any) {
-    console.log(`⚠️ [BROWSER] First attempt failed: ${firstError.message}`);
+    console.log('🚀 [BROWSER] Launching with @sparticuz/chromium (production mode)...');
+    const chromium = await import('@sparticuz/chromium');
     
-    if (executablePath) {
-      try {
-        console.log('🔄 [BROWSER] Retrying without custom executablePath...');
-        const fallbackOptions = { ...launchOptions };
-        delete fallbackOptions.executablePath;
-        const browser = await puppeteer.launch(fallbackOptions);
-        console.log('✅ [BROWSER] Launched with bundled browser');
-        cachedPath = null;
-        return browser;
-      } catch (secondError: any) {
-        console.error(`❌ [BROWSER] Bundled browser also failed: ${secondError.message}`);
-      }
-    }
+    const sparticuzPath = await chromium.default.executablePath();
+    console.log(`📍 [BROWSER] @sparticuz/chromium path: ${sparticuzPath}`);
+    
+    const sparticuzArgs = [
+      ...chromium.default.args,
+      ...baseArgs,
+      ...(options.args || []),
+    ];
+    const uniqueArgs = Array.from(new Set(sparticuzArgs));
 
-    for (const knownPath of KNOWN_PATHS) {
-      if (fs.existsSync(knownPath) && knownPath !== executablePath) {
-        try {
-          console.log(`🔄 [BROWSER] Trying known path: ${knownPath}`);
-          const browser = await puppeteer.launch({
-            ...launchOptions,
-            executablePath: knownPath,
-          });
-          console.log(`✅ [BROWSER] Launched with: ${knownPath}`);
-          cachedPath = knownPath;
-          return browser;
-        } catch {}
-      }
-    }
+    const browser = await puppeteerCore.launch({
+      headless: true,
+      executablePath: sparticuzPath,
+      args: uniqueArgs,
+      defaultViewport: { width: 1280, height: 720 },
+    });
 
-    throw new Error(`Failed to launch browser after all attempts. Original error: ${firstError.message}`);
+    console.log('✅ [BROWSER] Launched successfully with @sparticuz/chromium');
+    usingSparticuz = true;
+    return browser;
+  } catch (sparticuzError: any) {
+    console.error(`❌ [BROWSER] @sparticuz/chromium failed: ${sparticuzError.message}`);
+    console.error(`❌ [BROWSER] Stack: ${sparticuzError.stack}`);
+    
+    try {
+      console.log('🔄 [BROWSER] Final fallback: Puppeteer bundled browser...');
+      const browser = await puppeteer.launch({
+        headless: true,
+        args: baseArgs,
+      });
+      console.log('✅ [BROWSER] Launched with Puppeteer bundled browser');
+      usingSparticuz = false;
+      return browser;
+    } catch (finalError: any) {
+      console.error(`❌ [BROWSER] All browser launch attempts failed`);
+      throw new Error(`Failed to launch any browser. Last error: ${finalError.message}`);
+    }
   }
 }
 
@@ -211,10 +229,11 @@ export function clearChromiumCache(): void {
   detectionAttempted = false;
 }
 
-export function getChromiumInfo(): { path: string | null; method: string } {
+export function getChromiumInfo(): { path: string | null; method: string; usingSparticuz: boolean } {
   const chromePath = getChromiumExecutablePath();
   return { 
     path: chromePath || null, 
-    method: chromePath ? 'detected' : 'bundled' 
+    method: chromePath ? 'local' : 'sparticuz',
+    usingSparticuz,
   };
 }
