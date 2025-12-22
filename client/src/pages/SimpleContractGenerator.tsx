@@ -100,6 +100,7 @@ import {
 import { getClients as getFirebaseClients } from "@/services/clientService";
 import DynamicTemplateConfigurator from "@/components/templates/DynamicTemplateConfigurator";
 import { templateConfigRegistry } from "@/lib/templateConfigRegistry";
+import { shareOrDownloadPdf, isMobileDevice, isNativeShareSupported } from '@/utils/mobileSharing';
 
 // Interface for completed contracts
 interface CompletedContract {
@@ -2643,23 +2644,22 @@ export default function SimpleContractGenerator() {
           const clientName = contractData?.client?.name || contractData?.clientInfo?.name || 'client';
           const fileName = generatePdfFilename(selectedDocumentType, clientName);
           
-          // Handle PDF download
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = fileName;
-          a.style.display = 'none';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
+          // Use native share on mobile/tablet, direct download on desktop
+          const isMobile = isMobileDevice();
+          const canShare = isNativeShareSupported();
           
-          // Clean up
-          setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+          await shareOrDownloadPdf(blob, fileName, {
+            title: `${selectedDocumentType.toUpperCase()} - ${clientName}`,
+            text: `Professional document for ${clientName}`,
+            clientName: clientName,
+          });
           
           // Success toast
           toast({
-            title: "✅ PDF Downloaded",
-            description: "Check your downloads folder",
+            title: isMobile && canShare ? "✅ Listo" : "✅ PDF Downloaded",
+            description: isMobile && canShare 
+              ? "Elige dónde guardar o compartir" 
+              : "Check your downloads folder",
           });
           
           setIsLoading(false);
