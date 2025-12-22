@@ -2819,47 +2819,25 @@ export default function SimpleContractGenerator() {
       if (response.ok) {
         // Convert response to blob 
         const blob = await response.blob();
-        const fileName = `contract-${selectedProject.clientName?.replace(/\s+/g, "_") || "client"}-${new Date().toISOString().split("T")[0]}.pdf`;
+        const clientName = selectedProject.clientName?.replace(/\s+/g, "_") || "client";
+        const fileName = `contract-${clientName}-${new Date().toISOString().split("T")[0]}.pdf`;
         
-        // Detect if user is on mobile/tablet device
-        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || 
-                        ('ontouchstart' in window) ||
-                        (navigator.maxTouchPoints > 0);
+        // Use unified sharing utility (native share on mobile, download on desktop)
+        const isMobile = isMobileDevice();
+        const canShare = isNativeShareSupported();
         
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-        const isIPadOS = navigator.userAgent.includes('Mac') && 'ontouchend' in document;
+        await shareOrDownloadPdf(blob, fileName, {
+          title: `Contract - ${selectedProject.clientName}`,
+          text: `Professional contract for ${selectedProject.clientName}`,
+          clientName: clientName,
+        });
         
-        // Handle PDF based on device type - ALWAYS prioritize direct download
-        if (isMobile || isIOS || isIPadOS) {
-          // Mobile/Tablet: Direct download (no Web Share API to avoid share options)
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = fileName;
-          a.style.display = 'none';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          
-          // Clean up after a delay
-          setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-          
-          toast({
-            title: "✅ PDF Downloaded",
-            description: "Check your downloads folder",
-          });
-        } else {
-          // Desktop: Traditional download
-          // ✅ NO TOAST: Browser shows download notification
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = fileName;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          window.URL.revokeObjectURL(url);
-        }
+        toast({
+          title: isMobile && canShare ? "✅ Listo" : "✅ PDF Downloaded",
+          description: isMobile && canShare 
+            ? "Elige dónde guardar o compartir" 
+            : "Check your downloads folder",
+        });
       } else {
         const errorText = await response.text();
         console.error("❌ PDF download failed:", errorText);

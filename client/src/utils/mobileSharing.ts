@@ -159,21 +159,33 @@ export const shareOrDownloadPdf = async (
     forceDownload?: boolean;
   } = {}
 ): Promise<void> => {
+  const isMobile = isMobileDevice();
+  const nativeShareSupported = isNativeShareSupported();
+  
+  console.log('📱 [SHARE-DEBUG] Device detection:', {
+    isMobile,
+    nativeShareSupported,
+    userAgent: navigator.userAgent,
+    hasShare: 'share' in navigator,
+    hasCanShare: 'canShare' in navigator,
+    forceDownload: options.forceDownload,
+  });
+
   // Force download if requested or if not on mobile
-  if (options.forceDownload || !isMobileDevice()) {
-    console.log('💾 Triggering standard download...');
+  if (options.forceDownload || !isMobile) {
+    console.log('💾 Triggering standard download (desktop or forced)...');
     downloadPdfFile(pdfBlob, filename);
     return;
   }
 
   // Check if native sharing is supported
-  if (!isNativeShareSupported()) {
-    console.log('📱 Native sharing not supported, downloading instead...');
+  if (!nativeShareSupported) {
+    console.log('📱 Native sharing not supported on this mobile device, downloading instead...');
     downloadPdfFile(pdfBlob, filename);
     return;
   }
 
-  console.log('📱 Mobile device detected, attempting native sharing...');
+  console.log('📱 Mobile device with native share support detected, attempting sharing...');
 
   // Try file sharing first (preferred method)
   if (isFileShareSupported()) {
