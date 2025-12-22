@@ -3,7 +3,7 @@
  * Sistema modular reutilizable para estimados y contratos
  */
 
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { modernPdfService } from '../services/ModernPdfService';
 import { verifyFirebaseAuth } from '../middleware/firebase-auth';
 import { userMappingService } from '../services/userMappingService';
@@ -18,9 +18,8 @@ const router = Router();
 /**
  * Endpoint principal para generación rápida de PDF
  * Reemplaza completamente el sistema anterior
- * 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth para proteger generación de PDFs
  */
-router.post('/generate-pdf', verifyFirebaseAuth, async (req, res) => {
+router.post('/generate-pdf', verifyFirebaseAuth, async (req: Request, res: Response) => {
   const startTime = Date.now();
   console.log('🚀 [MODERN-ENDPOINT] Nueva solicitud de PDF recibida');
 
@@ -34,31 +33,37 @@ router.post('/generate-pdf', verifyFirebaseAuth, async (req, res) => {
       });
     }
 
-    // 🔐 CRITICAL SECURITY FIX: Solo usuarios autenticados pueden generar PDFs
-    const firebaseUid = req.firebaseUser?.uid;
+    const firebaseUid = (req as any).firebaseUser?.uid;
     if (!firebaseUid) {
       return res.status(401).json({ 
         success: false, 
         error: 'Usuario no autenticado' 
       });
     }
+    
     let userId = await userMappingService.getInternalUserId(firebaseUid);
+    
     if (!userId) {
-      userId = await userMappingService.createMapping(firebaseUid, req.firebaseUser?.email || `${firebaseUid}@firebase.auth`);
+      const createResult = await userMappingService.createMapping(
+        firebaseUid, 
+        (req as any).firebaseUser?.email || `${firebaseUid}@firebase.auth`
+      );
+      if (createResult) {
+        userId = createResult.id;
+      }
     }
+    
     if (!userId) {
       return res.status(500).json({ 
         success: false, 
         error: 'Error creando mapeo de usuario' 
       });
     }
+    
     console.log(`🔐 [SECURITY] Generating PDF for REAL user_id: ${userId}`);
-
     console.log(`📄 [MODERN-ENDPOINT] Generando PDF tipo: ${type}`);
     console.log(`📏 [MODERN-ENDPOINT] Tamaño HTML: ${html.length} caracteres`);
 
-    // 🔐 SECURITY FIX: Block contract generation through this endpoint
-    // Contracts MUST use /generate-contract endpoint with CONTRACT_GUARD protection
     if (type === 'contract') {
       console.warn(`⚠️ [SECURITY] Rejected contract generation via /generate-pdf for user: ${userId}`);
       return res.status(403).json({
@@ -69,12 +74,9 @@ router.post('/generate-pdf', verifyFirebaseAuth, async (req, res) => {
       });
     }
 
-    let result;
+    const result = await modernPdfService.generateEstimatePdf(html, estimateId || 'estimate');
 
-    // Only estimates allowed through this endpoint
-    result = await modernPdfService.generateEstimatePdf(html, estimateId || 'estimate');
-
-    if (!result.success) {
+    if (!result.success || !result.buffer) {
       console.error('❌ [MODERN-ENDPOINT] Error generando PDF:', result.error);
       return res.status(500).json({
         success: false,
@@ -85,18 +87,16 @@ router.post('/generate-pdf', verifyFirebaseAuth, async (req, res) => {
     const totalTime = Date.now() - startTime;
     console.log(`✅ [MODERN-ENDPOINT] PDF generado exitosamente en ${totalTime}ms`);
     console.log(`📊 [MODERN-ENDPOINT] Tiempo de procesamiento: ${result.processingTime}ms`);
-    console.log(`📦 [MODERN-ENDPOINT] Tamaño del PDF: ${result.buffer!.length} bytes`);
+    console.log(`📦 [MODERN-ENDPOINT] Tamaño del PDF: ${result.buffer.length} bytes`);
 
-    // Configurar headers para descarga
     const filename = title ? `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf` : 'documento.pdf';
     
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.setHeader('Content-Length', result.buffer!.length);
+    res.setHeader('Content-Length', result.buffer.length);
     res.setHeader('X-Generation-Time', totalTime.toString());
     res.setHeader('X-Processing-Time', result.processingTime.toString());
 
-    // Enviar el PDF
     res.send(result.buffer);
 
   } catch (error) {
@@ -113,61 +113,104 @@ router.post('/generate-pdf', verifyFirebaseAuth, async (req, res) => {
 
 /**
  * Endpoint específico para estimados (compatibilidad)
- * 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth
  */
-router.post('/generate-estimate', verifyFirebaseAuth, async (req, res) => {
+router.post('/generate-estimate', verifyFirebaseAuth, async (req: Request, res: Response) => {
   console.log('📊 [MODERN-ENDPOINT] Solicitud específica de estimado');
   req.body.type = 'estimate';
-  return router.handle(req, res, () => {});
+  
+  const { html, title, estimateId } = req.body;
+  
+  if (!html) {
+    return res.status(400).json({
+      success: false,
+      error: 'HTML requerido para generar PDF'
+    });
+  }
+
+  try {
+    const result = await modernPdfService.generateEstimatePdf(html, estimateId || 'estimate');
+    
+    if (!result.success || !result.buffer) {
+      return res.status(500).json({
+        success: false,
+        error: result.error || 'Error generando PDF'
+      });
+    }
+
+    const filename = title ? `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf` : 'estimado.pdf';
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', result.buffer.length);
+    
+    res.send(result.buffer);
+  } catch (error) {
+    console.error('❌ [MODERN-ENDPOINT] Error en generate-estimate:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error interno del servidor'
+    });
+  }
 });
 
 /**
- * Endpoint específico para contratos (futuro uso)
- * 🔐 SECURITY FIX: Full CONTRACT_GUARD applied
+ * Endpoint específico para contratos con protección completa
  */
 router.post('/generate-contract', 
   verifyFirebaseAuth, 
   requireLegalDefenseAccess,
   validateUsageLimit('contracts'),
   incrementUsageOnSuccess('contracts'),
-  async (req, res) => {
-  console.log('📋 [MODERN-ENDPOINT] Solicitud específica de contrato');
-  req.body.type = 'contract';
-  return router.handle(req, res, () => {});
-});
+  async (req: Request, res: Response) => {
+    console.log('📋 [MODERN-ENDPOINT] Solicitud específica de contrato');
+    
+    const { html, title, contractId } = req.body;
+    
+    if (!html) {
+      return res.status(400).json({
+        success: false,
+        error: 'HTML requerido para generar PDF'
+      });
+    }
+
+    try {
+      const result = await modernPdfService.generateContractPdf(html, contractId || 'contract');
+      
+      if (!result.success || !result.buffer) {
+        return res.status(500).json({
+          success: false,
+          error: result.error || 'Error generando PDF'
+        });
+      }
+
+      const filename = title ? `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf` : 'contrato.pdf';
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', result.buffer.length);
+      
+      res.send(result.buffer);
+    } catch (error) {
+      console.error('❌ [MODERN-ENDPOINT] Error en generate-contract:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor'
+      });
+    }
+  }
+);
 
 /**
  * Health check del servicio PDF
  */
-router.get('/health', async (req, res) => {
+router.get('/health', async (req: Request, res: Response) => {
   try {
-    const testHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Test PDF</title>
-        <style>
-          body { font-family: Arial, sans-serif; padding: 20px; }
-          .test { color: #007BFF; font-size: 24px; text-align: center; }
-        </style>
-      </head>
-      <body>
-        <div class="test">✅ Servicio PDF funcionando correctamente</div>
-        <p>Generado: ${new Date().toISOString()}</p>
-      </body>
-      </html>
-    `;
-
-    const startTime = Date.now();
-    const result = await modernPdfService.generatePdf({ html: testHtml });
-    const processingTime = Date.now() - startTime;
+    const healthResult = await modernPdfService.healthCheck();
 
     res.json({
-      status: 'healthy',
+      status: healthResult.healthy ? 'healthy' : 'unhealthy',
       service: 'ModernPdfService',
-      success: result.success,
-      processingTime: `${processingTime}ms`,
-      pdfSize: result.buffer ? `${result.buffer.length} bytes` : 'N/A',
+      ...healthResult.details,
       timestamp: new Date().toISOString()
     });
 

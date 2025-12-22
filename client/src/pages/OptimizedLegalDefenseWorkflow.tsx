@@ -1,5 +1,4 @@
-
-import React, { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -8,6 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { usePermissions } from '@/contexts/PermissionContext';
+import { robustAuth } from '@/lib/robust-auth';
 import { 
   Upload,
   Shield, 
@@ -30,12 +30,10 @@ import {
 
 interface WorkflowStep {
   id: string;
-  step: number;
   title: string;
   description: string;
   status: 'pending' | 'processing' | 'completed' | 'error';
   progress: number;
-  icon: React.ReactNode;
   estimatedTime?: string;
 }
 

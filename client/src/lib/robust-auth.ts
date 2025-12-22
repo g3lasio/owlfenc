@@ -145,6 +145,18 @@ class RobustAuthService {
     });
   }
 
+  /**
+   * Obtener token de autenticación de Firebase
+   * Método de conveniencia para usar en llamadas API
+   */
+  public async getAuthToken(): Promise<string> {
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) {
+      throw new Error('No authenticated user');
+    }
+    return firebaseUser.getIdToken();
+  }
+
   public async checkFeatureAccess(feature: string): Promise<{
     canAccess: boolean;
     usage: { used: number; limit: number; isUnlimited: boolean };

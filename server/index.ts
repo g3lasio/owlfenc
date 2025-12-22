@@ -624,6 +624,9 @@ import legalDefenseUnifiedRoutes from './routes/legal-defense-unified';
 import emailContractRoutes from './routes/email-contract';
 import contractManagementRoutes from './routes/contract-management';
 
+// 📄 MODERN PDF SYSTEM - Fast PDF generation with browser pooling
+import modernPdfRoutes from './routes/modern-pdf-routes';
+
 // 🖊️ DUAL SIGNATURE SYSTEM - Contract Signing Workflow
 import dualSignatureRoutes from './routes/dualSignatureRoutes';
 
@@ -702,6 +705,10 @@ app.use('/api/legal-defense', legalDefenseUnifiedRoutes); // Use unified routes
 app.use('/api/legal-defense-legacy', legalDefenseRoutes); // Keep legacy for compatibility
 console.log('🛡️ [LEGAL-DEFENSE] Sistema unificado de contratos registrado en /api/legal-defense/generate-contract');
 console.log('🤖 [ANTHROPIC] Sistema inteligente de contratos registrado en /api/anthropic/generate-contract');
+
+// 📄 Registrar sistema moderno de PDFs con browser pooling
+app.use('/api/modern-pdf', modernPdfRoutes);
+console.log('📄 [MODERN-PDF] Sistema de PDF rápido con browser pooling registrado en /api/modern-pdf');
 
 // 🖊️ Registrar sistema de firma dual
 app.use('/api/dual-signature', dualSignatureRoutes);
