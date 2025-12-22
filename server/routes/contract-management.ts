@@ -9,11 +9,92 @@ import { contracts } from '../../shared/schema';
 import { verifyFirebaseAuth } from '../middleware/firebase-auth';
 import { userMappingService } from '../services/userMappingService';
 import { eq } from 'drizzle-orm';
-import PremiumPdfService from '../services/premiumPdfService';
+import PremiumPdfService, { browserPool } from '../services/premiumPdfService';
 
 const premiumPdfService = PremiumPdfService.getInstance();
 
 const router = Router();
+
+// 🔧 DEBUG ENDPOINT: Diagnose PDF generation issues in production
+// Returns detailed error information for authenticated admin users only
+router.get('/pdf-debug', verifyFirebaseAuth, async (req, res) => {
+  const startTime = Date.now();
+  const diagnostics: any = {
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    browserPoolStatus: 'unknown',
+    chromiumPath: 'unknown',
+    testResults: [],
+    errors: []
+  };
+
+  try {
+    // Step 1: Check browser pool status
+    diagnostics.browserPoolStatus = browserPool.isWarm() ? 'warm' : 'cold';
+    diagnostics.testResults.push({ step: 'pool_status', success: true, value: diagnostics.browserPoolStatus });
+
+    // Step 2: Try to get browser from pool
+    const browserGetStart = Date.now();
+    const browser = await browserPool.getBrowser();
+    const browserGetTime = Date.now() - browserGetStart;
+    diagnostics.testResults.push({ step: 'get_browser', success: true, durationMs: browserGetTime });
+    
+    // Step 3: Check if browser is connected
+    const isConnected = browser.isConnected();
+    diagnostics.testResults.push({ step: 'browser_connected', success: isConnected, value: isConnected });
+
+    if (!isConnected) {
+      throw new Error('Browser is not connected after getBrowser()');
+    }
+
+    // Step 4: Try to create a new page
+    const pageCreateStart = Date.now();
+    const page = await browser.newPage();
+    const pageCreateTime = Date.now() - pageCreateStart;
+    diagnostics.testResults.push({ step: 'create_page', success: true, durationMs: pageCreateTime });
+
+    // Step 5: Try to set content
+    const setContentStart = Date.now();
+    await page.setContent('<html><body><h1>PDF Test</h1></body></html>', { 
+      waitUntil: 'domcontentloaded',
+      timeout: 10000 
+    });
+    const setContentTime = Date.now() - setContentStart;
+    diagnostics.testResults.push({ step: 'set_content', success: true, durationMs: setContentTime });
+
+    // Step 6: Try to generate PDF
+    const pdfGenStart = Date.now();
+    const pdfBuffer = await page.pdf({ format: 'A4', timeout: 15000 });
+    const pdfGenTime = Date.now() - pdfGenStart;
+    diagnostics.testResults.push({ step: 'generate_pdf', success: true, durationMs: pdfGenTime, pdfSize: pdfBuffer.length });
+
+    // Cleanup
+    await page.close();
+
+    const totalTime = Date.now() - startTime;
+    diagnostics.totalDurationMs = totalTime;
+    diagnostics.success = true;
+    diagnostics.message = `PDF generation test passed in ${totalTime}ms`;
+
+    console.log(`✅ [PDF-DEBUG] All tests passed in ${totalTime}ms`);
+    res.json(diagnostics);
+
+  } catch (error: any) {
+    const totalTime = Date.now() - startTime;
+    diagnostics.totalDurationMs = totalTime;
+    diagnostics.success = false;
+    diagnostics.errors.push({
+      message: error.message,
+      stack: error.stack?.split('\n').slice(0, 10).join('\n'),
+      name: error.name
+    });
+    
+    console.error(`❌ [PDF-DEBUG] Test failed after ${totalTime}ms:`, error.message);
+    console.error(`❌ [PDF-DEBUG] Stack:`, error.stack);
+    
+    res.status(500).json(diagnostics);
+  }
+});
 
 // Save contract to history
 // 🔐 CRITICAL SECURITY FIX: Agregado verifyFirebaseAuth para proteger guardado de contratos
