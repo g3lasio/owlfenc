@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { usePermissions } from '@/contexts/PermissionContext';
 import { robustAuth } from '@/lib/robust-auth';
+import { shareOrDownloadPdf, isMobileDevice, isNativeShareSupported } from '@/utils/mobileSharing';
 import { 
   Upload,
   Shield, 
@@ -385,24 +386,74 @@ export default function OptimizedLegalDefenseWorkflow() {
     }
   };
 
-  // Función 7: Descarga de contrato
-  const downloadContract = () => {
+  // Función 7: Descarga de contrato (PDF con native share en móvil)
+  const downloadContract = async () => {
     if (!generatedContract || !extractedData) return;
 
-    const blob = new Blob([generatedContract], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `contrato-blindado-${extractedData.clientName?.replace(/\s+/g, '-') || 'cliente'}-${Date.now()}.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const clientName = extractedData.clientName?.replace(/\s+/g, '-') || 'cliente';
+    const filename = `contrato-blindado-${clientName}-${Date.now()}.pdf`;
+    const isMobile = isMobileDevice();
+    const canShare = isNativeShareSupported();
 
-    toast({
-      title: "📥 Contrato Descargado",
-      description: "Archivo guardado exitosamente",
-    });
+    try {
+      // Generate PDF from HTML using modern-pdf service
+      toast({
+        title: isMobile && canShare ? "📱 Preparando..." : "⏳ Generando PDF...",
+        description: "Convirtiendo contrato a PDF",
+      });
+
+      const token = await robustAuth.getAuthToken();
+      const response = await fetch('/api/modern-pdf/generate-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          html: generatedContract,
+          title: `Contrato - ${clientName}`,
+          type: 'estimate'
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Error generando PDF');
+      }
+
+      const pdfBlob = await response.blob();
+
+      // Use native share on mobile/tablet, direct download on desktop
+      await shareOrDownloadPdf(pdfBlob, filename, {
+        title: `Contrato Blindado - ${clientName}`,
+        text: `Contrato profesional para ${clientName}`,
+        clientName: clientName,
+      });
+
+      toast({
+        title: isMobile && canShare ? "✅ Listo" : "📥 Contrato Descargado",
+        description: isMobile && canShare 
+          ? "Elige dónde guardar o compartir tu contrato" 
+          : "Archivo guardado exitosamente",
+      });
+    } catch (error) {
+      console.error('Error downloading contract:', error);
+      
+      // Fallback to HTML download if PDF generation fails
+      const htmlBlob = new Blob([generatedContract], { type: 'text/html' });
+      const url = URL.createObjectURL(htmlBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `contrato-blindado-${clientName}-${Date.now()}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "📥 Contrato Descargado (HTML)",
+        description: "Se descargó en formato HTML como respaldo",
+      });
+    }
   };
 
   // Función 8: Iniciar proceso de firma

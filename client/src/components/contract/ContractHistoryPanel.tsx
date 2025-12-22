@@ -10,6 +10,7 @@ import { contractHistoryService, ContractHistoryEntry, SignatureRequirement } fr
 import { auth } from '@/lib/firebase';
 import { getTemplateBadgeConfig, inferRequiredSigners, getDetailedTemplateId } from '@/hooks/useContractsStore';
 import { User as FirebaseUser, onAuthStateChanged } from 'firebase/auth';
+import { shareOrDownloadPdf, isMobileDevice, isNativeShareSupported } from '@/utils/mobileSharing';
 import { 
   Server, 
   FileText, 
@@ -220,25 +221,58 @@ export function ContractHistoryPanel({ children, onEditContract }: ContractHisto
       return;
     }
 
-    try {
+    const filename = `Contract_${contract.clientName.replace(/\s+/g, '_')}_${contract.contractId}.pdf`;
+    const isMobile = isMobileDevice();
+    const canShare = isNativeShareSupported();
+
+    // Helper for anchor-based download (works regardless of CORS)
+    const anchorDownload = () => {
       const link = document.createElement('a');
       link.href = pdfUrl;
-      link.download = `Contract_${contract.clientName.replace(/\s+/g, '_')}_${contract.contractId}.pdf`;
+      link.download = filename;
       link.style.display = 'none';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-
+      
       toast({
         title: "Download Started",
         description: `Contract for ${contract.clientName} is downloading.`,
       });
-    } catch (error) {
+    };
+
+    // Desktop: always use anchor-based download
+    if (!isMobile || !canShare) {
+      anchorDownload();
+      return;
+    }
+
+    // Mobile/tablet with native share: try fetch, fallback to anchor if CORS fails
+    try {
       toast({
-        title: "Download Failed",
-        description: "Failed to download contract. Please try again.",
-        variant: "destructive",
+        title: "📱 Preparing...",
+        description: "Getting your contract ready to share.",
       });
+
+      const response = await fetch(pdfUrl, { mode: 'cors' });
+      if (!response.ok) throw new Error('Failed to fetch PDF');
+      
+      const pdfBlob = await response.blob();
+      
+      await shareOrDownloadPdf(pdfBlob, filename, {
+        title: `Contract - ${contract.clientName}`,
+        text: `Signed contract for ${contract.clientName}`,
+        clientName: contract.clientName,
+      });
+
+      toast({
+        title: "✅ Ready",
+        description: "Choose where to save or share your contract.",
+      });
+    } catch (error) {
+      // CORS or network error - fallback to anchor download which bypasses CORS
+      console.log('📱 Native share failed (likely CORS), using anchor download:', error);
+      anchorDownload();
     }
   };
 

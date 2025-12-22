@@ -81,7 +81,7 @@ export const sharePdfFile = async (
 
   } catch (error) {
     // User cancelled sharing or other error
-    if (error.name === 'AbortError') {
+    if (error instanceof Error && error.name === 'AbortError') {
       console.log('📱 User cancelled sharing');
       return true; // Not an error, user just cancelled
     }
@@ -132,7 +132,7 @@ export const sharePdfUrl = async (
     return true;
 
   } catch (error) {
-    if (error.name === 'AbortError') {
+    if (error instanceof Error && error.name === 'AbortError') {
       console.log('📱 User cancelled URL sharing');
       return true;
     }
