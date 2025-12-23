@@ -8816,16 +8816,22 @@ ENHANCED LEGAL CLAUSE:`;
       
       const { unifiedContractService } = await import('./services/UnifiedContractService');
       
+      // Check if HTML-only is requested (check early to skip health gating for HTML-only)
+      const htmlOnly = req.query.htmlOnly === 'true' || req.body.htmlOnly === true;
+      
       // ==================== HEALTH GATING ====================
-      // Check service health before accepting work
-      const isHealthy = await unifiedContractService.isHealthy();
-      if (!isHealthy) {
-        console.warn("🚨 [UNIFIED-GENERATE] Service unhealthy, rejecting request with 503");
-        return res.status(503).json({
-          success: false,
-          error: "Service temporarily unavailable. Please retry in a few seconds.",
-          retryAfter: 5,
-        });
+      // Only check PDF service health if we actually need to generate a PDF
+      // HTML-only requests don't need Puppeteer, so skip the health check
+      if (!htmlOnly) {
+        const isHealthy = await unifiedContractService.isHealthy();
+        if (!isHealthy) {
+          console.warn("🚨 [UNIFIED-GENERATE] Service unhealthy, rejecting request with 503");
+          return res.status(503).json({
+            success: false,
+            error: "Service temporarily unavailable. Please retry in a few seconds.",
+            retryAfter: 5,
+          });
+        }
       }
       
       // Determine jurisdiction
@@ -8878,9 +8884,6 @@ ENHANCED LEGAL CLAUSE:`;
         completion: req.body.completion,
         warranty: req.body.warranty,
       };
-      
-      // Check if HTML-only is requested
-      const htmlOnly = req.query.htmlOnly === 'true' || req.body.htmlOnly === true;
       
       let result;
       if (htmlOnly) {
