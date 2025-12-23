@@ -3146,14 +3146,33 @@ export default function SimpleContractGenerator() {
       console.log("📋 [MULTI-TEMPLATE] Selected document type:", selectedDocumentType, contractPayload.templateId ? `(using template: ${contractPayload.templateId})` : '(using legacy flow)');
 
       // First generate contract HTML for legal workflow
-      const htmlResponse = await fetch("/api/generate-contract-html", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${currentUser.uid}`,
-        },
-        body: JSON.stringify(contractPayload),
-      });
+      // ⏱️ TIMEOUT FIX: Add 30-second timeout to prevent 23-minute hangs in production
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      
+      let htmlResponse: Response;
+      try {
+        htmlResponse = await fetch("/api/generate-contract-html", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-firebase-uid": currentUser.uid,
+            Authorization: `Bearer ${currentUser.uid}`,
+          },
+          body: JSON.stringify(contractPayload),
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        if ((fetchError as Error).name === 'AbortError') {
+          console.error("⏱️ [TIMEOUT] Contract HTML generation timed out after 30 seconds");
+          // Use local fallback instead of hanging
+          await handleFallbackContractCreation(contractPayload);
+          return;
+        }
+        throw fetchError;
+      }
 
       console.log("🔍 [DEBUG] HTML Response status:", htmlResponse.status);
 
@@ -3187,114 +3206,86 @@ export default function SimpleContractGenerator() {
           await handleFallbackContractCreation(contractPayload);
         }
       } else {
-        // Fallback to PDF generation if HTML endpoint fails
-        const response = await fetch("/api/generate-pdf", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${currentUser.uid}`,
-          },
-          body: JSON.stringify(contractPayload),
-        });
-
-        if (response.ok) {
-          const contentType = response.headers.get("content-type");
-          console.log("✅ PDF Generation Response:", {
-            status: response.status,
-            contentType,
-            headers: Object.fromEntries(response.headers.entries()),
+        // 🔄 SECONDARY FALLBACK: Try PDF generation with timeout before local fallback
+        console.log("⚠️ [FALLBACK] HTML endpoint failed, trying PDF fallback...");
+        
+        try {
+          const pdfController = new AbortController();
+          const pdfTimeoutId = setTimeout(() => pdfController.abort(), 45000); // 45 second timeout for PDF
+          
+          const pdfResponse = await fetch("/api/generate-pdf", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-firebase-uid": currentUser.uid,
+              Authorization: `Bearer ${currentUser.uid}`,
+            },
+            body: JSON.stringify(contractPayload),
+            signal: pdfController.signal,
           });
-
-          if (contentType?.includes("application/pdf")) {
-            console.log("📄 PDF content type confirmed - processing...");
-          } else {
-            console.log(
-              "⚠️ Unexpected content type, but response is OK - proceeding...",
-            );
-          }
-
-          // PDF generated successfully - create basic HTML for legal workflow
-          const basicHTML = `
-            <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
-              <h1>Independent Contractor Agreement</h1>
-              <p><strong>Contractor:</strong> ${contractPayload.contractor.name}</p>
-              <p><strong>Client:</strong> ${contractPayload.client.name}</p>
-              <p><strong>Project Total:</strong> $${contractPayload.financials.total.toLocaleString()}</p>
-              <p><strong>Project Description:</strong> ${contractPayload.project.description}</p>
-              <p>Complete contract details have been generated. Please proceed with the legal compliance workflow.</p>
-            </div>
-          `;
-
-          // Generate professional HTML for legal workflow
-          try {
-            const htmlResponse = await fetch("/api/generate-contract-html", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "x-firebase-uid": currentUser?.uid || "",
-              },
-              body: JSON.stringify(contractPayload),
-            });
-
-            if (htmlResponse.ok) {
-              const htmlData = await htmlResponse.json();
-              setContractHTML(htmlData.html);
-              setIsContractReady(true);
-              console.log(
-                "✅ Professional contract HTML generated for legal workflow",
-                { htmlLength: htmlData.html?.length, isFromScratch: selectedProject?.isFromScratch }
-              );
-            } else {
-              console.warn(
-                "⚠️ Failed to generate professional HTML, using basic fallback",
-              );
-              setContractHTML(basicHTML);
-              setIsContractReady(true);
-            }
-          } catch (htmlError) {
-            console.error("HTML generation error:", htmlError);
+          clearTimeout(pdfTimeoutId);
+          
+          if (pdfResponse.ok) {
+            console.log("✅ [FALLBACK] PDF generation succeeded");
+            // Generate basic HTML for legal workflow display
+            const basicHTML = `
+              <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+                <h1>Independent Contractor Agreement</h1>
+                <p><strong>Contractor:</strong> ${contractPayload.contractor.name}</p>
+                <p><strong>Client:</strong> ${contractPayload.client.name}</p>
+                <p><strong>Project Total:</strong> $${contractPayload.financials.total.toLocaleString()}</p>
+                <p><strong>Project Description:</strong> ${contractPayload.project.description}</p>
+                <p>Complete contract details have been generated. Please proceed with the legal compliance workflow.</p>
+              </div>
+            `;
             setContractHTML(basicHTML);
+            setContractData(contractPayload);
             setIsContractReady(true);
+            setCurrentStep(3);
+            
+            toast({
+              title: "Contract Generated",
+              description: `Contract ready for ${selectedProject.clientName}`,
+            });
+            return;
+          } else {
+            console.log("⚠️ [FALLBACK] PDF generation failed, using local fallback");
+            await handleFallbackContractCreation(contractPayload);
+            return;
           }
-
-          setContractData(contractPayload);
-          setIsContractReady(true);
-          setCurrentStep(3);
-
-          toast({
-            title: "Contract Generated",
-            description: `Contract ready for legal compliance workflow with ${selectedProject.clientName}`,
-          });
-        } else {
-          const errorText = await response.text();
-          console.error("❌ Contract generation failed:", {
-            status: response.status,
-            statusText: response.statusText,
-            headers: Object.fromEntries(response.headers.entries()),
-            error: errorText,
-          });
-          throw new Error(
-            `Failed to generate contract PDF: ${response.status} - ${response.statusText}. ${errorText}`,
-          );
+        } catch (pdfError) {
+          if ((pdfError as Error).name === 'AbortError') {
+            console.error("⏱️ [TIMEOUT] PDF generation timed out after 45 seconds");
+          } else {
+            console.error("❌ [FALLBACK] PDF generation error:", pdfError);
+          }
+          // Use local fallback as final safety net
+          await handleFallbackContractCreation(contractPayload);
+          return;
         }
       }
     } catch (error) {
-      console.error("❌ Error generating contract:", error as Error);
-      console.error("❌ Error details:", {
-        message: (error as Error).message,
-        stack: (error as Error).stack,
-        contractPayload: contractPayload
-          ? {
-              clientName: contractPayload.client?.name,
-              contractorName: contractPayload.contractor?.name,
-              projectTotal: contractPayload.financials?.total,
-            }
-          : "Not created yet",
-      });
-
+      // Handle all errors gracefully
+      console.error("❌ Error in contract generation:", error);
+      
+      // Try local fallback as last resort
+      if (contractPayload) {
+        console.log("🔄 [RECOVERY] Attempting local fallback after error...");
+        try {
+          await handleFallbackContractCreation(contractPayload);
+          toast({
+            title: "Contract Generated (Local)",
+            description: "Generated using local templates due to server issues.",
+          });
+          return;
+        } catch (fallbackError) {
+          console.error("❌ [RECOVERY] Fallback also failed:", fallbackError);
+        }
+      }
+      
       toast({
-        title: "Generation Error",
-        description: `Failed to generate contract: ${(error as Error).message || "Unknown error"}. Please check the console for details.`,
+        title: "Error",
+        description: "Could not generate contract. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -3305,11 +3296,14 @@ export default function SimpleContractGenerator() {
     currentUser?.uid,
     profile,
     editableData,
+    contractData,
     selectedClauses,
     suggestedClauses,
     getCorrectProjectTotal,
+    isPrimoChambeador,
     selectedDocumentType,
     toast,
+    handleFallbackContractCreation,
   ]);
 
   // Reset to start new contract
