@@ -8,8 +8,8 @@ let cachedPath: string | null = null;
 let detectionAttempted = false;
 let usingSparticuz = false;
 
+// Static fallback paths (avoid hardcoding Nix hashes - they differ between dev/prod)
 const KNOWN_PATHS = [
-  '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium',
   '/usr/bin/chromium',
   '/usr/bin/chromium-browser', 
   '/usr/bin/google-chrome',
@@ -18,6 +18,45 @@ const KNOWN_PATHS = [
   '/snap/bin/chromium',
 ];
 
+/**
+ * Priority 1: Use `which chromium` - works reliably in both dev and production
+ * This is the most reliable method on Replit as it resolves Nix symlinks correctly
+ */
+function findViaWhich(): string | null {
+  try {
+    // Try chromium first (most common on Replit/Nix)
+    const result = execSync(
+      'which chromium 2>/dev/null || which chromium-browser 2>/dev/null || which google-chrome 2>/dev/null',
+      { encoding: 'utf8', timeout: 5000 }
+    ).trim().split('\n')[0];
+    if (result && fs.existsSync(result)) {
+      console.log(`✅ [CHROMIUM] Found via which: ${result}`);
+      return result;
+    }
+  } catch {}
+  return null;
+}
+
+/**
+ * Priority 2: Search Nix store dynamically (handles different hashes between dev/prod)
+ */
+function findInNixStore(): string | null {
+  try {
+    const result = execSync(
+      'ls -1d /nix/store/*/bin/chromium 2>/dev/null | head -1',
+      { encoding: 'utf8', timeout: 5000 }
+    ).trim();
+    if (result && fs.existsSync(result)) {
+      console.log(`✅ [CHROMIUM] Found in Nix store: ${result}`);
+      return result;
+    }
+  } catch {}
+  return null;
+}
+
+/**
+ * Priority 3: Check Puppeteer cache
+ */
 function findInPuppeteerCache(): string | null {
   const homeDirs = [
     process.env.HOME,
@@ -44,6 +83,7 @@ function findInPuppeteerCache(): string | null {
           if (fs.existsSync(p)) {
             try {
               fs.accessSync(p, fs.constants.X_OK);
+              console.log(`✅ [CHROMIUM] Found in Puppeteer cache: ${p}`);
               return p;
             } catch {}
           }
@@ -54,43 +94,21 @@ function findInPuppeteerCache(): string | null {
   return null;
 }
 
-function findInNixStore(): string | null {
-  try {
-    const result = execSync(
-      'ls -1d /nix/store/*/bin/chromium 2>/dev/null | head -1',
-      { encoding: 'utf8', timeout: 5000 }
-    ).trim();
-    if (result && fs.existsSync(result)) {
-      return result;
-    }
-  } catch {}
-  return null;
-}
-
-function findViaWhich(): string | null {
-  try {
-    const result = execSync(
-      'which chromium chromium-browser google-chrome 2>/dev/null | head -1',
-      { encoding: 'utf8', timeout: 3000 }
-    ).trim();
-    if (result && fs.existsSync(result)) {
-      return result;
-    }
-  } catch {}
-  return null;
-}
-
 export function getChromiumExecutablePath(): string | undefined {
+  // Return cached path if still valid
   if (cachedPath && fs.existsSync(cachedPath)) {
     return cachedPath;
   }
 
+  // Only attempt detection once per process lifetime
   if (detectionAttempted && !cachedPath) {
     return undefined;
   }
 
   detectionAttempted = true;
+  console.log('🔍 [CHROMIUM] Starting executable detection...');
 
+  // Priority 0: Environment variables (explicit configuration)
   if (process.env.PUPPETEER_EXECUTABLE_PATH && fs.existsSync(process.env.PUPPETEER_EXECUTABLE_PATH)) {
     cachedPath = process.env.PUPPETEER_EXECUTABLE_PATH;
     console.log(`✅ [CHROMIUM] Using env PUPPETEER_EXECUTABLE_PATH: ${cachedPath}`);
@@ -103,13 +121,29 @@ export function getChromiumExecutablePath(): string | undefined {
     return cachedPath;
   }
 
-  const puppeteerPath = findInPuppeteerCache();
-  if (puppeteerPath) {
-    cachedPath = puppeteerPath;
-    console.log(`✅ [CHROMIUM] Found in Puppeteer cache: ${cachedPath}`);
+  // Priority 1: `which chromium` - MOST RELIABLE for Replit (works in both dev and production)
+  // This resolves Nix symlinks correctly regardless of the Nix store hash
+  const whichPath = findViaWhich();
+  if (whichPath) {
+    cachedPath = whichPath;
     return cachedPath;
   }
 
+  // Priority 2: Dynamic Nix store search (handles different hashes)
+  const nixPath = findInNixStore();
+  if (nixPath) {
+    cachedPath = nixPath;
+    return cachedPath;
+  }
+
+  // Priority 3: Puppeteer cache (if installed)
+  const puppeteerPath = findInPuppeteerCache();
+  if (puppeteerPath) {
+    cachedPath = puppeteerPath;
+    return cachedPath;
+  }
+
+  // Priority 4: Known static paths (unlikely on Replit but fallback)
   for (const p of KNOWN_PATHS) {
     if (fs.existsSync(p)) {
       try {
@@ -121,21 +155,7 @@ export function getChromiumExecutablePath(): string | undefined {
     }
   }
 
-  const nixPath = findInNixStore();
-  if (nixPath) {
-    cachedPath = nixPath;
-    console.log(`✅ [CHROMIUM] Found in Nix store: ${cachedPath}`);
-    return cachedPath;
-  }
-
-  const whichPath = findViaWhich();
-  if (whichPath) {
-    cachedPath = whichPath;
-    console.log(`✅ [CHROMIUM] Found via which: ${cachedPath}`);
-    return cachedPath;
-  }
-
-  console.log('⚠️ [CHROMIUM] No local executable found - will use @sparticuz/chromium');
+  console.log('⚠️ [CHROMIUM] No executable found - PDF generation may fail');
   return undefined;
 }
 
@@ -158,9 +178,10 @@ export async function launchBrowser(options: any = {}): Promise<any> {
   ];
 
   const executablePath = getChromiumExecutablePath();
+  const mergedArgs = Array.from(new Set([...baseArgs, ...(options.args || [])]));
   
+  // Strategy 1: Use detected Chromium path (works in both dev and production)
   if (executablePath) {
-    const mergedArgs = Array.from(new Set([...baseArgs, ...(options.args || [])]));
     const launchOptions = {
       headless: true,
       ...options,
@@ -169,58 +190,32 @@ export async function launchBrowser(options: any = {}): Promise<any> {
     };
 
     try {
-      console.log(`🚀 [BROWSER] Launching with local path: ${executablePath}`);
+      console.log(`🚀 [BROWSER] Launching with: ${executablePath}`);
       const browser = await puppeteer.launch(launchOptions);
-      console.log('✅ [BROWSER] Launched successfully with local Chromium');
+      console.log('✅ [BROWSER] Launched successfully');
       usingSparticuz = false;
       return browser;
     } catch (error: any) {
-      console.log(`⚠️ [BROWSER] Local Chromium failed: ${error.message}`);
-      console.log('🔄 [BROWSER] Falling back to @sparticuz/chromium...');
+      console.error(`❌ [BROWSER] Failed with detected path: ${error.message}`);
+      // Don't throw yet - try bundled browser
     }
   }
 
+  // Strategy 2: Let Puppeteer use its bundled browser (fallback)
+  // NOTE: We deliberately skip @sparticuz/chromium as it takes minutes to download
+  // and is designed for AWS Lambda, not Replit production deployments
   try {
-    console.log('🚀 [BROWSER] Launching with @sparticuz/chromium (production mode)...');
-    const chromium = await import('@sparticuz/chromium');
-    
-    const sparticuzPath = await chromium.default.executablePath();
-    console.log(`📍 [BROWSER] @sparticuz/chromium path: ${sparticuzPath}`);
-    
-    const sparticuzArgs = [
-      ...chromium.default.args,
-      ...baseArgs,
-      ...(options.args || []),
-    ];
-    const uniqueArgs = Array.from(new Set(sparticuzArgs));
-
-    const browser = await puppeteerCore.launch({
+    console.log('🔄 [BROWSER] Using Puppeteer bundled browser...');
+    const browser = await puppeteer.launch({
       headless: true,
-      executablePath: sparticuzPath,
-      args: uniqueArgs,
-      defaultViewport: { width: 1280, height: 720 },
+      args: mergedArgs,
     });
-
-    console.log('✅ [BROWSER] Launched successfully with @sparticuz/chromium');
-    usingSparticuz = true;
+    console.log('✅ [BROWSER] Launched with Puppeteer bundled browser');
+    usingSparticuz = false;
     return browser;
-  } catch (sparticuzError: any) {
-    console.error(`❌ [BROWSER] @sparticuz/chromium failed: ${sparticuzError.message}`);
-    console.error(`❌ [BROWSER] Stack: ${sparticuzError.stack}`);
-    
-    try {
-      console.log('🔄 [BROWSER] Final fallback: Puppeteer bundled browser...');
-      const browser = await puppeteer.launch({
-        headless: true,
-        args: baseArgs,
-      });
-      console.log('✅ [BROWSER] Launched with Puppeteer bundled browser');
-      usingSparticuz = false;
-      return browser;
-    } catch (finalError: any) {
-      console.error(`❌ [BROWSER] All browser launch attempts failed`);
-      throw new Error(`Failed to launch any browser. Last error: ${finalError.message}`);
-    }
+  } catch (finalError: any) {
+    console.error(`❌ [BROWSER] All browser launch attempts failed: ${finalError.message}`);
+    throw new Error(`Failed to launch browser. Ensure Chromium is available in .replit nix packages. Error: ${finalError.message}`);
   }
 }
 
