@@ -8793,6 +8793,160 @@ ENHANCED LEGAL CLAUSE:`;
     },
   );
 
+  // ==================== UNIFIED CONTRACT GENERATION ENDPOINT ====================
+  // Single endpoint for contract generation - replaces all legacy fallback chains
+  // Features:
+  // - 30-second timeout with watchdog
+  // - Browser pool health gating
+  // - Automatic recycle after 3 consecutive failures
+  // - Returns both HTML and PDF in single request
+  app.post("/api/contracts/generate", async (req: Request, res: Response) => {
+    const startTime = Date.now();
+    
+    try {
+      console.log("🚀 [UNIFIED-GENERATE] Starting unified contract generation...");
+      
+      const firebaseUid = req.headers["x-firebase-uid"] as string;
+      if (!firebaseUid) {
+        return res.status(401).json({ 
+          success: false, 
+          error: "Authentication required" 
+        });
+      }
+      
+      const { unifiedContractService } = await import('./services/UnifiedContractService');
+      
+      // ==================== HEALTH GATING ====================
+      // Check service health before accepting work
+      const isHealthy = await unifiedContractService.isHealthy();
+      if (!isHealthy) {
+        console.warn("🚨 [UNIFIED-GENERATE] Service unhealthy, rejecting request with 503");
+        return res.status(503).json({
+          success: false,
+          error: "Service temporarily unavailable. Please retry in a few seconds.",
+          retryAfter: 5,
+        });
+      }
+      
+      // Determine jurisdiction
+      const jurisdiction = determineJurisdiction(req.body.client?.address);
+      
+      // Process legal clauses
+      const legalClauses = req.body.legalClauses || {};
+      const selectedClauseIds = legalClauses.selected || req.body.selectedClauses || [];
+      const frontendClauses = legalClauses.clauses || [];
+      
+      const protectionClauses: Array<{title: string; content: string}> = [];
+      for (const clauseId of selectedClauseIds) {
+        const libraryClause = LEGAL_CLAUSES_LIBRARY[clauseId];
+        if (libraryClause) {
+          protectionClauses.push({
+            title: libraryClause.title,
+            content: libraryClause.content,
+          });
+        } else {
+          const frontendClause = frontendClauses.find((c: any) => c.id === clauseId);
+          if (frontendClause?.content) {
+            protectionClauses.push({
+              title: frontendClause.title || clauseId,
+              content: frontendClause.content,
+            });
+          }
+        }
+      }
+      
+      // Build contract data
+      const contractData = {
+        client: req.body.client,
+        contractor: req.body.contractor,
+        project: {
+          ...req.body.project,
+          location: req.body.project?.location || req.body.client?.address || "",
+        },
+        financials: req.body.financials,
+        timeline: req.body.timeline,
+        permitInfo: req.body.permitInfo || req.body.permits,
+        warranties: req.body.warranties,
+        protectionClauses,
+        paymentTerms: req.body.paymentTerms,
+        jurisdiction,
+        templateId: req.body.templateId,
+        changeOrder: req.body.changeOrder,
+        addendum: req.body.addendum,
+        workOrder: req.body.workOrder,
+        lienWaiver: req.body.lienWaiver,
+        completion: req.body.completion,
+        warranty: req.body.warranty,
+      };
+      
+      // Check if HTML-only is requested
+      const htmlOnly = req.query.htmlOnly === 'true' || req.body.htmlOnly === true;
+      
+      let result;
+      if (htmlOnly) {
+        result = await unifiedContractService.generateHtmlOnly(contractData);
+      } else {
+        result = await unifiedContractService.generateContract(contractData);
+      }
+      
+      if (!result.success) {
+        console.error(`❌ [UNIFIED-GENERATE] Failed in ${Date.now() - startTime}ms:`, result.error);
+        return res.status(500).json({
+          success: false,
+          error: result.error,
+          metrics: result.metrics,
+        });
+      }
+      
+      console.log(`✅ [UNIFIED-GENERATE] Success in ${result.metrics?.totalMs}ms`);
+      
+      // If PDF was generated, encode as base64
+      const pdfBase64 = result.pdfBuffer ? result.pdfBuffer.toString('base64') : undefined;
+      
+      res.json({
+        success: true,
+        html: result.html,
+        pdfBase64,
+        pdfSize: result.pdfBuffer?.length,
+        contractId: result.contractId,
+        generatedAt: result.generatedAt,
+        metrics: result.metrics,
+        clientName: req.body.client?.name,
+        contractorName: req.body.contractor?.name,
+        projectTotal: req.body.financials?.total,
+      });
+      
+    } catch (error: any) {
+      console.error("❌ [UNIFIED-GENERATE] Unhandled error:", error);
+      res.status(500).json({
+        success: false,
+        error: error.message || "Contract generation failed",
+        metrics: { totalMs: Date.now() - startTime },
+      });
+    }
+  });
+  
+  // Health check for unified contract service
+  app.get("/api/contracts/generate/health", async (_req: Request, res: Response) => {
+    try {
+      const { unifiedContractService } = await import('./services/UnifiedContractService');
+      const healthy = await unifiedContractService.isHealthy();
+      const status = unifiedContractService.getStatus();
+      
+      res.json({
+        healthy,
+        status,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        healthy: false,
+        error: error.message,
+      });
+    }
+  });
+
+  // Legacy endpoint - redirects to unified (for backward compatibility during transition)
   // Premium Contract PDF Generation
   app.post("/api/contracts/generate-pdf", async (req, res) => {
     try {

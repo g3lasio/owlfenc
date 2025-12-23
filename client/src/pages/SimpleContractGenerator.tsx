@@ -3141,151 +3141,61 @@ export default function SimpleContractGenerator() {
         },
       );
 
-      console.log("Generating contract with payload:", contractPayload);
-      console.log("🔍 [DEBUG] Project type:", selectedProject?.isFromScratch ? 'From Scratch' : 'Existing Project');
-      console.log("📋 [MULTI-TEMPLATE] Selected document type:", selectedDocumentType, contractPayload.templateId ? `(using template: ${contractPayload.templateId})` : '(using legacy flow)');
+      console.log("📋 [UNIFIED] Generating contract with unified endpoint...");
+      console.log("📋 [UNIFIED] Template:", selectedDocumentType);
 
-      // First generate contract HTML for legal workflow
-      // ⏱️ TIMEOUT FIX: Add 30-second timeout to prevent 23-minute hangs in production
+      // ==================== UNIFIED CONTRACT GENERATION ====================
+      // Single endpoint, single timeout, zero fallbacks
+      // Backend handles everything: HTML + PDF generation with watchdog
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 35000); // 35s client timeout (backend has 30s)
       
-      let htmlResponse: Response;
-      try {
-        htmlResponse = await fetch("/api/generate-contract-html", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-firebase-uid": currentUser.uid,
-            Authorization: `Bearer ${currentUser.uid}`,
-          },
-          body: JSON.stringify(contractPayload),
-          signal: controller.signal,
+      const response = await fetch("/api/contracts/generate?htmlOnly=true", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-firebase-uid": currentUser.uid,
+        },
+        body: JSON.stringify(contractPayload),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      const result = await response.json();
+      
+      if (!response.ok || !result.success) {
+        console.error("❌ [UNIFIED] Contract generation failed:", result.error);
+        toast({
+          title: "Error",
+          description: result.error || "Could not generate contract. Please try again.",
+          variant: "destructive",
         });
-        clearTimeout(timeoutId);
-      } catch (fetchError) {
-        clearTimeout(timeoutId);
-        if ((fetchError as Error).name === 'AbortError') {
-          console.error("⏱️ [TIMEOUT] Contract HTML generation timed out after 30 seconds");
-          // Use local fallback instead of hanging
-          await handleFallbackContractCreation(contractPayload);
-          return;
-        }
-        throw fetchError;
+        return;
       }
 
-      console.log("🔍 [DEBUG] HTML Response status:", htmlResponse.status);
+      console.log(`✅ [UNIFIED] Contract generated in ${result.metrics?.totalMs}ms`);
+      console.log(`📄 [UNIFIED] HTML: ${result.html?.length} chars, Contract ID: ${result.contractId}`);
 
-      if (htmlResponse.ok) {
-        const contractHTMLData = await htmlResponse.json();
-        console.log("🔍 [DEBUG] HTML Data received:", {
-          hasHtml: !!contractHTMLData.html,
-          htmlLength: contractHTMLData.html?.length || 0,
-          isFromScratch: selectedProject?.isFromScratch,
-          responseKeys: Object.keys(contractHTMLData)
-        });
-        
-        // Use the correct key from response - try both possibilities
-        const contractHtmlContent = contractHTMLData.html || contractHTMLData.contractHTML || '';
-        
-        if (contractHtmlContent) {
-          setContractHTML(contractHtmlContent);
-          setContractData(contractPayload);
-          setIsContractReady(true);
-          setCurrentStep(3);
+      setContractHTML(result.html);
+      setContractData(contractPayload);
+      setIsContractReady(true);
+      setCurrentStep(3);
 
-          console.log("🔍 [DEBUG] Contract HTML set successfully:", contractHtmlContent.length, "characters");
+      toast({
+        title: "Contract Ready",
+        description: `Contract generated for ${selectedProject.clientName}. Proceed with legal workflow.`,
+      });
 
-          toast({
-            title: "Contract Ready for Legal Process",
-            description: `Contract generated for ${selectedProject.clientName}. Legal compliance workflow enabled.`,
-          });
-        } else {
-          console.error("🔍 [DEBUG] No HTML content found in response");
-          // Try alternative approach: Save contract data and generate simple HTML for signatures
-          await handleFallbackContractCreation(contractPayload);
-        }
-      } else {
-        // 🔄 SECONDARY FALLBACK: Try PDF generation with timeout before local fallback
-        console.log("⚠️ [FALLBACK] HTML endpoint failed, trying PDF fallback...");
-        
-        try {
-          const pdfController = new AbortController();
-          const pdfTimeoutId = setTimeout(() => pdfController.abort(), 45000); // 45 second timeout for PDF
-          
-          const pdfResponse = await fetch("/api/generate-pdf", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "x-firebase-uid": currentUser.uid,
-              Authorization: `Bearer ${currentUser.uid}`,
-            },
-            body: JSON.stringify(contractPayload),
-            signal: pdfController.signal,
-          });
-          clearTimeout(pdfTimeoutId);
-          
-          if (pdfResponse.ok) {
-            console.log("✅ [FALLBACK] PDF generation succeeded");
-            // Generate basic HTML for legal workflow display
-            const basicHTML = `
-              <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
-                <h1>Independent Contractor Agreement</h1>
-                <p><strong>Contractor:</strong> ${contractPayload.contractor.name}</p>
-                <p><strong>Client:</strong> ${contractPayload.client.name}</p>
-                <p><strong>Project Total:</strong> $${contractPayload.financials.total.toLocaleString()}</p>
-                <p><strong>Project Description:</strong> ${contractPayload.project.description}</p>
-                <p>Complete contract details have been generated. Please proceed with the legal compliance workflow.</p>
-              </div>
-            `;
-            setContractHTML(basicHTML);
-            setContractData(contractPayload);
-            setIsContractReady(true);
-            setCurrentStep(3);
-            
-            toast({
-              title: "Contract Generated",
-              description: `Contract ready for ${selectedProject.clientName}`,
-            });
-            return;
-          } else {
-            console.log("⚠️ [FALLBACK] PDF generation failed, using local fallback");
-            await handleFallbackContractCreation(contractPayload);
-            return;
-          }
-        } catch (pdfError) {
-          if ((pdfError as Error).name === 'AbortError') {
-            console.error("⏱️ [TIMEOUT] PDF generation timed out after 45 seconds");
-          } else {
-            console.error("❌ [FALLBACK] PDF generation error:", pdfError);
-          }
-          // Use local fallback as final safety net
-          await handleFallbackContractCreation(contractPayload);
-          return;
-        }
-      }
     } catch (error) {
-      // Handle all errors gracefully
-      console.error("❌ Error in contract generation:", error);
+      console.error("❌ [UNIFIED] Error:", error);
       
-      // Try local fallback as last resort
-      if (contractPayload) {
-        console.log("🔄 [RECOVERY] Attempting local fallback after error...");
-        try {
-          await handleFallbackContractCreation(contractPayload);
-          toast({
-            title: "Contract Generated (Local)",
-            description: "Generated using local templates due to server issues.",
-          });
-          return;
-        } catch (fallbackError) {
-          console.error("❌ [RECOVERY] Fallback also failed:", fallbackError);
-        }
-      }
+      const errorMessage = (error as Error).name === 'AbortError' 
+        ? "Contract generation timed out. Please try again."
+        : "Could not generate contract. Please try again.";
       
       toast({
         title: "Error",
-        description: "Could not generate contract. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -3303,7 +3213,6 @@ export default function SimpleContractGenerator() {
     isPrimoChambeador,
     selectedDocumentType,
     toast,
-    handleFallbackContractCreation,
   ]);
 
   // Reset to start new contract
