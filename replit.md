@@ -53,6 +53,16 @@ This AI-powered platform automates legal document and permit management for cont
 - **Legal Defense Access Control System**: Enterprise-grade subscription-based access control.
   - **CONTRACT_GUARD Pattern**: Unified middleware protecting all contract generation endpoints, enforcing plan limits and usage counting at the generation point.
 - **PDF Digital Signature System**: Premium PDF service with robust signature embedding and dual signature workflow.
+  - **Native PDF Engine (Dec 2025 - Phase 1)**: `NativePdfEngine` using `pdf-lib` eliminates browser dependencies for Legal Defense documents.
+    - **Architecture**: Pure JavaScript PDF generation without Puppeteer/Chromium. Uses `htmlparser2` for DOM traversal and `pdf-lib` for direct PDF creation.
+    - **Performance**: ~27ms generation time (vs 12+ seconds with browser-based approach).
+    - **Supported Templates**: Independent Contractor Agreement, Change Order, Lien Waiver.
+    - **Endpoints**:
+      - `POST /api/legal-defense/generate-pdf-native` - Direct HTML to PDF conversion.
+      - `POST /api/legal-defense/templates/:templateId/generate-pdf` - Template + PDF generation.
+      - `GET /api/legal-defense/native-pdf/health` - Health check.
+    - **Files**: `server/services/NativePdfEngine.ts`, `server/routes/legal-defense-unified.ts`.
+    - **Phase 2**: Will extend to Estimate Wizard, Permit Advisor reports, and Invoices.
   - **PDF Generation Strategy (Dec 2025)**: All PDF services use `waitUntil: 'domcontentloaded'` instead of `networkidle0` to prevent timeout from external Google Fonts. Request interception blocks `fonts.googleapis.com` and `fonts.gstatic.com`. Explicit image loading wait (`Promise.all` on `document.images`) with 3s per-image timeout ensures logos/images render before PDF generation.
   - **Chromium Resolution Fix (Dec 2025)**: `chromiumResolver.ts` now uses `which chromium` as first priority (works in both dev and production regardless of Nix store hash). Removed slow `@sparticuz/chromium` fallback that caused multi-minute delays in production. Dynamic Nix store search as second priority handles different hashes between environments.
 - **Stripe Integration**: Production-ready subscription system with health guardrails and Price ID registry.
