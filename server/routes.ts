@@ -3771,9 +3771,31 @@ ENHANCED LEGAL CLAUSE:`;
           // Generate HTML using template registry
           const html = template.generateHTML(templateDataForHtml, branding);
           
-          // Convert HTML to PDF using puppeteer
-          const { puppeteerPdfService } = await import("./puppeteer-pdf-service");
-          const pdfBuffer = await puppeteerPdfService.generatePdfFromHtml(html);
+          // Convert HTML to PDF using NATIVE engine (no browser dependency)
+          console.log(`🚀 [NATIVE-PDF] Using native PDF engine for template: ${templateId}`);
+          const { nativePdfEngine } = await import("./services/NativePdfEngine");
+          
+          let nativePdfResult;
+          if (templateId === 'change-order') {
+            nativePdfResult = await nativePdfEngine.generateChangeOrderPdf(html);
+          } else if (templateId === 'lien-waiver') {
+            nativePdfResult = await nativePdfEngine.generateLienWaiverPdf(html);
+          } else {
+            nativePdfResult = await nativePdfEngine.generateContractPdf(html);
+          }
+          
+          if (!nativePdfResult.success || !nativePdfResult.buffer) {
+            console.error(`❌ [NATIVE-PDF] Generation failed for ${templateId}:`, nativePdfResult.error);
+            return res.status(500).json({
+              success: false,
+              error: `Native PDF generation failed: ${nativePdfResult.error}`,
+              templateId: templateId,
+              processingTime: nativePdfResult.processingTime,
+            });
+          }
+          
+          const pdfBuffer = nativePdfResult.buffer;
+          console.log(`✅ [NATIVE-PDF] Generated ${templateId} PDF: ${pdfBuffer.length} bytes in ${nativePdfResult.processingTime}ms`);
           
           const filename = `${template.displayName.replace(/\s+/g, "_")}_${requestData.client.name.replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.pdf`;
           
@@ -4166,11 +4188,29 @@ ENHANCED LEGAL CLAUSE:`;
         });
       }
     } catch (error: any) {
-      console.error("❌ [API] Error in PDF generation:", error);
+      // ENHANCED LOGGING: Expose full error details for production debugging
+      const errorDetails = {
+        message: error?.message || 'Unknown error',
+        name: error?.name || 'UnknownError',
+        stack: error?.stack || 'No stack trace available',
+        code: error?.code || 'NO_CODE',
+        cause: error?.cause || null,
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'unknown',
+      };
+      
+      console.error("❌ [API] Error in PDF generation:", JSON.stringify(errorDetails, null, 2));
+      console.error("❌ [API] Full error object:", error);
+      console.error("❌ [API] Stack trace:", error?.stack);
+      
       res.status(500).json({
         success: false,
         message: "Failed to generate PDF",
-        details: error instanceof Error ? error.message : "Unknown error",
+        details: errorDetails.message,
+        errorName: errorDetails.name,
+        stack: process.env.NODE_ENV !== 'production' ? errorDetails.stack : undefined,
+        code: errorDetails.code,
+        timestamp: errorDetails.timestamp,
       });
     }
   });
