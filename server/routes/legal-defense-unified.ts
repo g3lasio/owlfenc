@@ -17,6 +17,7 @@ import {
 } from '../middleware/subscription-auth';
 import { templateService } from '../templates/templateService';
 import { featureFlags } from '../config/featureFlags';
+import { nativePdfEngine } from '../services/NativePdfEngine';
 
 const router = Router();
 
@@ -736,5 +737,189 @@ router.post('/templates/:templateId/generate',
     }
   }
 );
+
+// ============================================
+// NATIVE PDF ENGINE - No Puppeteer/Chromium
+// ============================================
+
+/**
+ * NATIVE PDF GENERATION ENDPOINT
+ * Uses NativePdfEngine instead of Puppeteer/Chromium
+ * Generates PDF directly from HTML without browser dependency
+ */
+router.post('/generate-pdf-native',
+  verifyFirebaseAuth,
+  requireLegalDefenseAccess,
+  validateUsageLimit('contracts'),
+  incrementUsageOnSuccess('contracts'),
+  async (req, res) => {
+    const startTime = Date.now();
+    console.log('🚀 [NATIVE-PDF-ROUTE] Starting native PDF generation...');
+    
+    try {
+      const { html, templateId, title } = req.body;
+      
+      if (!html) {
+        return res.status(400).json({
+          success: false,
+          error: 'HTML content is required'
+        });
+      }
+      
+      let result;
+      
+      if (templateId === 'change-order') {
+        result = await nativePdfEngine.generateChangeOrderPdf(html);
+      } else if (templateId === 'lien-waiver') {
+        result = await nativePdfEngine.generateLienWaiverPdf(html);
+      } else {
+        result = await nativePdfEngine.generateContractPdf(html);
+      }
+      
+      if (!result.success || !result.buffer) {
+        console.error('❌ [NATIVE-PDF-ROUTE] Generation failed:', result.error);
+        return res.status(500).json({
+          success: false,
+          error: result.error || 'PDF generation failed'
+        });
+      }
+      
+      const totalTime = Date.now() - startTime;
+      console.log(`✅ [NATIVE-PDF-ROUTE] PDF generated in ${totalTime}ms (${result.pageCount} pages)`);
+      
+      const filename = title 
+        ? `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`
+        : `legal_defense_document_${Date.now()}.pdf`;
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', result.buffer.length);
+      res.setHeader('X-Generation-Time', totalTime.toString());
+      res.setHeader('X-Page-Count', result.pageCount?.toString() || '1');
+      res.setHeader('X-Engine', 'native-pdf-lib');
+      
+      res.send(result.buffer);
+      
+    } catch (error) {
+      const totalTime = Date.now() - startTime;
+      console.error('❌ [NATIVE-PDF-ROUTE] Unexpected error:', error);
+      
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Internal server error',
+        processingTime: totalTime
+      });
+    }
+  }
+);
+
+/**
+ * TEMPLATE + NATIVE PDF GENERATION (Combined)
+ * Generates document from template and converts to PDF using native engine
+ */
+router.post('/templates/:templateId/generate-pdf',
+  verifyFirebaseAuth,
+  requireLegalDefenseAccess,
+  validateUsageLimit('contracts'),
+  incrementUsageOnSuccess('contracts'),
+  async (req, res) => {
+    const startTime = Date.now();
+    const { templateId } = req.params;
+    
+    console.log(`📋 [TEMPLATE-PDF] Generating PDF for template: ${templateId}`);
+    
+    try {
+      const { data, branding, title } = req.body;
+      
+      if (!featureFlags.isMultiTemplateSystemEnabled()) {
+        return res.status(404).json({
+          success: false,
+          error: 'Template system is not enabled'
+        });
+      }
+      
+      if (!templateService.isTemplateAvailable(templateId)) {
+        return res.status(404).json({
+          success: false,
+          error: `Template '${templateId}' not found or not available`
+        });
+      }
+      
+      const htmlResult = await templateService.generateDocument(templateId, data, branding || {});
+      
+      if (!htmlResult.success || !htmlResult.html) {
+        return res.status(400).json({
+          success: false,
+          error: htmlResult.error || 'Failed to generate document HTML'
+        });
+      }
+      
+      let pdfResult;
+      
+      if (templateId === 'change-order') {
+        pdfResult = await nativePdfEngine.generateChangeOrderPdf(htmlResult.html);
+      } else if (templateId === 'lien-waiver') {
+        pdfResult = await nativePdfEngine.generateLienWaiverPdf(htmlResult.html);
+      } else {
+        pdfResult = await nativePdfEngine.generateContractPdf(htmlResult.html);
+      }
+      
+      if (!pdfResult.success || !pdfResult.buffer) {
+        return res.status(500).json({
+          success: false,
+          error: pdfResult.error || 'PDF generation failed'
+        });
+      }
+      
+      const totalTime = Date.now() - startTime;
+      console.log(`✅ [TEMPLATE-PDF] PDF generated: ${templateId} in ${totalTime}ms`);
+      
+      const filename = title 
+        ? `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`
+        : `${templateId}_${Date.now()}.pdf`;
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', pdfResult.buffer.length);
+      res.setHeader('X-Generation-Time', totalTime.toString());
+      res.setHeader('X-Template-Id', templateId);
+      res.setHeader('X-Page-Count', pdfResult.pageCount?.toString() || '1');
+      res.setHeader('X-Engine', 'native-pdf-lib');
+      
+      res.send(pdfResult.buffer);
+      
+    } catch (error) {
+      const totalTime = Date.now() - startTime;
+      console.error('❌ [TEMPLATE-PDF] Error:', error);
+      
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Internal server error',
+        processingTime: totalTime
+      });
+    }
+  }
+);
+
+/**
+ * NATIVE PDF ENGINE HEALTH CHECK
+ */
+router.get('/native-pdf/health', async (req, res) => {
+  try {
+    const health = await nativePdfEngine.healthCheck();
+    
+    res.json({
+      status: health.healthy ? 'healthy' : 'unhealthy',
+      ...health.details,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'unhealthy',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
 
 export default router;
