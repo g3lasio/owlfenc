@@ -34,81 +34,38 @@ This AI-powered platform automates legal document and permit management for cont
 - **Tool Execution Flow**: OpenAI triggers tool callback to backend, backend validates user, executes action, and returns result to OpenAI.
 - **Tool-Calling Architecture**: Scalable design with tools defined in OpenAI function calling format, executed via `SystemAPIService`.
 - **Tool Registry Structure**: Three-layer architecture (Tool Definitions, Tool Executors, Tool Metadata) for maintainability and extensibility.
-- **Mervin Philosophy**: "Constructor Experto Digital" - Mervin learns by pattern recognition to identify tool needs, requiring no instruction updates for new tools.
-- **Extensibility System**: Comprehensive infrastructure for adding new tools, including documentation, metadata, and validation.
+- **Mervin Philosophy**: "Constructor Experto Digital" - Mervin learns by pattern recognition to identify tool needs.
 - **Conversation History System**: Production-grade persistence and management for Mervin AI conversations using Firebase Firestore, with auto-save and authenticated CRUD API.
-- **Dual-System Architecture**: Primary system uses OpenAI Assistants API for text-based conversations. Legacy custom orchestrator retained only for file attachments until native OpenAI support.
+- **Dual-System Architecture**: Primary system uses OpenAI Assistants API for text-based conversations. Legacy custom orchestrator retained only for file attachments.
 - **Mervin Personality**: Authentic Mexican personality with contractor-focused humor and professionalism, using natural modismos.
-- **Contextual Eyes System**: Allows Mervin to understand the user's current page and provide contextual guidance by enhancing AI prompts with page and step information.
-- **Persistent Chat System**: Single persistent `MervinExperience` instance maintains context across routes with flexible layout modes managed by `ChatLayoutController`.
+- **Contextual Eyes System**: Allows Mervin to understand the user's current page and provide contextual guidance.
+- **Persistent Chat System**: Single persistent `MervinExperience` instance maintains context across routes with flexible layout modes.
 
 #### Core Features & Design Patterns
 - **User Authentication & Authorization**: Subscription-based permissions with OAuth, email/password, and usage limits.
 - **Data Consistency & Security**: Secure 1:1 user mapping, authentication middleware, real-time integrity monitoring.
-- **Error Handling**: Comprehensive Firebase authentication error handling, unhandled rejection interceptors, and "Failed to fetch" error handling.
+- **Error Handling**: Comprehensive Firebase authentication error handling, unhandled rejection interceptors.
 - **API Design**: Secure API endpoints with middleware for access controls and usage limits.
-- **Sharing Systems**: Holographic Sharing System, Public URL Sharing System for estimates, and Enterprise-grade URL Shortening System.
+- **Sharing Systems**: Holographic Sharing System, Public URL Sharing System, and Enterprise-grade URL Shortening System.
 - **Permissions System**: Centralized architecture for plan limits.
 - **Rate Limiting & Usage Tracking**: Redis-based rate limiting and PostgreSQL persistent usage tracking.
-- **Legal Defense Access Control System**: Enterprise-grade subscription-based access control.
-  - **CONTRACT_GUARD Pattern**: Unified middleware protecting all contract generation endpoints, enforcing plan limits and usage counting at the generation point.
+- **Legal Defense Access Control System**: Enterprise-grade subscription-based access control with `CONTRACT_GUARD` pattern.
 - **PDF Digital Signature System**: Premium PDF service with robust signature embedding and dual signature workflow.
-  - **Native PDF Engine (Dec 2025 - Phase 1)**: `NativePdfEngine` using `pdf-lib` eliminates browser dependencies for Legal Defense documents.
-    - **Architecture**: Pure JavaScript PDF generation without Puppeteer/Chromium. Uses `htmlparser2` for DOM traversal and `pdf-lib` for direct PDF creation.
-    - **Performance**: ~27ms generation time (vs 12+ seconds with browser-based approach).
-    - **Supported Templates**: Independent Contractor Agreement, Change Order, Lien Waiver.
-    - **Endpoints**:
-      - `POST /api/legal-defense/generate-pdf-native` - Direct HTML to PDF conversion.
-      - `POST /api/legal-defense/templates/:templateId/generate-pdf` - Template + PDF generation.
-      - `GET /api/legal-defense/native-pdf/health` - Health check.
-    - **Files**: `server/services/NativePdfEngine.ts`, `server/routes/legal-defense-unified.ts`.
-    - **Phase 2**: Will extend to Estimate Wizard, Permit Advisor reports, and Invoices.
-  - **PDF Generation Strategy (Dec 2025)**: All PDF services use `waitUntil: 'domcontentloaded'` instead of `networkidle0` to prevent timeout from external Google Fonts. Request interception blocks `fonts.googleapis.com` and `fonts.gstatic.com`. Explicit image loading wait (`Promise.all` on `document.images`) with 3s per-image timeout ensures logos/images render before PDF generation.
-  - **Chromium Resolution Fix (Dec 2025)**: `chromiumResolver.ts` now uses `which chromium` as first priority (works in both dev and production regardless of Nix store hash). Removed slow `@sparticuz/chromium` fallback that caused multi-minute delays in production. Dynamic Nix store search as second priority handles different hashes between environments.
-- **Stripe Integration**: Production-ready subscription system with health guardrails and Price ID registry.
-- **Stripe Express Contractor Payments**: Production-ready Stripe Express Connect integration for contractor payment processing with enterprise-grade security hardening.
-- **Automated Email Systems**: Welcome Email System and Payment Failure Blocking System, both utilizing Resend.
-- **Contract History System**: Production-ready classification system with robust Draft/In Progress/Completed categorization, comprehensive state mapping, duplicate prevention, and multi-source aggregation.
-  - **Contract Archiving System**: Reversible archiving system for contract lifecycle management with comprehensive guards, dual-collection architecture, and integrity preservation.
-  - **Instant-Response Optimistic UI System**: Zero-latency archive/unarchive with React Query optimistic updates for instant UI feedback.
-  - **Automatic Draft Cleanup**: Smart filtering that hides drafts when a completed/in-progress version exists using composite key matching.
-- **Legal Seal Digital Certificate System**: Production-ready PDF-embedded digital certificates with legal compliance, unique folio generation, and a verification URL.
-- **Dual Signature Completion System**: Production-ready distributed completion workflow with atomic job creation, distributed locking, crash recovery, idempotency guarantees, and saga pattern implementation for robust asynchronous processing.
-  - **Template-Driven Signature Engine (v2.0)**: Signature behavior determined entirely by template registry's `signatureType` property. No engine modifications needed for new templates.
-    - **Single Source of Truth**: `templateRegistry` in `server/templates/registry.ts` defines `signatureType` ('none', 'single', 'dual') for each template.
-    - **Fail-Fast Behavior**: If `templateId` is provided but not in registry, `dualSignatureService` returns error (prevents silent fallback to dual mode).
-    - **Pipeline Flow**: Routes validate `templateId` → `dualSignatureService` looks up registry → persists `signatureMode` in contract → `transactionalContractService` checks `signatureMode` for completion → `completionWorker` validates template-aware.
-    - **Completion Logic**:
-      - 'none': No signature workflow, PDF ready for download.
-      - 'single': Completes when contractor signs; client pre-marked as signed; `completionWorker` skips client validation.
-      - 'dual': Requires both parties; completion triggers when second party signs.
-    - **Current Templates**: `lien-waiver.ts` (single), `independent-contractor.ts` (dual), `change-order.ts` (dual with placeholders), others default to dual.
-    - **Extensibility**: Adding new template only requires `signatureType` definition in registry - no signature engine code changes.
-- **Unified Lien Waiver System (v3.0 - Jurisdiction-Aware)**: Single unified template supporting both Partial (conditional progress payment) and Final (unconditional full release) waivers.
-  - **Architecture**: One template (`lien-waiver.ts`) with internal `waiverType` variation ('partial' | 'final'). Eliminates template duplication and matches real contractor workflow.
-  - **Waiver Types**:
-    - **Partial**: Conditional release through specific date. Requires `throughDate`. Supports exceptions field.
-    - **Final**: Unconditional full release of all lien rights. No `throughDate` required.
-  - **Frontend Config**: `templateConfigRegistry.ts` exposes waiverType selector with conditional field visibility (throughDate only for partial).
-  - **Jurisdiction Overlay System**: Automatic detection of applicable state law with fallback chain (project → contract/client → company → GENERIC).
-    - **Partial Overlays**: GENERIC, STATUTORY (CA, TX, AZ, NV), SEMI-STRUCTURED (FL, GA, NC, SC, TN).
-    - **Final Overlays**: GENERIC_FINAL with unconditional release language. State-specific final forms can be added to FINAL_OVERLAY_REGISTRY.
-    - Uses `getLienWaiverOverlay()` for partial, `getFinalLienWaiverOverlay()` for final.
-  - **Jurisdiction Badge**: Visual indicator showing applicable state law (e.g., "California Statutory Form").
-  - **Files**: `lien-waiver.ts`, `lienWaiverOverlays.ts`, `jurisdictionDetector.ts`.
-  - **Registry**: Single `templateId: 'lien-waiver'` replaces separate partial/final entries.
-  - **Feature Flag**: `FF_LIEN_WAIVER_TEMPLATE` (replaces separate partial/final flags).
-  - **Unified Digital Certificate Format**: "DIGITAL CERTIFICATE OF AUTHENTICITY" header with consistent dark blue (#1a365d) color scheme.
-- **Unified Data Source Architecture**: All project and estimate data now uses a single source of truth (the 'estimates' Firestore collection), removing dual-writes and ensuring consistency.
-- **AutoClean AI Data Pipeline**: Automatic, invisible contact data cleaning system integrated into FirebaseOnlyStorage.getClients(). Uses heuristic detection (phone/email/address patterns, concatenated data splitting) with OpenAI GPT-4o-mini fallback for low-confidence cases. Corrections are persisted asynchronously in batches of 25. No user intervention required - users only see clean data.
-- **Intelligent Import Pipeline V2**: 5-phase architecture for CSV/Excel import with automatic data corruption handling.
-  - **Phase 0 (Ingestion)**: Smart Excel parsing with multi-sheet detection (selects densest sheet), blank-row filtering, and base64 encoding. CSV handled as plain text.
-  - **Phase 1 (Structural Analysis)**: Header detection, column count validation, data quality metrics.
-  - **Phase 2 (Semantic Mapping)**: Intelligent field mapping using pattern recognition for name/phone/email/address columns.
-  - **Phase 3 (Normalization)**: Integration with AutoClean/NormalizationToolkit for data cleaning.
-  - **Phase 4 (Validation/Dedupe)**: Final validation and duplicate detection.
-  - **Frontend Safety**: FileReader.readAsDataURL for safe base64 encoding, 10MB file size guard, user feedback on errors.
-  - **API Endpoints**: `/api/intelligent-import/v2/process`, `/v2/confirm`, `/v2/analyze-row` with Firebase authentication.
+  - **Native PDF Engine (Phase 1 Complete - Dec 2025)**: Uses `pdf-lib` + `htmlparser2` for pure JavaScript PDF generation, eliminating Puppeteer/Chromium dependencies.
+    - **Performance**: 10-86ms per PDF (vs 842ms+ with browser). Templates: `lien-waiver` (27ms), `change-order` (29ms), `work-order` (86ms), `contract-addendum` (29ms), `certificate-completion` (16ms), `warranty-agreement` (10ms).
+    - **Endpoint**: `POST /api/generate-pdf` uses `nativePdfEngine` for all registry templates.
+    - **Files**: `server/services/NativePdfEngine.ts`, `server/routes.ts` (lines 3774-3830).
+  - **Puppeteer Vestiges (Phase 2 Migration Pending)**: `/api/estimate-puppeteer-pdf`, `/api/invoice-pdf`, `/api/generate-permit-report-pdf`, `independent-contractor` template. Browser pool still warms up for these legacy endpoints.
+  - **PDF Generation Strategy**: All PDF services use `waitUntil: 'domcontentloaded'` with request interception to block external font loading and explicit image loading waits.
+- **Stripe Integration**: Production-ready subscription system and Stripe Express Connect integration for contractor payments.
+- **Automated Email Systems**: Welcome Email System and Payment Failure Blocking System, utilizing Resend.
+- **Contract History System**: Production-ready classification system with Draft/In Progress/Completed categorization, archiving, and instant-response optimistic UI.
+- **Legal Seal Digital Certificate System**: Production-ready PDF-embedded digital certificates with legal compliance and verification URL.
+- **Dual Signature Completion System**: Production-ready distributed completion workflow with atomic job creation, distributed locking, crash recovery, idempotency, and saga pattern. Template-driven signature engine (v2.0) determines behavior based on `signatureType` in template registry.
+- **Unified Lien Waiver System (v3.0 - Jurisdiction-Aware)**: Single unified template supporting both Partial (conditional) and Final (unconditional) waivers, with automatic jurisdiction detection and overlay system.
+- **Unified Data Source Architecture**: All project and estimate data uses a single source of truth (Firestore 'estimates' collection).
+- **AutoClean AI Data Pipeline**: Automatic contact data cleaning using heuristic detection and OpenAI GPT-4o-mini fallback, with asynchronous persistence.
+- **Intelligent Import Pipeline V2**: 5-phase architecture for CSV/Excel import with automatic data corruption handling, including ingestion, structural analysis, semantic mapping, normalization, and validation/deduplication.
 
 ### External Dependencies
 - Firebase (Firestore, Admin SDK)
