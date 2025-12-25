@@ -51,15 +51,17 @@ This AI-powered platform automates legal document and permit management for cont
 - **Rate Limiting & Usage Tracking**: Redis-based rate limiting and PostgreSQL persistent usage tracking.
 - **Legal Defense Access Control System**: Enterprise-grade subscription-based access control with `CONTRACT_GUARD` pattern.
 - **PDF Digital Signature System**: Premium PDF service with robust signature embedding and dual signature workflow.
-  - **Native PDF Engine (Phase 1 Complete - Dec 2025)**: Uses `pdf-lib` + `htmlparser2` for pure JavaScript PDF generation, eliminating Puppeteer/Chromium dependencies.
-    - **Performance**: 10-86ms per PDF (vs 842ms+ with browser). Templates: `lien-waiver` (27ms), `change-order` (29ms), `work-order` (86ms), `contract-addendum` (29ms), `certificate-completion` (16ms), `warranty-agreement` (10ms).
-    - **Endpoint**: `POST /api/generate-pdf` uses `nativePdfEngine` for all registry templates.
-    - **Files**: `server/services/NativePdfEngine.ts`, `server/routes.ts` (lines 3774-3830).
-  - **Puppeteer Vestiges (Phase 2 Migration Pending)**:
-    - **Endpoints**: `/api/estimate-puppeteer-pdf` (puppeteerPdfService), `/api/invoice-pdf` (invoicePdfService), `/api/generate-permit-report-pdf` (enhancedPdfService), `/api/contracts/generate-pdf` (premiumPdfService), `independent-contractor` template (HybridContractGenerator).
-    - **Services**: `premiumPdfService.ts`, `ModernPdfService.ts`, `invoicePdfService.ts`, `enhancedPdfService.ts`.
-    - **Browser Pool**: Warms up on startup (`server/index.ts` lines 1470-1476) - REQUIRED until all above endpoints migrate to native engine.
-  - **PDF Generation Strategy**: All PDF services use `waitUntil: 'domcontentloaded'` with request interception to block external font loading and explicit image loading waits.
+  - **Native PDF Engine (Phase 1 & 2 - Dec 2025)**: Uses `pdf-lib` for pure JavaScript PDF generation, eliminating Puppeteer/Chromium dependencies.
+    - **Phase 1 Complete**: 6 Legal Defense registry templates migrated. Templates: `lien-waiver` (27ms), `change-order` (29ms), `work-order` (86ms), `contract-addendum` (29ms), `certificate-completion` (16ms), `warranty-agreement` (10ms).
+    - **Phase 2 Partial**: Estimate and Invoice endpoints migrated using direct structured-data-to-PDF generation (no HTML parsing).
+      - `POST /api/estimate-puppeteer-pdf`: Uses `nativePdfEngine.generateEstimatePdf()` - **18ms** (98% faster than Puppeteer)
+      - `POST /api/invoice-pdf`: Uses `nativePdfEngine.generateInvoicePdf()` - **56ms** (93% faster than Puppeteer)
+    - **Files**: `server/services/NativePdfEngine.ts`, `server/routes.ts`, `server/tests/native-pdf-engine.test.ts`
+  - **Puppeteer Vestiges (Remaining)**:
+    - **Endpoints**: `/api/generate-permit-report-pdf` (enhancedPdfService), `/api/contracts/generate-pdf` (premiumPdfService), `independent-contractor` template (HybridContractGenerator).
+    - **Services**: `premiumPdfService.ts`, `ModernPdfService.ts`, `enhancedPdfService.ts`.
+    - **Browser Pool**: Warms up on startup (`server/index.ts` lines 1470-1476) - REQUIRED until remaining endpoints migrate to native engine.
+  - **PDF Generation Strategy**: Native engine uses StandardFonts (Helvetica) with no external dependencies. Legacy services use `waitUntil: 'domcontentloaded'`.
 - **Stripe Integration**: Production-ready subscription system and Stripe Express Connect integration for contractor payments.
 - **Automated Email Systems**: Welcome Email System and Payment Failure Blocking System, utilizing Resend.
 - **Contract History System**: Production-ready classification system with Draft/In Progress/Completed categorization, archiving, and instant-response optimistic UI.
