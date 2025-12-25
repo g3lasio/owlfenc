@@ -17,7 +17,7 @@ import {
 } from '../middleware/subscription-auth';
 import { templateService } from '../templates/templateService';
 import { featureFlags } from '../config/featureFlags';
-import { nativePdfEngine } from '../services/NativePdfEngine';
+import { modernPdfService } from '../services/ModernPdfService';
 
 const router = Router();
 
@@ -739,13 +739,14 @@ router.post('/templates/:templateId/generate',
 );
 
 // ============================================
-// NATIVE PDF ENGINE - No Puppeteer/Chromium
+// UNIFIED PDF ENGINE - Uses ModernPdfService (Puppeteer-based)
+// Same stable engine used by Invoices and Contracts
 // ============================================
 
 /**
- * NATIVE PDF GENERATION ENDPOINT
- * Uses NativePdfEngine instead of Puppeteer/Chromium
- * Generates PDF directly from HTML without browser dependency
+ * UNIFIED PDF GENERATION ENDPOINT
+ * Uses ModernPdfService (Puppeteer-based) for reliable PDF generation
+ * Same engine that powers working Invoice and Contract PDFs
  */
 router.post('/generate-pdf-native',
   verifyFirebaseAuth,
@@ -754,7 +755,7 @@ router.post('/generate-pdf-native',
   incrementUsageOnSuccess('contracts'),
   async (req, res) => {
     const startTime = Date.now();
-    console.log('🚀 [NATIVE-PDF-ROUTE] Starting native PDF generation...');
+    console.log('🚀 [UNIFIED-PDF] Starting PDF generation with ModernPdfService...');
     
     try {
       const { html, templateId, title } = req.body;
@@ -766,18 +767,19 @@ router.post('/generate-pdf-native',
         });
       }
       
-      let result;
-      
-      if (templateId === 'change-order') {
-        result = await nativePdfEngine.generateChangeOrderPdf(html);
-      } else if (templateId === 'lien-waiver') {
-        result = await nativePdfEngine.generateLienWaiverPdf(html);
-      } else {
-        result = await nativePdfEngine.generateContractPdf(html);
-      }
+      // Use ModernPdfService for all document types - same engine as Invoices/Contracts
+      const result = await modernPdfService.generateFromHtml(html, {
+        format: 'Letter',
+        margin: {
+          top: '0.75in',
+          right: '0.75in',
+          bottom: '0.75in',
+          left: '0.75in'
+        }
+      });
       
       if (!result.success || !result.buffer) {
-        console.error('❌ [NATIVE-PDF-ROUTE] Generation failed:', result.error);
+        console.error('❌ [UNIFIED-PDF] Generation failed:', result.error);
         return res.status(500).json({
           success: false,
           error: result.error || 'PDF generation failed'
@@ -785,7 +787,7 @@ router.post('/generate-pdf-native',
       }
       
       const totalTime = Date.now() - startTime;
-      console.log(`✅ [NATIVE-PDF-ROUTE] PDF generated in ${totalTime}ms (${result.pageCount} pages)`);
+      console.log(`✅ [UNIFIED-PDF] PDF generated in ${totalTime}ms using ${result.method}`);
       
       const filename = title 
         ? `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`
@@ -795,14 +797,14 @@ router.post('/generate-pdf-native',
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
       res.setHeader('Content-Length', result.buffer.length);
       res.setHeader('X-Generation-Time', totalTime.toString());
-      res.setHeader('X-Page-Count', result.pageCount?.toString() || '1');
-      res.setHeader('X-Engine', 'native-pdf-lib');
+      res.setHeader('X-Engine', 'modern-pdf-service');
+      res.setHeader('X-Method', result.method);
       
       res.send(result.buffer);
       
     } catch (error) {
       const totalTime = Date.now() - startTime;
-      console.error('❌ [NATIVE-PDF-ROUTE] Unexpected error:', error);
+      console.error('❌ [UNIFIED-PDF] Unexpected error:', error);
       
       res.status(500).json({
         success: false,
@@ -814,8 +816,9 @@ router.post('/generate-pdf-native',
 );
 
 /**
- * TEMPLATE + NATIVE PDF GENERATION (Combined)
- * Generates document from template and converts to PDF using native engine
+ * TEMPLATE + PDF GENERATION (Combined)
+ * Generates document from template and converts to PDF using ModernPdfService
+ * Same reliable engine as Invoices and Contracts
  */
 router.post('/templates/:templateId/generate-pdf',
   verifyFirebaseAuth,
@@ -826,7 +829,7 @@ router.post('/templates/:templateId/generate-pdf',
     const startTime = Date.now();
     const { templateId } = req.params;
     
-    console.log(`📋 [TEMPLATE-PDF] Generating PDF for template: ${templateId}`);
+    console.log(`📋 [TEMPLATE-PDF] Generating PDF for template: ${templateId} using ModernPdfService`);
     
     try {
       const { data, branding, title } = req.body;
@@ -854,15 +857,16 @@ router.post('/templates/:templateId/generate-pdf',
         });
       }
       
-      let pdfResult;
-      
-      if (templateId === 'change-order') {
-        pdfResult = await nativePdfEngine.generateChangeOrderPdf(htmlResult.html);
-      } else if (templateId === 'lien-waiver') {
-        pdfResult = await nativePdfEngine.generateLienWaiverPdf(htmlResult.html);
-      } else {
-        pdfResult = await nativePdfEngine.generateContractPdf(htmlResult.html);
-      }
+      // Use ModernPdfService for all template types - unified engine
+      const pdfResult = await modernPdfService.generateFromHtml(htmlResult.html, {
+        format: 'Letter',
+        margin: {
+          top: '0.75in',
+          right: '0.75in',
+          bottom: '0.75in',
+          left: '0.75in'
+        }
+      });
       
       if (!pdfResult.success || !pdfResult.buffer) {
         return res.status(500).json({
@@ -872,7 +876,7 @@ router.post('/templates/:templateId/generate-pdf',
       }
       
       const totalTime = Date.now() - startTime;
-      console.log(`✅ [TEMPLATE-PDF] PDF generated: ${templateId} in ${totalTime}ms`);
+      console.log(`✅ [TEMPLATE-PDF] PDF generated: ${templateId} in ${totalTime}ms using ${pdfResult.method}`);
       
       const filename = title 
         ? `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`
@@ -883,8 +887,8 @@ router.post('/templates/:templateId/generate-pdf',
       res.setHeader('Content-Length', pdfResult.buffer.length);
       res.setHeader('X-Generation-Time', totalTime.toString());
       res.setHeader('X-Template-Id', templateId);
-      res.setHeader('X-Page-Count', pdfResult.pageCount?.toString() || '1');
-      res.setHeader('X-Engine', 'native-pdf-lib');
+      res.setHeader('X-Engine', 'modern-pdf-service');
+      res.setHeader('X-Method', pdfResult.method);
       
       res.send(pdfResult.buffer);
       
@@ -902,20 +906,22 @@ router.post('/templates/:templateId/generate-pdf',
 );
 
 /**
- * NATIVE PDF ENGINE HEALTH CHECK
+ * UNIFIED PDF SERVICE HEALTH CHECK
  */
 router.get('/native-pdf/health', async (req, res) => {
   try {
-    const health = await nativePdfEngine.healthCheck();
+    const health = await modernPdfService.healthCheck();
     
     res.json({
       status: health.healthy ? 'healthy' : 'unhealthy',
+      engine: 'modern-pdf-service',
       ...health.details,
       timestamp: new Date().toISOString()
     });
   } catch (error) {
     res.status(500).json({
       status: 'unhealthy',
+      engine: 'modern-pdf-service',
       error: error instanceof Error ? error.message : 'Unknown error',
       timestamp: new Date().toISOString()
     });

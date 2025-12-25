@@ -48,7 +48,7 @@ import { projectPaymentService } from "./services/projectPaymentService";
 import { determineJurisdiction } from "./utils/jurisdictionDetector";
 import { jurisdictionDetector } from "./services/nationwide/JurisdictionDetector";
 import { legalClausesAIService, LEGAL_CLAUSES_LIBRARY } from "./services/legalClausesAIService";
-import { nativePdfEngine } from "./services/NativePdfEngine";
+import { modernPdfService } from "./services/ModernPdfService";
 import { getCompanyConfig, getCompanyAddress } from "./config/company-config";
 import { registerPromptTemplateRoutes } from "./routes/prompt-templates";
 import { TRIAL_PLAN_ID, SUBSCRIPTION_PLAN_IDS } from "./constants/subscription";
@@ -2142,9 +2142,10 @@ ENHANCED LEGAL CLAUSE:`;
     throw new Error('Invalid invoice payload format. Must be from project or estimate source.');
   }
 
-  // 🧾 UNIFIED: Professional Invoice PDF Generation (Phase 2 - Native Engine)
+  // 🧾 UNIFIED: Professional Invoice PDF Generation (Puppeteer-based - Stable Engine)
   app.post("/api/invoice-pdf", async (req: Request, res: Response) => {
-    console.log("🎯 Unified Invoice PDF generation started (Native Engine)");
+    console.log("🎯 Unified Invoice PDF generation started (Puppeteer Engine)");
+    const startTime = Date.now();
 
     try {
       // Log raw request for debugging
@@ -2155,14 +2156,10 @@ ENHANCED LEGAL CLAUSE:`;
 
       console.log("📊 Normalized invoice data:", JSON.stringify(invoiceData, null, 2));
 
-      // Generate PDF using Native Engine (Phase 2 - No Puppeteer)
-      const result = await nativePdfEngine.generateInvoicePdf(invoiceData);
+      // Generate PDF using InvoicePdfService (Puppeteer-based - stable engine)
+      const pdfBuffer = await invoicePdfService.generatePdf(invoiceData);
 
-      if (!result.success || !result.buffer) {
-        throw new Error(result.error || 'Failed to generate PDF');
-      }
-
-      const pdfBuffer = result.buffer;
+      const processingTime = Date.now() - startTime;
 
       // Validate PDF buffer
       console.log("🔍 PDF Buffer validation:", {
@@ -2170,8 +2167,8 @@ ENHANCED LEGAL CLAUSE:`;
         length: pdfBuffer.length,
         firstBytes: pdfBuffer.subarray(0, 8).toString("hex"),
         isPDF: pdfBuffer.subarray(0, 4).toString() === "%PDF",
-        method: result.method,
-        processingTime: `${result.processingTime}ms`,
+        method: 'puppeteer-invoice-service',
+        processingTime: `${processingTime}ms`,
       });
 
       // Set response headers for PDF download
@@ -2182,11 +2179,12 @@ ENHANCED LEGAL CLAUSE:`;
       );
       res.setHeader("Content-Length", pdfBuffer.length);
       res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("X-Engine", "puppeteer-invoice-service");
 
       // Send PDF buffer as binary data
       res.end(pdfBuffer, "binary");
 
-      console.log(`✅ Native Invoice PDF generated in ${result.processingTime}ms`);
+      console.log(`✅ Invoice PDF generated in ${processingTime}ms using Puppeteer`);
     } catch (error) {
       console.error("❌ Error generating Invoice PDF:", error);
       res.status(500).json({
@@ -2528,7 +2526,8 @@ ENHANCED LEGAL CLAUSE:`;
           selectedTemplate: selectedTemplate,
         };
 
-        console.log("🎨 Generating PDF with Native Engine (Phase 2)...");
+        console.log("🎨 Generating PDF with Puppeteer Engine (Stable)...");
+        const pdfStartTime = Date.now();
 
         // Log the final data structure being sent to PDF service
         console.log(
@@ -2544,14 +2543,10 @@ ENHANCED LEGAL CLAUSE:`;
           ),
         );
 
-        // Generate PDF using Native Engine (Phase 2 - No Puppeteer)
-        const result = await nativePdfEngine.generateEstimatePdf(estimateData);
+        // Generate PDF using PuppeteerPdfService (stable engine - same as Invoices)
+        const pdfBuffer = await puppeteerPdfService.generatePdf(estimateData);
 
-        if (!result.success || !result.buffer) {
-          throw new Error(result.error || 'Failed to generate PDF');
-        }
-
-        const pdfBuffer = result.buffer;
+        const processingTime = Date.now() - pdfStartTime;
 
         // Validate PDF buffer
         console.log("🔍 PDF Buffer validation:", {
@@ -2559,8 +2554,8 @@ ENHANCED LEGAL CLAUSE:`;
           length: pdfBuffer.length,
           firstBytes: pdfBuffer.subarray(0, 8).toString("hex"),
           isPDF: pdfBuffer.subarray(0, 4).toString() === "%PDF",
-          method: result.method,
-          processingTime: `${result.processingTime}ms`,
+          method: 'puppeteer-estimate-service',
+          processingTime: `${processingTime}ms`,
         });
 
         // Set response headers for PDF download
@@ -2571,11 +2566,12 @@ ENHANCED LEGAL CLAUSE:`;
         );
         res.setHeader("Content-Length", pdfBuffer.length);
         res.setHeader("Cache-Control", "no-cache");
+        res.setHeader("X-Engine", "puppeteer-estimate-service");
 
         // Send PDF buffer as binary data
         res.end(pdfBuffer, "binary");
 
-        console.log(`✅ Native Estimate PDF generated in ${result.processingTime}ms`);
+        console.log(`✅ Estimate PDF generated in ${processingTime}ms using Puppeteer`);
       } catch (error) {
         console.error("❌ Error generating PDF with Puppeteer:", error);
         res.status(500).json({
@@ -3762,31 +3758,34 @@ ENHANCED LEGAL CLAUSE:`;
           // Generate HTML using template registry
           const html = template.generateHTML(templateDataForHtml, branding);
           
-          // Convert HTML to PDF using NATIVE engine (no browser dependency)
-          console.log(`🚀 [NATIVE-PDF] Using native PDF engine for template: ${templateId}`);
-          const { nativePdfEngine } = await import("./services/NativePdfEngine");
+          // Convert HTML to PDF using ModernPdfService (Puppeteer-based - stable engine)
+          console.log(`🚀 [UNIFIED-PDF] Using ModernPdfService for template: ${templateId}`);
+          const pdfStartTime = Date.now();
           
-          let nativePdfResult;
-          if (templateId === 'change-order') {
-            nativePdfResult = await nativePdfEngine.generateChangeOrderPdf(html);
-          } else if (templateId === 'lien-waiver') {
-            nativePdfResult = await nativePdfEngine.generateLienWaiverPdf(html);
-          } else {
-            nativePdfResult = await nativePdfEngine.generateContractPdf(html);
-          }
+          // Use ModernPdfService for all document types - same engine as Invoices/Contracts
+          const pdfResult = await modernPdfService.generateFromHtml(html, {
+            format: 'Letter',
+            margin: {
+              top: '0.75in',
+              right: '0.75in',
+              bottom: '0.75in',
+              left: '0.75in'
+            }
+          });
           
-          if (!nativePdfResult.success || !nativePdfResult.buffer) {
-            console.error(`❌ [NATIVE-PDF] Generation failed for ${templateId}:`, nativePdfResult.error);
+          if (!pdfResult.success || !pdfResult.buffer) {
+            console.error(`❌ [UNIFIED-PDF] Generation failed for ${templateId}:`, pdfResult.error);
             return res.status(500).json({
               success: false,
-              error: `Native PDF generation failed: ${nativePdfResult.error}`,
+              error: `PDF generation failed: ${pdfResult.error}`,
               templateId: templateId,
-              processingTime: nativePdfResult.processingTime,
+              processingTime: pdfResult.processingTime,
             });
           }
           
-          const pdfBuffer = nativePdfResult.buffer;
-          console.log(`✅ [NATIVE-PDF] Generated ${templateId} PDF: ${pdfBuffer.length} bytes in ${nativePdfResult.processingTime}ms`);
+          const pdfBuffer = pdfResult.buffer;
+          const processingTime = Date.now() - pdfStartTime;
+          console.log(`✅ [UNIFIED-PDF] Generated ${templateId} PDF: ${pdfBuffer.length} bytes in ${processingTime}ms using ${pdfResult.method}`);
           
           const filename = `${template.displayName.replace(/\s+/g, "_")}_${requestData.client.name.replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.pdf`;
           
