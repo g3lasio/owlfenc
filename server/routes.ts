@@ -48,6 +48,7 @@ import { projectPaymentService } from "./services/projectPaymentService";
 import { determineJurisdiction } from "./utils/jurisdictionDetector";
 import { jurisdictionDetector } from "./services/nationwide/JurisdictionDetector";
 import { legalClausesAIService, LEGAL_CLAUSES_LIBRARY } from "./services/legalClausesAIService";
+import { nativePdfEngine } from "./services/NativePdfEngine";
 import { getCompanyConfig, getCompanyAddress } from "./config/company-config";
 import { registerPromptTemplateRoutes } from "./routes/prompt-templates";
 import { TRIAL_PLAN_ID, SUBSCRIPTION_PLAN_IDS } from "./constants/subscription";
@@ -2141,14 +2142,11 @@ ENHANCED LEGAL CLAUSE:`;
     throw new Error('Invalid invoice payload format. Must be from project or estimate source.');
   }
 
-  // 🧾 UNIFIED: Professional Invoice PDF Generation
+  // 🧾 UNIFIED: Professional Invoice PDF Generation (Phase 2 - Native Engine)
   app.post("/api/invoice-pdf", async (req: Request, res: Response) => {
-    console.log("🎯 Unified Invoice PDF generation started");
+    console.log("🎯 Unified Invoice PDF generation started (Native Engine)");
 
     try {
-      // Initialize Invoice PDF service
-      await invoicePdfService.initialize();
-
       // Log raw request for debugging
       console.log("🔍 Raw invoice request:", JSON.stringify(req.body, null, 2));
 
@@ -2157,8 +2155,14 @@ ENHANCED LEGAL CLAUSE:`;
 
       console.log("📊 Normalized invoice data:", JSON.stringify(invoiceData, null, 2));
 
-      // Generate PDF using Invoice service
-      const pdfBuffer = await invoicePdfService.generatePdf(invoiceData);
+      // Generate PDF using Native Engine (Phase 2 - No Puppeteer)
+      const result = await nativePdfEngine.generateInvoicePdf(invoiceData);
+
+      if (!result.success || !result.buffer) {
+        throw new Error(result.error || 'Failed to generate PDF');
+      }
+
+      const pdfBuffer = result.buffer;
 
       // Validate PDF buffer
       console.log("🔍 PDF Buffer validation:", {
@@ -2166,6 +2170,8 @@ ENHANCED LEGAL CLAUSE:`;
         length: pdfBuffer.length,
         firstBytes: pdfBuffer.subarray(0, 8).toString("hex"),
         isPDF: pdfBuffer.subarray(0, 4).toString() === "%PDF",
+        method: result.method,
+        processingTime: `${result.processingTime}ms`,
       });
 
       // Set response headers for PDF download
@@ -2180,7 +2186,7 @@ ENHANCED LEGAL CLAUSE:`;
       // Send PDF buffer as binary data
       res.end(pdfBuffer, "binary");
 
-      console.log("✅ Unified Invoice PDF generated and sent successfully");
+      console.log(`✅ Native Invoice PDF generated in ${result.processingTime}ms`);
     } catch (error) {
       console.error("❌ Error generating Invoice PDF:", error);
       res.status(500).json({
@@ -2522,7 +2528,7 @@ ENHANCED LEGAL CLAUSE:`;
           selectedTemplate: selectedTemplate,
         };
 
-        console.log("🎨 Generating PDF with professional template...");
+        console.log("🎨 Generating PDF with Native Engine (Phase 2)...");
 
         // Log the final data structure being sent to PDF service
         console.log(
@@ -2532,37 +2538,20 @@ ENHANCED LEGAL CLAUSE:`;
               company: estimateData.company,
               client: estimateData.client,
               itemsCount: estimateData.estimate.items.length,
-              estimate: {
-                ...estimateData.estimate,
-                items: estimateData.estimate.items.map((item) => ({
-                  code: item.code,
-                  description: item.description?.substring(0, 50) + "...",
-                  qty: item.qty,
-                  unit_price: item.unit_price,
-                  total: item.total,
-                })),
-              },
             },
             null,
             2,
           ),
         );
 
-        // Add detailed logo debugging before sending to PDF service
-        console.log("🔍 LOGO DEBUG - Data being sent to PDF service:", {
-          hasContractorData: !!contractorData,
-          contractorLogo: contractorData.logo || "No logo",
-          contractorLogoLength: contractorData.logo
-            ? contractorData.logo.length
-            : 0,
-          estimateDataCompanyLogo: estimateData.company.logo || "No logo",
-          estimateDataCompanyLogoLength: estimateData.company.logo
-            ? estimateData.company.logo.length
-            : 0,
-        });
+        // Generate PDF using Native Engine (Phase 2 - No Puppeteer)
+        const result = await nativePdfEngine.generateEstimatePdf(estimateData);
 
-        // Generate PDF using Puppeteer service
-        const pdfBuffer = await puppeteerPdfService.generatePdf(estimateData);
+        if (!result.success || !result.buffer) {
+          throw new Error(result.error || 'Failed to generate PDF');
+        }
+
+        const pdfBuffer = result.buffer;
 
         // Validate PDF buffer
         console.log("🔍 PDF Buffer validation:", {
@@ -2570,6 +2559,8 @@ ENHANCED LEGAL CLAUSE:`;
           length: pdfBuffer.length,
           firstBytes: pdfBuffer.subarray(0, 8).toString("hex"),
           isPDF: pdfBuffer.subarray(0, 4).toString() === "%PDF",
+          method: result.method,
+          processingTime: `${result.processingTime}ms`,
         });
 
         // Set response headers for PDF download
@@ -2584,7 +2575,7 @@ ENHANCED LEGAL CLAUSE:`;
         // Send PDF buffer as binary data
         res.end(pdfBuffer, "binary");
 
-        console.log("✅ Professional PDF generated and sent successfully");
+        console.log(`✅ Native Estimate PDF generated in ${result.processingTime}ms`);
       } catch (error) {
         console.error("❌ Error generating PDF with Puppeteer:", error);
         res.status(500).json({
