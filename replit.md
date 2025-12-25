@@ -55,7 +55,10 @@ This AI-powered platform automates legal document and permit management for cont
     - **Performance**: 10-86ms per PDF (vs 842ms+ with browser). Templates: `lien-waiver` (27ms), `change-order` (29ms), `work-order` (86ms), `contract-addendum` (29ms), `certificate-completion` (16ms), `warranty-agreement` (10ms).
     - **Endpoint**: `POST /api/generate-pdf` uses `nativePdfEngine` for all registry templates.
     - **Files**: `server/services/NativePdfEngine.ts`, `server/routes.ts` (lines 3774-3830).
-  - **Puppeteer Vestiges (Phase 2 Migration Pending)**: `/api/estimate-puppeteer-pdf`, `/api/invoice-pdf`, `/api/generate-permit-report-pdf`, `independent-contractor` template. Browser pool still warms up for these legacy endpoints.
+  - **Puppeteer Vestiges (Phase 2 Migration Pending)**:
+    - **Endpoints**: `/api/estimate-puppeteer-pdf` (puppeteerPdfService), `/api/invoice-pdf` (invoicePdfService), `/api/generate-permit-report-pdf` (enhancedPdfService), `/api/contracts/generate-pdf` (premiumPdfService), `independent-contractor` template (HybridContractGenerator).
+    - **Services**: `premiumPdfService.ts`, `ModernPdfService.ts`, `invoicePdfService.ts`, `enhancedPdfService.ts`.
+    - **Browser Pool**: Warms up on startup (`server/index.ts` lines 1470-1476) - REQUIRED until all above endpoints migrate to native engine.
   - **PDF Generation Strategy**: All PDF services use `waitUntil: 'domcontentloaded'` with request interception to block external font loading and explicit image loading waits.
 - **Stripe Integration**: Production-ready subscription system and Stripe Express Connect integration for contractor payments.
 - **Automated Email Systems**: Welcome Email System and Payment Failure Blocking System, utilizing Resend.
