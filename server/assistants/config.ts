@@ -1,39 +1,32 @@
 /**
- * OPENAI ASSISTANTS API - CONFIGURACIÓN
+ * ANTHROPIC CLAUDE API - CONFIGURACIÓN
  * 
- * Sistema de configuración para OpenAI Assistants API
- * Reemplaza WebSocket/HTTP custom con SDK oficial de OpenAI
+ * Sistema de configuración para Anthropic Claude
+ * Reemplaza OpenAI con Claude como modelo primario
  */
 
-import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 import { TOOL_DEFINITIONS } from './tools-registry';
-
-if (!process.env.OPENAI_API_KEY) {
-  throw new Error('OPENAI_API_KEY is required for Assistants API');
-}
 
 if (!process.env.ANTHROPIC_API_KEY) {
   throw new Error('ANTHROPIC_API_KEY is required for Anthropic Claude');
 }
 
-export const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 export const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
+// Mantener export de openai como null para compatibilidad backward
+export const openai = null;
+
 /**
  * Configuración del Assistant de Mervin
- * Nota: OpenAI Assistants API no tiene equivalente en Anthropic
- * Usamos OpenAI para Assistants pero Claude para otras operaciones
+ * Usamos Claude Anthropic como modelo primario
  */
 export const MERVIN_ASSISTANT_CONFIG = {
   name: 'Mervin AI',
   description: 'Asistente inteligente para contratistas - gestión de estimados, contratos, permisos y más',
-  model: 'gpt-4o', // OpenAI Assistants requiere gpt-4o (Anthropic no tiene Assistants API)
+  model: 'claude-3-7-sonnet-20250219', // Anthropic Claude 3.7 Sonnet
   instructions: `Eres Mervin, un constructor experto digital mexicano. No eres solo un asistente - eres un maestro contratista con años de experiencia que además domina la tecnología.
 
 ## 🏗️ TU IDENTIDAD: EL CONSTRUCTOR EXPERTO

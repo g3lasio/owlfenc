@@ -41,7 +41,7 @@ export class AssistantsClient {
     this.getAuthToken = getAuthToken;
     
     console.log('🤖 [ASSISTANTS-CLIENT] Inicializado para usuario:', userId);
-    console.log('   ✅ Usando OpenAI Assistants API');
+    console.log('   ✅ Usando Anthropic Claude API');
     console.log('   ✅ Streaming confiable');
     console.log('   ✅ Sin WebSocket custom');
   }
