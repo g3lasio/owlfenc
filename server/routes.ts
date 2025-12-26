@@ -3763,15 +3763,27 @@ ENHANCED LEGAL CLAUSE:`;
           const pdfStartTime = Date.now();
           
           // Use ModernPdfService for all document types - same engine as Invoices/Contracts
-          const pdfResult = await modernPdfService.generateFromHtml(html, {
-            format: 'Letter',
-            margin: {
-              top: '0.75in',
-              right: '0.75in',
-              bottom: '0.75in',
-              left: '0.75in'
-            }
-          });
+          let pdfResult;
+          try {
+            pdfResult = await modernPdfService.generateFromHtml(html, {
+              format: 'Letter',
+              margin: {
+                top: '0.75in',
+                right: '0.75in',
+                bottom: '0.75in',
+                left: '0.75in'
+              }
+            });
+          } catch (pdfError: any) {
+            console.error(`❌ [UNIFIED-PDF] Exception during PDF generation for ${templateId}:`, pdfError);
+            return res.status(500).json({
+              success: false,
+              error: `PDF generation exception: ${pdfError.message}`,
+              templateId: templateId,
+              processingTime: Date.now() - pdfStartTime,
+              stack: process.env.NODE_ENV === 'development' ? pdfError.stack : undefined,
+            });
+          }
           
           if (!pdfResult.success || !pdfResult.buffer) {
             console.error(`❌ [UNIFIED-PDF] Generation failed for ${templateId}:`, pdfResult.error);
@@ -3780,6 +3792,7 @@ ENHANCED LEGAL CLAUSE:`;
               error: `PDF generation failed: ${pdfResult.error}`,
               templateId: templateId,
               processingTime: pdfResult.processingTime,
+              method: pdfResult.method,
             });
           }
           

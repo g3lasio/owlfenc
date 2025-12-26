@@ -202,8 +202,6 @@ export async function launchBrowser(options: any = {}): Promise<any> {
   }
 
   // Strategy 2: Let Puppeteer use its bundled browser (fallback)
-  // NOTE: We deliberately skip @sparticuz/chromium as it takes minutes to download
-  // and is designed for AWS Lambda, not Replit production deployments
   try {
     console.log('🔄 [BROWSER] Using Puppeteer bundled browser...');
     const browser = await puppeteer.launch({
@@ -213,9 +211,36 @@ export async function launchBrowser(options: any = {}): Promise<any> {
     console.log('✅ [BROWSER] Launched with Puppeteer bundled browser');
     usingSparticuz = false;
     return browser;
-  } catch (finalError: any) {
-    console.error(`❌ [BROWSER] All browser launch attempts failed: ${finalError.message}`);
-    throw new Error(`Failed to launch browser. Ensure Chromium is available in .replit nix packages. Error: ${finalError.message}`);
+  } catch (bundledError: any) {
+    console.error(`❌ [BROWSER] Bundled browser failed: ${bundledError.message}`);
+    // Continue to Strategy 3
+  }
+
+  // Strategy 3: Use @sparticuz/chromium as last resort (for production environments)
+  // This is slower but more reliable in serverless/container environments
+  try {
+    console.log('🔄 [BROWSER] Attempting @sparticuz/chromium fallback for production...');
+    const chromium = await import('@sparticuz/chromium');
+    
+    // Configure for minimal download and fast startup
+    chromium.default.setGraphicsMode = false;
+    
+    const sparticuzPath = await chromium.default.executablePath();
+    console.log(`📍 [BROWSER] @sparticuz/chromium path: ${sparticuzPath}`);
+    
+    const browser = await puppeteerCore.launch({
+      headless: 'shell',
+      args: [...chromium.default.args, ...mergedArgs],
+      executablePath: sparticuzPath,
+      defaultViewport: { width: 1200, height: 1600 },
+    });
+    
+    console.log('✅ [BROWSER] Launched with @sparticuz/chromium');
+    usingSparticuz = true;
+    return browser;
+  } catch (sparticuzError: any) {
+    console.error(`❌ [BROWSER] @sparticuz/chromium failed: ${sparticuzError.message}`);
+    throw new Error(`Failed to launch browser. All strategies exhausted. Last error: ${sparticuzError.message}`);
   }
 }
 

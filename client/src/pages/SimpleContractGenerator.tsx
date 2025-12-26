@@ -6455,7 +6455,13 @@ export default function SimpleContractGenerator() {
                         });
 
                         if (!response.ok) {
-                          throw new Error('Failed to generate Lien Waiver');
+                          const errorData = await response.json().catch(() => ({}));
+                          console.error('❌ [LIEN-WAIVER] Server error:', {
+                            status: response.status,
+                            statusText: response.statusText,
+                            error: errorData
+                          });
+                          throw new Error(errorData?.error || `Server error: ${response.status} ${response.statusText}`);
                         }
 
                         const result = await response.json();
@@ -6492,9 +6498,10 @@ export default function SimpleContractGenerator() {
                         }
                       } catch (error) {
                         console.error('Error generating Lien Waiver:', error);
+                        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
                         toast({
-                          title: "Error",
-                          description: "Failed to generate Lien Waiver. Please try again.",
+                          title: "Error Generating Lien Waiver",
+                          description: errorMessage.length > 100 ? errorMessage.substring(0, 100) + '...' : errorMessage,
                           variant: "destructive",
                         });
                       } finally {
