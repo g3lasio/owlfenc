@@ -155,7 +155,7 @@ export function getChromiumExecutablePath(): string | undefined {
     }
   }
 
-  console.log('⚠️ [CHROMIUM] No executable found - PDF generation may fail');
+  console.log('⚠️ [CHROMIUM] No local executable found - will use @sparticuz/chromium for production');
   return undefined;
 }
 
@@ -180,7 +180,40 @@ export async function launchBrowser(options: any = {}): Promise<any> {
   const executablePath = getChromiumExecutablePath();
   const mergedArgs = Array.from(new Set([...baseArgs, ...(options.args || [])]));
   
-  // Strategy 1: Use detected Chromium path (works in both dev and production)
+  // 🔥 CRITICAL FIX: In production (NODE_ENV=production), prefer @sparticuz/chromium
+  // This ensures consistent behavior in serverless/autoscale environments
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+  if (isProduction) {
+    console.log('🚀 [BROWSER] Production mode detected - using @sparticuz/chromium for reliability');
+    
+    try {
+      const chromium = await import('@sparticuz/chromium');
+      
+      // Configure for minimal download and fast startup
+      chromium.default.setGraphicsMode = false;
+      
+      const sparticuzPath = await chromium.default.executablePath();
+      console.log(`📍 [BROWSER] @sparticuz/chromium path: ${sparticuzPath}`);
+      
+      const browser = await puppeteerCore.launch({
+        headless: 'shell',
+        args: [...chromium.default.args, ...mergedArgs],
+        executablePath: sparticuzPath,
+        defaultViewport: { width: 1200, height: 1600 },
+      });
+      
+      console.log('✅ [BROWSER] Launched with @sparticuz/chromium (production mode)');
+      usingSparticuz = true;
+      return browser;
+    } catch (sparticuzError: any) {
+      console.error(`❌ [BROWSER] @sparticuz/chromium failed: ${sparticuzError.message}`);
+      console.log('🔄 [BROWSER] Falling back to local Chromium detection...');
+      // Continue to local detection strategies below
+    }
+  }
+  
+  // Strategy 1: Use detected Chromium path (works in development)
   if (executablePath) {
     const launchOptions = {
       headless: true,
@@ -190,9 +223,9 @@ export async function launchBrowser(options: any = {}): Promise<any> {
     };
 
     try {
-      console.log(`🚀 [BROWSER] Launching with: ${executablePath}`);
+      console.log(`🚀 [BROWSER] Launching with local Chromium: ${executablePath}`);
       const browser = await puppeteer.launch(launchOptions);
-      console.log('✅ [BROWSER] Launched successfully');
+      console.log('✅ [BROWSER] Launched successfully with local Chromium');
       usingSparticuz = false;
       return browser;
     } catch (error: any) {
@@ -219,7 +252,7 @@ export async function launchBrowser(options: any = {}): Promise<any> {
   // Strategy 3: Use @sparticuz/chromium as last resort (for production environments)
   // This is slower but more reliable in serverless/container environments
   try {
-    console.log('🔄 [BROWSER] Attempting @sparticuz/chromium fallback for production...');
+    console.log('🔄 [BROWSER] Attempting @sparticuz/chromium fallback...');
     const chromium = await import('@sparticuz/chromium');
     
     // Configure for minimal download and fast startup
