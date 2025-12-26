@@ -1,31 +1,31 @@
 /**
  * USE MERVIN AGENT HOOK - REACT HOOK PARA MERVIN V2
  * 
- * ARQUITECTURA DUAL (Nov 18, 2025):
- * ================================
+ * ARQUITECTURA UNIFICADA (Dic 26, 2024):
+ * ======================================
  * 
- * 🎯 SISTEMA PRINCIPAL - OpenAI Assistants API:
- * - Cliente: AssistantsClient
- * - Backend: /api/assistant/* (server/routes/assistants.ts)
- * - Uso: TODOS los mensajes de texto sin archivos
- * - Beneficios: Streaming confiable, context retention, tool calling nativo
- * 
- * 🗂️ SISTEMA LEGACY - Custom Orchestrator (temporal):
+ * 🎯 SISTEMA PRINCIPAL - Claude Conversational:
  * - Cliente: AgentClient
  * - Backend: /api/mervin-v2/* (server/routes/mervin-v2.ts)
- * - Uso: SOLO mensajes con archivos adjuntos
- * - Razón: OpenAI Assistants aún no soporta file attachments
- * - Plan: Eliminar cuando OpenAI agregue soporte de archivos
+ * - Motor: MervinConversationalOrchestrator con Claude 3.5 Sonnet
+ * - Uso: TODOS los mensajes (con y sin archivos)
+ * - Beneficios: Tool calling nativo, soporte de archivos, sin dependencia de OpenAI
  * 
- * 🛠️ CAPACIDADES DE MERVIN (preservadas en ambos sistemas):
+ * ❌ SISTEMA OBSOLETO - OpenAI Assistants API:
+ * - DESACTIVADO completamente
+ * - AssistantsClient ya no se usa
+ * - /api/assistant/* endpoints desactivados
+ * 
+ * 🛠️ CAPACIDADES DE MERVIN:
  * - Chat conversacional (responde preguntas, guía usuarios)
  * - Tool execution (crear estimates, contracts, verify properties)
- * - 14 tools activos en server/assistants/tools-registry.ts
- * - SystemAPIService como proxy a Firebase/API endpoints
+ * - Workflows completos (Property, Estimate, Contract, Permit)
+ * - Procesamiento de archivos e imágenes
+ * - WorkflowRunner ejecuta workflows existentes del sistema
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { AssistantsClient } from '../lib/AssistantsClient';
+// import { AssistantsClient } from '../lib/AssistantsClient'; // DESACTIVADO - Sistema obsoleto de OpenAI
 import { AgentClient, MervinMessage, MervinResponse, StreamUpdate, AuthTokenProvider } from '../lib/AgentClient';
 import { auth } from '@/lib/firebase';
 import { 
@@ -101,16 +101,14 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
     pendingSaves: 0,
   });
 
-  // ✅ SISTEMA PRINCIPAL: AssistantsClient para mensajes de texto (OpenAI Assistants API)
-  // - Usa /api/assistant/* endpoints
-  // - Streaming confiable sin truncación
-  // - Tool calling nativo de OpenAI
-  const assistantsClientRef = useRef<AssistantsClient>(new AssistantsClient(userId, getFirebaseToken));
-  
-  // 🗂️ SISTEMA LEGACY: AgentClient SOLO para archivos adjuntos (temporal)
+  // ✅ SISTEMA PRINCIPAL: AgentClient con Claude Conversational
   // - Usa /api/mervin-v2/* endpoints
-  // - Se eliminará cuando OpenAI Assistants soporte file attachments
-  const legacyClientRef = useRef<AgentClient>(new AgentClient(userId, '', getFirebaseToken));
+  // - Claude 3.5 Sonnet con tool calling
+  // - Soporta archivos adjuntos
+  const agentClientRef = useRef<AgentClient>(new AgentClient(userId, '', getFirebaseToken));
+  
+  // ❌ SISTEMA OBSOLETO: AssistantsClient (OpenAI) - DESACTIVADO
+  // const assistantsClientRef = useRef<AssistantsClient>(new AssistantsClient(userId, getFirebaseToken));
   
   const prevUserIdRef = useRef<string>(userId);
   
@@ -142,12 +140,8 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
     if (userId !== prevUserIdRef.current) {
       console.log(`🔄 [MERVIN-AGENT] UserId changed: ${prevUserIdRef.current} → ${userId}`);
       
-      // Recrear cliente Assistants CON AUTH
-      assistantsClientRef.current.resetThread();
-      assistantsClientRef.current = new AssistantsClient(userId, getFirebaseToken);
-      
-      // Recrear cliente legacy
-      legacyClientRef.current = new AgentClient(userId, '', getFirebaseToken);
+      // Recrear cliente con Claude Conversational
+      agentClientRef.current = new AgentClient(userId, '', getFirebaseToken);
       
       prevUserIdRef.current = userId;
       
@@ -161,19 +155,14 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
 
   // Obtener estado del sistema y verificar health
   useEffect(() => {
-    // Verificar health del cliente legacy (para file uploads)
-    legacyClientRef.current.checkHealth().then(healthy => {
+    // Verificar health del cliente
+    agentClientRef.current.checkHealth().then(healthy => {
       setIsHealthy(healthy);
     });
     
-    // Obtener estado del cliente Assistants
-    const assistantsStatus = assistantsClientRef.current.getStatus();
-    
-    legacyClientRef.current.getStatus().then(legacyStatus => {
-      setSystemStatus({ 
-        assistants: assistantsStatus, 
-        legacy: legacyStatus 
-      });
+    // Obtener estado del cliente
+    agentClientRef.current.getStatus().then(status => {
+      setSystemStatus({ agent: status });
     });
   }, [userId]);
 
@@ -205,12 +194,11 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
     });
 
     try {
-      // DECISIÓN INTELIGENTE: Usar cliente según si hay archivos
+      // Usar AgentClient con Claude Conversational (soporta archivos)
       if (files && files.length > 0) {
-        // CON ARCHIVOS: Usar cliente legacy (AgentClient) que soporta attachments
-        console.log(`📎 [MERVIN-AGENT] Usando cliente LEGACY para ${files.length} archivo(s)`);
+        console.log(`📎 [MERVIN-AGENT] Enviando mensaje con ${files.length} archivo(s)`);
         
-        await legacyClientRef.current.sendMessageWithFiles(
+        await agentClientRef.current.sendMessageWithFiles(
           input,
           files,
           messages,
@@ -235,90 +223,31 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
           }
         );
       } else {
-        // SIN ARCHIVOS: Usar Assistants API (OpenAI powered, confiable)
-        console.log('🤖 [MERVIN-AGENT] Usando ASSISTANTS API (OpenAI powered)');
+        // SIN ARCHIVOS: Usar AgentClient con Claude Conversational
+        console.log('🤖 [MERVIN-AGENT] Usando Claude Conversational API');
         
-        // 👁️ Log pageContext antes de enviar
-        if (pageContext && pageContext.type !== 'none') {
-          console.log('👁️ [MERVIN-AGENT] Enviando con contexto de página:', pageContext);
-        }
-        
-        await assistantsClientRef.current.sendMessageStream(
+        await agentClientRef.current.sendMessage(
           input,
-          [], // No necesitamos history completo, OpenAI lo maneja
+          messages,
           language,
-          (assistantUpdate) => {
-            console.log('📨 [UPDATE-RECEIVED] Got update from AssistantsClient:', {
-              type: assistantUpdate.type,
-              hasContent: !!assistantUpdate.content,
-              contentLength: assistantUpdate.content?.length || 0,
-              contentPreview: assistantUpdate.content?.substring(0, 100) || '(no content)'
-            });
+          (update: StreamUpdate) => {
+            setStreamingUpdates(prev => [...prev, update]);
+            if (onStreamUpdate) onStreamUpdate(update);
 
-            // Adaptar updates de AssistantsClient al formato StreamUpdate estándar
-            let adaptedType: 'progress' | 'message' | 'complete' | 'error' = 'message';
-            if (assistantUpdate.type === 'text_delta') adaptedType = 'message';
-            else if (assistantUpdate.type === 'tool_call_start' || assistantUpdate.type === 'tool_call_end') adaptedType = 'progress';
-            else if (assistantUpdate.type === 'complete') adaptedType = 'complete';
-            else if (assistantUpdate.type === 'error') adaptedType = 'error';
-            
-            const adaptedUpdate: StreamUpdate = {
-              type: adaptedType,
-              content: assistantUpdate.content || '',
-              data: assistantUpdate.data,
-            };
-            
-            console.log('🔄 [ADAPTATION] Adapted update:', {
-              originalType: assistantUpdate.type,
-              adaptedType: adaptedType,
-              contentPreserved: adaptedUpdate.content === assistantUpdate.content
-            });
-            
-            setStreamingUpdates(prev => {
-              console.log('📊 [STATE-UPDATE] Adding to streamingUpdates, current count:', prev.length);
-              return [...prev, adaptedUpdate];
-            });
-            
-            if (onStreamUpdate) onStreamUpdate(adaptedUpdate);
-
-            // FIX CRÍTICO: El mensaje completo ahora llega directamente en type='complete'
-            if (assistantUpdate.type === 'complete' && assistantUpdate.content) {
-              console.log('✅ [ASSISTANTS] Complete message received:', {
-                contentLength: assistantUpdate.content.length,
-                fullContent: assistantUpdate.content
-              });
-              
+            if (update.type === 'complete') {
               const assistantMessage: MervinMessage = {
                 role: 'assistant',
-                content: assistantUpdate.content,
+                content: update.content,
                 timestamp: new Date()
               };
-
-              console.log('💾 [SAVING-MESSAGE] About to save message:', {
-                role: assistantMessage.role,
-                contentLength: assistantMessage.content.length,
-                timestamp: assistantMessage.timestamp
-              });
-              
-              setMessages(prev => {
-                console.log('📝 [MESSAGES-UPDATE] Current messages:', prev.length);
-                console.log('📝 [MESSAGES-UPDATE] Adding new message with', assistantMessage.content.length, 'characters');
-                const newMessages = [...prev, assistantMessage];
-                console.log('📝 [MESSAGES-UPDATE] New total:', newMessages.length);
-                console.log('📝 [MESSAGES-UPDATE] Last message content:', newMessages[newMessages.length - 1].content);
-                return newMessages;
-              });
-
+              setMessages(prev => [...prev, assistantMessage]);
               persistenceRef.current?.saveMessage({
                 sender: 'assistant',
-                text: assistantUpdate.content,
+                text: update.content,
                 timestamp: assistantMessage.timestamp!.toISOString(),
               }).catch(err => console.error('❌ [AUTO-SAVE] Failed:', err));
-
-              console.log('✅ [MESSAGE-SAVED] Message successfully added to state');
             }
-          },
-          pageContext // 👁️ Pasar pageContext al backend
+          }
         );
       }
 
