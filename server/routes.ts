@@ -104,7 +104,7 @@ import quickbooksRoutes from "./routes/quickbooks-routes";
 import contactRoutes from "./routes/contact-route";
 import anthropicRoutes from "./routes/anthropic";
 import mervinV2Routes from "./routes/mervin-v2"; // Mervin AI V2 - Hybrid Intelligence Architecture (legacy file uploads)
-import assistantsRoutes from "./routes/assistants"; // Mervin AI V4 - OpenAI Assistants API (primary system)
+// import assistantsRoutes from "./routes/assistants"; // DESACTIVADO - Mervin AI V4 - OpenAI Assistants API (reemplazado por Claude Conversational)
 import mervinResearchAPI from "./routes/mervin-research-api"; // Import Mervin Research API - FASE 2 OPTIMIZATIONS
 import openrouterAPI from "./routes/openrouter-api"; // Import OpenRouter API for diagnostics and testing
 // PDF routes removed - using only premiumPdfService
@@ -1715,9 +1715,10 @@ Output must be between 200-900 characters in English.`;
   console.log("🤖 [MERVIN-V2] Registrando sistema V2 de inteligencia híbrida (legacy file uploads)...");
   app.use("/api/mervin-v2", mervinV2Routes);
   
-  // 🤖 Registrar Mervin AI V4 - OpenAI Assistants API (primary system)
-  console.log("🤖 [ASSISTANTS] Registrando OpenAI Assistants API como sistema principal...");
-  app.use("/api/assistant", assistantsRoutes);
+  // 🤖 Registrar Mervin AI V4 - OpenAI Assistants API (primary system) - DESACTIVADO
+  // console.log("🤖 [ASSISTANTS] Registrando OpenAI Assistants API como sistema principal...");
+  // app.use("/api/assistant", assistantsRoutes);
+  console.log("⚠️ [ASSISTANTS] Sistema OpenAI Assistants desactivado - usando Mervin Conversational con Claude en /api/mervin-v2");
   
   // ==================== FASE 2: INVESTIGACIÓN SÚPER RÁPIDA PARA CONTRATISTAS ====================
   console.log('🔬 [MERVIN-RESEARCH-API] Registrando sistema de investigación optimizado...');

@@ -30,7 +30,7 @@ import phase4OptimizationRoutes from "./routes/phase4-optimization";
 import adminContractsRoutes from "./routes/admin-contracts";
 import urlShortenerRoutes from "./routes/urlShortener";
 import mervinV2Routes from "./routes/mervin-v2";
-import assistantsRoutes from "./routes/assistants";
+// import assistantsRoutes from "./routes/assistants"; // DESACTIVADO - Sistema obsoleto de OpenAI Assistants
 import mervinEstimatesRoutes from "./routes/mervin-estimates";
 
 // 📊 Importar servicios de optimización Fase 4 ANTES de registrar rutas
@@ -738,9 +738,10 @@ console.log('💬 [CONVERSATIONS] Sistema de historial de conversaciones registr
 app.use('/api/mervin-v2', mervinV2Routes);
 console.log('🤖 [MERVIN-V2] Sistema Mervin V2 registrado en /api/mervin-v2');
 
-// 🤖 Registrar sistema Assistants API (OpenAI-powered)
-app.use('/api/assistant', assistantsRoutes);
-console.log('🤖 [ASSISTANTS] Sistema OpenAI Assistants API registrado en /api/assistant');
+// 🤖 Registrar sistema Assistants API (OpenAI-powered) - DESACTIVADO
+// app.use('/api/assistant', assistantsRoutes);
+// console.log('🤖 [ASSISTANTS] Sistema OpenAI Assistants API registrado en /api/assistant');
+console.log('⚠️ [ASSISTANTS] Sistema OpenAI Assistants desactivado - usando Mervin Conversational con Claude');
 
 // 🤖 Registrar sistema de estimados Mervin con DeepSearch integrado
 app.use('/api/mervin', mervinEstimatesRoutes);
@@ -1424,13 +1425,14 @@ console.log('🔧 [UNIFIED-ANALYSIS] Sistema híbrido registrado en /api/analysi
     });
     
     // 🔌 WebSocket for Mervin V2 - DEPRECATED (Nov 18, 2025)
-    // Sistema migrado completamente a OpenAI Assistants API
+    // Sistema migrado completamente a OpenAI Assistants API - LUEGO MIGRADO A CLAUDE
     // WebSocket custom removido por problemas de truncación de mensajes
+    // OpenAI Assistants API removido - ahora usa Claude Conversational
     // const { WebSocketServer } = await import('ws');
     // const { setupMervinWebSocket } = await import('./websocket/mervin-ws');
     // const wss = new WebSocketServer({ server, path: '/ws/mervin-v2' });
     // setupMervinWebSocket(wss);
-    console.log('🤖 [MERVIN] Sistema OpenAI Assistants API activo en /api/assistant');
+    console.log('🤖 [MERVIN] Sistema Mervin Conversational con Claude activo en /api/mervin-v2');
     
     // 🔗 URL SHORTENER REDIRECT - Handle /s/:shortCode redirects
     app.get('/s/:shortCode', async (req, res) => {
