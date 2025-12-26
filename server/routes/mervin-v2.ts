@@ -9,7 +9,6 @@
 import express, { Request, Response } from 'express';
 import admin from 'firebase-admin';
 import multer from 'multer';
-import { MervinOrchestratorV3 } from '../mervin-v2/orchestrator/MervinOrchestratorV3';
 import { MervinConversationalOrchestrator } from '../mervin-v2/orchestrator/MervinConversationalOrchestrator';
 import { FileProcessorService } from '../mervin-v2/services/FileProcessorService';
 import type { MervinRequest, FileAttachment } from '../mervin-v2/types/mervin-types';
@@ -78,34 +77,16 @@ router.post('/message', async (req: Request, res: Response) => {
     });
 
     // Crear orchestrator con userId AUTENTICADO y headers de sesión
-    // USAR NUEVO SISTEMA CONVERSACIONAL CON CLAUDE
-    const useConversational = true; // Cambiar a false para volver al sistema antiguo
-    
+    // USAR SISTEMA CONVERSACIONAL CON CLAUDE 3.5 SONNET
     const baseURL = process.env.BASE_URL || 'http://localhost:5000';
-    const orchestrator = useConversational
-      ? new MervinConversationalOrchestrator(authenticatedUserId, authHeaders, baseURL)
-      : new MervinOrchestratorV3(authenticatedUserId, authHeaders);
+    const orchestrator = new MervinConversationalOrchestrator(authenticatedUserId, authHeaders, baseURL);
 
-    // Procesar mensaje con el orquestador apropiado
-    let response;
-    
-    if (useConversational) {
-      // Usar nuevo sistema conversacional
-      response = await orchestrator.processMessage({
-        input,
-        userId: authenticatedUserId,
-        conversationId: req.body.conversationId || undefined
-      });
-    } else {
-      // Usar sistema antiguo
-      const request: MervinRequest = {
-        userId: authenticatedUserId,
-        input,
-        conversationHistory,
-        language
-      };
-      response = await orchestrator.process(request);
-    }
+    // Procesar mensaje con el sistema conversacional
+    const response = await orchestrator.processMessage({
+      input,
+      userId: authenticatedUserId,
+      conversationId: req.body.conversationId || undefined
+    });
     
     const elapsed = Date.now() - startTime;
     console.log(`✅ [MERVIN-V2-HTTP] Respuesta generada en ${elapsed}ms`);
@@ -202,21 +183,15 @@ router.post('/process', async (req: Request, res: Response) => {
       }
     });
 
-    // Crear orquestador V3 con userId VERIFICADO
-    const orchestrator = new MervinOrchestratorV3(authenticatedUserId, authHeaders);
+    // Crear orquestador conversacional con userId VERIFICADO
+    const baseURL = process.env.BASE_URL || 'http://localhost:5000';
+    const orchestrator = new MervinConversationalOrchestrator(authenticatedUserId, authHeaders, baseURL);
 
-    // Procesar (V3 usa modo AGENT_SAFE por defecto)
-    const response = await orchestrator.process({
+    // Procesar mensaje con el sistema conversacional
+    const response = await orchestrator.processMessage({
       input,
-      userId: authenticatedUserId, // USAR userId autenticado
-      conversationHistory: conversationHistory || [],
-      language: language || 'es',
-      // Modo por defecto: AGENT_SAFE (auto-ejecuta excepto contratos y acciones críticas)
-      mode: {
-        type: 'AGENT',
-        autoExecute: true,
-        requireConfirmationFor: ['create_contract', 'delete_*', 'send_email']
-      }
+      userId: authenticatedUserId,
+      conversationId: req.body.conversationId || undefined
     });
 
     console.log('✅ [MERVIN-V2-API] Response generado exitosamente');
@@ -306,22 +281,15 @@ router.post('/stream', async (req: Request, res: Response) => {
       }
     });
 
-    // Crear orquestador V3 con userId VERIFICADO
-    const orchestrator = new MervinOrchestratorV3(authenticatedUserId, authHeaders);
-    // NO configurar ProgressStream - retornar JSON directo
+    // Crear orquestador conversacional con userId VERIFICADO
+    const baseURL = process.env.BASE_URL || 'http://localhost:5000';
+    const orchestrator = new MervinConversationalOrchestrator(authenticatedUserId, authHeaders, baseURL);
 
-    // Procesar (V3 usa modo AGENT_SAFE por defecto)
-    const response = await orchestrator.process({
+    // Procesar mensaje con el sistema conversacional
+    const response = await orchestrator.processMessage({
       input,
-      userId: authenticatedUserId, // USAR userId autenticado
-      conversationHistory: conversationHistory || [],
-      language: language || 'es',
-      // Modo por defecto: AGENT_SAFE
-      mode: {
-        type: 'AGENT',
-        autoExecute: true,
-        requireConfirmationFor: ['create_contract', 'delete_*', 'send_email']
-      }
+      userId: authenticatedUserId,
+      conversationId: req.body.conversationId || undefined
     });
 
     // Retornar respuesta JSON directa
@@ -424,40 +392,18 @@ router.post('/process-with-files', upload.array('files', 5), async (req: Request
       }
     });
 
-    // Crear orquestrador V3 con userId VERIFICADO
-    const orchestrator = new MervinOrchestratorV3(authenticatedUserId, authHeaders);
-    // NO configurar ProgressStream - retornar JSON directo
-
-    // Parsear conversationHistory si viene como string
-    let parsedHistory = [];
-    if (conversationHistory) {
-      try {
-        parsedHistory = typeof conversationHistory === 'string' 
-          ? JSON.parse(conversationHistory) 
-          : conversationHistory;
-      } catch (e) {
-        console.error('⚠️ [MERVIN-V2-FILES] Error parsing conversationHistory:', e);
-      }
-    }
+    // Crear orquestrador conversacional con userId VERIFICADO
+    const baseURL = process.env.BASE_URL || 'http://localhost:5000';
+    const orchestrator = new MervinConversationalOrchestrator(authenticatedUserId, authHeaders, baseURL);
 
     console.log(`🚀 [MERVIN-V2-FILES] Iniciando procesamiento con ${attachments.length} archivos`);
 
-    // Procesar con archivos adjuntos con timeout (con cleanup)
-    let timeoutId: NodeJS.Timeout | undefined;
-    let timedOut = false;
-    
-    const processPromise = orchestrator.process({
-      input,
-      userId: authenticatedUserId, // USAR userId autenticado
-      conversationHistory: parsedHistory,
-      language: language || 'es',
-      attachments,
-      // Modo por defecto: AGENT_SAFE
-      mode: {
-        type: 'AGENT',
-        autoExecute: true,
-        requireConfirmationFor: ['create_contract', 'delete_*', 'send_email']
-      }
+    // TODO: Implementar soporte para archivos adjuntos en el nuevo sistema
+    // Por ahora, procesar el mensaje sin archivos
+    const processPromise = orchestrator.processMessage({
+      input: input + (attachments.length > 0 ? `\n\n[${attachments.length} archivo(s) adjunto(s)]` : ''),
+      userId: authenticatedUserId,
+      conversationId: req.body.conversationId || undefined
     });
 
     // Timeout wrapper con cleanup
