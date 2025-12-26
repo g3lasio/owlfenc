@@ -1,13 +1,15 @@
 /**
- * ANTHROPIC CLAUDE API - CONFIGURACIÓN
+ * AI API CONFIGURATION - Claude + OpenAI Assistants
  * 
- * Sistema de configuración para Anthropic Claude
- * Reemplaza OpenAI con Claude como modelo primario
+ * Claude: Para generación de contenido (contratos, estimados, etc.)
+ * OpenAI: Solo para el sistema de Assistants API (threads/runs)
  */
 
+import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 import { TOOL_DEFINITIONS } from './tools-registry';
 
+// Claude es REQUERIDO - es el motor principal de AI
 if (!process.env.ANTHROPIC_API_KEY) {
   throw new Error('ANTHROPIC_API_KEY is required for Anthropic Claude');
 }
@@ -16,8 +18,15 @@ export const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-// Mantener export de openai como null para compatibilidad backward
-export const openai = null;
+// OpenAI es REQUERIDO solo para el sistema de Assistants (threads/runs)
+// TODO: Migrar completamente a Claude cuando haya alternativa
+if (!process.env.OPENAI_API_KEY) {
+  throw new Error('OPENAI_API_KEY is required for Assistants API threads/runs');
+}
+
+export const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 /**
  * Configuración del Assistant de Mervin
