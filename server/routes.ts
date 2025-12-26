@@ -160,19 +160,17 @@ import express from "express"; // Import express to use express.raw
 // REMOVED: Subscription auth middleware for DeepSearch access
 import { trackAndValidateUsage } from "./middleware/usage-tracking"; // Import usage tracking middleware
 
-// Initialize Anthropic Claude API (OPTIONAL - only if API key is available)
+// Initialize Anthropic Claude API
 // Using Claude 3.7 Sonnet as the primary model for better reasoning and agent capabilities
 const CLAUDE_MODEL = "claude-3-7-sonnet-20250219";
-let anthropicClient: Anthropic | null = null;
-
-if (process.env.ANTHROPIC_API_KEY) {
-  anthropicClient = new Anthropic({
-    apiKey: process.env.ANTHROPIC_API_KEY,
-  });
-  console.log("✅ Anthropic Claude API initialized");
-} else {
-  console.log("⚠️ Anthropic Claude API key not found - Claude features will be disabled");
+if (!process.env.ANTHROPIC_API_KEY) {
+  throw new Error(
+    "ANTHROPIC_API_KEY no está configurado en las variables de entorno",
+  );
 }
+const anthropicClient = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
 
 // Configuration object (needs to be populated appropriately)
 const config = {
@@ -1640,14 +1638,6 @@ Output must be between 200-900 characters in English.`;
   // Endpoint para verificar el estado de Claude/Anthropic
   app.get("/api/openai-status", async (req: Request, res: Response) => {
     try {
-      // Verificar si Anthropic está disponible
-      if (!anthropicClient) {
-        return res.json({ 
-          available: false, 
-          error: "Anthropic API key not configured" 
-        });
-      }
-
       // Comprobación básica de Claude
       await anthropicClient.messages.create({
         model: CLAUDE_MODEL,

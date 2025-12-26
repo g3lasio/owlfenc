@@ -443,9 +443,13 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
 
 // Importar servicios reales
 import { SystemAPIService } from '../mervin-v2/services/SystemAPIService';
+import { ClaudeConversationalEngine } from '../mervin-v2/ai/ClaudeConversationalEngine';
 import { deepSearchService } from '../services/deepSearchService';
 import { firebaseSearchService } from '../services/firebaseSearchService';
 import type { UserSnapshot } from '../mervin-v2/services/SnapshotService';
+
+// Instancias globales de servicios
+const claude = new ClaudeConversationalEngine();
 
 /**
  * 🔥 Helper function para crear SystemAPIService autenticado
@@ -535,7 +539,18 @@ const executeCreateContract: ToolExecutor = async (args, userContext) => {
   try {
     const systemAPI = createAuthenticatedSystemAPI(userContext);
 
-    // Crear contrato con dual signature (contenido generado por sistema)
+    // Generar contenido del contrato usando Claude
+    const contractContent = await claude.generateContractContent({
+      clientName: args.clientName,
+      projectType: args.projectType,
+      projectAddress: args.projectAddress,
+      amount: args.amount,
+      startDate: args.startDate,
+      endDate: args.endDate,
+      specialTerms: args.specialTerms
+    });
+
+    // Crear contrato con dual signature
     const contract = await systemAPI.createContract({
       clientName: args.clientName,
       clientEmail: args.clientEmail,
@@ -545,7 +560,7 @@ const executeCreateContract: ToolExecutor = async (args, userContext) => {
       startDate: args.startDate,
       endDate: args.endDate,
       specialTerms: args.specialTerms
-    });
+    }, contractContent);
 
     return {
       contractId: contract.id,
