@@ -10,6 +10,7 @@ import express, { Request, Response } from 'express';
 import admin from 'firebase-admin';
 import multer from 'multer';
 import { MervinOrchestratorV3 } from '../mervin-v2/orchestrator/MervinOrchestratorV3';
+import { MervinConversationalOrchestrator } from '../mervin-v2/orchestrator/MervinConversationalOrchestrator';
 import { FileProcessorService } from '../mervin-v2/services/FileProcessorService';
 import type { MervinRequest, FileAttachment } from '../mervin-v2/types/mervin-types';
 
@@ -77,18 +78,34 @@ router.post('/message', async (req: Request, res: Response) => {
     });
 
     // Crear orchestrator con userId AUTENTICADO y headers de sesión
-    const orchestrator = new MervinOrchestratorV3(authenticatedUserId, authHeaders);
+    // USAR NUEVO SISTEMA CONVERSACIONAL CON CLAUDE
+    const useConversational = true; // Cambiar a false para volver al sistema antiguo
+    
+    const baseURL = process.env.BASE_URL || 'http://localhost:5000';
+    const orchestrator = useConversational
+      ? new MervinConversationalOrchestrator(authenticatedUserId, authHeaders, baseURL)
+      : new MervinOrchestratorV3(authenticatedUserId, authHeaders);
 
-    // Crear request con userId VERIFICADO
-    const request: MervinRequest = {
-      userId: authenticatedUserId, // USAR userId autenticado
-      input,
-      conversationHistory,
-      language
-    };
-
-    // Procesar sin streaming
-    const response = await orchestrator.process(request);
+    // Procesar mensaje con el orquestador apropiado
+    let response;
+    
+    if (useConversational) {
+      // Usar nuevo sistema conversacional
+      response = await orchestrator.processMessage({
+        input,
+        userId: authenticatedUserId,
+        conversationId: req.body.conversationId || undefined
+      });
+    } else {
+      // Usar sistema antiguo
+      const request: MervinRequest = {
+        userId: authenticatedUserId,
+        input,
+        conversationHistory,
+        language
+      };
+      response = await orchestrator.process(request);
+    }
     
     const elapsed = Date.now() - startTime;
     console.log(`✅ [MERVIN-V2-HTTP] Respuesta generada en ${elapsed}ms`);
@@ -99,7 +116,10 @@ router.post('/message', async (req: Request, res: Response) => {
       success: true,
       message: response.message,
       type: response.type,
-      executionTime: response.executionTime
+      executionTime: response.executionTime || elapsed,
+      conversationId: response.conversationId,
+      data: response.data,
+      workflowSessionId: response.workflowSessionId
     });
 
   } catch (error: any) {
