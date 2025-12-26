@@ -160,16 +160,16 @@ import express from "express"; // Import express to use express.raw
 // REMOVED: Subscription auth middleware for DeepSearch access
 import { trackAndValidateUsage } from "./middleware/usage-tracking"; // Import usage tracking middleware
 
-// Initialize OpenAI API
-// the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-const GPT_MODEL = "gpt-4o";
-if (!process.env.OPENAI_API_KEY) {
+// Initialize Anthropic Claude API
+// Using Claude 3.7 Sonnet as the primary model for better reasoning and agent capabilities
+const CLAUDE_MODEL = "claude-3-7-sonnet-20250219";
+if (!process.env.ANTHROPIC_API_KEY) {
   throw new Error(
-    "OPENAI_API_KEY no está configurado en las variables de entorno",
+    "ANTHROPIC_API_KEY no está configurado en las variables de entorno",
   );
 }
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+const anthropicClient = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
 // Configuration object (needs to be populated appropriately)
@@ -1635,18 +1635,18 @@ Output must be between 200-900 characters in English.`;
     }
   });
 
-  // Endpoint para verificar el estado de OpenAI
+  // Endpoint para verificar el estado de Claude/Anthropic
   app.get("/api/openai-status", async (req: Request, res: Response) => {
     try {
-      // Comprobación básica de OpenAI
-      await openai.chat.completions.create({
-        model: GPT_MODEL,
-        messages: [{ role: "user", content: "Hola" }],
+      // Comprobación básica de Claude
+      await anthropicClient.messages.create({
+        model: CLAUDE_MODEL,
         max_tokens: 5,
+        messages: [{ role: "user", content: "Hola" }],
       });
       res.json({ available: true });
     } catch (error: any) {
-      console.error("Error verificando OpenAI:", error);
+      console.error("Error verificando Claude:", error);
       res.json({
         available: false,
         error: error.message || "Error desconocido",
