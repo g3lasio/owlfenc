@@ -4,3 +4,31 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+
+# ===== SECURITY: NEVER COMMIT THESE =====
+.env
+.env.*
+.env.local
+.env.development
+.env.production
+*.pem
+*.key
+*.p12
+*.pfx
+serviceAccountKey.json
+firebase-adminsdk*.json
+*-credentials.json
+*-service-account.json
+google-credentials.json
+secrets/
+credentials/
+
+# Logs that might contain sensitive data
+*.log
+logs/
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
