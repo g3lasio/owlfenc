@@ -31,4 +31,6 @@ logs/
 .idea/
 .vscode/
 *.swp
-*.swo
+*.swo# Security - Credential files
+scripts/rotate-api-keys.js
+docs/api-key-exposure-audit.md
