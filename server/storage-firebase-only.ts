@@ -122,11 +122,16 @@ class FirebaseOnlyManager implements IFirebaseOnlyManager {
   }
 
   // Persistir correcciones de forma asíncrona sin bloquear la respuesta
+  // DISABLED: Causing FieldValue errors - needs Firebase Admin fix
   private async persistCorrections(
     firebaseUid: string, 
     cleanedClients: FirebaseClient[], 
     corrections: any[]
   ): Promise<void> {
+    // Temporalmente deshabilitado para evitar loop de errores
+    console.debug('[AUTO-CLEAN] Persistencia deshabilitada temporalmente');
+    return;
+    
     // Ejecutar en background sin bloquear la respuesta al usuario
     setImmediate(async () => {
       try {
