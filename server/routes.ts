@@ -1431,22 +1431,46 @@ ${extractedText}`,
     const materials: string[] = [];
     const actions: string[] = [];
 
-    // Extract all numeric measurements with units
+    // Extract all numeric measurements with units - improved patterns
     const measurementPatterns = [
-      /(\d+(?:,\d+)?(?:\.\d+)?)\s*(ft|feet|foot|pies?|linear\s*ft|lin\.?\s*ft|sqft|sq\.?\s*ft|square\s*feet?|metros?|m2|inches?|in\.?|"|yards?|yds?)/gi,
-      /(\d+(?:,\d+)?(?:\.\d+)?)\s*(mil(?:es)?|thousand)/gi,
-      /(\d+(?:,\d+)?(?:\.\d+)?)\s*(?:ft|feet|')\s*(?:x|by)\s*(\d+(?:\.\d+)?)\s*(?:ft|feet|')/gi,
-      /(\d+(?:,\d+)?(?:\.\d+)?)\s*(?:ft|feet|pies?)\s*(?:de\s+)?(?:altura?|height|tall|high)/gi,
-      /height[:\s]+(\d+(?:\.\d+)?)\s*(?:ft|feet|')/gi,
-      /(\d+)\s*(?:ft|feet|')\s*(?:tall|high|altura)/gi,
+      // Lineal/linear feet patterns (most specific first)
+      /(\d+(?:,\d+)?(?:\.\d+)?)\s*(?:lineal|linear)\s*(?:ft|feet|foot)/gi,
+      // Standard feet patterns
+      /(\d+(?:,\d+)?(?:\.\d+)?)\s*(?:ft|feet|foot)/gi,
+      // Spanish pies patterns
+      /(\d+(?:,\d+)?(?:\.\d+)?)\s*pies?/gi,
+      // Square feet patterns
+      /(\d+(?:,\d+)?(?:\.\d+)?)\s*(?:sqft|sq\.?\s*ft|square\s*feet?)/gi,
+      // Height patterns
+      /(\d+(?:,\d+)?(?:\.\d+)?)\s*(?:ft|feet|pies?)?\s*(?:de\s+)?(?:altura?|height|tall|high)/gi,
+      // Dimension patterns (e.g., 6x8, 6' x 8')
+      /(\d+(?:\.\d+)?)\s*(?:ft|feet|')?\s*(?:x|by)\s*(\d+(?:\.\d+)?)\s*(?:ft|feet|')?/gi,
+      // Thousand/mil patterns
+      /(\d+(?:,\d+)?)\s*(?:mil|thousand)/gi,
+      // Inches patterns
+      /(\d+(?:\.\d+)?)\s*(?:inches?|in\.?|")/gi,
+      // Yards patterns
+      /(\d+(?:\.\d+)?)\s*(?:yards?|yds?)/gi,
+      // Meters patterns
+      /(\d+(?:\.\d+)?)\s*(?:metros?|m2?)/gi,
     ];
 
+    // Use a Set to avoid duplicates
+    const measurementSet = new Set<string>();
     for (const pattern of measurementPatterns) {
       const matches = text.matchAll(pattern);
       for (const match of matches) {
-        measurements.push(match[0].trim());
+        const cleaned = match[0].trim();
+        // Normalize to English
+        const normalized = cleaned
+          .replace(/pies?/gi, 'ft')
+          .replace(/altura/gi, 'height')
+          .replace(/lineal/gi, 'linear')
+          .replace(/de\s+/gi, '');
+        measurementSet.add(normalized);
       }
     }
+    measurements.push(...measurementSet);
 
     // Extract material types
     const materialPatterns = [
@@ -1520,7 +1544,7 @@ ${extractedText}`,
         const projectType = body?.projectType || "general construction";
         
         const response = await anthropicClient.messages.create({
-          model: "claude-3-5-sonnet-20241022",
+          model: "claude-3-5-sonnet-20240620",
           max_tokens: 1500,
           messages: [
             {
