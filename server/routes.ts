@@ -1425,6 +1425,69 @@ ${extractedText}`,
   console.log("🔧 Registrando endpoint simple para estimados...");
   app.use("/api/estimates-simple", estimatesSimpleRoutes);
   // NEW: Simple and direct AI description enhancement using Anthropic Claude
+  // Pre-processor to extract critical measurements and specifications
+  function extractProjectFacts(text: string): { measurements: string[], materials: string[], actions: string[] } {
+    const measurements: string[] = [];
+    const materials: string[] = [];
+    const actions: string[] = [];
+
+    // Extract all numeric measurements with units
+    const measurementPatterns = [
+      /(\d+(?:,\d+)?(?:\.\d+)?)\s*(ft|feet|foot|pies?|linear\s*ft|lin\.?\s*ft|sqft|sq\.?\s*ft|square\s*feet?|metros?|m2|inches?|in\.?|"|yards?|yds?)/gi,
+      /(\d+(?:,\d+)?(?:\.\d+)?)\s*(mil(?:es)?|thousand)/gi,
+      /(\d+(?:,\d+)?(?:\.\d+)?)\s*(?:ft|feet|')\s*(?:x|by)\s*(\d+(?:\.\d+)?)\s*(?:ft|feet|')/gi,
+      /(\d+(?:,\d+)?(?:\.\d+)?)\s*(?:ft|feet|pies?)\s*(?:de\s+)?(?:altura?|height|tall|high)/gi,
+      /height[:\s]+(\d+(?:\.\d+)?)\s*(?:ft|feet|')/gi,
+      /(\d+)\s*(?:ft|feet|')\s*(?:tall|high|altura)/gi,
+    ];
+
+    for (const pattern of measurementPatterns) {
+      const matches = text.matchAll(pattern);
+      for (const match of matches) {
+        measurements.push(match[0].trim());
+      }
+    }
+
+    // Extract material types
+    const materialPatterns = [
+      /chain\s*link/gi, /wood(?:en)?/gi, /cedar/gi, /redwood/gi, /vinyl/gi, /pvc/gi,
+      /aluminum/gi, /steel/gi, /iron/gi, /wrought\s*iron/gi, /metal/gi,
+      /madera/gi, /hierro/gi, /aluminio/gi, /acero/gi,
+      /concrete/gi, /concreto/gi, /block/gi, /brick/gi, /ladrillo/gi,
+      /laminate/gi, /laminado/gi, /hardwood/gi, /tile/gi, /ceramic/gi,
+      /black/gi, /white/gi, /brown/gi, /galvanized/gi, /powder\s*coat/gi,
+      /privacy/gi, /ornamental/gi, /decorative/gi, /residential/gi, /commercial/gi,
+    ];
+
+    for (const pattern of materialPatterns) {
+      const matches = text.matchAll(pattern);
+      for (const match of matches) {
+        if (!materials.includes(match[0].toLowerCase())) {
+          materials.push(match[0].toLowerCase());
+        }
+      }
+    }
+
+    // Extract action types
+    const actionPatterns = [
+      /remov(?:e|er|al|ing)/gi, /install(?:ar|ation|ing)?/gi, /replac(?:e|ing|ement)/gi,
+      /repair(?:ing|s)?/gi, /haul(?:ing)?/gi, /demoli(?:tion|sh)/gi,
+      /build(?:ing)?/gi, /construct(?:ion|ing)?/gi, /paint(?:ing)?/gi,
+      /stain(?:ing)?/gi, /seal(?:ing)?/gi, /pour(?:ing)?/gi,
+    ];
+
+    for (const pattern of actionPatterns) {
+      const matches = text.matchAll(pattern);
+      for (const match of matches) {
+        if (!actions.includes(match[0].toLowerCase())) {
+          actions.push(match[0].toLowerCase());
+        }
+      }
+    }
+
+    return { measurements, materials, actions };
+  }
+
   app.post("/api/ai-enhance", async (req: Request, res: Response) => {
     console.log("=== AI ENHANCE ENDPOINT (Anthropic) ===");
     console.log("📥 Full request received");
@@ -1445,7 +1508,11 @@ ${extractedText}`,
         });
       }
 
-      console.log("🚀 Starting Anthropic Claude enhancement...");
+      // STEP 1: Extract critical facts from user input
+      const facts = extractProjectFacts(text);
+      console.log("📊 Extracted facts:", JSON.stringify(facts, null, 2));
+
+      console.log("🚀 Starting Anthropic Claude enhancement with fact preservation...");
 
       let enhancedDescription: string;
 
@@ -1454,32 +1521,50 @@ ${extractedText}`,
         
         const response = await anthropicClient.messages.create({
           model: "claude-3-5-sonnet-20241022",
-          max_tokens: 1000,
+          max_tokens: 1500,
           messages: [
             {
               role: "user",
               content: `You are a professional construction estimator. Transform this project description into a clear, professional specification.
 
-USER INPUT (may be in any language): "${text}"
-PROJECT TYPE: "${projectType}"
+=== USER INPUT (may be in any language) ===
+"${text}"
 
-STRICT REQUIREMENTS:
-1. OUTPUT MUST BE 100% IN ENGLISH - absolutely NO Spanish words allowed
-2. NEVER copy or repeat the user's original words - completely rewrite everything
-3. Use professional construction industry terminology
-4. Format as a brief intro paragraph (2-3 sentences) followed by 3-5 bullet points
-5. Each bullet point should be clear and specific (materials, methods, scope)
-6. Keep total response between 300-800 characters
-7. Be concise but comprehensive - easy to understand
+=== PROJECT TYPE ===
+"${projectType}"
 
-FORMAT EXAMPLE:
-Professional installation project involving [scope]. Work includes industry-standard methods and quality materials.
+=== CRITICAL MEASUREMENTS & SPECS (MUST BE PRESERVED EXACTLY) ===
+${facts.measurements.length > 0 ? `Measurements: ${facts.measurements.join(', ')}` : 'No specific measurements detected'}
+${facts.materials.length > 0 ? `Materials: ${facts.materials.join(', ')}` : 'No specific materials detected'}
+${facts.actions.length > 0 ? `Work Scope: ${facts.actions.join(', ')}` : 'General work'}
 
-• [Specific task with materials/measurements]
-• [Another specific task]
-• [Quality/completion details]
+=== MANDATORY REQUIREMENTS ===
+1. OUTPUT 100% IN ENGLISH - absolutely NO Spanish words
+2. PRESERVE ALL MEASUREMENTS EXACTLY as listed above (ft, sqft, heights, dimensions)
+3. PRESERVE ALL MATERIAL SPECIFICATIONS (chain link, wood type, colors, etc.)
+4. DO NOT summarize or shorten - EXPAND and clarify the description
+5. Use professional construction terminology
+6. Never copy user's exact phrasing - rewrite professionally
+7. Format with clear bullet points organized by work phase
 
-Output ONLY the enhanced description in English. No introductions or explanations.`,
+=== REQUIRED OUTPUT FORMAT ===
+Start with 1-2 sentence project overview, then organize into labeled sections:
+
+**Scope of Work:**
+• [First task with exact measurements]
+• [Second task with materials specified]
+
+**Materials & Specifications:**
+• [Material type, dimensions, specifications]
+• [Additional material details]
+
+**Project Details:**
+• [Height, gauge, style specifications]
+• [Any additional requirements from user input]
+
+REMEMBER: Every measurement and specification from the user MUST appear in your output. This information is critical for accurate pricing and project execution.
+
+Output ONLY the enhanced description. No introductions or meta-commentary.`,
             },
           ],
         });
@@ -1490,11 +1575,16 @@ Output ONLY the enhanced description in English. No introductions or explanation
           if (firstContent && firstContent.type === 'text' && typeof firstContent.text === 'string') {
             let content = firstContent.text.trim();
 
-            // Validate and adjust character length (200-900 characters)
-            if (content.length < 200) {
-              content += ` This project includes professional grade materials, expert installation services, comprehensive quality assurance, and complete cleanup. All work performed to industry standards with warranty coverage.`;
-            } else if (content.length > 900) {
-              content = content.substring(0, 897) + "...";
+            // STEP 2: Validate that critical measurements are preserved
+            const outputFacts = extractProjectFacts(content);
+            const missingMeasurements = facts.measurements.filter(m => {
+              const numMatch = m.match(/\d+/);
+              return numMatch && !content.includes(numMatch[0]);
+            });
+
+            if (missingMeasurements.length > 0) {
+              console.log("⚠️ Missing measurements in output, appending...");
+              content += `\n\n**Critical Measurements:**\n• ${missingMeasurements.join('\n• ')}`;
             }
 
             enhancedDescription = content;
@@ -1511,34 +1601,55 @@ Output ONLY the enhanced description in English. No introductions or explanation
         res.json({
           enhancedDescription: enhancedDescription,
           originalText: text,
+          extractedFacts: facts,
           success: true,
         });
       } catch (aiError: any) {
         console.error("❌ Error during Anthropic AI processing:", aiError);
 
-        // Professional English fallback with bullet points
+        // Smart fallback that preserves extracted facts
+        const facts = extractProjectFacts(text);
         const projectTypeEnglish = (body?.projectType || "construction")
           .replace(/estimado|estimado de construcción/gi, "construction")
           .replace(/cerca|fence/gi, "fencing")
           .replace(/piso|flooring/gi, "flooring");
 
-        let enhancedFallback = `Professional ${projectTypeEnglish} project scope as specified by client requirements. Work to be completed using industry-standard methods and quality materials.
-
-• Complete site preparation and material staging
-• Professional installation per manufacturer specifications  
-• Quality inspection and worksite cleanup
-• Project completion with warranty documentation`;
-
-        // Ensure fallback is within character limits
-        if (enhancedFallback.length > 800) {
-          enhancedFallback = enhancedFallback.substring(0, 797) + "...";
+        let enhancedFallback = `Professional ${projectTypeEnglish} project as specified by client requirements.\n\n**Scope of Work:**`;
+        
+        if (facts.actions.length > 0) {
+          facts.actions.forEach(action => {
+            const actionEnglish = action
+              .replace(/remover/gi, 'removal')
+              .replace(/instalar/gi, 'installation')
+              .replace(/hauling/gi, 'debris hauling');
+            enhancedFallback += `\n• ${actionEnglish.charAt(0).toUpperCase() + actionEnglish.slice(1)} services`;
+          });
         }
 
-        console.log("✅ Smart enhancement completed as fallback");
+        if (facts.measurements.length > 0) {
+          enhancedFallback += `\n\n**Measurements & Dimensions:**`;
+          facts.measurements.forEach(m => {
+            const mEnglish = m.replace(/pies?/gi, 'ft').replace(/altura/gi, 'height');
+            enhancedFallback += `\n• ${mEnglish}`;
+          });
+        }
+
+        if (facts.materials.length > 0) {
+          enhancedFallback += `\n\n**Materials:**`;
+          facts.materials.forEach(mat => {
+            const matEnglish = mat.replace(/madera/gi, 'wood').replace(/hierro/gi, 'iron');
+            enhancedFallback += `\n• ${matEnglish.charAt(0).toUpperCase() + matEnglish.slice(1)}`;
+          });
+        }
+
+        enhancedFallback += `\n\n**Project Completion:**\n• Professional installation per manufacturer specifications\n• Quality inspection and worksite cleanup\n• Project documentation and warranty`;
+
+        console.log("✅ Smart fallback with preserved facts completed");
 
         res.json({
           enhancedDescription: enhancedFallback,
           originalText: text,
+          extractedFacts: facts,
           success: true,
           fallback: true,
         });
