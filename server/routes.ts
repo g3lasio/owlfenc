@@ -1458,20 +1458,28 @@ ${extractedText}`,
           messages: [
             {
               role: "user",
-              content: `You are a professional construction project manager. Transform this construction project description into a professional, concise specification in English.
+              content: `You are a professional construction estimator. Transform this project description into a clear, professional specification.
 
-INPUT: "${text}"
+USER INPUT (may be in any language): "${text}"
 PROJECT TYPE: "${projectType}"
 
-CRITICAL REQUIREMENTS:
-- Response must be exactly 200-900 characters total
-- Use professional construction terminology
-- Include key technical details and materials
-- Mention methodology and quality standards
-- Write in flowing sentences, not bullet points
-- Be concise but comprehensive
+STRICT REQUIREMENTS:
+1. OUTPUT MUST BE 100% IN ENGLISH - absolutely NO Spanish words allowed
+2. NEVER copy or repeat the user's original words - completely rewrite everything
+3. Use professional construction industry terminology
+4. Format as a brief intro paragraph (2-3 sentences) followed by 3-5 bullet points
+5. Each bullet point should be clear and specific (materials, methods, scope)
+6. Keep total response between 300-800 characters
+7. Be concise but comprehensive - easy to understand
 
-Output must be between 200-900 characters in English. Output ONLY the enhanced description, nothing else.`,
+FORMAT EXAMPLE:
+Professional installation project involving [scope]. Work includes industry-standard methods and quality materials.
+
+• [Specific task with materials/measurements]
+• [Another specific task]
+• [Quality/completion details]
+
+Output ONLY the enhanced description in English. No introductions or explanations.`,
             },
           ],
         });
@@ -1508,26 +1516,22 @@ Output must be between 200-900 characters in English. Output ONLY the enhanced d
       } catch (aiError: any) {
         console.error("❌ Error during Anthropic AI processing:", aiError);
 
-        // Smart enhancement fallback - ALWAYS English output
-        const enhanced = text
-          .replace(/\b(fence|cerca)\b/gi, "professional fence installation")
-          .replace(/\b(wood|madera)\b/gi, "premium cedar wood")
-          .replace(/\b(install|instalar)\b/gi, "professionally install")
-          .replace(/\b(yard|patio)\b/gi, "residential property")
-          .replace(/\b(piso|floor|flooring)\b/gi, "flooring installation")
-          .replace(/\b(laminado|laminate)\b/gi, "laminate flooring")
-          .replace(/\b(hardwood|dura)\b/gi, "hardwood flooring")
-          .replace(/\b(remover|remove)\b/gi, "remove existing")
-          .replace(/\b(sqft|sq ft|pies cuadrados)\b/gi, "square feet");
+        // Professional English fallback with bullet points
+        const projectTypeEnglish = (body?.projectType || "construction")
+          .replace(/estimado|estimado de construcción/gi, "construction")
+          .replace(/cerca|fence/gi, "fencing")
+          .replace(/piso|flooring/gi, "flooring");
 
-        const projectTypeEnglish = (body?.projectType || "construction").replace(/estimado|estimado de construcción/gi, "construction estimate");
-        let enhancedFallback = `Professional ${projectTypeEnglish} Specification: ${enhanced}. This comprehensive project includes material procurement and delivery, professional installation services, comprehensive quality assurance, complete site cleanup, warranty coverage, and compliance with local building codes and industry standards.`;
+        let enhancedFallback = `Professional ${projectTypeEnglish} project scope as specified by client requirements. Work to be completed using industry-standard methods and quality materials.
 
-        // Ensure fallback is within 200-900 character limits
-        if (enhancedFallback.length < 200) {
-          enhancedFallback += ` Additional professional services include project management, safety protocols, environmental compliance, and customer satisfaction guarantee.`;
-        } else if (enhancedFallback.length > 900) {
-          enhancedFallback = enhancedFallback.substring(0, 897) + "...";
+• Complete site preparation and material staging
+• Professional installation per manufacturer specifications  
+• Quality inspection and worksite cleanup
+• Project completion with warranty documentation`;
+
+        // Ensure fallback is within character limits
+        if (enhancedFallback.length > 800) {
+          enhancedFallback = enhancedFallback.substring(0, 797) + "...";
         }
 
         console.log("✅ Smart enhancement completed as fallback");
