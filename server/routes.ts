@@ -1424,9 +1424,9 @@ ${extractedText}`,
   // Registro del endpoint simple para autoguardado de estimados
   console.log("🔧 Registrando endpoint simple para estimados...");
   app.use("/api/estimates-simple", estimatesSimpleRoutes);
-  // NEW: Simple and direct AI description enhancement
+  // NEW: Simple and direct AI description enhancement using Anthropic Claude
   app.post("/api/ai-enhance", async (req: Request, res: Response) => {
-    console.log("=== NEW AI ENHANCE ENDPOINT ===");
+    console.log("=== AI ENHANCE ENDPOINT (Anthropic) ===");
     console.log("📥 Full request received");
     console.log("📝 Body:", JSON.stringify(req.body, null, 2));
 
@@ -1445,19 +1445,23 @@ ${extractedText}`,
         });
       }
 
-      console.log("🚀 Starting OpenAI enhancement...");
+      console.log("🚀 Starting Anthropic Claude enhancement...");
 
-      // Configurar OpenAI si aún no está configurado
-      if (!openai) {
-        console.error("❌ OpenAI no está configurado correctamente");
-        return res.status(500).json({ error: "OpenAI configuration error" });
-      }
+      let enhancedDescription: string;
 
-      // Create a professional prompt for project description enhancement with character limits
-      const prompt = `Transform this construction project description into a professional, concise specification in English:
+      try {
+        const projectType = body?.projectType || "general construction";
+        
+        const response = await anthropicClient.messages.create({
+          model: "claude-3-5-sonnet-20241022",
+          max_tokens: 1000,
+          messages: [
+            {
+              role: "user",
+              content: `You are a professional construction project manager. Transform this construction project description into a professional, concise specification in English.
 
 INPUT: "${text}"
-PROJECT TYPE: "${body?.projectType || "general construction"}"
+PROJECT TYPE: "${projectType}"
 
 CRITICAL REQUIREMENTS:
 - Response must be exactly 200-900 characters total
@@ -1467,150 +1471,57 @@ CRITICAL REQUIREMENTS:
 - Write in flowing sentences, not bullet points
 - Be concise but comprehensive
 
-Output must be between 200-900 characters in English.`;
+Output must be between 200-900 characters in English. Output ONLY the enhanced description, nothing else.`,
+            },
+          ],
+        });
 
-      // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-      let enhancedDescription: string;
-
-      try {
-        // Try OpenAI first
-        let response;
-        try {
-          response = await openai.chat.completions.create({
-            model: "gpt-4o",
-            messages: [
-              {
-                role: "system",
-                content:
-                  "You are a professional construction project manager. Transform descriptions into detailed, professional English specifications.",
-              },
-              { role: "user", content: prompt },
-            ],
-            temperature: 0.7,
-            max_tokens: 1000,
-          });
-
-          if (
-            response.choices &&
-            response.choices[0] &&
-            response.choices[0].message &&
-            response.choices[0].message.content
-          ) {
-            let content = response.choices[0].message.content.trim();
+        // Safely extract text content from Anthropic response
+        if (response.content && Array.isArray(response.content) && response.content.length > 0) {
+          const firstContent = response.content[0];
+          if (firstContent && firstContent.type === 'text' && typeof firstContent.text === 'string') {
+            let content = firstContent.text.trim();
 
             // Validate and adjust character length (200-900 characters)
             if (content.length < 200) {
-              // If too short, enhance with more details
-              content += ` This project includes professional grade materials, expert installation services, comprehensive quality assurance, and complete cleanup. All work performed to industry standards with warranty coverage and compliance to local building codes.`;
+              content += ` This project includes professional grade materials, expert installation services, comprehensive quality assurance, and complete cleanup. All work performed to industry standards with warranty coverage.`;
             } else if (content.length > 900) {
-              // If too long, trim to 900 characters while keeping it professional
               content = content.substring(0, 897) + "...";
             }
 
             enhancedDescription = content;
-            console.log(
-              `✅ OpenAI enhancement completed successfully (${content.length} characters)`,
-            );
+            console.log(`✅ Anthropic Claude enhancement completed successfully (${content.length} characters)`);
           } else {
-            throw new Error("Invalid OpenAI response format");
+            throw new Error("Anthropic response content is not text type");
           }
-        } catch (openAiError) {
-          console.log("⚠️ OpenAI failed, trying Anthropic fallback...");
-
-          // Fallback to Anthropic
-          try {
-            const anthropicResponse = await fetch(
-              "https://api.anthropic.com/v1/messages",
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "x-api-key": process.env.ANTHROPIC_API_KEY || "",
-                  "anthropic-version": "2023-06-01",
-                },
-                body: JSON.stringify({
-                  model: "claude-3-7-sonnet-20250219",
-                  max_tokens: 1000,
-                  messages: [
-                    {
-                      role: "user",
-                      content: `You are a professional construction project manager. Transform this description into detailed, professional English specifications (200-900 characters):\n\n${text}`,
-                    },
-                  ],
-                }),
-              },
-            );
-
-            if (anthropicResponse.ok) {
-              const anthropicData = await anthropicResponse.json();
-              if (
-                anthropicData.content &&
-                anthropicData.content[0] &&
-                anthropicData.content[0].text
-              ) {
-                let content = anthropicData.content[0].text.trim();
-
-                // Validate and adjust character length (200-900 characters)
-                if (content.length < 200) {
-                  content += ` This project includes professional grade materials, expert installation services, comprehensive quality assurance, and complete cleanup. All work performed to industry standards with warranty coverage.`;
-                } else if (content.length > 900) {
-                  content = content.substring(0, 897) + "...";
-                }
-
-                enhancedDescription = content;
-                console.log(
-                  `✅ Anthropic enhancement completed successfully (${content.length} characters)`,
-                );
-              } else {
-                throw new Error("Invalid Anthropic response");
-              }
-            } else {
-              throw new Error("Anthropic API failed");
-            }
-          } catch (anthropicError) {
-            console.log(
-              "⚠️ Both AI services failed, using smart enhancement...",
-            );
-
-            // Smart enhancement fallback - ALWAYS English output
-            const enhanced = text
-              .replace(/\b(fence|cerca)\b/gi, "professional fence installation")
-              .replace(/\b(wood|madera)\b/gi, "premium cedar wood")
-              .replace(/\b(install|instalar)\b/gi, "professionally install")
-              .replace(/\b(yard|patio)\b/gi, "residential property")
-              .replace(/\b(piso|floor|flooring)\b/gi, "flooring installation")
-              .replace(/\b(laminado|laminate)\b/gi, "laminate flooring")
-              .replace(/\b(hardwood|dura)\b/gi, "hardwood flooring")
-              .replace(/\b(remover|remove)\b/gi, "remove existing")
-              .replace(/\b(sqft|sq ft|pies cuadrados)\b/gi, "square feet");
-
-            enhancedDescription = `Professional Construction Specification: ${enhanced}. This comprehensive project includes material procurement and delivery, professional installation services, comprehensive quality assurance, complete site cleanup, warranty coverage, and compliance with local building codes and industry standards.`;
-
-            console.log("✅ Smart enhancement completed as fallback");
-          }
+        } else {
+          throw new Error("Invalid or empty Anthropic response");
         }
 
-        console.log(
-          "📏 Enhanced description length:",
-          enhancedDescription.length,
-        );
+        console.log("📏 Enhanced description length:", enhancedDescription.length);
 
         res.json({
           enhancedDescription: enhancedDescription,
           originalText: text,
           success: true,
         });
-      } catch (openAiError) {
-        console.error("❌ Error during AI processing:", openAiError);
+      } catch (aiError: any) {
+        console.error("❌ Error during Anthropic AI processing:", aiError);
 
-        // Ultimate fallback - always return something useful with proper length IN ENGLISH
+        // Smart enhancement fallback - ALWAYS English output
+        const enhanced = text
+          .replace(/\b(fence|cerca)\b/gi, "professional fence installation")
+          .replace(/\b(wood|madera)\b/gi, "premium cedar wood")
+          .replace(/\b(install|instalar)\b/gi, "professionally install")
+          .replace(/\b(yard|patio)\b/gi, "residential property")
+          .replace(/\b(piso|floor|flooring)\b/gi, "flooring installation")
+          .replace(/\b(laminado|laminate)\b/gi, "laminate flooring")
+          .replace(/\b(hardwood|dura)\b/gi, "hardwood flooring")
+          .replace(/\b(remover|remove)\b/gi, "remove existing")
+          .replace(/\b(sqft|sq ft|pies cuadrados)\b/gi, "square feet");
+
         const projectTypeEnglish = (body?.projectType || "construction").replace(/estimado|estimado de construcción/gi, "construction estimate");
-        let enhancedFallback = `Professional ${projectTypeEnglish} Specification: Construction project involving ${text.replace(/\b(piso|cerca|instalar|remover)\b/gi, match => ({
-          'piso': 'flooring',
-          'cerca': 'fence',
-          'instalar': 'install',
-          'remover': 'remove'
-        }[match.toLowerCase()] || match))}. This project includes professional grade materials, expert installation services, comprehensive quality assurance, and complete cleanup. All work performed to industry standards with warranty coverage and compliance to local building codes.`;
+        let enhancedFallback = `Professional ${projectTypeEnglish} Specification: ${enhanced}. This comprehensive project includes material procurement and delivery, professional installation services, comprehensive quality assurance, complete site cleanup, warranty coverage, and compliance with local building codes and industry standards.`;
 
         // Ensure fallback is within 200-900 character limits
         if (enhancedFallback.length < 200) {
@@ -1618,6 +1529,8 @@ Output must be between 200-900 characters in English.`;
         } else if (enhancedFallback.length > 900) {
           enhancedFallback = enhancedFallback.substring(0, 897) + "...";
         }
+
+        console.log("✅ Smart enhancement completed as fallback");
 
         res.json({
           enhancedDescription: enhancedFallback,
