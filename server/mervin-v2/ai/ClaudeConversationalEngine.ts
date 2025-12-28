@@ -59,7 +59,7 @@ export interface ConversationTurn {
 
 export class ClaudeConversationalEngine {
   private anthropic: Anthropic;
-  private model: string = 'claude-3-5-sonnet-20241022'; // Latest Claude 3.5 Sonnet
+  private model: string = 'claude-3-5-sonnet-20240620'; // Claude 3.5 Sonnet (June 2024)
   private maxTokens: number = 4096;
   
   constructor() {

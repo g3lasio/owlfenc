@@ -39,6 +39,7 @@ export interface UseMervinAgentOptions {
   userId: string;
   enableStreaming?: boolean;
   language?: 'es' | 'en';
+  mode?: 'chat' | 'agent'; // Modo de operación: chat (free) o agent (paid)
   pageContext?: PageContextType;
   onStreamUpdate?: (update: StreamUpdate) => void;
   onPersistenceError?: (error: string) => void;
@@ -83,6 +84,7 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
     userId,
     enableStreaming = true,
     language = 'es',
+    mode = 'agent', // Default: agent mode
     pageContext,
     onStreamUpdate,
     onPersistenceError
@@ -220,13 +222,14 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
                 timestamp: assistantMessage.timestamp!.toISOString(),
               }).catch(err => console.error('❌ [AUTO-SAVE] Failed:', err));
             }
-          }
+          },
+          mode // Pasar mode al cliente
         );
       } else {
         // SIN ARCHIVOS: Usar AgentClient con Claude Conversational
         console.log('🤖 [MERVIN-AGENT] Usando Claude Conversational API');
         
-        await agentClientRef.current.sendMessage(
+        await agentClientRef.current.sendMessageStream(
           input,
           messages,
           language,
@@ -247,7 +250,8 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
                 timestamp: assistantMessage.timestamp!.toISOString(),
               }).catch(err => console.error('❌ [AUTO-SAVE] Failed:', err));
             }
-          }
+          },
+          mode // Pasar mode al cliente
         );
       }
 

@@ -85,7 +85,8 @@ router.post('/message', async (req: Request, res: Response) => {
     const response = await orchestrator.processMessage({
       input,
       userId: authenticatedUserId,
-      conversationId: req.body.conversationId || undefined
+      conversationId: req.body.conversationId || undefined,
+      mode: mode || 'agent' // Default: agent mode
     });
     
     const elapsed = Date.now() - startTime;
@@ -151,7 +152,7 @@ router.post('/process', async (req: Request, res: Response) => {
       });
     }
 
-    const { input, conversationHistory, language } = req.body;
+    const { input, conversationHistory, language, mode } = req.body;
 
     // Validación de input
     if (!input) {
@@ -191,7 +192,8 @@ router.post('/process', async (req: Request, res: Response) => {
     const response = await orchestrator.processMessage({
       input,
       userId: authenticatedUserId,
-      conversationId: req.body.conversationId || undefined
+      conversationId: req.body.conversationId || undefined,
+      mode: mode || 'agent' // Default: agent mode
     });
 
     console.log('✅ [MERVIN-V2-API] Response generado exitosamente');
@@ -247,7 +249,7 @@ router.post('/stream', async (req: Request, res: Response) => {
       return;
     }
 
-    const { input, conversationHistory, language } = req.body;
+    const { input, conversationHistory, language, mode } = req.body;
 
     // Validación de input
     if (!input) {
@@ -289,7 +291,8 @@ router.post('/stream', async (req: Request, res: Response) => {
     const response = await orchestrator.processMessage({
       input,
       userId: authenticatedUserId,
-      conversationId: req.body.conversationId || undefined
+      conversationId: req.body.conversationId || undefined,
+      mode: mode || 'agent' // Default: agent mode
     });
 
     // Retornar respuesta JSON directa
@@ -340,7 +343,7 @@ router.post('/process-with-files', upload.array('files', 5), async (req: Request
     }
 
     const files = req.files as Express.Multer.File[];
-    const { input, conversationHistory, language } = req.body;
+    const { input, conversationHistory, language, mode } = req.body;
 
     // Validación de input
     if (!input) {

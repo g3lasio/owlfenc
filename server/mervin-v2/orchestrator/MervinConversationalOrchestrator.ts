@@ -26,6 +26,7 @@ export interface MervinConversationalRequest {
   input: string;
   userId: string;
   conversationId?: string;
+  mode?: 'chat' | 'agent'; // Modo de operación
   attachments?: Array<{
     filename: string;
     mimeType: string;
@@ -85,13 +86,29 @@ export class MervinConversationalOrchestrator {
         enrichedInput = await this.processAttachments(request.input, request.attachments);
       }
       
-      // 3. Obtener herramientas disponibles
-      const tools = getAllTools();
+      // 3. Determinar modo de operación
+      const mode = request.mode || 'agent'; // Default: agent mode
       
-      // 4. Obtener prompt del sistema
-      const systemPrompt = getMervinSystemPrompt();
+      // 4. Obtener perfil del contratista para contexto
+      const contractorProfile = await this.systemAPI.getContractorProfile();
       
-      // 5. Procesar turno de conversación con Claude
+      // 5. Obtener herramientas disponibles según el modo
+      const tools = mode === 'agent' ? getAllTools() : []; // Chat mode: sin herramientas
+      
+      // 6. Obtener prompt del sistema según el modo
+      let systemPrompt = getMervinSystemPrompt(mode);
+      
+      // 7. Enriquecer prompt con contexto del contratista
+      if (contractorProfile) {
+        const contextInfo = `\n\n# CONTEXTO DEL CONTRATISTA\n\nTienes acceso al perfil del contratista:\n- Nombre del negocio: ${contractorProfile.companyName || 'No especificado'}\n- Especialidad: ${contractorProfile.businessType || 'No especificado'}\n- Ubicación: ${contractorProfile.city || ''}${contractorProfile.state ? ', ' + contractorProfile.state : ''}\n- Teléfono: ${contractorProfile.phone || 'No especificado'}\n- Email: ${contractorProfile.email || 'No especificado'}\n\nUSA ESTA INFORMACIÓN para personalizar tus respuestas y NO pedir datos que ya tienes.`;
+        systemPrompt += contextInfo;
+      }
+      
+      console.log('🎯 [MERVIN-CONVERSATIONAL] Mode:', mode.toUpperCase());
+      console.log('👤 [MERVIN-CONVERSATIONAL] Contractor profile loaded:', !!contractorProfile);
+      console.log('🔧 [MERVIN-CONVERSATIONAL] Tools available:', tools.length);
+      
+      // 6. Procesar turno de conversación con Claude
       const turn = await claudeEngine.processConversationTurn(
         state,
         enrichedInput,
@@ -104,12 +121,17 @@ export class MervinConversationalOrchestrator {
       console.log('   Tool calls:', turn.toolCalls?.length || 0);
       console.log('   Needs more info:', turn.needsMoreInfo);
       
-      // 6. Si Claude llamó a herramientas, ejecutarlas
+      // 7. Si Claude llamó a herramientas, ejecutarlas (solo en modo agent)
       if (turn.toolCalls && turn.toolCalls.length > 0) {
-        return await this.handleToolCalls(state, turn, systemPrompt, startTime);
+        if (mode === 'agent') {
+          return await this.handleToolCalls(state, turn, systemPrompt, startTime);
+        } else {
+          // En modo chat, no debería llamar herramientas, pero por si acaso
+          console.warn('⚠️  [MERVIN-CONVERSATIONAL] Tool calls in chat mode ignored');
+        }
       }
       
-      // 7. Si Claude está pidiendo más información
+      // 8. Si Claude está pidiendo más información
       if (turn.needsMoreInfo) {
         return {
           type: 'needs_more_info',
@@ -119,7 +141,7 @@ export class MervinConversationalOrchestrator {
         };
       }
       
-      // 8. Respuesta conversacional simple
+      // 9. Respuesta conversacional simple
       return {
         type: 'conversation',
         message: turn.assistantResponse,

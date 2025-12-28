@@ -510,6 +510,32 @@ export class SystemAPIService {
     }
   }
 
+  // ============= PROFILE =============
+
+  /**
+   * Obtener perfil del contratista
+   * Endpoint: GET /profile
+   */
+  async getContractorProfile(): Promise<any> {
+    console.log('👤 [SYSTEM-API] Obteniendo perfil del contratista');
+    
+    try {
+      const response = await this.client.get('/profile');
+      
+      if (response.data?.success && response.data?.profile) {
+        console.log('✅ [SYSTEM-API] Perfil obtenido:', response.data.profile.companyName || 'Sin nombre');
+        return response.data.profile;
+      }
+      
+      console.warn('⚠️  [SYSTEM-API] Perfil no encontrado o incompleto');
+      return null;
+
+    } catch (error: any) {
+      console.error('❌ [SYSTEM-API] Error obteniendo perfil:', error.message);
+      return null; // No lanzar error, solo retornar null
+    }
+  }
+
   // ============= UTILITIES =============
 
   /**

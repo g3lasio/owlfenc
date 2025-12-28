@@ -141,6 +141,7 @@ export function MervinExperience({ mode, onMinimize, isMinimized = false, onClos
     userId: currentUser?.uid || 'guest',
     enableStreaming: true,
     language: 'es',
+    mode: selectedModel === 'legacy' ? 'chat' : 'agent', // 🎯 Mapear selectedModel a mode
     pageContext, // 👁️ Pasar contexto de página actual
     onStreamUpdate: (update) => {
       const content = update.content.toLowerCase();

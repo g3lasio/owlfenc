@@ -79,7 +79,8 @@ export class AgentClient {
   async sendMessage(
     input: string,
     conversationHistory: MervinMessage[] = [],
-    language: 'es' | 'en' = 'es'
+    language: 'es' | 'en' = 'es',
+    mode: 'chat' | 'agent' = 'agent'
   ): Promise<MervinResponse> {
     try {
       console.log('📨 [AGENT-CLIENT] Enviando mensaje:', input.substring(0, 50));
@@ -94,7 +95,8 @@ export class AgentClient {
           input,
           userId: this.userId,
           conversationHistory,
-          language
+          language,
+          mode
         })
       });
 
@@ -121,7 +123,8 @@ export class AgentClient {
     input: string,
     conversationHistory: MervinMessage[] = [],
     language: 'es' | 'en' = 'es',
-    onUpdate: StreamCallback
+    onUpdate: StreamCallback,
+    mode: 'chat' | 'agent' = 'agent'
   ): Promise<void> {
     try {
       console.log('📡 [AGENT-CLIENT] Enviando mensaje (JSON directo):', input.substring(0, 50));
@@ -130,7 +133,8 @@ export class AgentClient {
         input,
         userId: this.userId,
         conversationHistory,
-        language
+        language,
+        mode
       };
       
       const fullUrl = `${this.baseURL}/api/mervin-v2/stream`;
@@ -197,7 +201,8 @@ export class AgentClient {
     files: File[],
     conversationHistory: MervinMessage[] = [],
     language: 'es' | 'en' = 'es',
-    onUpdate: StreamCallback
+    onUpdate: StreamCallback,
+    mode: 'chat' | 'agent' = 'agent'
   ): Promise<void> {
     try {
       console.log(`📨 [AGENT-CLIENT-FILES] Enviando mensaje con ${files.length} archivo(s)`);
@@ -207,6 +212,7 @@ export class AgentClient {
       formData.append('input', input);
       formData.append('userId', this.userId);
       formData.append('language', language);
+      formData.append('mode', mode);
       formData.append('conversationHistory', JSON.stringify(conversationHistory));
 
       // Adjuntar archivos
