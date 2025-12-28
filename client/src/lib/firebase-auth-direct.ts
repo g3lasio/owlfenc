@@ -3,7 +3,8 @@
  * Bypass completo del bug de split() usando Firebase REST API
  */
 
-const FIREBASE_API_KEY = "AIzaSyBkiNyJNG-uGBO3-w4g-q5SbqDxvTdCRSk";
+// 🔑 [SECURE] Firebase API Key loaded from environment variable
+const FIREBASE_API_KEY = import.meta.env.VITE_FIREBASE_WEB_API_KEY || "";
 const FIREBASE_AUTH_URL = "https://identitytoolkit.googleapis.com/v1";
 
 interface FirebaseAuthResponse {

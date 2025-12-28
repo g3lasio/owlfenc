@@ -31,7 +31,8 @@ try {
   // Initialize with full configuration including storage
   try {
     // Try to use service account if available (check multiple env var names)
-    const serviceAccountEnv = process.env.FIREBASE_SERVICE_ACCOUNT || 
+    const serviceAccountEnv = process.env.FIREBASE_ADMIN_SDK || 
+                              process.env.FIREBASE_SERVICE_ACCOUNT || 
                               process.env.FIREBASE_ADMIN_CREDENTIALS;
     
     if (serviceAccountEnv) {

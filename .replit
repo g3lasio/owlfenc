@@ -60,3 +60,8 @@ externalPort = 3000
 
 [agent]
 integrations = ["javascript_stripe:1.0.0"]
+
+[userenv]
+
+[userenv.shared]
+VITE_FIREBASE_WEB_API_KEY = "${FIREBASE_WEB_API_KEY}"

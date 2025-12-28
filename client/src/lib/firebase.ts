@@ -113,16 +113,22 @@ export const createDevUser = () => {
   };
 };
 
-// 🔑 [API-KEY-DEBUG] Configuración de Firebase con logging de debug
+// 🔑 [SECURE] Firebase configuration using environment variables
+// API Key is loaded from Replit Secrets for security - never hardcoded
 const firebaseConfig = {
-  apiKey: "AIzaSyBkiNyJNG-uGBO3-w4g-q5SbqDxvTdCRSk",
-  authDomain: "owl-fenc.firebaseapp.com",
+  apiKey: import.meta.env.VITE_FIREBASE_WEB_API_KEY || "",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "owl-fenc.firebaseapp.com",
   projectId: "owl-fenc",
   storageBucket: "owl-fenc.firebasestorage.app",
   messagingSenderId: "610753147271",
   appId: "1:610753147271:web:b720b293ba1f4d2f456322",
   measurementId: "G-Z2PWQXHEN0"
 };
+
+// Validate Firebase API Key is configured
+if (!firebaseConfig.apiKey) {
+  console.error('❌ [FIREBASE] VITE_FIREBASE_WEB_API_KEY is not configured! Authentication will fail.');
+}
 
 // 🔑 [API-KEY-DEBUG] Logging para debugging de restricciones
 console.log('🔑 [API-KEY-DEBUG] Firebase config:', {
