@@ -353,7 +353,9 @@ export function generateInvoiceHtml(data: InvoiceData): string {
         
         <!-- Footer -->
         <div class="footer">
-            <p>Esta factura fue generada automáticamente por Mervin AI • Powered by Owl Fenc Platform</p>
+            <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd;">
+                <p style="font-size: 9px; color: #999;">Powered by Chyrris Technologies</p>
+            </div>
             <p>Para preguntas sobre esta factura, contacte: ${data.contractorEmail} • ${data.contractorPhone}</p>
         </div>
     </div>

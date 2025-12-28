@@ -71,7 +71,7 @@ function generateChangeOrderHTML(data: TemplateData, branding: ContractorBrandin
             size: 8.5in 11in;
             margin: 0.75in 0.75in 1in 0.75in;
             @bottom-center {
-                content: "Powered by Mervin AI";
+                content: "Powered by Chyrris Technologies";
                 font-family: 'Arial', sans-serif;
                 font-size: 9pt;
                 color: #666;
@@ -370,7 +370,7 @@ ${hasTimelineChange ? '' : `
     </div>
 </div>
 
-<div class="footer-branding">Powered by Mervin AI</div>
+<div class="footer-branding">Powered by Chyrris Technologies</div>
 
 </body>
 </html>`;

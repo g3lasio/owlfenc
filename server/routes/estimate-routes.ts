@@ -6,6 +6,7 @@ import { sendEmail } from "../services/emailService";
 import { verifyFirebaseAuth } from "../middleware/firebase-auth";
 import { userMappingService } from "../services/userMappingService";
 import { DatabaseStorage } from "../DatabaseStorage";
+import { ContractorDataService } from "../services/contractorDataService";
 
 // Inicializar UserMappingService
 const databaseStorage = new DatabaseStorage();
@@ -28,20 +29,31 @@ export function registerEstimateRoutes(app: Express): void {
         return res.status(500).json({ message: 'Error creando mapeo de usuario' });
       }
       console.log(`🔐 [SECURITY] Operating for REAL user_id: ${userId}`);
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: 'Usuario no encontrado' });
+      
+      // ✅ NEW: Obtener datos del perfil de Firebase
+      const profileValidation = await ContractorDataService.validateProfile(firebaseUid);
+      if (!profileValidation.valid) {
+        return res.status(400).json({
+          error: 'INCOMPLETE_PROFILE',
+          message: 'Please complete your company profile before generating estimates',
+          missingFields: profileValidation.missingFields,
+          redirectTo: '/profile-setup'
+        });
       }
+      
+      const contractorData = profileValidation.profile!;
       
       // Validar datos de entrada
       const inputData = {
         ...req.body,
         contractorId: userId,
-        contractorName: user.company || user.username,
-        contractorAddress: user.address || "",
-        contractorPhone: user.phone || "",
-        contractorEmail: user.email || "",
-        contractorLicense: user.license || "",
+        contractorName: contractorData.ownerName || contractorData.companyName,
+        contractorCompany: contractorData.companyName,
+        contractorAddress: contractorData.address,
+        contractorPhone: contractorData.phone,
+        contractorEmail: contractorData.email,
+        contractorLicense: contractorData.license || "",
+        contractorLogo: contractorData.logo || "",
       };
       
       const validationErrors = estimatorService.validateProjectInput(inputData);
@@ -121,19 +133,31 @@ export function registerEstimateRoutes(app: Express): void {
         return res.status(500).json({ message: 'Error creando mapeo de usuario' });
       }
       console.log(`🔐 [SECURITY] Operating for REAL user_id: ${userId}`);
-      const user = await storage.getUser(userId);
+      
+      // ✅ NEW: Obtener datos del perfil de Firebase
+      const profileValidation = await ContractorDataService.validateProfile(firebaseUid);
+      if (!profileValidation.valid) {
+        return res.status(400).json({
+          error: 'INCOMPLETE_PROFILE',
+          message: 'Please complete your company profile before generating estimates',
+          missingFields: profileValidation.missingFields,
+          redirectTo: '/profile-setup'
+        });
+      }
+      
+      const contractorData = profileValidation.profile!;
       
       // Preparar datos para el servicio estimador
       const estimateInput: ProjectInput = {
-        // Usar datos del contratista proporcionados o del usuario autenticado
-        contractorId: validatedInput.contractorId || userId,
-        contractorName: validatedInput.contractorName || user?.username || "",
-        contractorCompany: validatedInput.contractorCompany || user?.company || "",
-        contractorAddress: validatedInput.contractorAddress || user?.address || "",
-        contractorPhone: validatedInput.contractorPhone || user?.phone || "",
-        contractorEmail: validatedInput.contractorEmail || user?.email || "",
-        contractorLicense: validatedInput.contractorLicense || user?.license || "",
-        contractorLogo: validatedInput.contractorLogo,
+        // Usar datos del contratista del perfil de Firebase
+        contractorId: userId,
+        contractorName: contractorData.ownerName || contractorData.companyName,
+        contractorCompany: contractorData.companyName,
+        contractorAddress: contractorData.address,
+        contractorPhone: contractorData.phone,
+        contractorEmail: contractorData.email,
+        contractorLicense: contractorData.license || "",
+        contractorLogo: contractorData.logo || "",
         
         // Datos del cliente
         clientName: validatedInput.clientName,

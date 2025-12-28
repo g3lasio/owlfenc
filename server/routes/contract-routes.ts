@@ -9,6 +9,7 @@ import { hybridContractGenerator } from "../services/hybridContractGenerator";
 import OpenAI from "openai";
 import { verifyFirebaseAuth } from '../middleware/firebase-auth';
 import { userMappingService } from '../services/userMappingService';
+import { ContractorDataService } from '../services/contractorDataService';
 import { 
   requireLegalDefenseAccess,
   validateUsageLimit,
@@ -96,8 +97,23 @@ router.post('/preview',
       });
     }
 
+    // ✅ NEW: Obtener datos del perfil de Firebase para contractorBranding
+    const profileValidation = await ContractorDataService.validateProfile(firebaseUid);
+    if (!profileValidation.valid) {
+      return res.status(400).json({
+        success: false,
+        error: 'INCOMPLETE_PROFILE',
+        message: 'Please complete your company profile before generating contracts',
+        missingFields: profileValidation.missingFields,
+        redirectTo: '/profile-setup'
+      });
+    }
+    
+    const contractorData = profileValidation.profile!;
+    const contractorBranding = ContractorDataService.toContractorBranding(contractorData);
+    
     // Usar el generador híbrido para obtener el HTML del contrato
-    const contractHtml = await hybridContractGenerator.generateContractHTML(contractData);
+    const contractHtml = await hybridContractGenerator.generateContractHTML(contractData, contractorBranding);
     
     res.json({
       success: true,
@@ -828,10 +844,28 @@ router.post("/generate-hybrid", verifyFirebaseAuth, async (req, res) => {
       });
     }
 
+    // ✅ NEW: Obtener datos del perfil de Firebase para contractorBranding
+    const profileValidation = await ContractorDataService.validateProfile(firebaseUid);
+    if (!profileValidation.valid) {
+      return res.status(400).json({
+        success: false,
+        error: 'INCOMPLETE_PROFILE',
+        message: 'Please complete your company profile before generating contracts',
+        missingFields: profileValidation.missingFields,
+        redirectTo: '/profile-setup'
+      });
+    }
+    
+    const contractorData = profileValidation.profile!;
+    const contractorBranding = ContractorDataService.toContractorBranding(contractorData);
+
     // Generate contract using the hybrid system
     const result = await hybridContractGenerator.generateProfessionalContract(
       contractData,
-      templatePreferences || {
+      {
+        ...templatePreferences,
+        contractorBranding
+      } || {
         style: 'professional',
         includeProtections: true,
         pageLayout: '6-page'

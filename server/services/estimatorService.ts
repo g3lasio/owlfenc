@@ -913,11 +913,11 @@ export class EstimatorService {
       // Create comprehensive replacement map for all placeholders
       const replacements: Record<string, string> = {
         // Company information
-        '\\[Company Name\\]': estimateData.contractor?.companyName || estimateData.contractor?.name || 'Your Company',
-        '\\[Company Address, City, State, ZIP\\]': this.formatFullAddress(estimateData.contractor?.address) || 'Company Address',
-        '\\[COMPANY_EMAIL\\]': estimateData.contractor?.email || 'company@email.com',
-        '\\[COMPANY_PHONE\\]': estimateData.contractor?.phone || '(555) 123-4567',
-        '\\[COMPANY_LOGO_URL\\]': estimateData.contractor?.logo || '/owl-logo.png',
+        '\\[Company Name\\]': estimateData.contractor?.companyName || estimateData.contractor?.name || '[Company Name Required]',
+        '\\[Company Address, City, State, ZIP\\]': this.formatFullAddress(estimateData.contractor?.address) || '[Address Required]',
+        '\\[COMPANY_EMAIL\\]': estimateData.contractor?.email || '[Email Required]',
+        '\\[COMPANY_PHONE\\]': estimateData.contractor?.phone || '[Phone Required]',
+        '\\[COMPANY_LOGO_URL\\]': estimateData.contractor?.logo || '',
 
         // Client information
         '\\[Client Name\\]': estimateData.client?.name || 'Client Name',
@@ -942,7 +942,7 @@ export class EstimatorService {
 
         // Footer information
         '\\[YEAR\\]': new Date().getFullYear().toString(),
-        '\\[Your Company Name\\]': estimateData.contractor?.companyName || estimateData.contractor?.name || 'Your Company',
+        '\\[Your Company Name\\]': estimateData.contractor?.companyName || estimateData.contractor?.name || '[Company Name]',
       };
 
       // Apply all replacements to the template
@@ -994,9 +994,9 @@ export class EstimatorService {
     <div class="header">
         <h1>ESTIMADO PROFESIONAL</h1>
         <div class="company-info">
-            <h2>${estimateData.contractor?.companyName || estimateData.contractor?.name || 'Su Empresa'}</h2>
-            <p>${this.formatFullAddress(estimateData.contractor?.address) || 'Dirección de la empresa'}</p>
-            <p>Teléfono: ${estimateData.contractor?.phone || '(555) 123-4567'} | Email: ${estimateData.contractor?.email || 'contacto@empresa.com'}</p>
+            <h2>${estimateData.contractor?.companyName || estimateData.contractor?.name || '[Company Name Required]'}</h2>
+            <p>${this.formatFullAddress(estimateData.contractor?.address) || '[Address Required]'}</p>
+            <p>Teléfono: ${estimateData.contractor?.phone || '[Phone Required]'} | Email: ${estimateData.contractor?.email || '[Email Required]'}</p>
         </div>
     </div>
 
@@ -1215,9 +1215,9 @@ export class EstimatorService {
     <div class="header">
         <h1>ESTIMADO PROFESIONAL</h1>
         <div class="company-info">
-            <h2>${estimateData.contractor?.companyName || estimateData.contractor?.name || 'Su Empresa'}</h2>
-            <p>${this.formatFullAddress(estimateData.contractor?.address) || 'Dirección de la empresa'}</p>
-            <p>Teléfono: ${estimateData.contractor?.phone || '(555) 123-4567'} | Email: ${estimateData.contractor?.email || 'contacto@empresa.com'}</p>
+            <h2>${estimateData.contractor?.companyName || estimateData.contractor?.name || '[Company Name Required]'}</h2>
+            <p>${this.formatFullAddress(estimateData.contractor?.address) || '[Address Required]'}</p>
+            <p>Teléfono: ${estimateData.contractor?.phone || '[Phone Required]'} | Email: ${estimateData.contractor?.email || '[Email Required]'}</p>
         </div>
     </div>
 

@@ -660,7 +660,7 @@ ${isFinalWaiver ? `
 </div>
 
 <div class="document-footer">
-    <div class="footer-brand">Powered by Mervin AI</div>
+    <div class="footer-brand">Powered by Chyrris Technologies</div>
     <div class="footer-legal">This document was generated using professional legal document automation.</div>
 </div>
 

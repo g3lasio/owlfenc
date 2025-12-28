@@ -185,7 +185,12 @@ export class HybridContractGenerator {
     const numSelectedClauses = contractData.protections?.length || 0;
     
     // Use personalized contractor branding
-    const contractorName = contractorBranding.companyName || contractData.contractor.name || 'Contractor';
+    const contractorName = contractorBranding.companyName || contractData.contractor.name;
+    
+    // Validate required contractor information
+    if (!contractorName) {
+      throw new Error('CONTRACTOR_NAME_REQUIRED: Contractor name is required for contract generation');
+    }
     const contractorAddress = contractorBranding.address || contractData.contractor.address || '';
     const contractorPhone = contractorBranding.phone || contractData.contractor.phone || '';
     const contractorEmail = contractorBranding.email || contractData.contractor.email || '';
