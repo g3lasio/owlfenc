@@ -254,6 +254,31 @@ export const ProtectionPresets = {
     requirePlan: true,
     trackUsage: true,
     minimumLevel: PermissionLevel.FREE // Todos los planes tienen acceso pero con límites diferentes
+  },
+
+  // DeepSearch diferenciado por tipo
+  deepsearchMaterials: {
+    feature: 'deepsearch', // Materials y Labor comparten el mismo contador
+    rateLimit: { windowMs: 3600000, max: 200, message: 'Límite de búsquedas de materiales alcanzado por hora' },
+    requirePlan: true,
+    trackUsage: true,
+    minimumLevel: PermissionLevel.FREE
+  },
+
+  deepsearchLabor: {
+    feature: 'deepsearch', // Materials y Labor comparten el mismo contador
+    rateLimit: { windowMs: 3600000, max: 200, message: 'Límite de búsquedas de labor alcanzado por hora' },
+    requirePlan: true,
+    trackUsage: true,
+    minimumLevel: PermissionLevel.FREE
+  },
+
+  deepsearchFullCosts: {
+    feature: 'deepsearchFullCosts', // Full Costs tiene su propio contador (más valioso)
+    rateLimit: { windowMs: 3600000, max: 100, message: 'Límite de análisis completos alcanzado por hora' },
+    requirePlan: true,
+    trackUsage: true,
+    minimumLevel: PermissionLevel.FREE
   }
 };
 
@@ -267,3 +292,6 @@ export const protectPropertyVerification = () => subscriptionProtection(Protecti
 export const protectPermitAdvisor = () => subscriptionProtection(ProtectionPresets.permitAdvisor);
 export const protectAIChat = () => subscriptionProtection(ProtectionPresets.aiChat);
 export const protectDeepSearch = () => subscriptionProtection(ProtectionPresets.deepsearch);
+export const protectDeepSearchMaterials = () => subscriptionProtection(ProtectionPresets.deepsearchMaterials);
+export const protectDeepSearchLabor = () => subscriptionProtection(ProtectionPresets.deepsearchLabor);
+export const protectDeepSearchFullCosts = () => subscriptionProtection(ProtectionPresets.deepsearchFullCosts);

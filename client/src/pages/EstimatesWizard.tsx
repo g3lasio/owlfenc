@@ -1219,11 +1219,21 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
   ) => {
     console.log("🔍 NEW DEEPSEARCH - Starting with type:", searchType);
     
-    // Verificar permisos antes de proceder
-    if (!featureAccess.canUseDeepsearch()) {
-      console.log("🚫 NEW DEEPSEARCH - Access denied, showing upgrade prompt");
-      featureAccess.showDeepsearchUpgrade();
-      return;
+    // Verificar permisos según el tipo de búsqueda
+    if (searchType === "full") {
+      // Full Costs requiere permiso especial
+      if (!featureAccess.canUseDeepsearchFullCosts()) {
+        console.log("🚫 NEW DEEPSEARCH - Full Costs access denied, showing upgrade prompt");
+        featureAccess.showDeepsearchFullCostsUpgrade();
+        return;
+      }
+    } else {
+      // Materials y Labor usan el permiso regular
+      if (!featureAccess.canUseDeepsearch()) {
+        console.log("🚫 NEW DEEPSEARCH - Access denied, showing upgrade prompt");
+        featureAccess.showDeepsearchUpgrade();
+        return;
+      }
     }
     
     const description = estimate.projectDetails.trim();
@@ -5304,14 +5314,25 @@ This link provides a professional view of your estimate that you can access anyt
                                 SELECT.SEARCH.TYPE
                               </div>
                               {featureAccess.canUseDeepsearch() && (
-                                <div className="flex items-center gap-1.5">
-                                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                  <span className="text-xs font-mono text-emerald-400">
-                                    {(() => {
-                                      const remaining = featureAccess.remainingDeepsearch();
-                                      return remaining === -1 ? '∞' : remaining;
-                                    })()} restantes
-                                  </span>
+                                <div className="flex flex-col gap-1">
+                                  <div className="flex items-center gap-1.5">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+                                    <span className="text-xs font-mono text-blue-400">
+                                      {(() => {
+                                        const remaining = featureAccess.remainingDeepsearch();
+                                        return remaining === -1 ? '∞' : remaining;
+                                      })()} Materials/Labor
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                    <span className="text-xs font-mono text-emerald-400">
+                                      {(() => {
+                                        const remaining = featureAccess.remainingDeepsearchFullCosts();
+                                        return remaining === -1 ? '∞' : remaining;
+                                      })()} Full Costs
+                                    </span>
+                                  </div>
                                 </div>
                               )}
                             </div>

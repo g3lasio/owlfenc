@@ -104,33 +104,35 @@ export const PLAN_LIMITS = {
   // =========================================
   [PLAN_IDS.PRIMO_CHAMBEADOR]: {
     // Estimados (conteo mensual)
-    estimatesBasic: 5,           // 5 estimados básicos/mes con marca de agua
+    estimatesBasic: -1,          // ✅ ILIMITADO - Estimados manuales sin IA
     estimatesAI: 1,              // 1 estimado con IA/mes con marca de agua
-    basicEstimates: 5,           // Alias para compatibilidad frontend
+    basicEstimates: -1,          // Alias para compatibilidad frontend
     aiEstimates: 1,              // Alias para compatibilidad frontend
     
-    // Contratos - BLOQUEADO
-    contracts: 0,                // ❌ NO acceso a Legal Defense
+    // Contratos - LIMITADO (solo PDF, sin firma digital)
+    contracts: 5,                // ✅ 5 contratos/mes (solo descarga PDF)
     
     // Herramientas de verificación
-    propertyVerifications: 0,    // ❌ Bloqueado
-    propertyVerification: 0,     // Alias para compatibilidad
-    permitAdvisor: 0,            // ❌ Bloqueado
+    propertyVerifications: 5,    // ✅ 5 verificaciones/mes
+    propertyVerification: 5,     // Alias para compatibilidad
+    permitAdvisor: 5,            // ✅ 5 consultas/mes
     
     // Gestión de proyectos
     projects: 0,                 // ❌ BLOQUEADO - puede ver página pero no detalles
     
     // Funciones financieras
-    invoices: 0,                 // ❌ Sin acceso
+    invoices: 5,                 // ✅ 5 invoices/mes
     paymentTracking: 0,          // ❌ Sin acceso (0=disabled, 1=basic, 2=pro)
     
-    // Investigación avanzada - LÍMITE BAJO PARA PRIMO
-    deepsearch: 3,               // ✅ 3 búsquedas DeepSearch/mes (puede agregar materiales manualmente ilimitado)
+    // Investigación avanzada - DeepSearch con límites diferenciados
+    deepsearch: 5,               // ✅ 5 búsquedas Materials o Labor
+    deepsearchFullCosts: 3,      // ✅ 3 búsquedas Full Costs (la más valiosa)
     
     // ===== FEATURE FLAGS BOOLEANAS =====
     hasWatermark: true,          // ✅ SIEMPRE marca de agua
-    hasLegalDefense: false,      // ❌ NO acceso a Legal Defense
-    hasInvoices: false,          // ❌ NO acceso a facturación
+    hasLegalDefense: true,       // ✅ Acceso limitado (5 contratos, solo PDF)
+    hasInvoices: true,           // ✅ Acceso limitado (5 invoices/mes)
+    hasDualSignature: false,     // ❌ NO acceso a firma digital dual (solo paid users)
     hasPaymentTracker: false,    // ❌ NO acceso a tracking de pagos
     hasOwlFunding: false,        // ❌ NO acceso a financiamiento
     hasOwlAcademy: false,        // ❌ NO acceso a academia
@@ -167,7 +169,8 @@ export const PLAN_LIMITS = {
     paymentTracking: 1,          // ✅ Básico
     
     // Investigación avanzada
-    deepsearch: 50,              // 50 búsquedas/mes
+    deepsearch: 50,              // 50 búsquedas Materials o Labor/mes
+    deepsearchFullCosts: 50,     // 50 búsquedas Full Costs/mes
     
     // ===== FEATURE FLAGS BOOLEANAS =====
     hasWatermark: false,         // ✅ SIN marca de agua
@@ -178,6 +181,7 @@ export const PLAN_LIMITS = {
     hasOwlAcademy: true,         // ✅ Acceso a academia
     hasAIProjectManager: true,   // ✅ Acceso a gestión AI de proyectos
     hasQuickBooksIntegration: false, // ❌ NO integración QuickBooks (solo Premium)
+    hasDualSignature: true,      // ✅ Acceso a firma digital dual
     
     // Configuración
     supportLevel: 'priority',    // Soporte prioritario
@@ -210,6 +214,7 @@ export const PLAN_LIMITS = {
     
     // Investigación avanzada
     deepsearch: -1,              // ✅ ILIMITADO
+    deepsearchFullCosts: -1,     // ✅ ILIMITADO
     
     // ===== FEATURE FLAGS BOOLEANAS =====
     hasWatermark: false,         // ✅ SIN marca de agua
@@ -220,6 +225,7 @@ export const PLAN_LIMITS = {
     hasOwlAcademy: true,         // ✅ Acceso a academia
     hasAIProjectManager: true,   // ✅ Acceso a gestión AI de proyectos
     hasQuickBooksIntegration: true, // ✅ Integración QuickBooks
+    hasDualSignature: true,      // ✅ Acceso a firma digital dual
     
     // Configuración
     supportLevel: 'vip',         // Soporte VIP 24/7
@@ -241,9 +247,10 @@ export const PLAN_LIMITS = {
     projects: -1,                // ✅ ILIMITADO durante trial
     invoices: -1,                // ✅ ILIMITADO durante trial
     paymentTracking: 2,          // ✅ PRO durante trial
-    deepsearch: -1,              // ✅ ILIMITADO durante trial (14 días gratis)
+    deepsearch: -1,              // ✅ ILIMITADO durante trial (14 días)
+    deepsearchFullCosts: -1,     // ✅ ILIMITADO durante trial
     
-    // ===== FEATURE FLAGS BOOLEANAS =====
+    // ===== FEATURE FLAGS BOOLEANAS ======
     hasWatermark: false,         // ✅ SIN marca de agua durante trial
     hasLegalDefense: true,       // ✅ Acceso durante trial
     hasInvoices: true,           // ✅ Acceso durante trial
@@ -252,6 +259,7 @@ export const PLAN_LIMITS = {
     hasOwlAcademy: true,         // ✅ Acceso durante trial
     hasAIProjectManager: true,   // ✅ Acceso durante trial
     hasQuickBooksIntegration: true, // ✅ Acceso durante trial
+    hasDualSignature: true,      // ✅ Acceso a firma digital dual durante trial
     
     // Configuración
     supportLevel: 'premium',     // Soporte premium durante trial

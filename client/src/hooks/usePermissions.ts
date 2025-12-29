@@ -20,6 +20,10 @@ export function useFeatureAccess() {
     hasDeepsearchAccess: () => hasAccess('deepsearch'),
     remainingDeepsearch: () => getRemainingUsage('deepsearch'),
     
+    // Deepsearch Full Costs (análisis completo - más valioso)
+    canUseDeepsearchFullCosts: () => canUse('deepsearchFullCosts'),
+    remainingDeepsearchFullCosts: () => getRemainingUsage('deepsearchFullCosts'),
+    
     // Contratos
     canCreateContract: () => canUse('contracts'),
     remainingContracts: () => getRemainingUsage('contracts'),
@@ -38,6 +42,7 @@ export function useFeatureAccess() {
     showInvoiceUpgrade: () => showUpgradeModal('invoices', 'Gestiona tus pagos como un profesional'),
     showProjectUpgrade: () => showUpgradeModal('projects', 'Administra proyectos con IA avanzada'),
     showDeepsearchUpgrade: () => showUpgradeModal('deepsearch', '¡Búsquedas súper potentes para estimados perfectos!'),
+    showDeepsearchFullCostsUpgrade: () => showUpgradeModal('deepsearchFullCosts', '¡Análisis completos ilimitados de materiales y labor!'),
   };
 }
 

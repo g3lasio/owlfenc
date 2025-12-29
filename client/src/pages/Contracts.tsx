@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { usePageContext } from "@/contexts/PageContext";
+import { useFeatureAccess, usePermissions } from "@/hooks/usePermissions";
 import { auth } from "@/lib/firebase";
 import { User as FirebaseUser, onAuthStateChanged } from "firebase/auth";
 import { 
@@ -46,6 +47,8 @@ const Contracts = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { setPageContext, clearPageContext } = usePageContext();
+  const featureAccess = useFeatureAccess();
+  const { userPlan } = usePermissions();
   const [activeTab, setActiveTab] = useState("mis-contratos");
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -297,10 +300,26 @@ const Contracts = () => {
             Administra tus contratos de cercado y crea nuevos documentos en minutos
           </p>
         </div>
-        <Button onClick={() => setIsCreateDialogOpen(true)}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Nuevo Contrato
-        </Button>
+        <div className="flex flex-col items-end gap-2">
+          <Button 
+            onClick={() => {
+              if (!featureAccess.canCreateContract()) {
+                featureAccess.showContractUpgrade();
+                return;
+              }
+              setIsCreateDialogOpen(true);
+            }}
+            disabled={!featureAccess.canCreateContract()}
+          >
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Nuevo Contrato
+          </Button>
+          {userPlan && userPlan.limits.contracts !== -1 && (
+            <span className="text-xs text-muted-foreground">
+              {featureAccess.remainingContracts()}/{userPlan.limits.contracts} contratos este mes
+            </span>
+          )}
+        </div>
       </div>
 
       <Separator />

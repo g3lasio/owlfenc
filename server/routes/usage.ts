@@ -344,3 +344,62 @@ export function registerUsageRoutes(app: any) {
 
   console.log('📊 [USAGE] Usage API routes registered successfully');
 }
+  // Obtener resumen de uso actual del usuario autenticado (usa productionUsageService)
+  app.get('/api/usage/current', async (req: Request, res: Response) => {
+    try {
+      // Verificar autenticación
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ 
+          error: "Autenticación requerida",
+          code: "NO_AUTH_TOKEN" 
+        });
+      }
+
+      const token = authHeader.split(' ')[1];
+      const decodedToken = await admin.auth().verifyIdToken(token);
+      const uid = decodedToken.uid;
+
+      // Importar productionUsageService dinámicamente
+      const { productionUsageService } = await import('../services/productionUsageService.js');
+      
+      // Obtener resumen de uso
+      const usageSummary = await productionUsageService.getUsageSummary(uid);
+      
+      if (!usageSummary) {
+        // Si no hay datos, devolver uso vacío
+        return res.json({
+          uid,
+          planName: 'primo',
+          planId: 1,
+          used: {
+            basicEstimates: 0,
+            aiEstimates: 0,
+            contracts: 0,
+            propertyVerifications: 0,
+            permitAdvisor: 0,
+            projects: 0,
+            invoices: 0,
+            paymentTracking: 0,
+            deepsearch: 0
+          },
+          limits: {
+            basicEstimates: 5,
+            aiEstimates: 2,
+            contracts: 0,
+            propertyVerifications: 0,
+            permitAdvisor: 0,
+            projects: 5,
+            invoices: 0,
+            paymentTracking: 0,
+            deepsearch: 3
+          }
+        });
+      }
+
+      res.json(usageSummary);
+    } catch (error) {
+      console.error('❌ [USAGE] Error getting current usage:', error);
+      res.status(500).json({ error: 'Error getting usage data' });
+    }
+  });

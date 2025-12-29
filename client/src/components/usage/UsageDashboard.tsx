@@ -53,42 +53,28 @@ export function UsageDashboard({
 }: UsageDashboardProps) {
   const [currentPeriod, setCurrentPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   
-  // Fetch usage data
+  // Fetch usage data from backend
   const { data: usageData, isLoading, error } = useQuery<UsageData>({
     queryKey: ['usage-dashboard', currentPeriod],
     queryFn: async () => {
-      // This would be replaced with actual API call
-      // For now, returning mock data
+      const response = await fetch('/api/usage/current', {
+        headers: {
+          'Authorization': `Bearer ${await (await import('@/lib/firebase')).auth.currentUser?.getIdToken()}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch usage data');
+      }
+      
+      const data = await response.json();
+      
       return {
-        planName: 'primo',
-        planId: 1,
-        trial: {
-          isTrialing: true,
-          daysRemaining: 3,
-          status: 'active'
-        },
-        limits: {
-          basicEstimates: 5,
-          aiEstimates: 2,
-          contracts: 2,
-          propertyVerifications: 3,
-          permitAdvisor: 3,
-          projects: 5,
-          invoices: 10,
-          paymentTracking: 20,
-          deepsearch: 5
-        },
-        used: {
-          basicEstimates: 4,
-          aiEstimates: 2,
-          contracts: 1,
-          propertyVerifications: 2,
-          permitAdvisor: 1,
-          projects: 3,
-          invoices: 7,
-          paymentTracking: 15,
-          deepsearch: 4
-        },
+        planName: data.planName || 'primo',
+        planId: data.planId || 1,
+        trial: data.trial,
+        limits: data.limits || {},
+        used: data.used || {},
         lastUpdated: new Date().toISOString()
       };
     },
