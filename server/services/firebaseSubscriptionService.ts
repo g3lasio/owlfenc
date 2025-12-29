@@ -645,6 +645,42 @@ export class FirebaseSubscriptionService {
       throw error;
     }
   }
+  /**
+   * Asigna el plan gratuito por defecto (Primo Chambeador) a un nuevo usuario.
+   * Esta función se llama solo durante el registro.
+   * @param firebaseUid - El Firebase UID del nuevo usuario.
+   */
+  async assignDefaultFreePlan(firebaseUid: string): Promise<void> {
+    try {
+      console.log(`🚀 [SUBSCRIPTION] Asignando plan gratuito por defecto a nuevo usuario: ${firebaseUid}`);
+      
+      const planId = PLAN_IDS.PRIMO_CHAMBEADOR;
+
+      // El plan gratuito es "anual" para no molestar al usuario, pero es gratis.
+      const oneYearFromNow = new Date();
+      oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+
+      const subscriptionData: Partial<SubscriptionData> = {
+        planId: planId,
+        status: 'active',
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: oneYearFromNow,
+        billingCycle: 'yearly',
+        cancelAtPeriodEnd: false,
+      };
+
+      // Usar el método existente que ya tiene las validaciones de seguridad
+      await this.createOrUpdateSubscription(firebaseUid, subscriptionData);
+
+      console.log(`✅ [SUBSCRIPTION] Plan 'Primo Chambeador' asignado exitosamente a ${firebaseUid}`);
+
+    } catch (error) {
+      console.error(`❌ [SUBSCRIPTION] Error asignando plan gratuito por defecto a ${firebaseUid}:`, error);
+      // No relanzar el error para no interrumpir el flujo de login, pero sí loggearlo.
+      // El usuario podrá elegir un plan manualmente si esto falla.
+    }
+  }
+
 }
 
 export const firebaseSubscriptionService = new FirebaseSubscriptionService();

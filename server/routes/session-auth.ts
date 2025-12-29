@@ -3,7 +3,20 @@ import { adminAuth } from '../firebase-admin';
 import { userMappingService } from '../services/userMappingService';
 import { storage } from '../storage';
 
+import { rateLimit } from 'express-rate-limit';
+
 const router = Router();
+
+// Rate limiting for login attempts
+const loginRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Max 10 login attempts per 15 minutes per IP
+  message: {
+    error: 'Demasiados intentos de login. Intenta de nuevo en 15 minutos.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 /**
  * FIREBASE SESSION COOKIES IMPLEMENTATION
@@ -24,7 +37,7 @@ interface SessionLoginRequest {
  * - Cookie valid for 5-10 days
  * - All subsequent requests use session cookie automatically
  */
-router.post('/sessionLogin', async (req: Request, res: Response) => {
+router.post("/sessionLogin", loginRateLimit, async (req: Request, res: Response) => {
   try {
     const { idToken } = req.body as SessionLoginRequest;
 
@@ -61,11 +74,15 @@ router.post('/sessionLogin', async (req: Request, res: Response) => {
     let internalUserId: number | null = null;
     try {
       const { userMappingService } = await import('../services/userMappingService');
-      internalUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(
-        decodedToken.uid, 
-        decodedToken.email || ''
-      );
-    } catch (mappingError) {
+      const mappingResult = await userMappingService.getOrCreateUserMapping(decodedToken.uid, decodedToken.email || '');
+      const internalUserId = mappingResult ? mappingResult.id : null;
+
+      // Si es un usuario nuevo, asignarle el plan gratuito por defecto
+      if (mappingResult && mappingResult.wasCreated) {
+        console.log(`🚀 Nuevo usuario detectado: ${internalUserId}. Asignando plan gratuito por defecto.`);
+        const { firebaseSubscriptionService } = await import('../services/firebaseSubscriptionService');
+        await firebaseSubscriptionService.assignDefaultFreePlan(decodedToken.uid);
+      }    } catch (mappingError) {
       console.error('⚠️ [SESSION-LOGIN] User mapping failed, continuing with session creation:', mappingError);
     }
 

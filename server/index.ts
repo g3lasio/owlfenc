@@ -1047,6 +1047,7 @@ registerRoutes(app);
 
 // 🔧 Registrar rutas centralizadas DESPUÉS del middleware de body-parser
 app.use("/api/centralized-email", centralizedEmailRoutes);
+app.use("/api/otp", otpRoutes);
 console.log('📧 [CENTRALIZED-EMAIL] Rutas registradas en /api/centralized-email');
 
 // 🔐 Registrar rutas de autenticación OTP

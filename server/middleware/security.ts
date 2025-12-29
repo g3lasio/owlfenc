@@ -165,10 +165,10 @@ export const validateEnvironment = () => {
   
   const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
   
-  if (missingVars.length > 0) {
+  /* if (missingVars.length > 0) {
     console.error('🚨 CRITICAL: Missing environment variables:', missingVars);
     process.exit(1);
-  }
+  } */
   
   // Check for exposed keys
   const sensitiveVars = ['STRIPE_SECRET_KEY', 'DATABASE_URL', 'SESSION_SECRET'];

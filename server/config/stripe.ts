@@ -23,7 +23,12 @@ export function getStripeSecretKey(): string {
     console.error(
       "❌ Stripe Secret Key not found. Please set STRIPE_SECRET_KEY or STRIPE_API_KEY in Replit Secrets"
     );
-    throw new Error("Stripe Secret Key is required");
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error("Stripe Secret Key is required in production");
+    } else {
+      console.warn("⚠️ Stripe Secret Key not found. Using a mock key for development.");
+      return 'sk_test_mock_key_for_development_only';
+    }
   }
   
   return key;

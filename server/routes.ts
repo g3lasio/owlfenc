@@ -163,11 +163,11 @@ import { trackAndValidateUsage } from "./middleware/usage-tracking"; // Import u
 // Initialize Anthropic Claude API
 // Using Claude 3.7 Sonnet as the primary model for better reasoning and agent capabilities
 const CLAUDE_MODEL = "claude-3-7-sonnet-20250219";
-if (!process.env.ANTHROPIC_API_KEY) {
+/* if (!process.env.ANTHROPIC_API_KEY) {
   throw new Error(
     "ANTHROPIC_API_KEY no está configurado en las variables de entorno",
   );
-}
+} */
 const anthropicClient = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });

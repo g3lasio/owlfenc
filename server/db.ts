@@ -15,9 +15,7 @@ if (!process.env.DATABASE_URL) {
     // Export null db in production if no DATABASE_URL
     // This allows the server to start but with limited functionality
   } else {
-    throw new Error(
-      "DATABASE_URL must be set. Did you forget to provision a database?",
-    );
+    console.warn("DATABASE_URL not set in development. Continuing without database for testing purposes.");
   }
 }
 

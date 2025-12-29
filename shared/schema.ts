@@ -80,7 +80,8 @@ export const users = pgTable('users', {
   logo: text('logo'),
   profilePhoto: text('profile_photo'),
   hasUsedTrial: boolean('has_used_trial').default(false).notNull(), // PERMANENT FLAG - never reset after trial created
-  trialStartDate: timestamp('trial_start_date'), // Fecha cuando empezó el trial (null si nunca lo usó)
+  trialStartDate: timestamp("trial_start_date"),
+  emailVerified: boolean("email_verified").default(false).notNull(), // Fecha cuando empezó el trial (null si nunca lo usó)
   createdAt: timestamp('created_at').defaultNow().notNull(),
   stripeConnectAccountId: text('stripe_connect_account_id'),
   defaultPaymentTerms: integer('default_payment_terms').default(30), // días para pago
@@ -1228,3 +1229,23 @@ export const conversationListItemSchema = z.object({
 });
 
 export type ConversationListItem = z.infer<typeof conversationListItemSchema>;
+
+export const otps = pgTable(
+  "otps",
+  {
+    id: serial("id").primaryKey(),
+    email: varchar("email", { length: 255 }).notNull(),
+    otp: varchar("otp", { length: 6 }).notNull(),
+    expiresAt: timestamp("expires_at", { mode: "date" }).notNull(),
+    used: boolean("used").default(false).notNull(),
+    createdAt: timestamp("created_at", { mode: "date" })
+      .defaultNow()
+      
+      .notNull(),
+  },
+  (table) => {
+    return {
+      emailIndex: index("email_idx").on(table.email),
+    };
+  }
+);

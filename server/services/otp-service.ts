@@ -3,18 +3,14 @@
  * Secure 6-digit OTP system with 15-minute expiration using Resend
  */
 
-import { Resend } from 'resend';
+import { resend } from '../lib/resendClient';
 import { db } from '../db';
 import { otpCodes, type InsertOtpCode } from '@shared/schema';
 import { eq, and, gt, lt } from 'drizzle-orm';
 import { getAuth } from 'firebase-admin/auth';
 import { SubscriptionEmailService } from './subscriptionEmailService';
 
-if (!process.env.RESEND_API_KEY) {
-  throw new Error("RESEND_API_KEY environment variable must be set");
-}
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 export class OTPService {
   

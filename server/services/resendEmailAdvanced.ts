@@ -37,14 +37,45 @@ export class ResendEmailAdvanced {
   private operationalEmail = 'gelasio@chyrris.com'; // Development/operational email
 
   constructor() {
-    if (!process.env.RESEND_API_KEY) {
-      throw new Error('RESEND_API_KEY is required');
+if (!process.env.RESEND_API_KEY) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('RESEND_API_KEY is required in production');
+      } else {
+        console.warn('⚠️ RESEND_API_KEY no está configurada en resendEmailAdvanced. Usando mock para desarrollo.');
+        this.resend = {
+          emails: {
+            send: async (payload: any) => {
+              console.log('--- MOCK EMAIL (Advanced) ---');
+              console.log('To:', payload.to);
+              console.log('Subject:', payload.subject);
+              console.log('--- END MOCK EMAIL ---');
+              return { data: { id: 'mock_advanced_email_id' }, error: null };
+            },
+          },
+        } as any;
+        return;
+      }
     }
     
     console.log('🔑 [RESEND-CONFIG] Using RESEND_API_KEY for initialization');
     console.log('🔑 [RESEND-CONFIG] API Key prefix:', process.env.RESEND_API_KEY?.substring(0, 8) + '...');
     
-    this.resend = new Resend(process.env.RESEND_API_KEY);
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('⚠️ RESEND_API_KEY no está configurada en resendEmailAdvanced. Usando mock para desarrollo.');
+      this.resend = {
+        emails: {
+          send: async (payload: any) => {
+            console.log('--- MOCK EMAIL (Advanced) ---');
+            console.log('To:', payload.to);
+            console.log('Subject:', payload.subject);
+            console.log('--- END MOCK EMAIL ---');
+            return { data: { id: 'mock_advanced_email_id' }, error: null };
+          },
+        },
+      } as any;
+    } else {
+      this.resend = new Resend(process.env.RESEND_API_KEY);
+    }
   }
 
   /**

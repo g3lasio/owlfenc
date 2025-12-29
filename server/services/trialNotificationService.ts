@@ -6,10 +6,10 @@
  */
 
 import { db, admin } from '../lib/firebase-admin.js';
-import { Resend } from 'resend';
+import { resend } from '../lib/resendClient';
 import { subscriptionEmailService } from './subscriptionEmailService';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+
 
 export interface TrialNotification {
   uid: string;

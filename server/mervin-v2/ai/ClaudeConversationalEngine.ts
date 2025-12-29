@@ -65,7 +65,29 @@ export class ClaudeConversationalEngine {
   constructor() {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
-      throw new Error('ANTHROPIC_API_KEY is not configured');
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('ANTHROPIC_API_KEY is not configured in production');
+      } else {
+        console.warn('⚠️ ANTHROPIC_API_KEY not set. Using a mock for development.');
+        this.anthropic = {
+          messages: {
+            create: async (params) => {
+              console.log('--- MOCK ANTHROPIC CALL ---');
+              return {
+                id: 'mock_message_id',
+                type: 'message',
+                role: 'assistant',
+                content: [{ type: 'text', text: 'This is a mock response from Claude.' }],
+                model: 'mock-claude-sonnet-4',
+                stop_reason: 'end_turn',
+                stop_sequence: null,
+                usage: { input_tokens: 10, output_tokens: 10 },
+              };
+            }
+          }
+        } as any;
+        return;
+      }
     }
     
     this.anthropic = new Anthropic({ apiKey });
