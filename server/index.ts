@@ -31,7 +31,7 @@ import adminContractsRoutes from "./routes/admin-contracts";
 import urlShortenerRoutes from "./routes/urlShortener";
 import mervinV2Routes from "./routes/mervin-v2";
 // import assistantsRoutes from "./routes/assistants"; // DESACTIVADO - Sistema obsoleto de OpenAI Assistants
-import mervinEstimatesRoutes from "./routes/mervin-estimates";
+// mervinEstimatesRoutes removed - Mervin now uses existing endpoints
 
 // 📊 Importar servicios de optimización Fase 4 ANTES de registrar rutas
 import { observabilityService } from './services/observabilityService';
@@ -743,9 +743,8 @@ console.log('🤖 [MERVIN-V2] Sistema Mervin V2 registrado en /api/mervin-v2');
 // console.log('🤖 [ASSISTANTS] Sistema OpenAI Assistants API registrado en /api/assistant');
 console.log('⚠️ [ASSISTANTS] Sistema OpenAI Assistants desactivado - usando Mervin Conversational con Claude');
 
-// 🤖 Registrar sistema de estimados Mervin con DeepSearch integrado
-app.use('/api/mervin', mervinEstimatesRoutes);
-console.log('🤖 [MERVIN-ESTIMATES] Sistema de estimados Mervin AI registrado en /api/mervin');
+// 🤖 Mervin parallel endpoints removed - Mervin V2 now uses existing protected endpoints
+// Mervin should call /api/estimates, /api/contracts, etc. directly
 
 // Add logging middleware only for API routes
 app.use('/api', (req, res, next) => {

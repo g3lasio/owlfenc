@@ -3,7 +3,7 @@ import { propertyService } from "../services/propertyService";
 import { verifyFirebaseAuth as requireAuth } from "../middleware/firebase-auth";
 import { getSecureUserId } from "../utils/secureUserHelper";
 import { firebaseSearchService } from "../services/firebaseSearchService";
-import { redisUsageService } from "../services/redisUsageService";
+import { productionUsageService } from "../services/productionUsageService";
 
 /**
  * Esta función registra las rutas relacionadas con la obtención
@@ -98,8 +98,8 @@ export function registerPropertyRoutes(app: Express): void {
           
           console.log('✅ [PROPERTY-HISTORY] Búsqueda guardada exitosamente en historial');
           
-          // 2️⃣ INCREMENTAR CONTADOR DE USO
-          await redisUsageService.incrementUsage(userId, 'propertyVerifications', 1);
+          // 2️⃣ INCREMENTAR CONTADOR DE USO (Firebase Firestore)
+          await productionUsageService.consumeFeature(userId, 'propertyVerifications');
           
           console.log('✅ [PROPERTY-USAGE] Contador incrementado: propertyVerifications +1');
         }

@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { verifyFirebaseAuth as requireAuth } from '../middleware/firebase-auth';
 import { firebaseEstimatesService } from '../services/firebaseEstimatesService';
 import { deepSearchService } from '../services/deepSearchService';
-import { redisUsageService } from '../services/redisUsageService';
+// redisUsageService removed - now using productionUsageService via middleware
 
 const router = express.Router();
 
