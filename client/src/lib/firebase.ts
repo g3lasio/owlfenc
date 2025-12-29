@@ -6,6 +6,7 @@ import {
   getDocs, 
   getDoc, 
   doc, 
+  setDoc,
   query, 
   where,
   orderBy,
@@ -1122,25 +1123,33 @@ export const uploadFile = async (file: File, path: string): Promise<string> => {
 // Obtener perfil de usuario
 export const getUserProfile = async (userId: string) => {
   try {
-    const q = query(
-      collection(db, "userProfiles"),
-      where("userId", "==", userId),
-      limit(1)
-    );
+    console.log(`🔍 [FIREBASE] Obteniendo perfil de companyProfiles para UID: ${userId}`);
     
-    const querySnapshot = await getDocs(q);
+    // CAMBIO CRÍTICO: Usar companyProfiles con document ID directo (firebaseUid)
+    // Esto sincroniza con el backend que usa CompanyProfileService
+    const docRef = doc(db, "companyProfiles", userId);
+    const docSnap = await getDoc(docRef);
     
-    if (querySnapshot.empty) {
+    if (!docSnap.exists()) {
+      console.log(`📭 [FIREBASE] No se encontró perfil en companyProfiles para UID: ${userId}`);
       return null;
     }
     
-    const doc = querySnapshot.docs[0];
+    const data = docSnap.data();
+    console.log(`✅ [FIREBASE] Perfil obtenido de companyProfiles: ${data.companyName || 'Sin nombre'}`);
+    
+    // MAPEO INVERSO: Backend usa 'companyName', frontend espera 'company'
+    const mappedData = {
+      ...data,
+      company: data.companyName || data.company || "",
+    };
+    
     return { 
-      id: doc.id, 
-      ...doc.data() 
+      id: docSnap.id, 
+      ...mappedData 
     };
   } catch (error) {
-    console.error("Error al obtener perfil de usuario:", error);
+    console.error("❌ [FIREBASE] Error al obtener perfil de usuario:", error);
     throw error;
   }
 };
@@ -1148,39 +1157,49 @@ export const getUserProfile = async (userId: string) => {
 // Guardar o actualizar perfil de usuario
 export const saveUserProfile = async (userId: string, profileData: any) => {
   try {
-    // Primero buscar si ya existe un perfil para este usuario
-    const q = query(
-      collection(db, "userProfiles"),
-      where("userId", "==", userId),
-      limit(1)
-    );
+    console.log(`💾 [FIREBASE] Guardando perfil en companyProfiles para UID: ${userId}`);
     
-    const querySnapshot = await getDocs(q);
+    // CAMBIO CRÍTICO: Usar companyProfiles con document ID directo (firebaseUid)
+    // Esto sincroniza con el backend que usa CompanyProfileService
+    const docRef = doc(db, "companyProfiles", userId);
+    const docSnap = await getDoc(docRef);
     
-    if (querySnapshot.empty) {
+    // MAPEO DE CAMPOS: Frontend usa 'company', backend usa 'companyName'
+    const mappedData = {
+      ...profileData,
+      companyName: profileData.companyName || profileData.company || "",
+    };
+    
+    // Eliminar campo 'company' para evitar duplicación
+    delete mappedData.company;
+    
+    // Preparar datos con metadata
+    const profileWithMeta = {
+      ...mappedData,
+      userId,
+      firebaseUid: userId,
+      updatedAt: Timestamp.now()
+    };
+    
+    if (!docSnap.exists()) {
       // No existe, crear nuevo perfil
-      const profileWithMeta = {
-        ...profileData,
-        userId,
-        createdAt: Timestamp.now(),
-        updatedAt: Timestamp.now()
-      };
-      
-      const docRef = await addDoc(collection(db, "userProfiles"), profileWithMeta);
-      return { id: docRef.id, ...profileWithMeta };
+      profileWithMeta.createdAt = Timestamp.now();
+      await setDoc(docRef, profileWithMeta);
+      console.log(`✅ [FIREBASE] Nuevo perfil creado en companyProfiles: ${profileData.companyName || profileData.company || 'Sin nombre'}`);
     } else {
-      // Ya existe, actualizar
-      const docRef = doc(db, "userProfiles", querySnapshot.docs[0].id);
-      const updatedData = {
-        ...profileData,
-        updatedAt: Timestamp.now()
-      };
-      
-      await updateDoc(docRef, updatedData);
-      return { id: docRef.id, ...updatedData };
+      // Ya existe, actualizar (merge para no sobrescribir campos no enviados)
+      await setDoc(docRef, profileWithMeta, { merge: true });
+      console.log(`✅ [FIREBASE] Perfil actualizado en companyProfiles: ${profileData.companyName || profileData.company || 'Sin nombre'}`);
     }
+    
+    // Retornar el perfil guardado
+    const savedDoc = await getDoc(docRef);
+    return { 
+      id: savedDoc.id, 
+      ...savedDoc.data() 
+    };
   } catch (error) {
-    console.error("Error al guardar perfil de usuario:", error);
+    console.error("❌ [FIREBASE] Error al guardar perfil de usuario:", error);
     throw error;
   }
 };

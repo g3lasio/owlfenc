@@ -134,7 +134,7 @@ export function useProfile() {
       }
     },
     enabled: !!currentUser || isDevMode,
-    staleTime: 1000 * 60 * 5, // Cache por 5 minutos
+    staleTime: 1000 * 30, // Cache por 30 segundos (reducido para reflejar cambios rápido)
     retry: 3
   });
 
