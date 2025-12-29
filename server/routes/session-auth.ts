@@ -72,17 +72,24 @@ router.post("/sessionLogin", loginRateLimit, async (req: Request, res: Response)
 
     // Get or create internal user mapping
     let internalUserId: number | null = null;
+    let isNewUser = false;
     try {
       const { userMappingService } = await import('../services/userMappingService');
-      const mappingResult = await userMappingService.getOrCreateUserMapping(decodedToken.uid, decodedToken.email || '');
-      const internalUserId = mappingResult ? mappingResult.id : null;
+      
+      // Primero verificar si el usuario ya existe
+      const existingUserId = await userMappingService.getInternalUserId(decodedToken.uid);
+      isNewUser = existingUserId === null;
+      
+      // Obtener o crear el mapping
+      internalUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(decodedToken.uid, decodedToken.email || '');
 
       // Si es un usuario nuevo, asignarle el plan gratuito por defecto
-      if (mappingResult && mappingResult.wasCreated) {
+      if (isNewUser && internalUserId) {
         console.log(`🚀 Nuevo usuario detectado: ${internalUserId}. Asignando plan gratuito por defecto.`);
         const { firebaseSubscriptionService } = await import('../services/firebaseSubscriptionService');
         await firebaseSubscriptionService.assignDefaultFreePlan(decodedToken.uid);
-      }    } catch (mappingError) {
+      }
+    } catch (mappingError) {
       console.error('⚠️ [SESSION-LOGIN] User mapping failed, continuing with session creation:', mappingError);
     }
 

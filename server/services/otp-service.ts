@@ -8,7 +8,6 @@ import { db } from '../db';
 import { otpCodes, type InsertOtpCode } from '@shared/schema';
 import { eq, and, gt, lt } from 'drizzle-orm';
 import { getAuth } from 'firebase-admin/auth';
-import { SubscriptionEmailService } from './subscriptionEmailService';
 
 
 
@@ -177,18 +176,8 @@ export class OTPService {
         // Generate custom token for immediate authentication
         const customToken = await getAuth().createCustomToken(userRecord.uid);
 
-        // 📧 Send welcome email to new user
-        try {
-          const emailService = new SubscriptionEmailService();
-          await emailService.sendWelcomeEmail({
-            email: email,
-            userName: displayName
-          });
-          console.log(`📧 [OTP-SERVICE] Welcome email sent to: ${email}`);
-        } catch (emailError) {
-          console.error('⚠️ [OTP-SERVICE] Failed to send welcome email (non-blocking):', emailError);
-          // Don't fail registration if email fails
-        }
+        // 📧 Log successful registration (welcome email handled by subscription flow)
+        console.log(`📧 [OTP-SERVICE] User registered successfully: ${email}`);
 
         return {
           success: true,
