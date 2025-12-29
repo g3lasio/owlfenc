@@ -7,6 +7,7 @@ import express from 'express';
 import { z } from 'zod';
 import { verifyFirebaseAuth as requireAuth } from '../middleware/firebase-auth';
 import { firebaseContractsService } from '../services/firebaseContractsService';
+import { protectContracts } from '../middleware/subscription-protection';
 
 const router = express.Router();
 
@@ -74,7 +75,8 @@ router.get('/', requireAuth, async (req, res) => {
 });
 
 // POST /api/contracts - Crear un nuevo contrato
-router.post('/', requireAuth, async (req, res) => {
+// 🔐 SECURITY: Protected with subscription limits - counts against user's contract quota
+router.post('/', requireAuth, protectContracts(), async (req, res) => {
   try {
     const userId = req.firebaseUser?.uid;
     if (!userId) {

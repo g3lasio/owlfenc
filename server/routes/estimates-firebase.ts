@@ -174,16 +174,8 @@ router.post('/', requireAuth, async (req, res) => {
     
     console.log('✅ [ESTIMATES-API] Estimado creado exitosamente, ID:', newEstimate.id);
     
-    // 🔥 INTEGRACIÓN COMPLETA: Incrementar contador automáticamente
-    // Esto asegura que tanto estimados manuales como de Mervin se cuenten igual
-    try {
-      const feature = usedDeepSearch ? 'aiEstimates' : 'basicEstimates';
-      await redisUsageService.incrementUsage(userId, feature, 1);
-      console.log(`✅ [ESTIMATES-USAGE] Contador incrementado: ${feature} +1`);
-    } catch (usageError) {
-      // No fallar la creación del estimate si falla el contador
-      console.error('⚠️ [ESTIMATES-USAGE] Error incrementando contador:', usageError);
-    }
+    // ℹ️ NOTA: Los estimados manuales son ILIMITADOS y no cuentan contra límites
+    // Solo DeepSearch cuenta, y se maneja en el endpoint /api/deepsearch/analyze
     
     res.status(201).json(newEstimate);
   } catch (error) {

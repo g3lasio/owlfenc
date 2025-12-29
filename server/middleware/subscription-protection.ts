@@ -28,7 +28,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { firebaseSubscriptionService } from '../services/firebaseSubscriptionService';
 import { redisRateLimiter, RateLimitConfig } from '../services/redisRateLimiter';
-import { redisUsageService } from '../services/redisUsageService';
+import { productionUsageService } from '../services/productionUsageService';
 import { isRedisAvailable } from '../lib/redis/client';
 import { 
   getPlanLimits,
@@ -145,11 +145,11 @@ export function subscriptionProtection(config: ProtectionConfig) {
         const featureLimit = planLimits[featureLimitKey];
 
         if (typeof featureLimit === 'number') {
-          // Check current usage
-          const canUse = await redisUsageService.canUseFeature(userId, config.feature, featureLimit);
+          // Check current usage (using Firebase Firestore for persistence)
+          const canUse = await productionUsageService.canUseFeature(userId, config.feature, featureLimit);
 
           if (!canUse) {
-            const usageDetails = await redisUsageService.getUsageDetails(userId, config.feature, featureLimit);
+            const usageDetails = await productionUsageService.getUsageDetails(userId, config.feature, featureLimit);
 
             return res.status(403).json({
               success: false,
@@ -164,10 +164,10 @@ export function subscriptionProtection(config: ProtectionConfig) {
             });
           }
 
-          // Attach usage tracking function to request
+          // Attach usage tracking function to request (using Firebase for persistence)
           req.trackUsage = async () => {
             try {
-              await redisUsageService.incrementUsage(userId, config.feature, 1);
+              await productionUsageService.consumeFeature(userId, config.feature);
               console.log(`✅ [PROTECTION] Usage tracked for ${userId}:${config.feature}`);
             } catch (error) {
               console.error(`❌ [PROTECTION] Error tracking usage:`, error);
