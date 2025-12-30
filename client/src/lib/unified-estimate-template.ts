@@ -55,7 +55,7 @@ export function convertEstimateDataToTemplate(estimateData: any, companyData: an
   
   return {
     // Empresa
-    companyName: companyData.companyName || companyData.ownerName || 'Owl Fenc',
+    companyName: companyData.companyName || '',
     companyAddress: companyData.address || companyData.fullAddress || '',
     companyPhone: companyData.phone || companyData.mobilePhone || '',
     companyEmail: companyData.email || '',

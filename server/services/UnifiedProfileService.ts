@@ -439,7 +439,7 @@ export class UnifiedProfileService {
       id: profile.userId,
       firebaseUid: profile.firebaseUid,
       company: profile.companyName,
-      ownerName: profile.ownerName || profile.companyName,
+      ownerName: profile.ownerName || '',
       address: this.formatFullAddress(profile),
       phone: profile.phone,
       email: profile.email,
@@ -470,7 +470,7 @@ export class UnifiedProfileService {
   toContractorBranding(profile: CompanyProfile): any {
     return {
       companyName: profile.companyName,
-      ownerName: profile.ownerName || profile.companyName,
+      ownerName: profile.ownerName || '',
       address: this.formatFullAddress(profile),
       phone: profile.phone,
       email: profile.email,

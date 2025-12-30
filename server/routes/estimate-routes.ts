@@ -47,7 +47,7 @@ export function registerEstimateRoutes(app: Express): void {
       const inputData = {
         ...req.body,
         contractorId: userId,
-        contractorName: contractorData.ownerName || contractorData.companyName,
+        contractorName: contractorData.ownerName || '',
         contractorCompany: contractorData.companyName,
         contractorAddress: contractorData.address,
         contractorPhone: contractorData.phone,
@@ -151,7 +151,7 @@ export function registerEstimateRoutes(app: Express): void {
       const estimateInput: ProjectInput = {
         // Usar datos del contratista del perfil de Firebase
         contractorId: userId,
-        contractorName: contractorData.ownerName || contractorData.companyName,
+        contractorName: contractorData.ownerName || '',
         contractorCompany: contractorData.companyName,
         contractorAddress: contractorData.address,
         contractorPhone: contractorData.phone,

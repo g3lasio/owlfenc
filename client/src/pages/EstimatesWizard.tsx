@@ -4312,13 +4312,13 @@ This link provides a professional view of your estimate that you can access anyt
         originalData: {
           projectDescription: estimate.projectDetails || "",
         },
-        // Add contractor data from profile - ENHANCED fallback data
+        // Add contractor data from profile - NO automatic fallbacks between fields
         contractor: {
-          name: profile?.company || profile?.ownerName || "Professional Contractor",
-          company: profile?.company || "Construction Company",
-          address: profile?.address || "Business Address",
-          phone: profile?.phone || "Phone Number",
-          email: profile?.email || currentUser?.email || "contractor@example.com",
+          name: profile?.ownerName || "",
+          company: profile?.company || "",
+          address: profile?.address || "",
+          phone: profile?.phone || "",
+          email: profile?.email || currentUser?.email || "",
           website: profile?.website || "",
           logo: profile?.logo || "",
           license: profile?.license || "",
@@ -4499,13 +4499,13 @@ This link provides a professional view of your estimate that you can access anyt
         originalData: {
           projectDescription: estimate.projectDetails || "",
         },
-        // Add contractor data from profile - ENHANCED fallback data
+        // Add contractor data from profile - NO automatic fallbacks between fields
         contractor: {
-          name: profile?.company || profile?.ownerName || "Professional Contractor",
-          company: profile?.company || "Construction Company",
-          address: profile?.address || "Business Address",
-          phone: profile?.phone || "Phone Number",
-          email: profile?.email || currentUser?.email || "contractor@example.com",
+          name: profile?.ownerName || "",
+          company: profile?.company || "",
+          address: profile?.address || "",
+          phone: profile?.phone || "",
+          email: profile?.email || currentUser?.email || "",
           website: profile?.website || "",
           logo: profile?.logo || "",
           license: profile?.license || "",

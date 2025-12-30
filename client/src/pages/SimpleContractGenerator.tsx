@@ -1374,8 +1374,8 @@ export default function SimpleContractGenerator() {
             address: editableData.clientAddress,
           },
           contractor: {
-            name: profile?.company || profile?.ownerName || "Company Name",
-            company: profile?.company || "Company Name",
+            name: profile?.ownerName || "",
+            company: profile?.company || "",
             address:
               `${profile?.address || ""} ${profile?.city || ""} ${profile?.state || ""} ${profile?.zipCode || ""}`.trim(),
             phone: profile?.phone || profile?.mobilePhone || "",
@@ -2500,10 +2500,10 @@ export default function SimpleContractGenerator() {
   const buildRegistryDrivenPdfPayload = useCallback((templateId: string) => {
     const dataSource = templateConfigRegistry.getDataSource(templateId);
     
-    // Build contractor data from profile (shared across all templates)
+    // Build contractor data from profile (shared across all templates) - NO automatic fallbacks between fields
     const contractorData = contractData?.contractor || {
-      name: profile?.company || profile?.ownerName || "Company Name",
-      company: profile?.company || "Company Name",
+      name: profile?.ownerName || "",
+      company: profile?.company || "",
       address: `${profile?.address || ""} ${profile?.city || ""} ${profile?.state || ""} ${profile?.zipCode || ""}`.trim(),
       phone: profile?.phone || profile?.mobilePhone || "",
       email: profile?.email || "",
@@ -2732,8 +2732,8 @@ export default function SimpleContractGenerator() {
           location: clientAddress || "As specified in project details",
         },
         contractor: {
-          name: profile?.company || profile?.ownerName || "Company Name",
-          company: profile?.company || "Company Name",
+          name: profile?.ownerName || "",
+          company: profile?.company || "",
           address:
             `${profile?.address || ""} ${profile?.city || ""} ${profile?.state || ""} ${profile?.zipCode || ""}`.trim(),
           phone: profile?.phone || profile?.mobilePhone || "",
@@ -3059,17 +3059,17 @@ export default function SimpleContractGenerator() {
           materials: contractData?.materials || selectedProject.materials || [],
         },
         contractor: {
-          name: profile?.company || profile?.ownerName || "Contractor Name",
-          company: profile?.company || "Company Name",
+          name: profile?.ownerName || "",
+          company: profile?.company || "",
           address: profile?.address
             ? `${profile.address}${profile.city ? `, ${profile.city}` : ""}${profile.state ? `, ${profile.state}` : ""}${profile.zipCode ? ` ${profile.zipCode}` : ""}`
-            : "Business Address",
-          phone: profile?.phone || profile?.mobilePhone || "Business Phone",
-          email: profile?.email || "business@email.com",
+            : "",
+          phone: profile?.phone || profile?.mobilePhone || "",
+          email: profile?.email || "",
           license:
             (profile as any)?.licenseNumber ||
             (profile as any)?.license ||
-            "License Number",
+            "",
         },
         timeline: {
           startDate:

@@ -171,7 +171,7 @@ export class ContractorDataService {
   static toLegacyFormat(contractorData: ContractorData): any {
     return {
       companyName: contractorData.companyName,
-      name: contractorData.ownerName || contractorData.companyName,
+      name: contractorData.ownerName || '',
       address: contractorData.address,
       phone: contractorData.phone,
       email: contractorData.email,
