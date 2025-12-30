@@ -1165,9 +1165,10 @@ export const saveUserProfile = async (userId: string, profileData: any) => {
     const docSnap = await getDoc(docRef);
     
     // MAPEO DE CAMPOS: Frontend usa 'company', backend usa 'companyName'
+    // IMPORTANTE: Priorizar 'company' (lo que edita el usuario) sobre 'companyName' (valor legacy)
     const mappedData = {
       ...profileData,
-      companyName: profileData.companyName || profileData.company || "",
+      companyName: profileData.company || profileData.companyName || "",
     };
     
     // Eliminar campo 'company' para evitar duplicación
