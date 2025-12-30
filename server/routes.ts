@@ -53,6 +53,7 @@ import { getCompanyConfig, getCompanyAddress } from "./config/company-config";
 import { registerPromptTemplateRoutes } from "./routes/prompt-templates";
 import { TRIAL_PLAN_ID, SUBSCRIPTION_PLAN_IDS } from "./constants/subscription";
 import { verifyFirebaseAuth } from "./middleware/firebase-auth";
+import { CompanyProfileService } from "./services/CompanyProfileService";
 
 // 🗺️ FUNCIÓN HELPER PARA LEGAL COMPLIANCE NATIONWIDE
 async function getNationwideLegalCompliance(address: string) {
@@ -2417,13 +2418,19 @@ ENHANCED LEGAL CLAUSE:`;
             hasLogo: !!contractorData.logo,
           });
         } else {
-          // Fallback to database lookup if not provided
+          // Fallback to Firebase Firestore lookup (same source as frontend)
           try {
             if (user?.[0]?.uid) {
-              const profile = await storage.getUserByFirebaseUid(user[0].uid);
-              console.log("🔍 LOGO DEBUG - Profile fetched from DB:", {
+              // 🔥 FIX: Use CompanyProfileService to read from Firebase Firestore
+              // This matches the frontend's data source and fixes the company name bug
+              const companyProfileService = new CompanyProfileService();
+              const profile = await companyProfileService.getProfileByFirebaseUid(user[0].uid);
+              
+              console.log("🔍 LOGO DEBUG - Profile fetched from Firebase Firestore:", {
                 profileExists: !!profile,
                 userId: user[0].uid,
+                companyName: profile?.companyName || "Not set",
+                ownerName: profile?.ownerName || "Not set",
                 hasLogo: profile ? !!profile.logo : false,
                 logoLength: profile?.logo ? profile.logo.length : 0,
                 logoType: profile?.logo
@@ -2435,7 +2442,8 @@ ENHANCED LEGAL CLAUSE:`;
 
               if (profile) {
                 contractorData = {
-                  name: profile.company || profile.ownerName || "",
+                  // 🎯 FIX: Use companyName (from Firestore) instead of company (from PostgreSQL)
+                  name: profile.companyName || profile.ownerName || "",
                   address: profile.address || "",
                   phone: profile.phone || "",
                   email: profile.email || "",
@@ -2447,7 +2455,7 @@ ENHANCED LEGAL CLAUSE:`;
             }
           } catch (profileError) {
             console.warn(
-              "Warning: Could not fetch contractor profile from DB:",
+              "Warning: Could not fetch contractor profile from Firebase Firestore:",
               profileError,
             );
           }
