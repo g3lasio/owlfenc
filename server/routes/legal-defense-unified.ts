@@ -91,8 +91,10 @@ router.post('/generate-contract',
       };
     } else {
       // Standard generation
+      // 🔥 FIX: Pass firebaseUid for centralized contractor data lookup
       contractResult = await contractGenerator.generateProfessionalContract(enrichedData, {
-        contractorBranding: contractorInfo
+        firebaseUid: req.firebaseUser?.uid, // 🔥 NEW: Pass firebaseUid
+        contractorBranding: contractorInfo // Keep for backward compatibility
       });
     }
 

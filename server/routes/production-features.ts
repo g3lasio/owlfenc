@@ -568,7 +568,10 @@ async function generateContract(contractData: any, clientInfo: any, templateType
       protections: contractData.protections || []
     };
     
-    const result = await professionalContractGenerator.generateProfessionalContract(contractInputData);
+    // 🔥 FIX: Pass firebaseUid for centralized contractor data lookup
+    const result = await professionalContractGenerator.generateProfessionalContract(contractInputData, {
+      firebaseUid: uid // 🔥 NEW: Pass firebaseUid
+    });
     
     return {
       id: `contract_${Date.now()}_${uid.slice(0, 8)}`,

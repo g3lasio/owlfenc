@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { templateService } from '../templates/templateService';
 import { TemplateData, ContractorBranding } from '../templates/registry';
+import { ContractorDataService } from './contractorDataService';
 
 export interface ContractData {
   client: {
@@ -92,11 +93,37 @@ if (!process.env.ANTHROPIC_API_KEY) {
   /**
    * Generate professional contract with PDF generation capability
    * Supports new template system via templateId (Phase 1: Multi-Template System)
+   * 
+   * 🔥 FIXED: Now requires firebaseUid to fetch contractor data from centralized source
    */
   async generateProfessionalContract(contractData: ContractData, options: any = {}): Promise<ContractGenerationResult> {
     const startTime = Date.now();
     
     try {
+      // 🔥 FIX: Fetch contractor data from Firebase Firestore (single source of truth)
+      let contractorBranding: ContractorBranding = {};
+      
+      if (options.firebaseUid) {
+        console.log(`🔍 [CONTRACT] Fetching contractor profile for UID: ${options.firebaseUid}`);
+        try {
+          const profileValidation = await ContractorDataService.validateProfile(options.firebaseUid);
+          if (profileValidation.valid && profileValidation.profile) {
+            contractorBranding = ContractorDataService.toContractorBranding(profileValidation.profile);
+            console.log(`✅ [CONTRACT] Using contractor data from Firebase: ${contractorBranding.companyName}`);
+          } else {
+            console.warn(`⚠️ [CONTRACT] Profile incomplete, using fallback data`);
+            contractorBranding = options.contractorBranding || {};
+          }
+        } catch (error) {
+          console.error(`❌ [CONTRACT] Error fetching profile, using fallback:`, error);
+          contractorBranding = options.contractorBranding || {};
+        }
+      } else {
+        // Fallback to provided branding if no firebaseUid (backward compatibility)
+        console.warn(`⚠️ [CONTRACT] No firebaseUid provided, using provided contractorBranding`);
+        contractorBranding = options.contractorBranding || {};
+      }
+      
       // PHASE 1: Check if templateId is provided - route to new template system
       if (options.templateId && templateService.isTemplateAvailable(options.templateId)) {
         console.log(`📋 [TEMPLATE-SYSTEM] Using template: ${options.templateId}`);
@@ -105,7 +132,7 @@ if (!process.env.ANTHROPIC_API_KEY) {
           client: contractData.client,
           contractor: {
             ...contractData.contractor,
-            company: options.contractorBranding?.companyName || contractData.contractor.name,
+            company: contractorBranding.companyName || contractData.contractor.name,
           },
           project: contractData.project,
           financials: contractData.financials,
@@ -117,8 +144,7 @@ if (!process.env.ANTHROPIC_API_KEY) {
           warranty: options.warranty,
         };
 
-        const branding: ContractorBranding = options.contractorBranding || {};
-        const result = await templateService.generateDocument(options.templateId, templateData, branding);
+        const result = await templateService.generateDocument(options.templateId, templateData, contractorBranding);
 
         if (!result.success) {
           console.error(`❌ [TEMPLATE-SYSTEM] Template generation failed: ${result.error}`);
@@ -143,8 +169,8 @@ if (!process.env.ANTHROPIC_API_KEY) {
       // LEGACY FLOW: No templateId - use existing Independent Contractor Agreement
       console.log('🤖 [CONTRACT] Iniciando generación profesional de contrato...');
       
-      // Generate HTML contract
-      const html = await this.generateContractHTML(contractData, options.contractorBranding || {});
+      // Generate HTML contract with centralized contractor data
+      const html = await this.generateContractHTML(contractData, contractorBranding);
       
       const generationTime = Date.now() - startTime;
       

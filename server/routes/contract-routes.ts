@@ -860,15 +860,18 @@ router.post("/generate-hybrid", verifyFirebaseAuth, async (req, res) => {
     const contractorBranding = ContractorDataService.toContractorBranding(contractorData);
 
     // Generate contract using the hybrid system
+    // 🔥 FIX: Pass firebaseUid so generator can fetch contractor data from Firebase
     const result = await hybridContractGenerator.generateProfessionalContract(
       contractData,
       {
         ...templatePreferences,
-        contractorBranding
+        firebaseUid, // 🔥 NEW: Pass firebaseUid for centralized data lookup
+        contractorBranding // Keep for backward compatibility
       } || {
         style: 'professional',
         includeProtections: true,
-        pageLayout: '6-page'
+        pageLayout: '6-page',
+        firebaseUid
       }
     );
 

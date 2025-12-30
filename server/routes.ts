@@ -54,6 +54,7 @@ import { registerPromptTemplateRoutes } from "./routes/prompt-templates";
 import { TRIAL_PLAN_ID, SUBSCRIPTION_PLAN_IDS } from "./constants/subscription";
 import { verifyFirebaseAuth } from "./middleware/firebase-auth";
 import { CompanyProfileService } from "./services/CompanyProfileService";
+import { ContractorDataService } from "./services/contractorDataService";
 
 // 🗺️ FUNCIÓN HELPER PARA LEGAL COMPLIANCE NATIONWIDE
 async function getNationwideLegalCompliance(address: string) {
@@ -9055,14 +9056,50 @@ ENHANCED LEGAL CLAUSE:`;
 
   // Legacy endpoint - redirects to unified (for backward compatibility during transition)
   // Premium Contract PDF Generation
-  app.post("/api/contracts/generate-pdf", async (req, res) => {
+  // 🔥 SECURITY FIX: Added authentication to prevent unauthorized access and ensure contractor data integrity
+  app.post("/api/contracts/generate-pdf", verifyFirebaseAuth, async (req, res) => {
     try {
       console.log("🎨 [API] Starting premium contract generation...");
+      
+      // 🔥 FIX: Get firebaseUid from authenticated user
+      const firebaseUid = (req as any).firebaseUser?.uid;
+      if (!firebaseUid) {
+        return res.status(401).json({
+          success: false,
+          error: 'Authentication required'
+        });
+      }
 
       const { default: PremiumPdfService } = await import(
         "./services/premiumPdfService"
       );
       const premiumPdfService = PremiumPdfService.getInstance();
+      
+      // 🔥 FIX: Fetch contractor data from Firebase Firestore (single source of truth)
+      let contractorData: any = req.body.contractor || {};
+      try {
+        console.log(`🔍 [CONTRACT-PDF] Fetching contractor profile for UID: ${firebaseUid}`);
+        const profileValidation = await ContractorDataService.validateProfile(firebaseUid);
+        if (profileValidation.valid && profileValidation.profile) {
+          const profile = profileValidation.profile;
+          // Override contractor data with current profile data
+          contractorData = {
+            name: profile.companyName,
+            address: ContractorDataService.formatFullAddress(profile),
+            phone: profile.phone,
+            email: profile.email,
+            license: profile.license,
+            logo: profile.logo,
+            website: profile.website,
+          };
+          console.log(`✅ [CONTRACT-PDF] Using contractor data from Firebase: ${profile.companyName}`);
+        } else {
+          console.warn(`⚠️ [CONTRACT-PDF] Profile incomplete, using frontend data`);
+        }
+      } catch (error) {
+        console.error(`❌ [CONTRACT-PDF] Error fetching profile:`, error);
+        // Continue with frontend data if profile fetch fails
+      }
 
       // ==================== LEGAL CLAUSES PROCESSING FOR PDF ====================
       // Convert frontend legalClauses to backend protectionClauses format
@@ -9096,10 +9133,11 @@ ENHANCED LEGAL CLAUSE:`;
       console.log(`🛡️ [LEGAL-CLAUSES-PDF] Processing ${selectedClauseIds.length} selected clauses → ${protectionClauses.length} with content`);
 
       // Enhanced contract data structure to capture ALL frontend data
-      const contractData = {
+      // 🔥 FIX: Use contractor data from Firebase instead of frontend
+      const contractDataForPdf = {
         // Basic client and contractor info (existing)
         client: req.body.client,
-        contractor: req.body.contractor,
+        contractor: contractorData, // 🔥 FIXED: Use data from Firebase
         project: req.body.project,
         financials: req.body.financials,
 
@@ -9136,17 +9174,18 @@ ENHANCED LEGAL CLAUSE:`;
       };
 
       console.log("📋 [API] Enhanced contract data captured:", {
-        hasExtraClauses: contractData.extraClauses.length > 0,
+        hasExtraClauses: contractDataForPdf.extraClauses.length > 0,
         hasIntelligentClauses:
-          contractData.selectedIntelligentClauses.length > 0,
+          contractDataForPdf.selectedIntelligentClauses.length > 0,
         protectionClausesCount: protectionClauses.length,
-        hasCustomTerms: Object.keys(contractData.customTerms).length > 0,
-        hasPaymentTerms: Object.keys(contractData.paymentTerms).length > 0,
-        hasWarranties: Object.keys(contractData.warranties).length > 0,
+        hasCustomTerms: Object.keys(contractDataForPdf.customTerms).length > 0,
+        hasPaymentTerms: Object.keys(contractDataForPdf.paymentTerms).length > 0,
+        hasWarranties: Object.keys(contractDataForPdf.warranties).length > 0,
+        contractorName: contractDataForPdf.contractor?.name, // 🔥 NEW: Log contractor name
       });
 
       // Validate required data
-      if (!contractData.client?.name || !contractData.contractor?.name) {
+      if (!contractDataForPdf.client?.name || !contractDataForPdf.contractor?.name) {
         return res.status(400).json({
           success: false,
           error: "Missing required client or contractor information",
@@ -9155,10 +9194,10 @@ ENHANCED LEGAL CLAUSE:`;
 
       // Generate premium PDF with enhanced data
       const pdfBuffer =
-        await premiumPdfService.generateProfessionalPDF(contractData);
+        await premiumPdfService.generateProfessionalPDF(contractDataForPdf);
 
       // Set headers for PDF download
-      const filename = `Contract_${contractData.client.name.replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.pdf`;
+      const filename = `Contract_${contractDataForPdf.client.name.replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.pdf`;
 
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader(
