@@ -133,6 +133,8 @@ export default function Profile() {
   // Image cropper states
   const [showLogoCropper, setShowLogoCropper] = useState(false);
   const [selectedLogoFile, setSelectedLogoFile] = useState<File | null>(null);
+  const [showProfilePhotoCropper, setShowProfilePhotoCropper] = useState(false);
+  const [selectedProfilePhotoFile, setSelectedProfilePhotoFile] = useState<File | null>(null);
 
   // ===== USER SETTINGS STATES =====
   // Types for settings
@@ -535,6 +537,7 @@ export default function Profile() {
 
   // ===== PROFILE PHOTO UPLOAD HANDLER =====
   // NEW APPROACH: Use React Query optimistic updates as single source of truth
+  // Opens the cropper for profile photo
   const handleProfilePhotoUpload = async (file: File) => {
     if (!file) return;
 
@@ -547,10 +550,11 @@ export default function Profile() {
       return;
     }
 
-    if (file.size > 2 * 1024 * 1024) {
+    // Accept up to 10MB, cropper will compress
+    if (file.size > 10 * 1024 * 1024) {
       toast({
         title: "Archivo muy grande",
-        description: "La foto de perfil debe ser menor a 2MB",
+        description: "La foto de perfil debe ser menor a 10MB",
         variant: "destructive",
       });
       return;
@@ -565,10 +569,84 @@ export default function Profile() {
       return;
     }
 
+    // Open cropper instead of processing directly
+    setSelectedProfilePhotoFile(file);
+    setShowProfilePhotoCropper(true);
+  };
+
+  // Handler for when cropped profile photo is ready
+  const handleCroppedProfilePhoto = async (croppedImageBase64: string) => {
+    if (!currentUser?.uid) return;
+    
     setUploadingPhoto(true);
     
     try {
-      console.log("📸 [PROFILE-PHOTO-V2] Converting to base64...");
+      console.log("📸 [PROFILE-PHOTO-CROPPED] Processing cropped image...");
+      console.log(`📸 [PROFILE-PHOTO-CROPPED] Size: ${Math.round(croppedImageBase64.length / 1024)}KB`);
+      
+      // STEP 1: Optimistic update - immediately update React Query cache
+      const queryKey = ["userProfile", currentUser.uid];
+      const previousProfile = queryClient.getQueryData<CompanyInfoType>(queryKey);
+      
+      const updatedProfile = {
+        ...companyInfo,
+        ...previousProfile,
+        profilePhoto: croppedImageBase64,
+      };
+      
+      // Set cache immediately (optimistic)
+      queryClient.setQueryData(queryKey, updatedProfile);
+      console.log("⚡ [PROFILE-PHOTO-CROPPED] React Query cache updated");
+      
+      // Also update local state for immediate UI feedback
+      setCompanyInfo(updatedProfile);
+
+      // STEP 2: Persist to Firestore via the hook
+      try {
+        console.log("🔥 [PROFILE-PHOTO-CROPPED] Saving to Firestore...");
+        await updateProfile(updatedProfile);
+        console.log("✅ [PROFILE-PHOTO-CROPPED] Firestore save confirmed!");
+        
+        toast({
+          title: "Foto guardada",
+          description: "Tu foto de perfil ha sido guardada correctamente",
+        });
+      } catch (firestoreError) {
+        console.error("❌ [PROFILE-PHOTO-CROPPED] Firestore save failed:", firestoreError);
+        
+        // Rollback optimistic update on failure
+        if (previousProfile) {
+          queryClient.setQueryData(queryKey, previousProfile);
+          setCompanyInfo(previousProfile);
+        }
+        
+        toast({
+          title: "Error",
+          description: "No se pudo guardar la foto. Inténtalo de nuevo.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("❌ [PROFILE-PHOTO-CROPPED] Error:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo procesar la foto.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingPhoto(false);
+      setSelectedProfilePhotoFile(null);
+    }
+  };
+
+  // Legacy function kept for reference - no longer used directly
+  const handleProfilePhotoUploadLegacy = async (file: File) => {
+    if (!file || !currentUser?.uid) return;
+
+    setUploadingPhoto(true);
+    
+    try {
+      console.log("📸 [PROFILE-PHOTO-LEGACY] Converting to base64...");
       
       const base64Photo = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
@@ -577,7 +655,7 @@ export default function Profile() {
         reader.readAsDataURL(file);
       });
 
-      console.log("✅ [PROFILE-PHOTO-V2] Base64 conversion complete");
+      console.log("✅ [PROFILE-PHOTO-LEGACY] Base64 conversion complete");
       
       // STEP 1: Optimistic update - immediately update React Query cache
       const queryKey = ["userProfile", currentUser.uid];
@@ -1256,6 +1334,22 @@ export default function Profile() {
                   <Upload className="w-6 h-6" />
                 </div>
               </label>
+              
+              {/* Profile Photo Cropper Dialog */}
+              <ImageCropper
+                open={showProfilePhotoCropper}
+                onClose={() => {
+                  setShowProfilePhotoCropper(false);
+                  setSelectedProfilePhotoFile(null);
+                }}
+                imageFile={selectedProfilePhotoFile}
+                onCropComplete={handleCroppedProfilePhoto}
+                outputWidth={300}
+                outputHeight={300}
+                maxOutputSize={400 * 1024}
+                title="Ajustar Foto de Perfil"
+                applyButtonText="Aplicar Foto"
+              />
             </div>
             <div className="flex-1">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
@@ -1492,7 +1586,7 @@ export default function Profile() {
                   </div>
                 </div>
 
-                {/* Image Cropper Dialog */}
+                {/* Image Cropper Dialog for Logo */}
                 <ImageCropper
                   open={showLogoCropper}
                   onClose={() => {
@@ -1504,6 +1598,8 @@ export default function Profile() {
                   outputWidth={400}
                   outputHeight={400}
                   maxOutputSize={400 * 1024}
+                  title="Ajustar Logo"
+                  applyButtonText="Aplicar Logo"
                 />
 
                 {/* Contact Information */}

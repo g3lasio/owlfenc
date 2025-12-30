@@ -13,6 +13,8 @@ interface ImageCropperProps {
   maxOutputSize?: number;
   outputWidth?: number;
   outputHeight?: number;
+  title?: string;
+  applyButtonText?: string;
 }
 
 export function ImageCropper({
@@ -24,6 +26,8 @@ export function ImageCropper({
   maxOutputSize = 400 * 1024,
   outputWidth = 400,
   outputHeight = 400,
+  title = "Ajustar Imagen",
+  applyButtonText = "Aplicar",
 }: ImageCropperProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -208,7 +212,7 @@ export function ImageCropper({
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent className="sm:max-w-md bg-gray-900 border-gray-700">
         <DialogHeader>
-          <DialogTitle className="text-cyan-400">Ajustar Logo</DialogTitle>
+          <DialogTitle className="text-cyan-400">{title}</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4">
@@ -293,7 +297,7 @@ export function ImageCropper({
             ) : (
               <>
                 <Check className="w-4 h-4 mr-2" />
-                Aplicar Logo
+                {applyButtonText}
               </>
             )}
           </Button>
