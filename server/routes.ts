@@ -105,7 +105,7 @@ import contactRoutes from "./routes/contact-route";
 import anthropicRoutes from "./routes/anthropic";
 import mervinV2Routes from "./routes/mervin-v2"; // Mervin AI V2 - Hybrid Intelligence Architecture (legacy file uploads)
 // import assistantsRoutes from "./routes/assistants"; // DESACTIVADO - Mervin AI V4 - OpenAI Assistants API (reemplazado por Claude Conversational)
-import mervinResearchAPI from "./routes/mervin-research-api"; // Import Mervin Research API - FASE 2 OPTIMIZATIONS
+// import mervinResearchAPI from "./routes/mervin-research-api"; // Import Mervin Research API - FASE 2 OPTIMIZATIONS (file doesn't exist)
 import openrouterAPI from "./routes/openrouter-api"; // Import OpenRouter API for diagnostics and testing
 // PDF routes removed - using only premiumPdfService
 import paymentRoutes from "./routes/payment-routes"; // Import payment routes
@@ -1773,8 +1773,8 @@ Output ONLY the enhanced description. No introductions or meta-commentary.`,
   console.log("⚠️ [ASSISTANTS] Sistema OpenAI Assistants desactivado - usando Mervin Conversational con Claude en /api/mervin-v2");
   
   // ==================== FASE 2: INVESTIGACIÓN SÚPER RÁPIDA PARA CONTRATISTAS ====================
-  console.log('🔬 [MERVIN-RESEARCH-API] Registrando sistema de investigación optimizado...');
-  app.use("/api/mervin-research", mervinResearchAPI);
+  // console.log('🔬 [MERVIN-RESEARCH-API] Registrando sistema de investigación optimizado...');
+  // app.use("/api/mervin-research", mervinResearchAPI); // DISABLED - file doesn't exist
 
   // ==================== OPENROUTER AI INTEGRATION ====================
   console.log('🚀 [OPENROUTER-API] Registrando endpoints de diagnóstico y testing...');

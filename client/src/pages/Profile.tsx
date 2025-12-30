@@ -66,6 +66,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import PhoneAuthMFA from "@/components/auth/PhoneAuthMFA";
+import { ImageCropper } from "@/components/ui/image-cropper";
 import { multiFactor, EmailAuthProvider, reauthenticateWithCredential, signOut } from "firebase/auth";
 import { auth, uploadFile } from "@/lib/firebase";
 import {
@@ -128,6 +129,10 @@ export default function Profile() {
   >(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  
+  // Image cropper states
+  const [showLogoCropper, setShowLogoCropper] = useState(false);
+  const [selectedLogoFile, setSelectedLogoFile] = useState<File | null>(null);
 
   // ===== USER SETTINGS STATES =====
   // Types for settings
@@ -335,6 +340,29 @@ export default function Profile() {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // Logo accepts up to 10MB and uses the cropper
+    if (type === "logo") {
+      if (file.size > 10 * 1024 * 1024) {
+        toast({
+          title: "Archivo muy grande",
+          description: "El archivo debe ser menor a 10MB",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Open the cropper dialog instead of processing directly
+      setSelectedLogoFile(file);
+      setShowLogoCropper(true);
+      
+      // Clear the input so the same file can be selected again
+      if (logoInputRef.current) {
+        logoInputRef.current.value = "";
+      }
+      return;
+    }
+
+    // Other file types still have 2MB limit
     if (file.size > 2 * 1024 * 1024) {
       toast({
         title: "Archivo muy grande",
@@ -344,78 +372,67 @@ export default function Profile() {
       return;
     }
 
-    if (type === "logo") {
-      // NEW APPROACH: Use React Query optimistic updates as single source of truth
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        try {
-          const base64Result = e.target?.result as string;
-          console.log("🖼️ [LOGO-V2] Converting to base64...");
+    // Para otros documentos, subir a Firebase Storage
+    handleDocumentUpload(file, type);
+  };
 
-          // STEP 1: Optimistic update - immediately update React Query cache
-          const queryKey = ["userProfile", currentUser?.uid];
-          const previousProfile = queryClient.getQueryData<CompanyInfoType>(queryKey);
-          
-          const updatedProfile = {
-            ...companyInfo,
-            ...previousProfile,
-            logo: base64Result,
-          };
-          
-          // Set cache immediately (optimistic)
-          queryClient.setQueryData(queryKey, updatedProfile);
-          console.log("⚡ [LOGO-V2] React Query cache updated optimistically");
-          
-          // Also update local state for immediate UI feedback
-          setCompanyInfo(updatedProfile);
+  // Handler for when cropped logo is ready
+  const handleCroppedLogo = async (croppedImageBase64: string) => {
+    try {
+      console.log("🖼️ [LOGO-CROPPED] Processing cropped image...");
+      console.log(`🖼️ [LOGO-CROPPED] Size: ${Math.round(croppedImageBase64.length / 1024)}KB`);
 
-          // STEP 2: Persist to Firestore via the hook (single source of truth)
-          try {
-            console.log("🔥 [LOGO-V2] Saving to Firestore via updateProfile hook...");
-            await updateProfile(updatedProfile);
-            console.log("✅ [LOGO-V2] Firestore save confirmed!");
-            
-            toast({
-              title: "Logo guardado",
-              description: `${file.name} guardado correctamente`,
-            });
-          } catch (firestoreError) {
-            console.error("❌ [LOGO-V2] Firestore save failed:", firestoreError);
-            
-            // Rollback optimistic update on failure
-            if (previousProfile) {
-              queryClient.setQueryData(queryKey, previousProfile);
-              setCompanyInfo(previousProfile);
-            }
-            
-            toast({
-              title: "Error",
-              description: "No se pudo guardar el logo. Inténtalo de nuevo.",
-              variant: "destructive",
-            });
-          }
-        } catch (error) {
-          console.error("❌ [LOGO-V2] Error:", error);
-          toast({
-            title: "Error",
-            description: "No se pudo procesar el logo.",
-            variant: "destructive",
-          });
-        }
+      // STEP 1: Optimistic update - immediately update React Query cache
+      const queryKey = ["userProfile", currentUser?.uid];
+      const previousProfile = queryClient.getQueryData<CompanyInfoType>(queryKey);
+      
+      const updatedProfile = {
+        ...companyInfo,
+        ...previousProfile,
+        logo: croppedImageBase64,
       };
+      
+      // Set cache immediately (optimistic)
+      queryClient.setQueryData(queryKey, updatedProfile);
+      console.log("⚡ [LOGO-CROPPED] React Query cache updated optimistically");
+      
+      // Also update local state for immediate UI feedback
+      setCompanyInfo(updatedProfile);
 
-      reader.onerror = () => {
+      // STEP 2: Persist to Firestore via the hook
+      try {
+        console.log("🔥 [LOGO-CROPPED] Saving to Firestore...");
+        await updateProfile(updatedProfile);
+        console.log("✅ [LOGO-CROPPED] Firestore save confirmed!");
+        
+        toast({
+          title: "Logo guardado",
+          description: "Tu logo ha sido guardado correctamente",
+        });
+      } catch (firestoreError) {
+        console.error("❌ [LOGO-CROPPED] Firestore save failed:", firestoreError);
+        
+        // Rollback optimistic update on failure
+        if (previousProfile) {
+          queryClient.setQueryData(queryKey, previousProfile);
+          setCompanyInfo(previousProfile);
+        }
+        
         toast({
           title: "Error",
-          description: "No se pudo procesar la imagen",
+          description: "No se pudo guardar el logo. Inténtalo de nuevo.",
           variant: "destructive",
         });
-      };
-
-      reader.readAsDataURL(file);
-    } else {
-      // Para otros documentos, subir a Firebase Storage
-      handleDocumentUpload(file, type);
+      }
+    } catch (error) {
+      console.error("❌ [LOGO-CROPPED] Error:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo procesar el logo.",
+        variant: "destructive",
+      });
+    } finally {
+      setSelectedLogoFile(null);
     }
   };
 
@@ -1468,12 +1485,26 @@ export default function Profile() {
                           Upload Logo
                         </Button>
                         <p className="text-xs text-gray-400 mt-2">
-                          Allowed formats: PNG, JPG. Maximum size: 2MB
+                          Formatos: PNG, JPG. Máximo: 10MB. Se ajustará automáticamente.
                         </p>
                       </div>
                     </div>
                   </div>
                 </div>
+
+                {/* Image Cropper Dialog */}
+                <ImageCropper
+                  open={showLogoCropper}
+                  onClose={() => {
+                    setShowLogoCropper(false);
+                    setSelectedLogoFile(null);
+                  }}
+                  imageFile={selectedLogoFile}
+                  onCropComplete={handleCroppedLogo}
+                  outputWidth={400}
+                  outputHeight={400}
+                  maxOutputSize={400 * 1024}
+                />
 
                 {/* Contact Information */}
                 <div className="border-t border-gray-700 pt-4">
