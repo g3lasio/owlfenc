@@ -2349,24 +2349,31 @@ ENHANCED LEGAL CLAUSE:`;
   });
 
   // 🚀 NEW: Professional Puppeteer PDF Generation (replaces PDFMonkey)
+  // 🔥 DEFINITIVE FIX: Always fetch contractor data from Firebase in real-time
   app.post(
     "/api/estimate-puppeteer-pdf",
+    verifyFirebaseAuth, // 🔥 REQUIRED: Must be authenticated
     async (req: Request, res: Response) => {
-      console.log("🎯 Professional PDF generation with Puppeteer started");
+      console.log("🎯 [ESTIMATE-PDF] Professional PDF generation started");
 
       try {
-        // Initialize Puppeteer service if not already done
-        // await puppeteerPdfService.initialize();
+        // 🔥 STEP 1: Get authenticated user
+        const firebaseUid = (req as any).firebaseUser?.uid;
+        if (!firebaseUid) {
+          console.error("❌ [ESTIMATE-PDF] No firebaseUid found");
+          return res.status(401).json({
+            success: false,
+            error: 'Authentication required',
+            message: 'Please log in to generate PDFs'
+          });
+        }
+        
+        console.log(`✅ [ESTIMATE-PDF] Authenticated user: ${firebaseUid}`);
 
         // Extract and validate data from request
         const requestData = req.body;
-        console.log(
-          "🔍 Raw request data:",
-          JSON.stringify(requestData, null, 2),
-        );
 
         // Handle different data structures from frontend
-        const user = requestData.user || [];
         const client = requestData.client || requestData.estimate?.client || {};
         const items = requestData.items || requestData.estimate?.items || [];
         const projectTotalCosts = requestData.projectTotalCosts || {};
@@ -2377,131 +2384,76 @@ ENHANCED LEGAL CLAUSE:`;
           items.push(...(requestData.estimate.items || []));
         }
 
-        console.log("📊 Processed data:", {
-          hasUser: !!user,
+        console.log("📊 [ESTIMATE-PDF] Processed data:", {
+          firebaseUid,
           hasClient: !!client,
           clientName: client?.name,
           itemsCount: items?.length || 0,
           hasCosts: !!projectTotalCosts,
-          subtotal: projectTotalCosts?.subtotal,
           total: projectTotalCosts?.total,
         });
 
-        // Get contractor profile data
-        let contractorData = {
-          name: "",
-          address: "",
-          phone: "",
-          email: "",
-          website: "",
-          logo: "",
-          license: "",
+        // 🔥 STEP 2: ALWAYS fetch contractor profile from Firebase Firestore (IGNORE frontend data)
+        console.log(`🔍 [ESTIMATE-PDF] Fetching contractor profile from Firebase for UID: ${firebaseUid}`);
+        
+        const companyProfileService = new CompanyProfileService();
+        const profile = await companyProfileService.getProfileByFirebaseUid(firebaseUid);
+        
+        if (!profile) {
+          console.error(`❌ [ESTIMATE-PDF] No profile found for UID: ${firebaseUid}`);
+          return res.status(400).json({
+            success: false,
+            error: 'PROFILE_NOT_FOUND',
+            message: 'Please complete your company profile in Settings before generating PDFs',
+            redirectTo: '/profile-setup'
+          });
+        }
+        
+        // 🔥 STEP 3: Validate required fields
+        if (!profile.companyName || !profile.email) {
+          console.error(`❌ [ESTIMATE-PDF] Profile incomplete:`, {
+            hasCompanyName: !!profile.companyName,
+            hasEmail: !!profile.email
+          });
+          return res.status(400).json({
+            success: false,
+            error: 'INCOMPLETE_PROFILE',
+            message: 'Please complete Company Name and Email in Settings',
+            missingFields: [
+              !profile.companyName && 'Company Name',
+              !profile.email && 'Email'
+            ].filter(Boolean),
+            redirectTo: '/profile-setup'
+          });
+        }
+        
+        // 🔥 STEP 4: Build contractor data from Firebase profile (REAL-TIME DATA)
+        const contractorData = {
+          name: profile.companyName, // 🔥 ALWAYS use companyName from Firebase
+          address: profile.address || "",
+          phone: profile.phone || "",
+          email: profile.email || "",
+          website: profile.website || "",
+          logo: profile.logo || "",
+          license: profile.license || "",
         };
-
-        // First check if contractor data is provided in the request
-        if (requestData.contractor) {
-          contractorData = {
-            name:
-              requestData.contractor.name ||
-              requestData.contractor.company ||
-              "",
-            address: requestData.contractor.address || "",
-            phone: requestData.contractor.phone || "",
-            email: requestData.contractor.email || "",
-            website: requestData.contractor.website || "",
-            logo: requestData.contractor.logo || "",
-            license: requestData.contractor.license || "",
-          };
-          console.log("✅ Using contractor data from frontend:", {
-            name: contractorData.name,
-            phone: contractorData.phone,
-            email: contractorData.email,
-            hasLogo: !!contractorData.logo,
-          });
-        } else {
-          // Fallback to Firebase Firestore lookup (same source as frontend)
-          try {
-            if (user?.[0]?.uid) {
-              // 🔥 FIX: Use CompanyProfileService to read from Firebase Firestore
-              // This matches the frontend's data source and fixes the company name bug
-              const companyProfileService = new CompanyProfileService();
-              const profile = await companyProfileService.getProfileByFirebaseUid(user[0].uid);
-              
-              console.log("🔍 LOGO DEBUG - Profile fetched from Firebase Firestore:", {
-                profileExists: !!profile,
-                userId: user[0].uid,
-                companyName: profile?.companyName || "Not set",
-                ownerName: profile?.ownerName || "Not set",
-                hasLogo: profile ? !!profile.logo : false,
-                logoLength: profile?.logo ? profile.logo.length : 0,
-                logoType: profile?.logo
-                  ? profile.logo.startsWith("data:")
-                    ? "Base64"
-                    : "Other"
-                  : "None",
-              });
-
-              if (profile) {
-                contractorData = {
-                  // 🎯 FIX: Use companyName (from Firestore) instead of company (from PostgreSQL)
-                  name: profile.companyName || profile.ownerName || "",
-                  address: profile.address || "",
-                  phone: profile.phone || "",
-                  email: profile.email || "",
-                  website: profile.website || "",
-                  logo: profile.logo || "",
-                  license: profile.license || "",
-                };
-              }
-            }
-          } catch (profileError) {
-            console.warn(
-              "Warning: Could not fetch contractor profile from Firebase Firestore:",
-              profileError,
-            );
-          }
-        }
-
-        // If no logo from database, check global profile storage as fallback
-        if (!contractorData.logo && global.profileStorage?.logo) {
-          console.log("🔍 LOGO DEBUG - Using logo from global storage:", {
-            hasGlobalLogo: !!global.profileStorage.logo,
-            logoLength: global.profileStorage.logo.length,
-            logoType: global.profileStorage.logo.startsWith("data:")
-              ? "Base64"
-              : "Other",
-          });
-
-          contractorData = {
-            name:
-              global.profileStorage.company ||
-              global.profileStorage.ownerName ||
-              contractorData.name ||
-              "",
-            address:
-              global.profileStorage.address || contractorData.address || "",
-            phone: global.profileStorage.phone || contractorData.phone || "",
-            email: global.profileStorage.email || contractorData.email || "",
-            website:
-              global.profileStorage.website || contractorData.website || "",
-            logo: global.profileStorage.logo,
-            license:
-              global.profileStorage.license || contractorData.license || "",
-          };
-        }
-
-        console.log("🔍 LOGO DEBUG - Final contractor data:", {
+        
+        console.log("✅ [ESTIMATE-PDF] Using contractor data from Firebase:", {
+          companyName: contractorData.name,
+          hasAddress: !!contractorData.address,
+          hasPhone: !!contractorData.phone,
+          hasEmail: !!contractorData.email,
+          hasLogo: !!contractorData.logo,
+        });
+        
+        // 🔥 NO FALLBACKS - We already have fresh data from Firebase above
+        // 🔥 NO GLOBAL STORAGE - Always use Firebase as single source of truth
+        
+        console.log("✅ [ESTIMATE-PDF] Final contractor data (from Firebase):", {
           companyName: contractorData.name,
           hasLogo: !!contractorData.logo,
           logoLength: contractorData.logo ? contractorData.logo.length : 0,
-          logoPreview: contractorData.logo
-            ? contractorData.logo.substring(0, 50) + "..."
-            : "No logo",
-          source: contractorData.logo
-            ? global.profileStorage?.logo === contractorData.logo
-              ? "Global Storage"
-              : "Database"
-            : "None",
+          source: "Firebase Firestore (Real-time)"
         });
 
         // Process items data with proper currency formatting
@@ -9056,18 +9008,23 @@ ENHANCED LEGAL CLAUSE:`;
 
   // Legacy endpoint - redirects to unified (for backward compatibility during transition)
   // Premium Contract PDF Generation
-  // 🔥 SECURITY FIX: Added authentication to prevent unauthorized access and ensure contractor data integrity
-  app.post("/api/contracts/generate-pdf", verifyFirebaseAuth, async (req, res) => {
+  // 🔥 FIX: Try to get firebaseUid from auth, but don't require it (backward compatibility)
+  app.post("/api/contracts/generate-pdf", async (req, res) => {
     try {
       console.log("🎨 [API] Starting premium contract generation...");
       
-      // 🔥 FIX: Get firebaseUid from authenticated user
-      const firebaseUid = (req as any).firebaseUser?.uid;
-      if (!firebaseUid) {
-        return res.status(401).json({
-          success: false,
-          error: 'Authentication required'
-        });
+      // 🔥 FIX: Try to get firebaseUid from auth header if available
+      let firebaseUid: string | undefined;
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        try {
+          const token = authHeader.substring(7);
+          const decodedToken = await admin.auth().verifyIdToken(token);
+          firebaseUid = decodedToken.uid;
+          console.log(`✅ [CONTRACT-PDF] Authenticated user: ${firebaseUid}`);
+        } catch (authError) {
+          console.warn('⚠️ [CONTRACT-PDF] Auth token invalid, continuing without auth');
+        }
       }
 
       const { default: PremiumPdfService } = await import(

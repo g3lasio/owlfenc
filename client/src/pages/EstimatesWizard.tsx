@@ -6992,21 +6992,28 @@ This link provides a professional view of your estimate that you can access anyt
                             <button
                               onClick={async () => {
                                 try {
-                                  if (!profile?.company) {
+                                  // 🔥 DEFINITIVE FIX: Backend now fetches profile automatically
+                                  // Just send estimate data - backend handles contractor data from Firebase
+                                  
+                                  if (!currentUser?.uid) {
                                     toast({
-                                      title: "Perfil Incompleto",
-                                      description: "Debes completar el nombre de tu empresa antes de generar PDFs.",
+                                      title: "Autenticación Requerida",
+                                      description: "Debes iniciar sesión para generar PDFs.",
                                       variant: "destructive",
                                     });
                                     return;
                                   }
 
                                   const isPremiumUser = userSubscription?.plan?.id !== 1;
+                                  
+                                  // 🔥 Simplified payload - NO contractor data needed
                                   const payload = {
-                                    user: currentUser?.uid
-                                      ? [{ uid: currentUser.uid, email: currentUser.email, displayName: currentUser.displayName }]
-                                      : [{ uid: "anonymous-pdf-user", email: profile?.email || "contractor@example.com", displayName: profile?.company || "Anonymous User" }],
-                                    client: { name: est.clientName || "", email: est.clientEmail || "", phone: "", address: "" },
+                                    client: { 
+                                      name: est.clientName || "", 
+                                      email: est.clientEmail || "", 
+                                      phone: "", 
+                                      address: "" 
+                                    },
                                     items: est.items || [],
                                     projectTotalCosts: {
                                       subtotal: Number(Number(est.subtotal || 0).toFixed(2)) || 0,
@@ -7015,35 +7022,69 @@ This link provides a professional view of your estimate that you can access anyt
                                       tax: Number(Number((est.tax || 0).toFixed(2))) || 0,
                                       total: Number(Number((est.total || 0).toFixed(2))) || 0,
                                     },
-                                    originalData: { projectDescription: est.title || est.rawData?.projectDescription || "" },
-                                    contractor: {
-                                      name: profile?.company || "Professional Contractor",
-                                      company: profile?.company || "Construction Company",
-                                      address: profile?.address || "",
-                                      phone: profile?.phone || "",
-                                      email: profile?.email || currentUser?.email || "",
-                                      website: profile?.website || "",
-                                      logo: profile?.logo || "",
-                                      license: profile?.license || "",
+                                    originalData: { 
+                                      projectDescription: est.title || est.rawData?.projectDescription || "" 
                                     },
                                     isMembership: isPremiumUser,
                                     templateMode: isPremiumUser ? "premium" : "basic",
                                   };
 
+                                  console.log("📤 [ESTIMATE-PDF] Sending request (contractor data will be fetched by backend)");
                                   const response = await axios.post("/api/estimate-puppeteer-pdf", payload, { responseType: "blob" });
+                                  
                                   const pdfBlob = new Blob([response.data], { type: "application/pdf" });
                                   const clientName = est.clientName?.replace(/[^a-zA-Z0-9]/g, "_") || "client";
                                   const timestamp = new Date().toISOString().slice(0, 10);
+                                  
                                   await shareOrDownloadPdf(pdfBlob, `estimate-${clientName}-${timestamp}.pdf`, {
                                     title: `Estimate for ${est.clientName || "Client"}`,
                                     text: `Professional estimate from ${profile?.company || "your contractor"}`,
                                     clientName: est.clientName,
                                     estimateNumber: `EST-${timestamp}`,
                                   });
-                                  toast({ title: "PDF Generado", description: "PDF descargado exitosamente" });
-                                } catch (error) {
+                                  
+                                  toast({ 
+                                    title: "PDF Generado", 
+                                    description: "PDF descargado exitosamente" 
+                                  });
+                                } catch (error: any) {
                                   console.error("PDF generation error:", error);
-                                  toast({ title: "Error", description: "No se pudo generar el PDF.", variant: "destructive" });
+                                  
+                                  // 🔥 Handle specific backend errors
+                                  if (error.response?.data?.error === 'PROFILE_NOT_FOUND') {
+                                    toast({ 
+                                      title: "Perfil No Encontrado", 
+                                      description: "Por favor completa tu perfil en Settings antes de generar PDFs.",
+                                      variant: "destructive" 
+                                    });
+                                    return;
+                                  }
+                                  
+                                  if (error.response?.data?.error === 'INCOMPLETE_PROFILE') {
+                                    const missingFields = error.response.data.missingFields?.join(', ') || 'campos requeridos';
+                                    toast({ 
+                                      title: "Perfil Incompleto", 
+                                      description: `Por favor completa: ${missingFields} en Settings.`,
+                                      variant: "destructive" 
+                                    });
+                                    return;
+                                  }
+                                  
+                                  if (error.response?.status === 401) {
+                                    toast({ 
+                                      title: "Sesión Expirada", 
+                                      description: "Por favor inicia sesión nuevamente.",
+                                      variant: "destructive" 
+                                    });
+                                    return;
+                                  }
+                                  
+                                  // Generic error
+                                  toast({ 
+                                    title: "Error", 
+                                    description: error.response?.data?.message || "No se pudo generar el PDF.",
+                                    variant: "destructive" 
+                                  });
                                 }
                               }}
                               className="estimate-action-btn"
