@@ -2,9 +2,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Input } from "@/components/ui/input";
 import { MapPin, X, CheckCircle } from "lucide-react";
 
+interface AddressDetails {
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  fullAddress?: string;
+}
+
 interface AddressAutocompleteProps {
   value: string;
-  onChange: (address: string) => void;
+  onChange: (address: string, details?: AddressDetails) => void;
   onStateExtracted?: (state: string) => void;
   placeholder?: string;
   className?: string;
@@ -160,23 +167,77 @@ export function AddressAutocomplete({
     }, 300);
   };
 
+  // Extraer componentes de dirección del contexto de Mapbox
+  const extractAddressDetails = (suggestion: MapboxSuggestion): AddressDetails => {
+    const details: AddressDetails = {
+      fullAddress: suggestion.place_name,
+    };
+
+    if (!suggestion.context) {
+      return details;
+    }
+
+    // Extraer city (place o locality)
+    const cityContext = suggestion.context.find(ctx => 
+      ctx.id.startsWith('place') || ctx.id.startsWith('locality')
+    );
+    if (cityContext) {
+      details.city = cityContext.text;
+    }
+
+    // Extraer state (region)
+    const stateContext = suggestion.context.find(ctx => 
+      ctx.id.startsWith('region')
+    );
+    if (stateContext) {
+      // Preferir código corto (ej: "OR" en lugar de "Oregon")
+      const stateCode = stateContext.short_code || stateContext.text;
+      details.state = stateCode.replace('US-', '').replace('MX-', '').replace('CA-', '');
+    }
+
+    // Extraer zip code (postcode)
+    const postcodeContext = suggestion.context.find(ctx => 
+      ctx.id.startsWith('postcode')
+    );
+    if (postcodeContext) {
+      details.zipCode = postcodeContext.text;
+    }
+
+    console.log('📍 [MAPBOX] Extracted address details:', details);
+    return details;
+  };
+
+  // Extraer solo número y nombre de calle de la dirección completa
+  const extractStreetAddress = (suggestion: MapboxSuggestion): string => {
+    // Mapbox devuelve el place_name como: "123 Main St, Portland, Oregon 97204, United States"
+    // Queremos solo la primera parte antes de la primera coma
+    const fullAddress = suggestion.place_name;
+    const parts = fullAddress.split(',');
+    
+    // La primera parte generalmente es el número y nombre de calle
+    if (parts.length > 0) {
+      return parts[0].trim();
+    }
+    
+    return fullAddress;
+  };
+
   // Seleccionar una sugerencia
   const handleSelectSuggestion = (suggestion: MapboxSuggestion) => {
-    setInternalValue(suggestion.place_name);
-    onChange(suggestion.place_name);
+    // Extraer detalles de la dirección
+    const details = extractAddressDetails(suggestion);
+    
+    // Extraer solo la calle (número y nombre) para el campo address
+    const streetAddress = extractStreetAddress(suggestion);
+    
+    setInternalValue(streetAddress);
+    onChange(streetAddress, details);
     setShowSuggestions(false);
     setSuggestions([]);
 
-    // Extraer estado de los datos de contexto de Mapbox
-    if (onStateExtracted && suggestion.context) {
-      const stateContext = suggestion.context.find(ctx => 
-        ctx.id.includes('region') || ctx.id.includes('state')
-      );
-      
-      if (stateContext) {
-        const stateCode = stateContext.short_code || stateContext.text;
-        onStateExtracted(stateCode.replace('US-', ''));
-      }
+    // Mantener compatibilidad con onStateExtracted legacy
+    if (onStateExtracted && details.state) {
+      onStateExtracted(details.state);
     }
   };
 
