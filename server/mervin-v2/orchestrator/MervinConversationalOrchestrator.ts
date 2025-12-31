@@ -54,6 +54,9 @@ export interface MervinConversationalResponse {
 export class MervinConversationalOrchestrator {
   private workflowRunner: WorkflowRunner;
   private systemAPI: SystemAPIService;
+  private contractorProfileCache: any = null; // ⚡ Cache del perfil del contratista
+  private profileCacheTimestamp: number = 0; // Timestamp del cache
+  private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutos de TTL
   
   constructor(
     private userId: string,
@@ -95,8 +98,8 @@ export class MervinConversationalOrchestrator {
       // 3. Determinar modo de operación
       const mode = request.mode || 'agent'; // Default: agent mode
       
-      // 4. Obtener perfil del contratista para contexto
-      const contractorProfile = await this.systemAPI.getContractorProfile();
+      // 4. Obtener perfil del contratista para contexto (con caché)
+      const contractorProfile = await this.getCachedContractorProfile();
       
       // 5. Obtener herramientas disponibles según el modo
       const tools = mode === 'agent' ? getAllTools() : []; // Chat mode: sin herramientas
@@ -356,5 +359,30 @@ export class MervinConversationalOrchestrator {
    */
   getConversationSummary(conversationId: string): any {
     return conversationStateManager.getSummary(conversationId);
+  }
+  
+  /**
+   * ⚡ Obtener perfil del contratista con caché
+   * Evita llamadas repetidas a la DB en cada mensaje
+   */
+  private async getCachedContractorProfile(): Promise<any> {
+    const now = Date.now();
+    
+    // Si el cache es válido, retornarlo
+    if (this.contractorProfileCache && (now - this.profileCacheTimestamp) < this.CACHE_TTL) {
+      console.log('⚡ [MERVIN-CONVERSATIONAL] Using cached contractor profile');
+      return this.contractorProfileCache;
+    }
+    
+    // Si no, obtener perfil fresco y cachearlo
+    console.log('🔄 [MERVIN-CONVERSATIONAL] Fetching fresh contractor profile');
+    try {
+      this.contractorProfileCache = await this.systemAPI.getContractorProfile();
+      this.profileCacheTimestamp = now;
+      return this.contractorProfileCache;
+    } catch (error: any) {
+      console.error('❌ [MERVIN-CONVERSATIONAL] Failed to fetch contractor profile:', error.message);
+      return null;
+    }
   }
 }

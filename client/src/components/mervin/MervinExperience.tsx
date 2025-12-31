@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -186,23 +186,32 @@ export function MervinExperience({ mode, onMinimize, isMinimized = false, onClos
 
   // 🔄 SINCRONIZACIÓN: Cuando estamos en modo legacy/chat, sincronizar mervinAgent.messages con el estado local messages
   // Esto asegura que las respuestas del asistente se muestren en la UI
+  // ⚡ OPTIMIZADO: Usa useMemo para evitar re-renders innecesarios
+  const syncedMessagesForLegacy = useMemo(() => {
+    if (selectedModel !== 'legacy') return null;
+    
+    return mervinAgent.messages.map((msg, index) => ({
+      id: `synced-${msg.role}-${index}-${msg.timestamp?.getTime() || Date.now()}`,
+      content: msg.content,
+      sender: msg.role === 'user' ? 'user' : 'assistant',
+      timestamp: msg.timestamp || new Date(),
+    }));
+  }, [mervinAgent.messages, selectedModel]);
+
   useEffect(() => {
-    if (selectedModel === 'legacy') {
-      // Convertir mervinAgent.messages al formato de Message[] para el estado local
-      const syncedMessages: Message[] = mervinAgent.messages.map((msg, index) => ({
-        id: `synced-${msg.role}-${index}-${msg.timestamp?.getTime() || Date.now()}`,
-        content: msg.content,
-        sender: msg.role === 'user' ? 'user' : 'assistant',
-        timestamp: msg.timestamp || new Date(),
-      }));
-      
-      // Solo actualizar si hay cambios (evitar loops infinitos)
-      if (syncedMessages.length !== messages.length) {
-        console.log(`🔄 [SYNC] Syncing ${syncedMessages.length} messages from mervinAgent to local state (legacy mode)`);
-        setMessages(syncedMessages);
-      }
+    if (!syncedMessagesForLegacy) return;
+    
+    // Comparación inteligente: verificar longitud Y último mensaje
+    const needsUpdate = 
+      syncedMessagesForLegacy.length !== messages.length ||
+      (syncedMessagesForLegacy.length > 0 && messages.length > 0 &&
+       syncedMessagesForLegacy[syncedMessagesForLegacy.length - 1].content !== messages[messages.length - 1]?.content);
+    
+    if (needsUpdate) {
+      console.log(`🔄 [SYNC] Syncing ${syncedMessagesForLegacy.length} messages from mervinAgent to local state (legacy mode)`);
+      setMessages(syncedMessagesForLegacy);
     }
-  }, [mervinAgent.messages, selectedModel, messages.length]);
+  }, [syncedMessagesForLegacy, messages]);
 
   // Efecto para cargar mensajes cuando la conversación se carga del historial
   // ARQUITECTURA SIMPLIFICADA: Usamos mervinAgent.messages como única fuente de verdad
