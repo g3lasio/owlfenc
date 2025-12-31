@@ -81,7 +81,7 @@ export const users = pgTable('users', {
   profilePhoto: text('profile_photo'),
   hasUsedTrial: boolean('has_used_trial').default(false).notNull(), // PERMANENT FLAG - never reset after trial created
   trialStartDate: timestamp("trial_start_date"),
-  emailVerified: boolean("email_verified").default(false).notNull(), // Fecha cuando empezó el trial (null si nunca lo usó)
+  // emailVerified: boolean("email_verified").default(false), // TEMPORALMENTE COMENTADO: Columna no existe en DB
   createdAt: timestamp('created_at').defaultNow().notNull(),
   stripeConnectAccountId: text('stripe_connect_account_id'),
   defaultPaymentTerms: integer('default_payment_terms').default(30), // días para pago
