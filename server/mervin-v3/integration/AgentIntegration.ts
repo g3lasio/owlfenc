@@ -20,23 +20,24 @@ import type { MervinConversationalRequest, MervinConversationalResponse } from '
  */
 export async function hasAgentV3Access(userId: string, authHeaders: Record<string, string>, baseURL: string): Promise<boolean> {
   try {
-    // Llamar al endpoint de perfil para obtener el plan del usuario
-    const response = await fetch(`${baseURL}/api/profile`, {
+    // Llamar al endpoint de suscripción para obtener el plan del usuario
+    const response = await fetch(`${baseURL}/user/subscription`, {
       headers: authHeaders
     });
     
     if (!response.ok) {
-      console.error('❌ [AGENT-INTEGRATION] Error obteniendo perfil del usuario');
+      console.error('❌ [AGENT-INTEGRATION] Error obteniendo suscripción del usuario');
       return false;
     }
     
-    const profile = await response.json();
+    const data = await response.json();
     
     // Verificar si el plan es Mero Patrón (id: 9) o Master Contractor (id: 6)
     const allowedPlans = [9, 6]; // mero_patron, MASTER_CONTRACTOR
-    const hasPaidPlan = allowedPlans.includes(profile.subscriptionPlanId);
+    const planId = data.subscription?.planId;
+    const hasPaidPlan = allowedPlans.includes(planId);
     
-    console.log(`🔐 [AGENT-INTEGRATION] Usuario ${userId} - Plan: ${profile.subscriptionPlanId} - Acceso V3: ${hasPaidPlan}`);
+    console.log(`🔐 [AGENT-INTEGRATION] Usuario ${userId} - Plan: ${planId} - Acceso V3: ${hasPaidPlan}`);
     
     return hasPaidPlan;
     
