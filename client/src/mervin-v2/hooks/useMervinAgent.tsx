@@ -223,7 +223,8 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
               }).catch(err => console.error('❌ [AUTO-SAVE] Failed:', err));
             }
           },
-          mode // Pasar mode al cliente
+          mode, // Pasar mode al cliente
+          pageContext ? { url: pageContext.currentUrl, section: pageContext.currentSection } : undefined
         );
       } else {
         // SIN ARCHIVOS: Usar AgentClient con Claude Conversational
@@ -251,7 +252,8 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
               }).catch(err => console.error('❌ [AUTO-SAVE] Failed:', err));
             }
           },
-          mode // Pasar mode al cliente
+          mode, // Pasar mode al cliente
+          pageContext ? { url: pageContext.currentUrl, section: pageContext.currentSection } : undefined
         );
       }
 

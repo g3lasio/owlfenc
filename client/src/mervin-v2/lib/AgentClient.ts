@@ -80,7 +80,8 @@ export class AgentClient {
     input: string,
     conversationHistory: MervinMessage[] = [],
     language: 'es' | 'en' = 'es',
-    mode: 'chat' | 'agent' = 'agent'
+    mode: 'chat' | 'agent' = 'agent',
+    pageContext?: { url?: string; section?: string; action?: string }
   ): Promise<MervinResponse> {
     try {
       console.log('📨 [AGENT-CLIENT] Enviando mensaje:', input.substring(0, 50));
@@ -96,7 +97,8 @@ export class AgentClient {
           userId: this.userId,
           conversationHistory,
           language,
-          mode
+          mode,
+          pageContext
         })
       });
 
@@ -124,7 +126,8 @@ export class AgentClient {
     conversationHistory: MervinMessage[] = [],
     language: 'es' | 'en' = 'es',
     onUpdate: StreamCallback,
-    mode: 'chat' | 'agent' = 'agent'
+    mode: 'chat' | 'agent' = 'agent',
+    pageContext?: { url?: string; section?: string; action?: string }
   ): Promise<void> {
     try {
       console.log('📡 [AGENT-CLIENT] Enviando mensaje (JSON directo):', input.substring(0, 50));
@@ -134,7 +137,8 @@ export class AgentClient {
         userId: this.userId,
         conversationHistory,
         language,
-        mode
+        mode,
+        pageContext
       };
       
       const fullUrl = `${this.baseURL}/api/mervin-v2/stream`;
@@ -202,7 +206,8 @@ export class AgentClient {
     conversationHistory: MervinMessage[] = [],
     language: 'es' | 'en' = 'es',
     onUpdate: StreamCallback,
-    mode: 'chat' | 'agent' = 'agent'
+    mode: 'chat' | 'agent' = 'agent',
+    pageContext?: { url?: string; section?: string; action?: string }
   ): Promise<void> {
     try {
       console.log(`📨 [AGENT-CLIENT-FILES] Enviando mensaje con ${files.length} archivo(s)`);
@@ -214,6 +219,9 @@ export class AgentClient {
       formData.append('language', language);
       formData.append('mode', mode);
       formData.append('conversationHistory', JSON.stringify(conversationHistory));
+      if (pageContext) {
+        formData.append('pageContext', JSON.stringify(pageContext));
+      }
 
       // Adjuntar archivos
       files.forEach((file) => {

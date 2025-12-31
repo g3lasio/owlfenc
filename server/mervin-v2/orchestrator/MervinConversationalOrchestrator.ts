@@ -17,6 +17,7 @@ import { conversationStateManager } from '../services/ConversationStateManager';
 import { WorkflowRunner } from '../services/WorkflowRunner';
 import { SystemAPIService } from '../services/SystemAPIService';
 import { getMervinSystemPrompt } from '../prompts/MervinSystemPrompt';
+import MERVIN_CHAT_COPILOT_PROMPT from '../prompts/MervinChatCopilotPrompt';
 import { getAllTools, validateToolParams } from '../tools/ClaudeToolDefinitions';
 import type { WorkflowExecutionResult } from '../services/WorkflowRunner';
 
@@ -27,6 +28,11 @@ export interface MervinConversationalRequest {
   userId: string;
   conversationId?: string;
   mode?: 'chat' | 'agent'; // Modo de operación
+  pageContext?: {
+    url?: string;          // URL actual donde está el usuario
+    section?: string;      // Sección específica de la página
+    action?: string;       // Acción que está realizando
+  };
   attachments?: Array<{
     filename: string;
     mimeType: string;
@@ -96,12 +102,18 @@ export class MervinConversationalOrchestrator {
       const tools = mode === 'agent' ? getAllTools() : []; // Chat mode: sin herramientas
       
       // 6. Obtener prompt del sistema según el modo
-      let systemPrompt = getMervinSystemPrompt(mode);
+      let systemPrompt = mode === 'chat' ? MERVIN_CHAT_COPILOT_PROMPT : getMervinSystemPrompt(mode);
       
-      // 7. Enriquecer prompt con contexto del contratista
+      // 7. Enriquecer prompt con contexto del contratista y página
       if (contractorProfile) {
-        const contextInfo = `\n\n# CONTEXTO DEL CONTRATISTA\n\nTienes acceso al perfil del contratista:\n- Nombre del negocio: ${contractorProfile.companyName || 'No especificado'}\n- Especialidad: ${contractorProfile.businessType || 'No especificado'}\n- Ubicación: ${contractorProfile.city || ''}${contractorProfile.state ? ', ' + contractorProfile.state : ''}\n- Teléfono: ${contractorProfile.phone || 'No especificado'}\n- Email: ${contractorProfile.email || 'No especificado'}\n\nUSA ESTA INFORMACIÓN para personalizar tus respuestas y NO pedir datos que ya tienes.`;
+        const contextInfo = `\n\n# PERFIL DEL CONTRATISTA\n\nPERFIL DEL CONTRATISTA:\n- Nombre del negocio: ${contractorProfile.companyName || 'No especificado'}\n- Especialidad: ${contractorProfile.businessType || 'No especificado'}\n- Ubicación: ${contractorProfile.city || ''}${contractorProfile.state ? ', ' + contractorProfile.state : ''}\n- Teléfono: ${contractorProfile.phone || 'No especificado'}\n- Email: ${contractorProfile.email || 'No especificado'}\n\nUSA ESTA INFORMACIÓN para:\n1. Identificarte como "asistente de ${contractorProfile.companyName || 'tu compañía'}"\n2. Personalizar respuestas según su especialidad\n3. NO pedir datos que ya tienes`;
         systemPrompt += contextInfo;
+      }
+      
+      // 8. Agregar contexto de página si está disponible
+      if (request.pageContext && request.pageContext.url) {
+        const pageInfo = `\n\n# CONTEXTO DE PÁGINA\n\nCONTEXTO DE PÁGINA: ${request.pageContext.url}${request.pageContext.section ? '\nSECCIÓN: ' + request.pageContext.section : ''}${request.pageContext.action ? '\nACCIÓN: ' + request.pageContext.action : ''}\n\nUSA ESTE CONTEXTO para dar ayuda específica y relevante a lo que el usuario está haciendo AHORA.`;
+        systemPrompt += pageInfo;
       }
       
       console.log('🎯 [MERVIN-CONVERSATIONAL] Mode:', mode.toUpperCase());
