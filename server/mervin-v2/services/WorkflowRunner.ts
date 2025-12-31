@@ -113,10 +113,14 @@ export class WorkflowRunner {
     
     try {
       // Iniciar workflow
+      // IMPORTANTE: Incluir userId en initialContext para workflows que lo requieren
       const session = await this.engine.startWorkflow({
         workflowId: request.workflowId,
         userId: request.userId,
-        initialContext: request.parameters,
+        initialContext: {
+          userId: request.userId,  // Agregar userId al contexto
+          ...request.parameters     // Incluir todos los demás parámetros
+        },
         conversationId: request.conversationId
       });
       
