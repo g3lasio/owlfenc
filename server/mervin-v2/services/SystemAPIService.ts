@@ -21,12 +21,14 @@ import type {
   Contract,
   PermitInfo
 } from '../types/mervin-types';
+import { EntityContextService, EntityType } from '../../services/EntityContextService';
 
 export class SystemAPIService {
   private baseURL: string;
   private userId: string;
   private client: AxiosInstance;
   private authHeaders: Record<string, string>;
+  private entityContext: EntityContextService;
 
   constructor(userId: string, authHeaders: Record<string, string> = {}, baseURL: string = 'http://localhost:5000') {
     this.userId = userId;
@@ -67,6 +69,9 @@ export class SystemAPIService {
         return Promise.reject(error);
       }
     );
+    
+    // Initialize Entity Context Service
+    this.entityContext = new EntityContextService(userId);
   }
 
   /**
@@ -696,5 +701,51 @@ export class SystemAPIService {
       // No lanzar error aquí para no interrumpir el flujo
       // El guardado en historial es secundario
     }
+  }
+}
+
+  /**
+   * ========================================
+   * ENTITY CONTEXT METHODS
+   * Acceso unificado a todas las entidades del sistema
+   * ========================================
+   */
+  
+  /**
+   * Buscar entidades por texto libre
+   */
+  async searchEntity(params: {
+    entity_type: EntityType;
+    query: string;
+    filters?: Record<string, any>;
+    limit?: number;
+  }): Promise<any[]> {
+    console.log('🔍 [SYSTEM-API] Searching entity:', params.entity_type, params.query);
+    return await this.entityContext.searchEntity(params);
+  }
+  
+  /**
+   * Obtener entidad por ID
+   */
+  async getEntity(params: {
+    entity_type: EntityType;
+    id: string | number;
+  }): Promise<any> {
+    console.log('📄 [SYSTEM-API] Getting entity:', params.entity_type, params.id);
+    return await this.entityContext.getEntity(params);
+  }
+  
+  /**
+   * Listar entidades con filtros
+   */
+  async listEntities(params: {
+    entity_type: EntityType;
+    filters?: Record<string, any>;
+    limit?: number;
+    sort?: string;
+    offset?: number;
+  }): Promise<any[]> {
+    console.log('📋 [SYSTEM-API] Listing entities:', params.entity_type);
+    return await this.entityContext.listEntities(params);
   }
 }

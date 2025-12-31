@@ -152,6 +152,15 @@ export class StepExecutor {
         case 'verify_property_ownership':
           return await this.systemAPI.verifyProperty({ address: params.address });
           
+        case 'search_entity':
+          return await this.systemAPI.searchEntity(params);
+          
+        case 'get_entity':
+          return await this.systemAPI.getEntity(params);
+          
+        case 'list_entities':
+          return await this.systemAPI.listEntities(params);
+          
         // Agregar más acciones según sea necesario
         
         default:
@@ -173,7 +182,10 @@ export class StepExecutor {
       'create_contract_workflow',
       'check_permits_workflow',
       'verify_property_ownership',
-      'analyze_permits'
+      'analyze_permits',
+      'search_entity',
+      'get_entity',
+      'list_entities'
     ];
     
     return workflows.includes(action);
@@ -243,6 +255,19 @@ export class StepExecutor {
       scratchpad.permit = result;
     } else if (action === 'analyze_permits') {
       scratchpad.permit = result;
+    } else if (action === 'search_entity') {
+      // Guardar resultados de búsqueda con nombre descriptivo
+      const entityType = params.entity_type || 'entity';
+      scratchpad[`found_${entityType}s`] = result;
+      scratchpad.lastSearch = { entity_type: params.entity_type, results: result };
+    } else if (action === 'get_entity') {
+      // Guardar entidad obtenida con nombre descriptivo
+      const entityType = params.entity_type || 'entity';
+      scratchpad[`selected_${entityType}`] = result;
+    } else if (action === 'list_entities') {
+      // Guardar lista de entidades
+      const entityType = params.entity_type || 'entity';
+      scratchpad[`${entityType}_list`] = result;
     } else {
       // Guardar con el nombre de la acción
       scratchpad[action] = result;

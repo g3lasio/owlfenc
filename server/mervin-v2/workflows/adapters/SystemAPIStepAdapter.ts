@@ -140,6 +140,15 @@ export class SystemAPIStepAdapter implements WorkflowStepAdapter {
       case 'savePermitHistory':
         return await systemAPI.savePermitHistory(params as any);
         
+      case 'searchEntity':
+        return await systemAPI.searchEntity(params as any);
+        
+      case 'getEntity':
+        return await systemAPI.getEntity(params as any);
+        
+      case 'listEntities':
+        return await systemAPI.listEntities(params as any);
+        
       default:
         throw new Error(`Unknown SystemAPI method: ${method}`);
     }

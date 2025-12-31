@@ -300,6 +300,158 @@ pero si falta la dirección o el tipo de proyecto, debes incluirlos en userMessa
       },
       required: ['userMessage']
     }
+  },
+  
+  // ============= CONTEXT TOOLS =============
+  // Herramientas genéricas para acceder a todas las entidades del sistema
+  
+  {
+    name: 'search_entity',
+    description: `Busca entidades en el sistema usando texto libre o filtros.
+    
+Entidades disponibles:
+- client: Clientes del contratista
+- estimate: Estimados/Presupuestos
+- contract: Contratos
+- invoice: Facturas
+- project: Proyectos
+- permit_history: Historial de búsquedas de permisos
+- property_history: Historial de búsquedas de propiedades
+- material: Materiales de construcción
+- template: Templates de documentos
+- project_template: Templates de proyectos
+- smart_material_list: Listas inteligentes de materiales
+- digital_contract: Contratos digitales
+- notification: Notificaciones
+
+Usa esta herramienta cuando el usuario:
+- Busca algo por nombre, apellido, dirección, etc.
+- Dice "no me acuerdo del nombre pero..."
+- Quiere encontrar algo específico
+- Menciona "cliente que se apellida..."
+- Pide "buscar estimados de..."
+
+Ejemplos:
+- "Tengo un cliente que se apellida Webb" → search_entity(entity_type="client", query="Webb")
+- "Buscar estimados de Vacaville" → search_entity(entity_type="estimate", query="Vacaville")
+- "Contratos del mes pasado" → search_entity(entity_type="contract", query="", filters={"month": "last"})
+
+La búsqueda es case-insensitive y busca en múltiples campos relevantes.`,
+    input_schema: {
+      type: 'object',
+      properties: {
+        entity_type: {
+          type: 'string',
+          enum: ['client', 'estimate', 'contract', 'invoice', 'project', 
+                 'permit_history', 'property_history', 'material', 'template',
+                 'project_template', 'smart_material_list', 'digital_contract', 'notification'],
+          description: 'Tipo de entidad a buscar'
+        },
+        query: {
+          type: 'string',
+          description: 'Texto de búsqueda (nombre, apellido, dirección, etc.). Puede estar vacío si usas solo filtros.'
+        },
+        filters: {
+          type: 'object',
+          description: 'Filtros adicionales (opcional). Ejemplo: { "status": "active", "city": "Vacaville" }'
+        },
+        limit: {
+          type: 'number',
+          description: 'Número máximo de resultados. Default: 10, máximo recomendado: 20'
+        }
+      },
+      required: ['entity_type', 'query']
+    }
+  },
+  
+  {
+    name: 'get_entity',
+    description: `Obtiene los detalles completos de una entidad específica por su ID.
+    
+Usa esta herramienta cuando:
+- El usuario selecciona algo de una lista ("el primero", "el de Vacaville", "John Webb")
+- Necesitas detalles completos de un item
+- Ya tienes el ID de la entidad
+- Quieres obtener información completa antes de ejecutar otra acción
+
+Ejemplos:
+- Usuario dice "usa el primero" después de ver una lista → get_entity(entity_type="estimate", id=<id_del_primero>)
+- "Dame detalles del estimado EST-123" → get_entity(entity_type="estimate", id="EST-123")
+- "Información del cliente CLI-456" → get_entity(entity_type="client", id="CLI-456")
+
+Esta herramienta devuelve TODOS los campos de la entidad, incluyendo:
+- Para clientes: nombre, email, teléfono, dirección, etc.
+- Para estimados: cliente, proyecto, materiales, costos, etc.
+- Para contratos: términos, fechas, montos, etc.`,
+    input_schema: {
+      type: 'object',
+      properties: {
+        entity_type: {
+          type: 'string',
+          enum: ['client', 'estimate', 'contract', 'invoice', 'project', 
+                 'permit_history', 'property_history', 'material', 'template',
+                 'project_template', 'smart_material_list', 'digital_contract', 'notification'],
+          description: 'Tipo de entidad'
+        },
+        id: {
+          type: 'string',
+          description: 'ID de la entidad. Puede ser numérico (123) o alfanumérico ("EST-001", "CLI-123", "CON-456")'
+        }
+      },
+      required: ['entity_type', 'id']
+    }
+  },
+  
+  {
+    name: 'list_entities',
+    description: `Lista entidades con filtros y ordenamiento.
+    
+Usa esta herramienta cuando el usuario:
+- Pide "últimos N estimados"
+- Quiere ver "todos los contratos activos"
+- Necesita una lista filtrada
+- Dice "dame una lista de mis..."
+- Pide "muéstrame los proyectos de..."
+
+Ejemplos:
+- "Dame mis últimos 3 estimados" → list_entities(entity_type="estimate", limit=3, sort="createdAt:desc")
+- "Todos los contratos activos" → list_entities(entity_type="contract", filters={"status": "active"})
+- "Clientes de Vacaville" → list_entities(entity_type="client", filters={"city": "Vacaville"})
+- "Proyectos de fence" → list_entities(entity_type="project", filters={"projectType": "fence"})
+
+Por defecto:
+- Ordena por fecha de creación (más recientes primero)
+- Límite de 10 resultados
+- Filtra por el usuario actual automáticamente`,
+    input_schema: {
+      type: 'object',
+      properties: {
+        entity_type: {
+          type: 'string',
+          enum: ['client', 'estimate', 'contract', 'invoice', 'project', 
+                 'permit_history', 'property_history', 'material', 'template',
+                 'project_template', 'smart_material_list', 'digital_contract', 'notification'],
+          description: 'Tipo de entidad'
+        },
+        filters: {
+          type: 'object',
+          description: 'Filtros (opcional). Ejemplo: { "status": "active", "city": "Vacaville", "projectType": "fence" }'
+        },
+        limit: {
+          type: 'number',
+          description: 'Número máximo de resultados. Default: 10, máximo recomendado: 20'
+        },
+        sort: {
+          type: 'string',
+          description: 'Campo y dirección de ordenamiento. Formato: "campo:direccion". Ejemplos: "createdAt:desc" (más recientes primero), "name:asc" (alfabético), "amount:desc" (mayor a menor)'
+        },
+        offset: {
+          type: 'number',
+          description: 'Número de resultados a saltar (para paginación). Default: 0'
+        }
+      },
+      required: ['entity_type']
+    }
   }
 ];
 
@@ -322,13 +474,14 @@ export function getAllTools(): ToolDefinition[] {
 /**
  * Obtener herramientas por categoría
  */
-export function getToolsByCategory(category: 'estimate' | 'contract' | 'permit' | 'property' | 'client'): ToolDefinition[] {
+export function getToolsByCategory(category: 'estimate' | 'contract' | 'permit' | 'property' | 'client' | 'context'): ToolDefinition[] {
   const categoryMap: Record<string, string[]> = {
     estimate: ['create_estimate_workflow'],
     contract: ['create_contract_workflow'],
     permit: ['check_permits_workflow', 'analyze_permits'],
     property: ['verify_property_ownership'],
-    client: ['search_client', 'create_client']
+    client: ['search_client', 'create_client'],
+    context: ['search_entity', 'get_entity', 'list_entities']
   };
   
   const toolNames = categoryMap[category] || [];
