@@ -26,8 +26,8 @@ export class TaskPlanner {
   constructor(config: Partial<AgentConfig> = {}) {
     // Configuración por defecto inline
     this.config = {
-      planningModel: 'claude-3-opus-20240229',
-      synthesisModel: 'claude-3-opus-20240229',
+      planningModel: 'claude-sonnet-4-5',
+      synthesisModel: 'claude-sonnet-4-5',
       planningTemperature: 0.2,
       synthesisTemperature: 0.7,
       maxRetries: 3,
