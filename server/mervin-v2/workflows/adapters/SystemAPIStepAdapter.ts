@@ -11,6 +11,11 @@ import { WorkflowStep, WorkflowStepAdapter } from '../types';
 import { SystemAPIService } from '../../services/SystemAPIService';
 
 export class SystemAPIStepAdapter implements WorkflowStepAdapter {
+  constructor(
+    private userId: string,
+    private authHeaders: Record<string, string> = {},
+    private baseURL?: string
+  ) {}
   
   /**
    * Verificar si este adapter puede manejar el paso
@@ -30,13 +35,13 @@ export class SystemAPIStepAdapter implements WorkflowStepAdapter {
     
     const { method, params, paramMapping } = step.endpoint;
     
-    // Crear instancia de SystemAPIService con el userId del context
-    const userId = context.userId;
-    if (!userId) {
-      throw new Error('userId not found in workflow context');
-    }
-    
-    const systemAPI = new SystemAPIService(userId);
+    // Crear instancia de SystemAPIService con authHeaders
+    // Usar userId del constructor (ya autenticado) en lugar del context
+    const systemAPI = new SystemAPIService(
+      this.userId,
+      this.authHeaders,
+      this.baseURL
+    );
     
     // Construir parámetros para la llamada
     const callParams = this.buildCallParams(params || {}, paramMapping || {}, context);

@@ -9,6 +9,11 @@ import { WorkflowStep, WorkflowStepAdapter } from '../types';
 import axios from 'axios';
 
 export class DeepSearchStepAdapter implements WorkflowStepAdapter {
+  constructor(
+    private userId: string,
+    private authHeaders: Record<string, string> = {},
+    private baseURL?: string
+  ) {}
   
   /**
    * Verificar si este adapter puede manejar el paso
@@ -70,11 +75,14 @@ export class DeepSearchStepAdapter implements WorkflowStepAdapter {
    * Ejecutar DeepSearch solo para materiales
    */
   private async executeMaterialsOnly(params: any): Promise<any> {
-    const response = await axios.post('http://localhost:5000/api/deepsearch/materials-only', {
+    const response = await axios.post(`${this.baseURL || 'http://localhost:5000'}/api/deepsearch/materials-only`, {
       projectDescription: params.projectDescription,
       location: params.location || ''
     }, {
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...this.authHeaders
+      },
       withCredentials: true
     });
     
@@ -85,11 +93,14 @@ export class DeepSearchStepAdapter implements WorkflowStepAdapter {
    * Ejecutar DeepSearch solo para mano de obra
    */
   private async executeLaborOnly(params: any): Promise<any> {
-    const response = await axios.post('http://localhost:5000/api/labor-deepsearch/generate-items', {
+    const response = await axios.post(`${this.baseURL || 'http://localhost:5000'}/api/labor-deepsearch/generate-items`, {
       projectDescription: params.projectDescription,
       location: params.location || ''
     }, {
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...this.authHeaders
+      },
       withCredentials: true
     });
     
@@ -100,11 +111,14 @@ export class DeepSearchStepAdapter implements WorkflowStepAdapter {
    * Ejecutar DeepSearch combinado (materiales + mano de obra)
    */
   private async executeCombined(params: any): Promise<any> {
-    const response = await axios.post('http://localhost:5000/api/labor-deepsearch/combined', {
+    const response = await axios.post(`${this.baseURL || 'http://localhost:5000'}/api/labor-deepsearch/combined`, {
       projectDescription: params.projectDescription,
       location: params.location || ''
     }, {
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...this.authHeaders
+      },
       withCredentials: true
     });
     
