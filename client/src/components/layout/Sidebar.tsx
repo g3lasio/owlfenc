@@ -45,12 +45,16 @@ import {
   BookOpen,
   Headphones,
   Ticket,
+  Zap,
+  Info,
+  ExternalLink,
 } from "lucide-react";
 import { navigationGroups, NavigationItem } from "@/config/navigation";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
 import LanguageSwitch from "@/components/ui/language-switch";
 import { motion, AnimatePresence } from "framer-motion";
+import { LeadPrimePreviewModal } from "@/components/modals/LeadPrimePreviewModal";
 
 // Componente del ícono hexagonal futurista para el sidebar
 const HexagonalMenuIcon = ({ onClick }: { onClick?: () => void }) => {
@@ -276,6 +280,9 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
   // Track device type
   const [isPhone, setIsPhone] = useState(false);
   const [isTabletOrDesktop, setIsTabletOrDesktop] = useState(false);
+  
+  // LeadPrime modal state
+  const [showLeadPrimeModal, setShowLeadPrimeModal] = useState(false);
 
   useEffect(() => {
     const checkDeviceType = () => {
@@ -474,44 +481,110 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                     >
                       {group.items
                         .map((item) => (
-                          <Link key={item.id} href={item.path}>
-                            <Button
-                              variant="ghost"
-                              className={`w-full justify-start px-2 py-1.5 h-auto hover:bg-accent text-sm font-normal ${
-                                location === item.path
-                                  ? "bg-primary/20 text-primary"
-                                  : ""
-                              }`}
-                              onClick={handleMenuItemClick}
-                            >
-                              {(() => {
-                                // FORCED ICON MAPPING - ALL LUCIDE ICONS
-                                switch(item.id) {
-                                  case "mervin": return <MessageSquare className="h-4 w-4 mr-3" />;
-                                  case "projects": return <Briefcase className="h-4 w-4 mr-3" />;
-                                  case "clients": return <Users className="h-4 w-4 mr-3" />;
-                                  case "materials": return <Archive className="h-4 w-4 mr-3" />;
-                                  case "estimates": return <FileText className="h-4 w-4 mr-3" />;
-                                  case "legal-defense": return <Shield className="h-4 w-4 mr-3" />;
-                                  case "property-verifier": return <Home className="h-4 w-4 mr-3" />;
-                                  case "project-payments": return <DollarSign className="h-4 w-4 mr-3" />;
-                                  case "invoices": return <FileCheck className="h-4 w-4 mr-3" />;
-                                  case "permit-advisor": return <Bot className="h-4 w-4 mr-3" />;
-                                  case "owl-funding": return <TrendingUp className="h-4 w-4 mr-3" />;
-                                  case "help-center": return <BookOpen className="h-4 w-4 mr-3" />;
-                                  case "get-support": return <Headphones className="h-4 w-4 mr-3" />;
-                                  case "my-tickets": return <Ticket className="h-4 w-4 mr-3" />;
-                                  case "profile": return <Settings className="h-4 w-4 mr-3" />;
-                                  case "billing": return <CreditCard className="h-4 w-4 mr-3" />;
-                                  case "subscription": return <Crown className="h-4 w-4 mr-3" />;
-                                  case "about-mervin": return <Bot className="h-4 w-4 mr-3" />;
-                                  case "about-owlfence": return <ShoppingBag className="h-4 w-4 mr-3" />;
-                                  default: return <User className="h-4 w-4 mr-3" />;
-                                }
-                              })()}
-                              {t(item.label)}
-                            </Button>
-                          </Link>
+                          <div key={item.id} className="flex items-center gap-1">
+                            {item.external ? (
+                              <Button
+                                variant="ghost"
+                                className="flex-1 justify-start px-2 py-1.5 h-auto hover:bg-accent text-sm font-normal"
+                                onClick={() => {
+                                  window.open(item.path, '_blank');
+                                  handleMenuItemClick();
+                                }}
+                              >
+                                {(() => {
+                                  // FORCED ICON MAPPING - ALL LUCIDE ICONS
+                                  switch(item.id) {
+                                    case "mervin": return <MessageSquare className="h-4 w-4 mr-3" />;
+                                    case "leadprime-crm": return <Zap className="h-4 w-4 mr-3" />;
+                                    case "projects": return <Briefcase className="h-4 w-4 mr-3" />;
+                                    case "clients": return <Users className="h-4 w-4 mr-3" />;
+                                    case "materials": return <Archive className="h-4 w-4 mr-3" />;
+                                    case "estimates": return <FileText className="h-4 w-4 mr-3" />;
+                                    case "legal-defense": return <Shield className="h-4 w-4 mr-3" />;
+                                    case "property-verifier": return <Home className="h-4 w-4 mr-3" />;
+                                    case "project-payments": return <DollarSign className="h-4 w-4 mr-3" />;
+                                    case "invoices": return <FileCheck className="h-4 w-4 mr-3" />;
+                                    case "permit-advisor": return <Bot className="h-4 w-4 mr-3" />;
+                                    case "owl-funding": return <TrendingUp className="h-4 w-4 mr-3" />;
+                                    case "help-center": return <BookOpen className="h-4 w-4 mr-3" />;
+                                    case "get-support": return <Headphones className="h-4 w-4 mr-3" />;
+                                    case "my-tickets": return <Ticket className="h-4 w-4 mr-3" />;
+                                    case "profile": return <Settings className="h-4 w-4 mr-3" />;
+                                    case "billing": return <CreditCard className="h-4 w-4 mr-3" />;
+                                    case "subscription": return <Crown className="h-4 w-4 mr-3" />;
+                                    case "about-mervin": return <Bot className="h-4 w-4 mr-3" />;
+                                    case "about-owlfence": return <ShoppingBag className="h-4 w-4 mr-3" />;
+                                    default: return <User className="h-4 w-4 mr-3" />;
+                                  }
+                                })()}
+                                {t(item.label)}
+                                {item.badge && (
+                                  <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-gradient-to-r from-cyan-400 to-blue-400 text-black font-semibold">
+                                    {item.badge}
+                                  </span>
+                                )}
+                                <ExternalLink className="h-3 w-3 ml-1 opacity-50" />
+                              </Button>
+                            ) : (
+                              <Link href={item.path} className="flex-1">
+                                <Button
+                                  variant="ghost"
+                                  className={`w-full justify-start px-2 py-1.5 h-auto hover:bg-accent text-sm font-normal ${
+                                    location === item.path
+                                      ? "bg-primary/20 text-primary"
+                                      : ""
+                                  }`}
+                                  onClick={handleMenuItemClick}
+                                >
+                                  {(() => {
+                                    // FORCED ICON MAPPING - ALL LUCIDE ICONS
+                                    switch(item.id) {
+                                      case "mervin": return <MessageSquare className="h-4 w-4 mr-3" />;
+                                      case "leadprime-crm": return <Zap className="h-4 w-4 mr-3" />;
+                                      case "projects": return <Briefcase className="h-4 w-4 mr-3" />;
+                                      case "clients": return <Users className="h-4 w-4 mr-3" />;
+                                      case "materials": return <Archive className="h-4 w-4 mr-3" />;
+                                      case "estimates": return <FileText className="h-4 w-4 mr-3" />;
+                                      case "legal-defense": return <Shield className="h-4 w-4 mr-3" />;
+                                      case "property-verifier": return <Home className="h-4 w-4 mr-3" />;
+                                      case "project-payments": return <DollarSign className="h-4 w-4 mr-3" />;
+                                      case "invoices": return <FileCheck className="h-4 w-4 mr-3" />;
+                                      case "permit-advisor": return <Bot className="h-4 w-4 mr-3" />;
+                                      case "owl-funding": return <TrendingUp className="h-4 w-4 mr-3" />;
+                                      case "help-center": return <BookOpen className="h-4 w-4 mr-3" />;
+                                      case "get-support": return <Headphones className="h-4 w-4 mr-3" />;
+                                      case "my-tickets": return <Ticket className="h-4 w-4 mr-3" />;
+                                      case "profile": return <Settings className="h-4 w-4 mr-3" />;
+                                      case "billing": return <CreditCard className="h-4 w-4 mr-3" />;
+                                      case "subscription": return <Crown className="h-4 w-4 mr-3" />;
+                                      case "about-mervin": return <Bot className="h-4 w-4 mr-3" />;
+                                      case "about-owlfence": return <ShoppingBag className="h-4 w-4 mr-3" />;
+                                      default: return <User className="h-4 w-4 mr-3" />;
+                                    }
+                                  })()}
+                                  {t(item.label)}
+                                  {item.badge && (
+                                    <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-gradient-to-r from-cyan-400 to-blue-400 text-black font-semibold">
+                                      {item.badge}
+                                    </span>
+                                  )}
+                                </Button>
+                              </Link>
+                            )}
+                            {item.hasPreview && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 hover:bg-cyan-400/10 hover:text-cyan-400"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowLeadPrimeModal(true);
+                                }}
+                              >
+                                <Info className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
                         ))}
                     </div>
                   </div>
@@ -550,55 +623,95 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                         .map((item: NavigationItem) => (
                           <Tooltip key={item.id}>
                             <TooltipTrigger asChild>
-                              <Link
-                                href={item.path}
-                                className={`
-                                  flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-200 mx-auto
-                                  hover:bg-accent/50 hover:scale-105 hover:shadow-md
-                                  ${
-                                    location === item.path
-                                      ? "bg-primary/20 text-primary border border-primary/30 shadow-sm"
-                                      : "text-muted-foreground hover:text-primary"
-                                  }
-                                `}
-                                style={{
-                                  minHeight: "40px",
-                                  minWidth: "40px",
-                                }}
-                                onClick={handleMenuItemClick}
-                              >
-                                {(() => {
-                                  // FORCED ICON MAPPING - ALL LUCIDE ICONS
-                                  switch(item.id) {
-                                    case "mervin": return <MessageSquare className="h-4 w-4" />;
-                                    case "projects": return <Briefcase className="h-4 w-4" />;
-                                    case "clients": return <Users className="h-4 w-4" />;
-                                    case "materials": return <Archive className="h-4 w-4" />;
-                                    case "estimates": return <FileText className="h-4 w-4" />;
-                                    case "legal-defense": return <Shield className="h-4 w-4" />;
-                                    case "property-verifier": return <Home className="h-4 w-4" />;
-                                    case "project-payments": return <DollarSign className="h-4 w-4" />;
-                                    case "invoices": return <FileCheck className="h-4 w-4" />;
-                                    case "permit-advisor": return <Bot className="h-4 w-4" />;
-                                    case "owl-funding": return <TrendingUp className="h-4 w-4" />;
-                                    case "help-center": return <BookOpen className="h-4 w-4" />;
-                                    case "get-support": return <Headphones className="h-4 w-4" />;
-                                    case "my-tickets": return <Ticket className="h-4 w-4" />;
-                                    case "profile": return <Settings className="h-4 w-4" />;
-                                    case "billing": return <CreditCard className="h-4 w-4" />;
-                                    case "subscription": return <Crown className="h-4 w-4" />;
-                                    case "about-mervin": return <Bot className="h-4 w-4" />;
-                                    case "about-owlfence": return <ShoppingBag className="h-4 w-4" />;
-                                    default: return <User className="h-4 w-4" />;
-                                  }
-                                })()}
-                              </Link>
+                              {item.external ? (
+                                <button
+                                  onClick={() => {
+                                    if (item.hasPreview) {
+                                      setShowLeadPrimeModal(true);
+                                    } else {
+                                      window.open(item.path, '_blank');
+                                    }
+                                    handleMenuItemClick();
+                                  }}
+                                  className="flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-200 mx-auto hover:bg-accent/50 hover:scale-105 hover:shadow-md text-muted-foreground hover:text-primary relative"
+                                  style={{
+                                    minHeight: "40px",
+                                    minWidth: "40px",
+                                  }}
+                                >
+                                  {(() => {
+                                    // FORCED ICON MAPPING - ALL LUCIDE ICONS
+                                    switch(item.id) {
+                                      case "leadprime-crm": return <Zap className="h-4 w-4" />;
+                                      default: return <User className="h-4 w-4" />;
+                                    }
+                                  })()}
+                                  {item.badge && (
+                                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-gradient-to-r from-cyan-400 to-blue-400 rounded-full animate-pulse" />
+                                  )}
+                                </button>
+                              ) : (
+                                <Link
+                                  href={item.path}
+                                  className={`
+                                    flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-200 mx-auto
+                                    hover:bg-accent/50 hover:scale-105 hover:shadow-md
+                                    ${
+                                      location === item.path
+                                        ? "bg-primary/20 text-primary border border-primary/30 shadow-sm"
+                                        : "text-muted-foreground hover:text-primary"
+                                    }
+                                  `}
+                                  style={{
+                                    minHeight: "40px",
+                                    minWidth: "40px",
+                                  }}
+                                  onClick={handleMenuItemClick}
+                                >
+                                  {(() => {
+                                    // FORCED ICON MAPPING - ALL LUCIDE ICONS
+                                    switch(item.id) {
+                                      case "mervin": return <MessageSquare className="h-4 w-4" />;
+                                      case "leadprime-crm": return <Zap className="h-4 w-4" />;
+                                      case "projects": return <Briefcase className="h-4 w-4" />;
+                                      case "clients": return <Users className="h-4 w-4" />;
+                                      case "materials": return <Archive className="h-4 w-4" />;
+                                      case "estimates": return <FileText className="h-4 w-4" />;
+                                      case "legal-defense": return <Shield className="h-4 w-4" />;
+                                      case "property-verifier": return <Home className="h-4 w-4" />;
+                                      case "project-payments": return <DollarSign className="h-4 w-4" />;
+                                      case "invoices": return <FileCheck className="h-4 w-4" />;
+                                      case "permit-advisor": return <Bot className="h-4 w-4" />;
+                                      case "owl-funding": return <TrendingUp className="h-4 w-4" />;
+                                      case "help-center": return <BookOpen className="h-4 w-4" />;
+                                      case "get-support": return <Headphones className="h-4 w-4" />;
+                                      case "my-tickets": return <Ticket className="h-4 w-4" />;
+                                      case "profile": return <Settings className="h-4 w-4" />;
+                                      case "billing": return <CreditCard className="h-4 w-4" />;
+                                      case "subscription": return <Crown className="h-4 w-4" />;
+                                      case "about-mervin": return <Bot className="h-4 w-4" />;
+                                      case "about-owlfence": return <ShoppingBag className="h-4 w-4" />;
+                                      default: return <User className="h-4 w-4" />;
+                                    }
+                                  })()}
+                                </Link>
+                              )}
                             </TooltipTrigger>
                             <TooltipContent
                               side="right"
                               className="bg-background border border-border text-foreground shadow-xl"
                             >
-                              <p className="font-medium">{t(item.label)}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium">{t(item.label)}</p>
+                                {item.badge && (
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-gradient-to-r from-cyan-400 to-blue-400 text-black font-semibold">
+                                    {item.badge}
+                                  </span>
+                                )}
+                              </div>
+                              {item.hasPreview && (
+                                <p className="text-xs text-muted-foreground mt-1">Click para ver capacidades</p>
+                              )}
                             </TooltipContent>
                           </Tooltip>
                         ))}
@@ -669,6 +782,12 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
           </div>
         </aside>
       </TooltipProvider>
+      
+      {/* LeadPrime Preview Modal */}
+      <LeadPrimePreviewModal 
+        isOpen={showLeadPrimeModal} 
+        onClose={() => setShowLeadPrimeModal(false)} 
+      />
     </>
   );
 }

@@ -13,6 +13,9 @@ export interface NavigationItem {
   path: string;
   icon: string;
   requiredPermission?: string;
+  external?: boolean;
+  badge?: string;
+  hasPreview?: boolean;
 }
 
 export interface NavigationGroup {
@@ -30,6 +33,15 @@ export const navigationGroups: NavigationGroup[] = [
         label: "navigation.talkToMervin",
         path: "/mervin",
         icon: "ri-chat-voice-line"
+      },
+      {
+        id: "leadprime-crm",
+        label: "LeadPrime CRM",
+        path: "https://leadprime.chyrris.com/",
+        icon: "lucide-zap",
+        external: true,
+        badge: "NEW",
+        hasPreview: true
       },
       {
         id: "projects",
