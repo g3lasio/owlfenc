@@ -12,6 +12,7 @@ import multer from 'multer';
 import { MervinConversationalOrchestrator } from '../mervin-v2/orchestrator/MervinConversationalOrchestrator';
 import { FileProcessorService } from '../mervin-v2/services/FileProcessorService';
 import type { MervinRequest, FileAttachment } from '../mervin-v2/types/mervin-types';
+import { determineMode } from '../mervin-v2/utils/ModeDetector';
 
 const router = express.Router();
 
@@ -46,7 +47,7 @@ router.post('/message', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Invalid authentication token' });
     }
 
-    const { input, conversationHistory = [], language = 'es' } = req.body;
+     const { input, conversationHistory, language, mode: requestedMode } = req.body;
 
     if (!input) {
       return res.status(400).json({ error: 'Missing input' });
@@ -54,6 +55,10 @@ router.post('/message', async (req: Request, res: Response) => {
 
     console.log(`📝 [MERVIN-V2-HTTP] Input: "${input.substring(0, 50)}..."`);
     console.log(`👤 [MERVIN-V2-HTTP] User: ${authenticatedUserId}`);
+    
+    // Determinar modo de forma inteligente
+    const mode = determineMode(requestedMode, input);
+    console.log(`🎯 [MERVIN-V2-HTTP] Modo determinado: ${mode.toUpperCase()}`);d}`);
 
     // Forward all auth headers to SystemAPIService (FIX 401 en servicios internos)
     const authHeaders: Record<string, string> = {};
@@ -86,7 +91,7 @@ router.post('/message', async (req: Request, res: Response) => {
       input,
       userId: authenticatedUserId,
       conversationId: req.body.conversationId || undefined,
-      mode: mode || 'agent' // Default: agent mode
+      mode: mode // Modo determinado inteligentemente
     });
     
     const elapsed = Date.now() - startTime;
@@ -152,7 +157,7 @@ router.post('/process', async (req: Request, res: Response) => {
       });
     }
 
-    const { input, conversationHistory, language, mode } = req.body;
+    const { input, conversationHistory, language, mode: requestedMode } = req.body;
 
     // Validación de input
     if (!input) {
@@ -162,6 +167,10 @@ router.post('/process', async (req: Request, res: Response) => {
     }
 
     console.log('📨 [MERVIN-V2-PROCESS] Request recibido:', { userId: authenticatedUserId, input: input.substring(0, 50) });
+    
+    // Determinar modo de forma inteligente
+    const mode = determineMode(requestedMode, input);
+    console.log(`🎯 [MERVIN-V2-PROCESS] Modo determinado: ${mode.toUpperCase()}`);
 
     // Forward all auth headers to SystemAPIService
     const authHeaders: Record<string, string> = {};
@@ -193,7 +202,7 @@ router.post('/process', async (req: Request, res: Response) => {
       input,
       userId: authenticatedUserId,
       conversationId: req.body.conversationId || undefined,
-      mode: mode || 'agent' // Default: agent mode
+      mode: mode // Modo determinado inteligentemente
     });
 
     console.log('✅ [MERVIN-V2-API] Response generado exitosamente');
@@ -249,7 +258,7 @@ router.post('/stream', async (req: Request, res: Response) => {
       return;
     }
 
-    const { input, conversationHistory, language, mode } = req.body;
+    const { input, conversationHistory, language, mode: requestedMode } = req.body;
 
     // Validación de input
     if (!input) {
@@ -261,6 +270,10 @@ router.post('/stream', async (req: Request, res: Response) => {
     }
 
     console.log('📡 [MERVIN-V2-STREAM] Request recibido:', { userId: authenticatedUserId, input: input.substring(0, 50) });
+    
+    // Determinar modo de forma inteligente basado en el contenido
+    const mode = determineMode(requestedMode, input);
+    console.log(`🎯 [MERVIN-V2-STREAM] Modo determinado: ${mode.toUpperCase()} (solicitado: ${requestedMode || 'ninguno'})`);
 
     // Forward all auth headers to SystemAPIService
     const authHeaders: Record<string, string> = {};
@@ -292,7 +305,7 @@ router.post('/stream', async (req: Request, res: Response) => {
       input,
       userId: authenticatedUserId,
       conversationId: req.body.conversationId || undefined,
-      mode: mode || 'agent' // Default: agent mode
+      mode: mode // Modo determinado inteligentemente
     });
 
     // Retornar respuesta JSON directa
@@ -343,7 +356,11 @@ router.post('/process-with-files', upload.array('files', 5), async (req: Request
     }
 
     const files = req.files as Express.Multer.File[];
-    const { input, conversationHistory, language, mode } = req.body;
+    const { input, conversationHistory, language, mode: requestedMode } = req.body;
+
+    // Determinar modo de forma inteligente
+    const mode = determineMode(requestedMode, input);
+    console.log(`🎯 [MERVIN-V2-FILES] Modo determinado: ${mode.toUpperCase()}`);
 
     // Validación de input
     if (!input) {
