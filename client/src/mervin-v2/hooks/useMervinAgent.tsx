@@ -206,15 +206,18 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
           messages,
           language,
           (update: StreamUpdate) => {
+            console.log('📥 [MERVIN-AGENT] Received update:', JSON.stringify(update, null, 2));
             setStreamingUpdates(prev => [...prev, update]);
             if (onStreamUpdate) onStreamUpdate(update);
 
             if (update.type === 'complete') {
+              console.log('✅ [MERVIN-AGENT] Processing complete update, content length:', update.content?.length);
               const assistantMessage: MervinMessage = {
                 role: 'assistant',
                 content: update.content,
                 timestamp: new Date()
               };
+              console.log('📝 [MERVIN-AGENT] Adding assistant message to state');
               setMessages(prev => [...prev, assistantMessage]);
               persistenceRef.current?.saveMessage({
                 sender: 'assistant',
@@ -235,15 +238,18 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
           messages,
           language,
           (update: StreamUpdate) => {
+            console.log('📥 [MERVIN-AGENT] Received update:', JSON.stringify(update, null, 2));
             setStreamingUpdates(prev => [...prev, update]);
             if (onStreamUpdate) onStreamUpdate(update);
 
             if (update.type === 'complete') {
+              console.log('✅ [MERVIN-AGENT] Processing complete update, content length:', update.content?.length);
               const assistantMessage: MervinMessage = {
                 role: 'assistant',
                 content: update.content,
                 timestamp: new Date()
               };
+              console.log('📝 [MERVIN-AGENT] Adding assistant message to state');
               setMessages(prev => [...prev, assistantMessage]);
               persistenceRef.current?.saveMessage({
                 sender: 'assistant',

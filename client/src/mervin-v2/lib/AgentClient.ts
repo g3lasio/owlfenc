@@ -177,14 +177,17 @@ export class AgentClient {
       
       // Ahora el backend retorna JSON directo (no SSE)
       const data = await response.json();
+      console.log('🔍 [AGENT-CLIENT] Response data:', JSON.stringify(data, null, 2));
       console.log(`✅ [AGENT-CLIENT] Response recibido, message length: ${data.message?.length || 0}`);
 
       // Enviar mensaje completo de una vez
-      onUpdate({
-        type: 'complete',
+      const updatePayload = {
+        type: 'complete' as const,
         content: data.message || 'No response',
         data: data.data
-      });
+      };
+      console.log('📤 [AGENT-CLIENT] Sending update:', JSON.stringify(updatePayload, null, 2));
+      onUpdate(updatePayload);
 
       console.log('✅ [AGENT-CLIENT] Procesamiento completado');
 
