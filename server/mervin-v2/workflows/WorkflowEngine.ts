@@ -286,6 +286,11 @@ export class WorkflowEngine {
     // Guardar resultado del paso
     await this.repository.addCompletedStep(session.sessionId, step.id, result);
     
+    // CRITICAL: Guardar resultado en el contexto para que esté disponible para pasos siguientes
+    // Los pasos transform pueden referenciar resultados de pasos anteriores usando step.id
+    session.context[step.id] = result;
+    await this.repository.updateContext(session.sessionId, session.context);
+    
     // Emitir evento de paso completado
     this.emitProgress({
       sessionId: session.sessionId,
@@ -446,15 +451,28 @@ export class WorkflowEngine {
       throw new Error(`Transform step ${step.id} has no transform defined`);
     }
     
-    const { input, output, operation } = step.transform;
-    const inputValue = session.context[input];
+    // Buscar adapter que pueda manejar este paso
+    const adapter = this.stepAdapters.find(a => a.canHandle(step));
     
-    // TODO: Implementar transformaciones comunes
-    // Por ahora, simplemente copiar el valor
-    session.context[output] = inputValue;
-    await this.repository.updateContext(session.sessionId, session.context);
+    if (!adapter) {
+      // Fallback: transformación simple (copiar valor)
+      const { input, output } = step.transform;
+      const inputValue = session.context[input];
+      session.context[output] = inputValue;
+      await this.repository.updateContext(session.sessionId, session.context);
+      return { [output]: inputValue };
+    }
     
-    return { [output]: inputValue };
+    // Ejecutar con el adapter
+    const result = await adapter.execute(step, session.context);
+    
+    // Guardar resultado en el contexto si se especifica output
+    if (step.transform.output) {
+      session.context[step.transform.output] = result;
+      await this.repository.updateContext(session.sessionId, session.context);
+    }
+    
+    return result;
   }
   
   /**
