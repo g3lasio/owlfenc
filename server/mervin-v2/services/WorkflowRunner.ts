@@ -270,6 +270,29 @@ export class WorkflowRunner {
   }
   
   /**
+   * Método simplificado para ejecutar workflows por nombre
+   */
+  async run(workflowName: string, params: Record<string, any>): Promise<WorkflowExecutionResult> {
+    console.log('🏃 [WORKFLOW-RUNNER] Running workflow:', workflowName);
+    
+    // Mapear nombres de herramientas a IDs de workflow
+    const workflowMap: Record<string, string> = {
+      'verify_property_ownership': 'property_verification',
+      'create_estimate_workflow': 'estimate_creation',
+      'create_contract_workflow': 'contract_creation',
+      'check_permits_workflow': 'permit_check'
+    };
+    
+    const workflowId = workflowMap[workflowName] || workflowName;
+    
+    return await this.executeWorkflow({
+      workflowId,
+      userId: this.systemAPI['userId'], // Acceder al userId del SystemAPI
+      parameters: params
+    });
+  }
+  
+  /**
    * Helper: Sleep
    */
   private sleep(ms: number): Promise<void> {

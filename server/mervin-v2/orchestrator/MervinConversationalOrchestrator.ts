@@ -20,6 +20,7 @@ import { getMervinSystemPrompt } from '../prompts/MervinSystemPrompt';
 import MERVIN_CHAT_COPILOT_PROMPT from '../prompts/MervinChatCopilotPrompt';
 import { getAllTools, validateToolParams } from '../tools/ClaudeToolDefinitions';
 import type { WorkflowExecutionResult } from '../services/WorkflowRunner';
+import { processWithAgentV3, shouldUseAgentV3 } from '../../mervin-v3/integration/AgentIntegration';
 
 // ============= TYPES =============
 
@@ -97,6 +98,13 @@ export class MervinConversationalOrchestrator {
       
       // 3. Determinar modo de operación
       const mode = request.mode || 'agent'; // Default: agent mode
+      
+      // 3.5. Si está en modo agente y la solicitud es compleja, usar V3
+      if (mode === 'agent' && shouldUseAgentV3(request)) {
+        console.log('🚀 [MERVIN-CONVERSATIONAL] Detectada solicitud compleja, usando Modo Agente V3');
+        const contractorProfile = await this.getCachedContractorProfile();
+        return await processWithAgentV3(request, contractorProfile, this.authHeaders, this.baseURL || '');
+      }
       
       // 4. Obtener perfil del contratista para contexto (con caché)
       const contractorProfile = await this.getCachedContractorProfile();
