@@ -11,9 +11,9 @@ import type {
   TaskPlan,
   PlanningContext,
   PlanStep,
-  AgentConfig,
-  PlanningError
+  AgentConfig
 } from '../types/agent-types';
+import { PlanningError } from '../types/agent-types';
 import {
   PLANNING_SYSTEM_PROMPT,
   buildPlanningPrompt
@@ -26,8 +26,8 @@ export class TaskPlanner {
   constructor(config: Partial<AgentConfig> = {}) {
     // Configuración por defecto inline
     this.config = {
-      planningModel: 'claude-3-5-sonnet-20241022',
-      synthesisModel: 'claude-3-5-sonnet-20241022',
+      planningModel: 'claude-3-5-sonnet-20240620',
+      synthesisModel: 'claude-3-5-sonnet-20240620',
       planningTemperature: 0.2,
       synthesisTemperature: 0.7,
       maxRetries: 3,

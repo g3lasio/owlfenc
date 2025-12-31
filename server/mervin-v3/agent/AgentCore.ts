@@ -37,8 +37,8 @@ export class AgentCore {
   ) {
     // Configuración por defecto inline (sin importar DEFAULT_AGENT_CONFIG)
     this.config = {
-      planningModel: 'claude-3-5-sonnet-20241022',
-      synthesisModel: 'claude-3-5-sonnet-20241022',
+      planningModel: 'claude-3-5-sonnet-20240620',
+      synthesisModel: 'claude-3-5-sonnet-20240620',
       planningTemperature: 0.2,
       synthesisTemperature: 0.7,
       maxRetries: 3,
