@@ -203,7 +203,6 @@ export class TransformStepAdapter implements WorkflowStepAdapter {
       taxRate: taxRate
     };
   }
-}
 
   /**
    * Extraer información de solicitud de permisos del mensaje del usuario
