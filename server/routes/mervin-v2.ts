@@ -58,7 +58,7 @@ router.post('/message', async (req: Request, res: Response) => {
     
     // Determinar modo de forma inteligente
     const mode = determineMode(requestedMode, input);
-    console.log(`🎯 [MERVIN-V2-HTTP] Modo determinado: ${mode.toUpperCase()}`);d}`);
+    console.log(`🎯 [MERVIN-V2-HTTP] Modo determinado: ${mode.toUpperCase()}`);
 
     // Forward all auth headers to SystemAPIService (FIX 401 en servicios internos)
     const authHeaders: Record<string, string> = {};
