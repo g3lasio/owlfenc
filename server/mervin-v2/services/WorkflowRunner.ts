@@ -48,8 +48,10 @@ export interface WorkflowExecutionResult {
 export class WorkflowRunner {
   private engine: WorkflowEngine;
   private systemAPI: SystemAPIService;
+  private userId: string;
   
   constructor(userId: string, authHeaders: Record<string, string> = {}, baseURL?: string) {
+    this.userId = userId;
     this.engine = new WorkflowEngine();
     this.systemAPI = new SystemAPIService(userId, authHeaders, baseURL);
     
@@ -287,7 +289,7 @@ export class WorkflowRunner {
     
     return await this.executeWorkflow({
       workflowId,
-      userId: this.systemAPI['userId'], // Acceder al userId del SystemAPI
+      userId: this.userId,
       parameters: params
     });
   }
