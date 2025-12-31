@@ -10,7 +10,6 @@ import type {
   ExecutionContext,
   Scratchpad,
   AgentConfig,
-  DEFAULT_AGENT_CONFIG,
   ExecutionError
 } from '../types/agent-types';
 import { WorkflowRunner } from '../../mervin-v2/services/WorkflowRunner';
@@ -27,7 +26,19 @@ export class StepExecutor {
     private baseURL?: string,
     config: Partial<AgentConfig> = {}
   ) {
-    this.config = { ...DEFAULT_AGENT_CONFIG, ...config };
+    // Configuración por defecto inline
+    this.config = {
+      planningModel: 'claude-3-5-sonnet-20241022',
+      synthesisModel: 'claude-3-5-sonnet-20241022',
+      planningTemperature: 0.2,
+      synthesisTemperature: 0.7,
+      maxRetries: 3,
+      stepTimeout: 60000,
+      debug: false,
+      savePlans: true,
+      enableLearning: true,
+      ...config
+    };
     this.workflowRunner = new WorkflowRunner(userId, authHeaders, baseURL);
     this.systemAPI = new SystemAPIService(userId, authHeaders, baseURL);
     

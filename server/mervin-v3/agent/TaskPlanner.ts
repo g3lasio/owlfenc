@@ -12,7 +12,6 @@ import type {
   PlanningContext,
   PlanStep,
   AgentConfig,
-  DEFAULT_AGENT_CONFIG,
   PlanningError
 } from '../types/agent-types';
 import {
@@ -25,7 +24,19 @@ export class TaskPlanner {
   private config: AgentConfig;
   
   constructor(config: Partial<AgentConfig> = {}) {
-    this.config = { ...DEFAULT_AGENT_CONFIG, ...config };
+    // Configuración por defecto inline
+    this.config = {
+      planningModel: 'claude-3-5-sonnet-20241022',
+      synthesisModel: 'claude-3-5-sonnet-20241022',
+      planningTemperature: 0.2,
+      synthesisTemperature: 0.7,
+      maxRetries: 3,
+      stepTimeout: 60000,
+      debug: false,
+      savePlans: true,
+      enableLearning: true,
+      ...config
+    };
     
     this.anthropic = new Anthropic({
       apiKey: process.env.ANTHROPIC_API_KEY
