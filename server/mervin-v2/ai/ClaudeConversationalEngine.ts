@@ -185,16 +185,25 @@ export class ClaudeConversationalEngine {
     turn.toolCalls = toolCalls;
     
     // Determinar si Claude está pidiendo más información
+    // MEJORADO: Solo marcar como needsMoreInfo si realmente falta información crítica
     if (response.stop_reason === 'end_turn' && toolCalls.length === 0) {
-      // Claude respondió con texto, probablemente pidiendo aclaración
       const lowerText = textContent.toLowerCase();
-      turn.needsMoreInfo = 
-        lowerText.includes('?') ||
-        lowerText.includes('necesito') ||
-        lowerText.includes('cuál') ||
-        lowerText.includes('qué') ||
-        lowerText.includes('podrías') ||
-        lowerText.includes('puedes darme');
+      
+      // Patrones que indican que REALMENTE falta información crítica
+      const needsInfoPatterns = [
+        /necesito (saber|que me digas|más información sobre)/,
+        /no tengo (suficiente información|los datos)/,
+        /falta (información|datos|detalles)/,
+        /podrías (darme|proporcionarme|decirme) (el|la|los|las)/,
+        /cuál es (el|la) (dirección|teléfono|email|nombre completo)/,
+        /qué (dirección|teléfono|email|datos) (tiene|es)/
+      ];
+      
+      // Solo marcar como needsMoreInfo si coincide con patrones específicos
+      turn.needsMoreInfo = needsInfoPatterns.some(pattern => pattern.test(lowerText));
+      
+      // NO marcar como needsMoreInfo si es solo una pregunta retórica amigable
+      // Ejemplo: "¿En qué te puedo ayudar?" es amigable, no falta información
     }
     
     // Determinar si la conversación está completa
