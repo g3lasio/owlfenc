@@ -268,24 +268,11 @@ export function MervinExperience({ mode, onMinimize, isMinimized = false, onClos
     setIsLoading(true);
 
     try {
-      if (selectedModel === "agent" && canUseAgentMode && mervinAgent.isHealthy) {
+      if ((selectedModel === "agent" && canUseAgentMode && mervinAgent.isHealthy) || 
+          (selectedModel === "legacy" && mervinAgent.isHealthy)) {
+        // ✅ USAR SISTEMA REAL: Tanto agent como legacy usan mervinAgent
+        // El backend maneja la diferencia entre modos con el parámetro 'mode'
         await mervinAgent.sendMessage(currentInput, currentFiles.length > 0 ? currentFiles : undefined);
-      } else if (selectedModel === "legacy" || !canUseAgentMode) {
-        const legacyResponses = [
-          "¡Órale primo! En modo Legacy te puedo ayudar con conversaciones simples. Para funciones avanzadas, activa el modo Agent.",
-          "¡Qué onda! Estoy en modo conversacional. Si necesitas que genere estimados o contratos, cambia a modo Agent arriba.",
-          "¡Ey compadre! Te escucho. Para usar las capacidades completas del agente, activa el modo Agent en el selector de arriba."
-        ];
-        
-        const randomResponse = legacyResponses[Math.floor(Math.random() * legacyResponses.length)];
-        
-        const assistantMessage: Message = {
-          id: "assistant-" + Date.now(),
-          content: randomResponse,
-          sender: "assistant",
-          timestamp: new Date()
-        };
-        setMessages(prev => [...prev, assistantMessage]);
       } else {
         const assistantMessage: Message = {
           id: "assistant-" + Date.now(),
