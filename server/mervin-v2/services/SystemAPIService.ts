@@ -702,8 +702,6 @@ export class SystemAPIService {
       // El guardado en historial es secundario
     }
   }
-}
-
   /**
    * ========================================
    * ENTITY CONTEXT METHODS
