@@ -18,6 +18,7 @@ import {
   PLANNING_SYSTEM_PROMPT,
   buildPlanningPrompt
 } from '../prompts/AgentPrompts';
+import { FriendlyErrorHandler } from '../utils/FriendlyErrorHandler';
 
 export class TaskPlanner {
   private anthropic: Anthropic;
@@ -116,10 +117,19 @@ export class TaskPlanner {
       const elapsed = Date.now() - startTime;
       console.error(`❌ [TASK-PLANNER] Error después de ${elapsed}ms:`, error.message);
       
-      throw new PlanningError(
-        `Error generando plan: ${error.message}`,
-        error
-      );
+      // Si ya es un PlanningError con mensaje amigable, no modificarlo
+      if (error instanceof PlanningError) {
+        throw error;
+      }
+      
+      // Convertir error técnico a mensaje amigable
+      const friendlyMessage = FriendlyErrorHandler.getFriendlyMessage({
+        errorType: 'planning_error',
+        originalMessage: error.message,
+        userInput: context.userInput
+      });
+      
+      throw new PlanningError(friendlyMessage, error);
     }
   }
   
@@ -206,10 +216,14 @@ export class TaskPlanner {
     for (const step of plan.steps) {
       // Validar que la herramienta existe
       if (!toolNames.has(step.action)) {
-        throw new PlanningError(
-          `Herramienta no disponible: ${step.action}. ` +
-          `Herramientas disponibles: ${Array.from(toolNames).join(', ')}`
-        );
+        const friendlyMessage = FriendlyErrorHandler.getFriendlyMessage({
+          errorType: 'tool_not_found',
+          originalMessage: `Herramienta no disponible: ${step.action}`,
+          attemptedTool: step.action,
+          availableTools: Array.from(toolNames)
+        });
+        
+        throw new PlanningError(friendlyMessage);
       }
       
       // Validar que tiene parámetros

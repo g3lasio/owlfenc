@@ -21,6 +21,7 @@ import MERVIN_CHAT_COPILOT_PROMPT from '../prompts/MervinChatCopilotPrompt';
 import { getAllTools, validateToolParams } from '../tools/ClaudeToolDefinitions';
 import type { WorkflowExecutionResult } from '../services/WorkflowRunner';
 import { processWithAgentV3, shouldUseAgentV3 } from '../../mervin-v3/integration/AgentIntegration';
+import { FriendlyErrorHandler } from '../../mervin-v3/utils/FriendlyErrorHandler';
 
 // ============= TYPES =============
 
@@ -176,10 +177,32 @@ export class MervinConversationalOrchestrator {
       
     } catch (error: any) {
       console.error('❌ [MERVIN-CONVERSATIONAL] Error:', error.message);
+      console.error('❌ [MERVIN-CONVERSATIONAL] Stack:', error.stack);
+      
+      // Determinar tipo de error
+      let errorType = 'generic';
+      if (error.message.includes('Herramienta no disponible') || error.message.includes('Tool not found')) {
+        errorType = 'tool_not_found';
+      } else if (error.message.includes('Error generando plan') || error.message.includes('PlanningError')) {
+        errorType = 'planning_error';
+      } else if (error.message.includes('timeout')) {
+        errorType = 'timeout';
+      } else if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+        errorType = 'auth_error';
+      } else if (error.message.includes('ECONNREFUSED') || error.message.includes('network')) {
+        errorType = 'network_error';
+      }
+      
+      // Obtener mensaje amigable
+      const friendlyMessage = FriendlyErrorHandler.getFriendlyMessage({
+        errorType,
+        originalMessage: error.message,
+        userInput: request.input
+      });
       
       return {
         type: 'error',
-        message: `Disculpa primo, hubo un error: ${error.message}`,
+        message: friendlyMessage,
         conversationId: request.conversationId || 'unknown',
         executionTime: Date.now() - startTime
       };

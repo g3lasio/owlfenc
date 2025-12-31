@@ -13,6 +13,7 @@ import type {
 } from '../types/agent-types';
 import { getAllTools } from '../../mervin-v2/tools/ClaudeToolDefinitions';
 import type { MervinConversationalRequest, MervinConversationalResponse } from '../../mervin-v2/orchestrator/MervinConversationalOrchestrator';
+import { FriendlyErrorHandler } from '../utils/FriendlyErrorHandler';
 
 /**
  * Verifica si el usuario tiene acceso al modo agente V3
@@ -186,10 +187,30 @@ export async function processWithAgentV3(
     
   } catch (error: any) {
     console.error('❌ [AGENT-INTEGRATION] Error en modo agente V3:', error.message);
+    console.error('❌ [AGENT-INTEGRATION] Stack:', error.stack);
+    
+    // Determinar tipo de error
+    let errorType = 'generic';
+    if (error.message.includes('Herramienta no disponible') || error.message.includes('Tool not found')) {
+      errorType = 'tool_not_found';
+    } else if (error.message.includes('Error generando plan') || error.message.includes('PlanningError')) {
+      errorType = 'planning_error';
+    } else if (error.message.includes('Error ejecutando')) {
+      errorType = 'execution_error';
+    } else if (error.message.includes('timeout')) {
+      errorType = 'timeout';
+    }
+    
+    // Obtener mensaje amigable
+    const friendlyMessage = FriendlyErrorHandler.getFriendlyMessage({
+      errorType,
+      originalMessage: error.message,
+      userInput: request.input
+    });
     
     return {
       type: 'error',
-      message: `Error en el modo agente: ${error.message}`,
+      message: friendlyMessage,
       conversationId: request.conversationId || 'error-conversation',
       executionTime: 0
     };
