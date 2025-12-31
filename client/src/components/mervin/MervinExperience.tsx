@@ -184,6 +184,26 @@ export function MervinExperience({ mode, onMinimize, isMinimized = false, onClos
     }
   });
 
+  // 🔄 SINCRONIZACIÓN: Cuando estamos en modo legacy/chat, sincronizar mervinAgent.messages con el estado local messages
+  // Esto asegura que las respuestas del asistente se muestren en la UI
+  useEffect(() => {
+    if (selectedModel === 'legacy') {
+      // Convertir mervinAgent.messages al formato de Message[] para el estado local
+      const syncedMessages: Message[] = mervinAgent.messages.map((msg, index) => ({
+        id: `synced-${msg.role}-${index}-${msg.timestamp?.getTime() || Date.now()}`,
+        content: msg.content,
+        sender: msg.role === 'user' ? 'user' : 'assistant',
+        timestamp: msg.timestamp || new Date(),
+      }));
+      
+      // Solo actualizar si hay cambios (evitar loops infinitos)
+      if (syncedMessages.length !== messages.length) {
+        console.log(`🔄 [SYNC] Syncing ${syncedMessages.length} messages from mervinAgent to local state (legacy mode)`);
+        setMessages(syncedMessages);
+      }
+    }
+  }, [mervinAgent.messages, selectedModel, messages.length]);
+
   // Efecto para cargar mensajes cuando la conversación se carga del historial
   // ARQUITECTURA SIMPLIFICADA: Usamos mervinAgent.messages como única fuente de verdad
   useEffect(() => {
@@ -248,15 +268,10 @@ export function MervinExperience({ mode, onMinimize, isMinimized = false, onClos
     setInputValue("");
     setAttachedFiles([]);
     
-    if (selectedModel === "legacy" || !canUseAgentMode) {
-      const userMessage: Message = {
-        id: "user-" + Date.now(),
-        content: currentInput,
-        sender: "user",
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, userMessage]);
-    }
+    // ❌ ELIMINADO: No agregar manualmente el mensaje del usuario en modo legacy
+    // El hook mervinAgent ya lo agrega a mervinAgent.messages, y el useEffect de sincronización
+    // lo copiará automáticamente al estado local messages
+    // Esto evita duplicación y mantiene una única fuente de verdad
     
     setActiveEndpoints([]);
     setCurrentAIModel(null);

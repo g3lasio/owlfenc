@@ -155,6 +155,11 @@ export function useMervinAgent(options: UseMervinAgentOptions): UseMervinAgentRe
     }
   }, [userId]);
 
+  // 👁️ Detectar cambios en el mode para debugging
+  useEffect(() => {
+    console.log(`🔄 [MERVIN-AGENT] Mode changed to: ${mode}`);
+  }, [mode]);
+
   // Obtener estado del sistema y verificar health
   useEffect(() => {
     // Verificar health del cliente
