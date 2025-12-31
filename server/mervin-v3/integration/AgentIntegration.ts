@@ -20,26 +20,54 @@ import type { MervinConversationalRequest, MervinConversationalResponse } from '
  */
 export async function hasAgentV3Access(userId: string, authHeaders: Record<string, string>, baseURL: string): Promise<boolean> {
   try {
-    // Llamar al endpoint de suscripción para obtener el plan del usuario
-    const response = await fetch(`${baseURL}/user/subscription`, {
-      headers: authHeaders
-    });
-    
-    if (!response.ok) {
-      console.error('❌ [AGENT-INTEGRATION] Error obteniendo suscripción del usuario');
-      return false;
+    // OPCIÓN 1: Intentar con /user/subscription
+    try {
+      const response = await fetch(`${baseURL}/user/subscription`, {
+        headers: authHeaders
+      });
+      
+      if (response.ok) {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const data = await response.json();
+          
+          // Verificar si el plan es Mero Patrón (id: 9) o Master Contractor (id: 6)
+          const allowedPlans = [9, 6]; // mero_patron, MASTER_CONTRACTOR
+          const planId = data.subscription?.planId;
+          const hasPaidPlan = allowedPlans.includes(planId);
+          
+          console.log(`🔐 [AGENT-INTEGRATION] Usuario ${userId} - Plan: ${planId} - Acceso V3: ${hasPaidPlan}`);
+          return hasPaidPlan;
+        } else {
+          console.warn('⚠️ [AGENT-INTEGRATION] /user/subscription no devuelve JSON, intentando alternativa');
+        }
+      }
+    } catch (subError: any) {
+      console.warn(`⚠️ [AGENT-INTEGRATION] Error con /user/subscription: ${subError.message}`);
     }
     
-    const data = await response.json();
+    // OPCIÓN 2: Verificar si es platform owner (acceso completo)
+    try {
+      const profileResponse = await fetch(`${baseURL}/api/profile`, {
+        headers: authHeaders
+      });
+      
+      if (profileResponse.ok) {
+        const profile = await profileResponse.json();
+        
+        // Si el usuario tiene email owl@chyrris.com, es el owner (acceso completo)
+        if (profile.email === 'owl@chyrris.com') {
+          console.log('👑 [AGENT-INTEGRATION] Platform owner detectado - Acceso V3: true');
+          return true;
+        }
+      }
+    } catch (profileError: any) {
+      console.warn(`⚠️ [AGENT-INTEGRATION] Error obteniendo perfil: ${profileError.message}`);
+    }
     
-    // Verificar si el plan es Mero Patrón (id: 9) o Master Contractor (id: 6)
-    const allowedPlans = [9, 6]; // mero_patron, MASTER_CONTRACTOR
-    const planId = data.subscription?.planId;
-    const hasPaidPlan = allowedPlans.includes(planId);
-    
-    console.log(`🔐 [AGENT-INTEGRATION] Usuario ${userId} - Plan: ${planId} - Acceso V3: ${hasPaidPlan}`);
-    
-    return hasPaidPlan;
+    // OPCIÓN 3: Por defecto, denegar acceso
+    console.log(`⛔ [AGENT-INTEGRATION] Usuario ${userId} - No se pudo verificar plan - Acceso V3: false`);
+    return false;
     
   } catch (error: any) {
     console.error('❌ [AGENT-INTEGRATION] Error verificando acceso:', error.message);
