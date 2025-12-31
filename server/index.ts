@@ -593,6 +593,7 @@ app.use(cookieParser());
 
 // 📁 SERVE STATIC FILES - PDFs, contracts, and other public files
 app.use('/contracts', express.static(path.join(process.cwd(), 'public', 'contracts')));
+app.use('/permit-reports', express.static(path.join(process.cwd(), 'public', 'permit-reports')));
 app.use('/public', express.static(path.join(process.cwd(), 'public')));
 
 

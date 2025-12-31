@@ -261,6 +261,45 @@ Usa esta herramienta cuando el usuario:
       },
       required: ['projectType', 'projectAddress']
     }
+  },
+  
+  // PERMIT ADVISOR WORKFLOW V2 (Con generación de PDF)
+  {
+    name: 'analyze_permits',
+    description: `Analiza permisos requeridos para proyectos de construcción y genera un reporte completo en PDF.
+
+Este workflow automatizado:
+1. Extrae información del proyecto del mensaje del usuario
+2. Valida la dirección de la propiedad
+3. Analiza permisos requeridos usando la base de datos de regulaciones
+4. Genera un reporte profesional en PDF descargable
+5. Guarda la búsqueda en el historial del usuario
+
+El reporte incluye:
+- Lista completa de permisos requeridos con costos y timelines
+- Códigos de construcción aplicables
+- Proceso de aplicación paso a paso
+- Información de contacto del departamento municipal
+- Alertas importantes sobre el proyecto
+
+Usa esta herramienta cuando el usuario:
+- Pregunte qué permisos necesita para un proyecto específico
+- Quiera un reporte detallado de permisos
+- Necesite información sobre códigos de construcción
+- Pida un PDF descargable con la información de permisos
+
+IMPORTANTE: Esta herramienta puede extraer la información del mensaje del usuario,
+pero si falta la dirección o el tipo de proyecto, debes incluirlos en userMessage.`,
+    input_schema: {
+      type: 'object',
+      properties: {
+        userMessage: {
+          type: 'string',
+          description: 'Mensaje completo del usuario con la solicitud de permisos. Debe incluir dirección y tipo de proyecto. Ejemplo: "Necesito saber qué permisos necesito para instalar una cerca de 8 pies en 123 Main St, Vacaville, CA"'
+        }
+      },
+      required: ['userMessage']
+    }
   }
 ];
 
@@ -287,7 +326,7 @@ export function getToolsByCategory(category: 'estimate' | 'contract' | 'permit' 
   const categoryMap: Record<string, string[]> = {
     estimate: ['create_estimate_workflow'],
     contract: ['create_contract_workflow'],
-    permit: ['check_permits_workflow'],
+    permit: ['check_permits_workflow', 'analyze_permits'],
     property: ['verify_property_ownership'],
     client: ['search_client', 'create_client']
   };

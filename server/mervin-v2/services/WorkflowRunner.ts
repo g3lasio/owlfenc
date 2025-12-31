@@ -19,6 +19,7 @@ import { EstimateWorkflow } from '../workflows/definitions/EstimateWorkflow';
 import { PropertyVerificationWorkflow } from '../workflows/definitions/PropertyVerificationWorkflow';
 import { ContractWorkflow } from '../workflows/definitions/ContractWorkflow';
 import { PermitWorkflow } from '../workflows/definitions/PermitWorkflow';
+import { PermitAdvisorWorkflow } from '../workflows/definitions/PermitAdvisorWorkflow';
 import type { WorkflowSession, WorkflowResult } from '../workflows/types';
 import { SystemAPIService } from './SystemAPIService';
 
@@ -79,6 +80,9 @@ export class WorkflowRunner {
     
     // Registrar workflow de permisos
     this.engine.registerWorkflow(PermitWorkflow);
+    
+    // Registrar workflow de Permit Advisor
+    this.engine.registerWorkflow(PermitAdvisorWorkflow);
     
     // TODO: Registrar workflow de invoices cuando esté definido
     
@@ -286,7 +290,8 @@ export class WorkflowRunner {
       'verify_property_ownership': 'property_verification',
       'create_estimate_workflow': 'estimate_creation',
       'create_contract_workflow': 'contract_creation',
-      'check_permits_workflow': 'permit_check'
+      'check_permits_workflow': 'permit_check',
+      'analyze_permits': 'permit_advisor'
     };
     
     const workflowId = workflowMap[workflowName] || workflowName;

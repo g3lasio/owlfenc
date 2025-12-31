@@ -172,7 +172,8 @@ export class StepExecutor {
       'create_estimate_workflow',
       'create_contract_workflow',
       'check_permits_workflow',
-      'verify_property_ownership'
+      'verify_property_ownership',
+      'analyze_permits'
     ];
     
     return workflows.includes(action);
@@ -239,6 +240,8 @@ export class StepExecutor {
     } else if (action === 'verify_property_ownership') {
       scratchpad.property = result;
     } else if (action === 'check_permits_workflow') {
+      scratchpad.permit = result;
+    } else if (action === 'analyze_permits') {
       scratchpad.permit = result;
     } else {
       // Guardar con el nombre de la acción
