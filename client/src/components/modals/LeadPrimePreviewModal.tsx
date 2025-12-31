@@ -64,7 +64,7 @@ export const LeadPrimePreviewModal: React.FC<LeadPrimePreviewModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl bg-gradient-to-br from-gray-900 via-gray-900 to-blue-950 text-white border-2 border-cyan-400/30 shadow-2xl shadow-cyan-400/20">
+      <DialogContent className="max-w-3xl max-h-[90vh] bg-gradient-to-br from-gray-900 via-gray-900 to-blue-950 text-white border-2 border-cyan-400/30 shadow-2xl shadow-cyan-400/20 overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3 text-2xl font-bold">
             <div className="relative">
@@ -94,7 +94,7 @@ export const LeadPrimePreviewModal: React.FC<LeadPrimePreviewModalProps> = ({
           </DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-6 mt-4">
+        <div className="space-y-6 mt-4 overflow-y-auto pr-2 custom-scrollbar" style={{ maxHeight: 'calc(90vh - 200px)' }}>
           {/* Descripción principal */}
           <div className="relative p-4 rounded-lg bg-gradient-to-r from-cyan-400/10 to-blue-400/10 border border-cyan-400/30">
             <p className="text-gray-200 leading-relaxed">
@@ -134,9 +134,9 @@ export const LeadPrimePreviewModal: React.FC<LeadPrimePreviewModalProps> = ({
           </div>
 
           {/* Nota sobre el beneficio del 30% */}
-          <div className="relative mt-6 p-3 rounded-lg bg-gradient-to-r from-purple-900/20 to-blue-900/20 border border-purple-400/20">
-            <p className="text-xs text-gray-400 text-center leading-relaxed">
-              <span className="text-purple-300 font-medium">Beneficio exclusivo:</span> Usuarios de planes Mero Patrón y Master Contractor reciben 30% de descuento en la suscripción de LeadPrime.
+          <div className="relative mt-6 p-4 rounded-lg bg-gradient-to-r from-purple-900/30 to-blue-900/30 border border-purple-400/30">
+            <p className="text-xs text-gray-300 text-center leading-relaxed">
+              <span className="text-purple-300 font-semibold">Beneficio exclusivo:</span> Usuarios de planes <span className="text-cyan-300 font-medium">Mero Patrón</span> y <span className="text-cyan-300 font-medium">Master Contractor</span> reciben <span className="text-purple-300 font-semibold">30% de descuento</span> en la suscripción de LeadPrime.
             </p>
           </div>
 
@@ -186,6 +186,26 @@ export const LeadPrimePreviewModal: React.FC<LeadPrimePreviewModalProps> = ({
 
         .animate-scan {
           animation: scan 3s ease-in-out infinite;
+        }
+
+        /* Custom scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(0, 0, 0, 0.2);
+          border-radius: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: linear-gradient(180deg, #00ffff 0%, #0080ff 100%);
+          border-radius: 4px;
+          transition: background 0.3s ease;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: linear-gradient(180deg, #00ffff 0%, #00ccff 100%);
         }
       `}</style>
     </Dialog>
