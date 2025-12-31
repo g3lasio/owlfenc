@@ -20,7 +20,6 @@ import type {
   TaskPlan,
   PlanStep
 } from '../types/agent-types';
-import { DEFAULT_AGENT_CONFIG } from '../types/agent-types';
 import Anthropic from '@anthropic-ai/sdk';
 
 export class AgentCore {
@@ -36,7 +35,19 @@ export class AgentCore {
     private baseURL?: string,
     config: Partial<AgentConfig> = {}
   ) {
-    this.config = { ...DEFAULT_AGENT_CONFIG, ...config };
+    // Configuración por defecto inline (sin importar DEFAULT_AGENT_CONFIG)
+    this.config = {
+      planningModel: 'claude-3-5-sonnet-20241022',
+      synthesisModel: 'claude-3-5-sonnet-20241022',
+      planningTemperature: 0.2,
+      synthesisTemperature: 0.7,
+      maxRetries: 3,
+      stepTimeout: 60000,
+      debug: false,
+      savePlans: true,
+      enableLearning: true,
+      ...config
+    };
     this.taskPlanner = new TaskPlanner(this.config);
     this.stepExecutor = new StepExecutor(userId, authHeaders, baseURL, this.config);
     this.anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
