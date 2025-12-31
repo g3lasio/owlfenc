@@ -264,10 +264,10 @@ export interface AgentResponse {
  */
 export interface AgentConfig {
   /** Modelo de IA a usar para planificación */
-  planningModel: 'claude-3-5-sonnet-latest' | 'gpt-4o' | 'gpt-4o-mini';
+  planningModel: 'claude-3-sonnet-20240229' | 'gpt-4o' | 'gpt-4o-mini';
   
   /** Modelo de IA a usar para síntesis */
-  synthesisModel: 'claude-3-5-sonnet-latest' | 'gpt-4o' | 'gpt-4o-mini';
+  synthesisModel: 'claude-3-sonnet-20240229' | 'gpt-4o' | 'gpt-4o-mini';
   
   /** Temperatura para planificación (0-1) */
   planningTemperature: number;
@@ -295,8 +295,8 @@ export interface AgentConfig {
  * Configuración por defecto
  */
 export const DEFAULT_AGENT_CONFIG: AgentConfig = {
-  planningModel: 'claude-3-5-sonnet-latest',
-  synthesisModel: 'claude-3-5-sonnet-latest',
+  planningModel: 'claude-3-sonnet-20240229',
+  synthesisModel: 'claude-3-sonnet-20240229',
   planningTemperature: 0.2,
   synthesisTemperature: 0.7,
   maxRetries: 3,
