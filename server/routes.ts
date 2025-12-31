@@ -2290,10 +2290,10 @@ ENHANCED LEGAL CLAUSE:`;
           logo: profile.logo || undefined,
         },
         client: {
-          name: estimate.client?.name || "",
-          email: estimate.client?.email || "",
-          phone: estimate.client?.phone || "",
-          address: estimate.client?.address || "",
+          name: estimate.clientName || estimate.client?.name || "",
+          email: estimate.clientEmail || estimate.client?.email || "",
+          phone: estimate.clientPhone || estimate.client?.phone || "",
+          address: estimate.clientAddress || estimate.client?.address || "",
         },
         invoice: {
           number: invoiceNumber,
