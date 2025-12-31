@@ -97,15 +97,24 @@ export class TransformStepAdapter implements WorkflowStepAdapter {
       throw new Error('Property data is empty');
     }
     
+    // El endpoint /api/property/details retorna { property: {...}, source: "ATTOM" }
+    // Extraer el objeto property si existe
+    const property = propertyData.property || propertyData;
+    
     return {
-      address: propertyData.address || 'Unknown',
-      owner: propertyData.owner || 'Unknown',
-      sqft: propertyData.building?.size?.livingSize || 'N/A',
-      bedrooms: propertyData.building?.rooms?.beds || 'N/A',
-      bathrooms: propertyData.building?.rooms?.bathsTotal || 'N/A',
-      yearBuilt: propertyData.summary?.yearBuilt || 'N/A',
-      ownerOccupied: propertyData.owner?.ownerOccupied || false,
-      raw: propertyData
+      address: property.address || 'Unknown',
+      owner: property.owner || 'Unknown',
+      sqft: property.sqft || property.building?.size?.livingSize || 'N/A',
+      bedrooms: property.bedrooms || property.building?.rooms?.beds || 'N/A',
+      bathrooms: property.bathrooms || property.building?.rooms?.bathsTotal || 'N/A',
+      yearBuilt: property.yearBuilt || property.summary?.yearBuilt || 'N/A',
+      propertyType: property.propertyType || property.summary?.propertyType || 'N/A',
+      assessedValue: property.assessedValue || property.assessment?.assessed?.assdTtlValue || 'N/A',
+      lotSize: property.lotSize || property.lot?.lotSize2 || 'N/A',
+      parcelNumber: property.parcelNumber || property.identifier?.apn || 'N/A',
+      ownerOccupied: property.ownerOccupied || property.owner?.ownerOccupied || false,
+      source: propertyData.source || 'ATTOM',
+      raw: property
     };
   }
   
