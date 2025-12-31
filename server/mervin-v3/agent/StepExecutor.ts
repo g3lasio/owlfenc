@@ -28,8 +28,8 @@ export class StepExecutor {
   ) {
     // Configuración por defecto inline
     this.config = {
-      planningModel: 'claude-3-5-sonnet-20240620',
-      synthesisModel: 'claude-3-5-sonnet-20240620',
+      planningModel: 'claude-3-5-sonnet-latest',
+      synthesisModel: 'claude-3-5-sonnet-latest',
       planningTemperature: 0.2,
       synthesisTemperature: 0.7,
       maxRetries: 3,
