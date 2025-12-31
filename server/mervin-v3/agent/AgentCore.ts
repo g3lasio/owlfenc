@@ -18,9 +18,9 @@ import type {
   PlanningContext,
   Scratchpad,
   TaskPlan,
-  DEFAULT_AGENT_CONFIG,
   PlanStep
 } from '../types/agent-types';
+import { DEFAULT_AGENT_CONFIG } from '../types/agent-types';
 import Anthropic from '@anthropic-ai/sdk';
 
 export class AgentCore {
