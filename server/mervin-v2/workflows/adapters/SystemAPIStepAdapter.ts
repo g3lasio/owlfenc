@@ -128,6 +128,18 @@ export class SystemAPIStepAdapter implements WorkflowStepAdapter {
       case 'findOrCreateClient':
         return await systemAPI.findOrCreateClient(params as any);
         
+      case 'validateAddress':
+        return await systemAPI.validateAddress(params as any);
+        
+      case 'analyzePermits':
+        return await systemAPI.analyzePermits(params as any);
+        
+      case 'generatePermitPDF':
+        return await systemAPI.generatePermitPDF(params as any);
+        
+      case 'savePermitHistory':
+        return await systemAPI.savePermitHistory(params as any);
+        
       default:
         throw new Error(`Unknown SystemAPI method: ${method}`);
     }
