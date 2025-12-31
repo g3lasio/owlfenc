@@ -144,7 +144,9 @@ export class MervinConversationalOrchestrator {
       }
       
       // 8. Si Claude está pidiendo más información
-      if (turn.needsMoreInfo) {
+      // NOTA: En modo CHAT, siempre devolvemos 'conversation' para que el frontend muestre la respuesta
+      // Solo en modo AGENT usamos 'needs_more_info' para workflows complejos
+      if (turn.needsMoreInfo && mode === 'agent') {
         return {
           type: 'needs_more_info',
           message: turn.assistantResponse,
