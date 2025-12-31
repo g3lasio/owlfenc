@@ -556,7 +556,6 @@ export class SystemAPIService {
   getBaseURL(): string {
     return this.baseURL;
   }
-}
 
   /**
    * Validar dirección usando Mapbox Geocoding API
