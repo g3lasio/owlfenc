@@ -476,10 +476,10 @@ const Invoices: React.FC = () => {
       const itemTotal = item.totalPrice || (itemQuantity * itemPrice);
       return `
         <tr>
-          <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${item.name || item.description || 'Item'}</td>
-          <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">${itemQuantity}</td>
-          <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${itemPrice.toFixed(2)}</td>
-          <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${itemTotal.toFixed(2)}</td>
+          <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; color: #111827;">${item.name || item.description || 'Item'}</td>
+          <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center; color: #111827;">${itemQuantity}</td>
+          <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right; color: #111827;">$${itemPrice.toFixed(2)}</td>
+          <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right; color: #111827;">$${itemTotal.toFixed(2)}</td>
         </tr>
       `;
     }).join('') || '';
