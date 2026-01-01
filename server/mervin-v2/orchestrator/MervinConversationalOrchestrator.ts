@@ -344,6 +344,11 @@ export class MervinConversationalOrchestrator {
             parameters: params
           });
           
+        case 'analyze_images':
+          // Importar y ejecutar VisionAnalysisTool
+          const { visionAnalysisTool } = await import('../tools/VisionAnalysisTool');
+          return await visionAnalysisTool.execute(params);
+          
         default:
           throw new Error(`Unknown tool: ${toolName}`);
       }

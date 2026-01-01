@@ -302,6 +302,69 @@ pero si falta la dirección o el tipo de proyecto, debes incluirlos en userMessa
     }
   },
   
+  // ============= VISION TOOLS =============
+  
+  {
+    name: 'analyze_images',
+    description: `Analiza imágenes, fotos, planos, PDFs o documentos visuales para extraer información relevante.
+    
+Casos de uso:
+- Analizar fotos del terreno para entender el proyecto
+- Leer planos y extraer medidas
+- Identificar materiales y estructuras en imágenes
+- Procesar documentos con OCR avanzado
+- Detectar características de propiedades
+
+IMPORTANTE: Usa esta herramienta cuando el usuario adjunte imágenes o cuando necesites "ver" algo para dar una mejor respuesta.
+
+Ejemplos:
+- Usuario adjunta foto del terreno → analyze_images para describir el proyecto
+- Usuario sube plano → analyze_images para extraer medidas
+- Usuario pregunta sobre una imagen → analyze_images para responder`,
+    input_schema: {
+      type: 'object',
+      properties: {
+        images: {
+          type: 'array',
+          description: 'Lista de imágenes a analizar',
+          items: {
+            type: 'object',
+            properties: {
+              type: {
+                type: 'string',
+                enum: ['url', 'base64', 'path'],
+                description: 'Tipo de imagen'
+              },
+              data: {
+                type: 'string',
+                description: 'URL, base64 o ruta del archivo'
+              },
+              mediaType: {
+                type: 'string',
+                description: 'Tipo MIME (image/jpeg, image/png, etc.)'
+              }
+            },
+            required: ['type', 'data']
+          }
+        },
+        prompt: {
+          type: 'string',
+          description: 'Pregunta o instrucción sobre qué analizar en las imágenes'
+        },
+        context: {
+          type: 'string',
+          description: 'Contexto adicional sobre el proyecto o situación'
+        },
+        analysisType: {
+          type: 'string',
+          enum: ['general', 'estimate', 'contract', 'property', 'measurements'],
+          description: 'Tipo de análisis a realizar'
+        }
+      },
+      required: ['images', 'prompt']
+    }
+  },
+  
   // ============= CONTEXT TOOLS =============
   // Herramientas genéricas para acceder a todas las entidades del sistema
   
