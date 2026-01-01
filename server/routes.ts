@@ -1938,6 +1938,11 @@ ENHANCED LEGAL CLAUSE:`;
   console.log("🔍 [STRIPE-HEALTH] Registrando endpoints de health check...");
   app.use("/api/stripe-health", stripeHealthRoutes);
 
+  // 🔥 TEMPORARY: Profile migration endpoint (remove after migration completes)
+  const migrateProfilesRouter = await import("./routes/migrate-profiles-api");
+  app.use("/api/admin", migrateProfilesRouter.default);
+  console.log("🔄 [MIGRATION] Temporary profile migration endpoint registered at /api/admin/migrate-profiles");
+
   // Rutas centralizadas ya registradas en server/index.ts para evitar conflictos de middleware
 
   // generate estimate pdf basic template
