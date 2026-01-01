@@ -512,3 +512,55 @@ export function validateToolParams(toolName: string, params: any): { valid: bool
     errors
   };
 }
+
+/**
+ * DYNAMIC TOOLS INTEGRATION
+ * 
+ * Integra herramientas descubiertas dinámicamente con las herramientas estáticas.
+ */
+
+import { autoDiscoveryIntegration } from '../../services/integration/AutoDiscoveryIntegration';
+
+/**
+ * Obtiene todas las herramientas (estáticas + dinámicas)
+ */
+export async function getAllTools(): Promise<ToolDefinition[]> {
+  try {
+    // Obtener herramientas dinámicas
+    const dynamicTools = await autoDiscoveryIntegration.getTools();
+    
+    // Combinar con herramientas estáticas
+    const allTools = [...CLAUDE_WORKFLOW_TOOLS, ...dynamicTools];
+    
+    console.log(`[CLAUDE-TOOLS] Total tools: ${allTools.length} (${CLAUDE_WORKFLOW_TOOLS.length} static + ${dynamicTools.length} dynamic)`);
+    
+    return allTools;
+  } catch (error) {
+    console.error('[CLAUDE-TOOLS] Error getting dynamic tools:', error);
+    // Fallback a herramientas estáticas
+    return CLAUDE_WORKFLOW_TOOLS;
+  }
+}
+
+/**
+ * Verifica si una herramienta es dinámica
+ */
+export async function isDynamicTool(toolName: string): Promise<boolean> {
+  try {
+    return await autoDiscoveryIntegration.toolExists(toolName);
+  } catch (error) {
+    return false;
+  }
+}
+
+/**
+ * Obtiene información de una herramienta dinámica
+ */
+export async function getDynamicToolInfo(toolName: string) {
+  try {
+    return await autoDiscoveryIntegration.getToolInfo(toolName);
+  } catch (error) {
+    console.error(`[CLAUDE-TOOLS] Error getting dynamic tool info for ${toolName}:`, error);
+    return null;
+  }
+}
