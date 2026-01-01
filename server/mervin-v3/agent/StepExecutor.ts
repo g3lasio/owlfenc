@@ -14,6 +14,8 @@ import type {
 import { ExecutionError } from '../types/agent-types';
 import { WorkflowRunner } from '../../mervin-v2/services/WorkflowRunner';
 import { SystemAPIService } from '../../mervin-v2/services/SystemAPIService';
+import { autoDiscoveryIntegration } from '../../services/integration/AutoDiscoveryIntegration';
+import { isDynamicTool } from '../../mervin-v2/tools/ClaudeToolDefinitions';
 
 export class StepExecutor {
   private workflowRunner: WorkflowRunner;
@@ -105,6 +107,12 @@ export class StepExecutor {
     const resolvedParams = this.resolveParams(params, scratchpad);
     
     console.log(`🔧 [STEP-EXECUTOR] Ejecutando acción: ${action}`);
+    
+    // Verificar si es una herramienta dinámica
+    if (await isDynamicTool(action)) {
+      console.log(`🌟 [STEP-EXECUTOR] Herramienta dinámica detectada: ${action}`);
+      return await this.executeDynamicTool(action, resolvedParams);
+    }
     
     // Determinar si es un workflow o una llamada directa a SystemAPI
     if (this.isWorkflow(action)) {
@@ -345,5 +353,38 @@ export class StepExecutor {
       result: null,
       error: `Paso ${step.stepNumber} falló. Fallback: ${step.fallbackAction}`
     };
+  }
+  
+  /**
+   * Ejecuta una herramienta dinámica descubierta automáticamente
+   */
+  private async executeDynamicTool(toolName: string, params: any): Promise<any> {
+    console.log(`🌟 [STEP-EXECUTOR] Ejecutando herramienta dinámica: ${toolName}`);
+    
+    try {
+      const result = await autoDiscoveryIntegration.executeTool(
+        toolName,
+        params,
+        {
+          userId: this.userId,
+          authHeaders: this.authHeaders,
+          baseURL: this.baseURL || 'http://localhost:3000'
+        }
+      );
+      
+      // El resultado puede ser un EnrichedResponse con content, actions, links, etc.
+      // O puede ser un resultado simple
+      if (result && typeof result === 'object' && 'content' in result) {
+        console.log(`✅ [STEP-EXECUTOR] Herramienta dinámica completada con response enriquecido`);
+        return result;
+      }
+      
+      console.log(`✅ [STEP-EXECUTOR] Herramienta dinámica completada`);
+      return result;
+      
+    } catch (error: any) {
+      console.error(`❌ [STEP-EXECUTOR] Error en herramienta dinámica ${toolName}:`, error.message);
+      throw error;
+    }
   }
 }

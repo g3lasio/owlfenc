@@ -19,6 +19,7 @@ import { SystemAPIService } from '../services/SystemAPIService';
 import { getMervinSystemPrompt } from '../prompts/MervinSystemPrompt';
 import MERVIN_CHAT_COPILOT_PROMPT from '../prompts/MervinChatCopilotPrompt';
 import { getAllTools, validateToolParams } from '../tools/ClaudeToolDefinitions';
+import { autoDiscoveryIntegration } from '../../services/integration/AutoDiscoveryIntegration';
 import type { WorkflowExecutionResult } from '../services/WorkflowRunner';
 import { processWithAgentV3, shouldUseAgentV3 } from '../../mervin-v3/integration/AgentIntegration';
 import { FriendlyErrorHandler } from '../../mervin-v3/utils/FriendlyErrorHandler';
@@ -69,6 +70,23 @@ export class MervinConversationalOrchestrator {
     this.systemAPI = new SystemAPIService(userId, authHeaders, baseURL);
     
     console.log('🤖 [MERVIN-CONVERSATIONAL] Initialized for user:', userId);
+    
+    // Inicializar auto-discovery en background
+    this.initializeAutoDiscovery();
+  }
+  
+  /**
+   * Inicializa el sistema de auto-discovery en background
+   */
+  private async initializeAutoDiscovery(): Promise<void> {
+    try {
+      console.log('🌟 [MERVIN-CONVERSATIONAL] Initializing auto-discovery...');
+      await autoDiscoveryIntegration.initialize();
+      console.log('✅ [MERVIN-CONVERSATIONAL] Auto-discovery initialized');
+    } catch (error: any) {
+      console.error('❌ [MERVIN-CONVERSATIONAL] Error initializing auto-discovery:', error.message);
+      // No fallar si auto-discovery falla, solo loguear
+    }
   }
   
   /**

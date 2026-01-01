@@ -79,10 +79,10 @@ export async function hasAgentV3Access(userId: string, authHeaders: Record<strin
 /**
  * Convierte una solicitud de Mervin V2 a contexto de planificación de V3
  */
-export function convertToAgentContext(
+export async function convertToAgentContext(
   request: MervinConversationalRequest,
   contractorProfile: any
-): PlanningContext {
+): Promise<PlanningContext> {
   return {
     userInput: request.input,
     userId: request.userId,
@@ -96,7 +96,7 @@ export function convertToAgentContext(
     },
     conversationHistory: [], // TODO: Obtener del conversationStateManager
     recentActions: [], // TODO: Obtener del historial del usuario
-    availableTools: getAllTools(),
+    availableTools: await getAllTools(),
     pageContext: request.pageContext
   };
 }
@@ -170,7 +170,7 @@ export async function processWithAgentV3(
     );
     
     // 3. Convertir la solicitud a contexto de planificación
-    const context = convertToAgentContext(request, contractorProfile);
+    const context = await convertToAgentContext(request, contractorProfile);
     
     // 4. Procesar la solicitud
     const agentResponse = await agent.processRequest(context);
