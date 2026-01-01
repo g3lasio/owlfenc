@@ -644,7 +644,10 @@ const Invoices: React.FC = () => {
 
       // Send email if requested
       if (invoiceConfig.sendEmail && invoiceConfig.recipientEmail) {
-        console.log("📧 [INVOICES] Email sending requested to:", invoiceConfig.recipientEmail);
+        console.log("📧 [INVOICES] Email sending requested");
+        console.log("   → Recipient Email:", invoiceConfig.recipientEmail);
+        console.log("   → Estimate Client Email:", selectedEstimate.clientEmail);
+        console.log("   → Send Email Flag:", invoiceConfig.sendEmail);
         try {
           setIsSendingEmail(true);
           
@@ -683,7 +686,16 @@ const Invoices: React.FC = () => {
             },
           };
 
-          console.log("📤 [INVOICES] Sending email with data:", emailData);
+          console.log("📤 [INVOICES] Sending email with data:");
+          console.log("   → To Client:", emailData.estimate.clientEmail);
+          console.log("   → Client Name:", emailData.estimate.clientName);
+          console.log("   → Has Payment Link:", !!emailData.emailConfig.paymentLink);
+          console.log("   → CC Contractor:", emailData.emailConfig.ccContractor);
+
+          // Validate email before sending
+          if (!emailData.estimate.clientEmail || !emailData.estimate.clientEmail.includes('@')) {
+            throw new Error(`Email del destinatario inválido: ${emailData.estimate.clientEmail}`);
+          }
 
           const emailResponse = await fetch("/api/invoice-email", {
             method: "POST",
@@ -700,10 +712,9 @@ const Invoices: React.FC = () => {
 
           const emailResult = await emailResponse.json();
           console.log("✅ [INVOICES] Email sent successfully:", emailResult);
-
           toast({
-            title: "📧 Email enviado",
-            description: `Factura enviada a ${invoiceConfig.recipientEmail}`,
+            title: "📧 Factura enviada por email",
+            description: `La factura ha sido enviada a ${invoiceConfig.recipientEmail}`,
           });
         } catch (emailError) {
           console.error("❌ [INVOICES] Error sending email:", emailError);
