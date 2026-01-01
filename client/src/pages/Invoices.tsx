@@ -1045,6 +1045,57 @@ const Invoices: React.FC = () => {
                   </div>
                 )}
 
+                {/* Quick payment buttons */}
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-cyan-400">
+                    Opciones rápidas{!canUseInvoices && ' (🔒 Premium)'}:
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={canUseInvoices ? () =>
+                        setInvoiceConfig((prev) => ({
+                          ...prev,
+                          paidAmount: 0,
+                        })) : () => showUpgradeModal('invoices', 'Configura pagos automáticamente con planes superiores')
+                      }
+                      disabled={!canUseInvoices}
+                      className={`${canUseInvoices ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700' : 'bg-gray-600 border-gray-600 text-gray-400 cursor-not-allowed'}`}
+                    >
+                      {!canUseInvoices ? '🔒 Sin pago' : 'Sin pago'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={canUseInvoices ? () =>
+                        setInvoiceConfig((prev) => ({
+                          ...prev,
+                          paidAmount: (selectedEstimate?.total || 0) * 0.5,
+                        })) : () => showUpgradeModal('invoices', 'Calcula pagos automáticamente con planes superiores')
+                      }
+                      disabled={!canUseInvoices}
+                      className={`${canUseInvoices ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700' : 'bg-gray-600 border-gray-600 text-gray-400 cursor-not-allowed'}`}
+                    >
+                      {!canUseInvoices ? '🔒 50% pagado' : '50% pagado'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={canUseInvoices ? () =>
+                        setInvoiceConfig((prev) => ({
+                          ...prev,
+                          paidAmount: selectedEstimate?.total || 0,
+                        })) : () => showUpgradeModal('invoices', 'Marca proyectos como pagados con planes superiores')
+                      }
+                      disabled={!canUseInvoices}
+                      className={`${canUseInvoices ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700' : 'bg-gray-600 border-gray-600 text-gray-400 cursor-not-allowed'}`}
+                    >
+                      {!canUseInvoices ? '🔒 Pagado completo' : 'Pagado completo'}
+                    </Button>
+                  </div>
+                </div>
+
                 {/* Payment configuration */}
                 <div className="grid gap-4">
                   <div>
@@ -1108,57 +1159,6 @@ const Invoices: React.FC = () => {
                       rows={3}
                       className="bg-gray-800 border-gray-600 text-white placeholder-gray-400"
                     />
-                  </div>
-                </div>
-
-                {/* Quick payment buttons */}
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-cyan-400">
-                    Opciones rápidas{!canUseInvoices && ' (🔒 Premium)'}:
-                  </p>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={canUseInvoices ? () =>
-                        setInvoiceConfig((prev) => ({
-                          ...prev,
-                          paidAmount: 0,
-                        })) : () => showUpgradeModal('invoices', 'Configura pagos automáticamente con planes superiores')
-                      }
-                      disabled={!canUseInvoices}
-                      className={`${canUseInvoices ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700' : 'bg-gray-600 border-gray-600 text-gray-400 cursor-not-allowed'}`}
-                    >
-                      {!canUseInvoices ? '🔒 Sin pago' : 'Sin pago'}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={canUseInvoices ? () =>
-                        setInvoiceConfig((prev) => ({
-                          ...prev,
-                          paidAmount: (selectedEstimate?.total || 0) * 0.5,
-                        })) : () => showUpgradeModal('invoices', 'Calcula pagos automáticamente con planes superiores')
-                      }
-                      disabled={!canUseInvoices}
-                      className={`${canUseInvoices ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700' : 'bg-gray-600 border-gray-600 text-gray-400 cursor-not-allowed'}`}
-                    >
-                      {!canUseInvoices ? '🔒 50% pagado' : '50% pagado'}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={canUseInvoices ? () =>
-                        setInvoiceConfig((prev) => ({
-                          ...prev,
-                          paidAmount: selectedEstimate?.total || 0,
-                        })) : () => showUpgradeModal('invoices', 'Marca proyectos como pagados con planes superiores')
-                      }
-                      disabled={!canUseInvoices}
-                      className={`${canUseInvoices ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700' : 'bg-gray-600 border-gray-600 text-gray-400 cursor-not-allowed'}`}
-                    >
-                      {!canUseInvoices ? '🔒 Pagado completo' : 'Pagado completo'}
-                    </Button>
                   </div>
                 </div>
               </CardContent>
