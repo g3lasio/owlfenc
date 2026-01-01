@@ -8,25 +8,12 @@
  * - Autenticación con Firebase token
  */
 
+import { EnrichedResponse } from "../types/responses";
+
 export interface MervinMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp?: Date;
-}
-
-export interface MervinResponse {
-  type: 'CONVERSATION' | 'TASK_COMPLETED' | 'TASK_ERROR' | 'NEEDS_MORE_INFO';
-  message: string;
-  data?: any;
-  executionTime?: number;
-  taskProgress?: {
-    currentStep: number;
-    totalSteps: number;
-    stepName: string;
-    progress: number;
-    estimatedTimeRemaining: number;
-  };
-  suggestedActions?: string[];
 }
 
 export interface StreamUpdate {
@@ -82,7 +69,7 @@ export class AgentClient {
     language: 'es' | 'en' = 'es',
     mode: 'chat' | 'agent' = 'agent',
     pageContext?: { url?: string; section?: string; action?: string }
-  ): Promise<MervinResponse> {
+  ): Promise<EnrichedResponse> {
     try {
       console.log('📨 [AGENT-CLIENT] Enviando mensaje:', input.substring(0, 50));
       
@@ -109,7 +96,7 @@ export class AgentClient {
       const data = await response.json();
       console.log('✅ [AGENT-CLIENT] Response recibido');
       
-      return data as MervinResponse;
+      return data as EnrichedResponse;
 
     } catch (error: any) {
       console.error('❌ [AGENT-CLIENT] Error:', error);

@@ -21,21 +21,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-export interface Message {
-  id: string;
-  content: string;
-  sender: "user" | "assistant";
-  options?: string[] | { text: string; clickable: boolean }[];
-  template?: {
-    type: "estimate" | "contract";
-    html: string;
-  };
-  isTyping?: boolean;
-  actions?: {
-    label: string;
-    onClick: () => void;
-  }[];
-}
+import { Message } from "@/mervin-v2/types/responses";
 
 // Esquema de validación para la cláusula personalizada
 const customClauseSchema = z.object({
@@ -67,7 +53,7 @@ type CustomClauseFormValues = z.infer<typeof customClauseSchema>;
 type CorrectionFormValues = z.infer<typeof correctionSchema>;
 
 export default function ChatInterface() {
-  const [messages, setMessages] = useState<Message[]>([]);
+    const [messages, setMessages] = useState<Message[]>([]);
   const [context, setContext] = useState<ChatContext>({});
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);

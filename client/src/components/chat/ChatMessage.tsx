@@ -1,7 +1,10 @@
 
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import { Message } from "./ChatInterface";
+import { Message } from "@/mervin-v2/types/responses";
+import { AttachmentViewer } from "@/components/mervin/AttachmentViewer";
+import { LinksSection } from "@/components/mervin/LinksSection";
+import { DynamicActionButtons } from "@/components/mervin/DynamicActionButtons";
 
 interface Option {
   text: string;
@@ -11,7 +14,7 @@ interface Option {
 interface ChatMessageProps {
   message: Message;
   onOptionClick?: (option: string) => void;
-  onActionClick?: (action: { label: string; onClick: () => void }) => void;
+  onActionExecute?: (action: string, params?: Record<string, any>) => Promise<void>;
 }
 
 const extractProgress = (content: string): number | null => {
@@ -19,7 +22,7 @@ const extractProgress = (content: string): number | null => {
   return match ? parseInt(match[1]) : null;
 };
 
-export default function ChatMessage({ message, onOptionClick, onActionClick }: ChatMessageProps) {
+export default function ChatMessage({ message, onOptionClick, onActionExecute }: ChatMessageProps) {
   const messageClass = message.sender === "user" ? "user-message" : "bot-message";
   
   return (
@@ -60,20 +63,22 @@ export default function ChatMessage({ message, onOptionClick, onActionClick }: C
           </div>
         )}
         
-        {/* Soporte para botones de acción */}
-        {message.actions && message.actions.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {message.actions.map((action, index) => (
-              <Button
-                key={index}
-                variant="default"
-                size="sm"
-                onClick={() => onActionClick && onActionClick(action)}
-              >
-                {action.label}
-              </Button>
-            ))}
-          </div>
+        {/* Botones de acción dinámicos */}
+        {message.actions && message.actions.length > 0 && onActionExecute && (
+          <DynamicActionButtons
+            actions={message.actions}
+            onActionExecute={onActionExecute}
+          />
+        )}
+        
+        {/* Links estructurados */}
+        {message.links && message.links.length > 0 && (
+          <LinksSection links={message.links} />
+        )}
+        
+        {/* Adjuntos */}
+        {message.attachments && message.attachments.length > 0 && (
+          <AttachmentViewer attachments={message.attachments} />
         )}
       </div>
     </div>
