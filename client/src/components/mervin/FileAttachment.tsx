@@ -25,7 +25,7 @@ interface FilePreview {
 export function FileAttachment({ 
   onFilesChange, 
   maxFiles = 5,
-  acceptedTypes = "image/*,.pdf,.doc,.docx"
+  acceptedTypes = "image/*,application/pdf,.pdf,.doc,.docx"
 }: FileAttachmentProps) {
   const [files, setFiles] = useState<FilePreview[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -34,7 +34,7 @@ export function FileAttachment({
 
   const getFileType = (file: File): 'image' | 'pdf' | 'document' => {
     if (file.type.startsWith('image/')) return 'image';
-    if (file.type === 'application/pdf') return 'pdf';
+    if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) return 'pdf';
     return 'document';
   };
 

@@ -349,6 +349,33 @@ export class MervinConversationalOrchestrator {
           const { visionAnalysisTool } = await import('../tools/VisionAnalysisTool');
           return await visionAnalysisTool.execute(params);
           
+        case 'create_contract_from_estimate_pdf':
+          // Importar y ejecutar ContractFromEstimatePDFTool
+          const { contractFromEstimatePDFTool } = await import('../tools/ContractFromEstimatePDFTool');
+          const pdfResult = await contractFromEstimatePDFTool.execute(params);
+          
+          // Si necesita input del usuario, retornar el mensaje
+          if (pdfResult.needsUserInput) {
+            return {
+              success: false,
+              needsUserInput: true,
+              message: pdfResult.missingFieldsMessage,
+              extractedData: pdfResult.extractedData,
+              missingFields: pdfResult.missingFields
+            };
+          }
+          
+          // Si tenemos todos los datos, ejecutar el workflow de contratos
+          if (pdfResult.success && pdfResult.contractData) {
+            return await this.workflowRunner.executeWorkflow({
+              workflowId: 'contract_generator',
+              userId: this.userId,
+              parameters: pdfResult.contractData
+            });
+          }
+          
+          return pdfResult;
+          
         default:
           throw new Error(`Unknown tool: ${toolName}`);
       }

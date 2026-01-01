@@ -305,6 +305,72 @@ pero si falta la dirección o el tipo de proyecto, debes incluirlos en userMessa
   // ============= VISION TOOLS =============
   
   {
+    name: 'create_contract_from_estimate_pdf',
+    description: `Genera un contrato legal profesional a partir de un PDF de estimado adjunto.
+
+Esta herramienta especializada:
+1. Analiza el PDF del estimado automáticamente
+2. Extrae todos los datos necesarios (cliente, proyecto, montos)
+3. Valida que la información sea suficiente
+4. Si falta información, pregunta al usuario específicamente qué necesita
+5. Genera el contrato completo con firma dual
+
+Usa esta herramienta cuando el usuario:
+- Adjunte un PDF de estimado y pida generar un contrato
+- Diga "el cliente aprobó el estimado, genera el contrato"
+- Quiera convertir un estimado en contrato
+
+IMPORTANTE: Esta herramienta maneja TODO el flujo automáticamente. 
+NO necesitas llamar a analyze_images por separado.
+
+Ejemplo de uso:
+Usuario: "El cliente aprobó este estimado hace una semana, necesito el contrato hoy"
+[Adjunta PDF]
+→ Usa esta herramienta con el PDF adjunto`,
+    input_schema: {
+      type: 'object',
+      properties: {
+        pdfFile: {
+          type: 'object',
+          description: 'Archivo PDF del estimado',
+          properties: {
+            type: {
+              type: 'string',
+              enum: ['base64', 'path'],
+              description: 'Tipo de archivo'
+            },
+            data: {
+              type: 'string',
+              description: 'Contenido en base64 o ruta del archivo'
+            },
+            mediaType: {
+              type: 'string',
+              description: 'Debe ser "application/pdf"'
+            }
+          },
+          required: ['type', 'data']
+        },
+        additionalInfo: {
+          type: 'object',
+          description: 'Información adicional proporcionada por el usuario (opcional)',
+          properties: {
+            clientName: { type: 'string' },
+            clientEmail: { type: 'string' },
+            clientPhone: { type: 'string' },
+            projectType: { type: 'string' },
+            projectDescription: { type: 'string' },
+            projectAddress: { type: 'string' },
+            totalAmount: { type: 'number' },
+            startDate: { type: 'string' },
+            endDate: { type: 'string' }
+          }
+        }
+      },
+      required: ['pdfFile']
+    }
+  },
+  
+  {
     name: 'analyze_images',
     description: `Analiza imágenes, fotos, planos, PDFs o documentos visuales para extraer información relevante.
     

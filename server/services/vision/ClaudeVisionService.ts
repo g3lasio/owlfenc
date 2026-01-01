@@ -19,7 +19,7 @@ export interface VisionAnalysisRequest {
 export interface ImageInput {
   type: 'url' | 'base64' | 'path';
   data: string;
-  mediaType?: string; // 'image/jpeg', 'image/png', 'image/webp', 'image/gif'
+  mediaType?: string; // 'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'
 }
 
 export interface VisionAnalysisResponse {
@@ -128,6 +128,7 @@ export class ClaudeVisionService {
         if (ext === '.png') mediaType = 'image/png';
         else if (ext === '.webp') mediaType = 'image/webp';
         else if (ext === '.gif') mediaType = 'image/gif';
+        else if (ext === '.pdf') mediaType = 'application/pdf';
       } else if (image.type === 'url') {
         // Para URLs, necesitamos descargar la imagen primero
         // Por ahora, lanzamos un error
