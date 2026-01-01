@@ -594,13 +594,6 @@ export function getToolByName(toolName: string): ToolDefinition | null {
 }
 
 /**
- * Obtener todas las herramientas
- */
-export function getAllTools(): ToolDefinition[] {
-  return CLAUDE_WORKFLOW_TOOLS;
-}
-
-/**
  * Obtener herramientas por categoría
  */
 export function getToolsByCategory(category: 'estimate' | 'contract' | 'permit' | 'property' | 'client' | 'context'): ToolDefinition[] {
