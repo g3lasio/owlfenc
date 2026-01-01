@@ -2,7 +2,7 @@
  * Unified Profile Service
  * 
  * Servicio centralizado para gestión de perfiles de usuario.
- * Fuente única de verdad: Firebase Firestore (companyProfiles collection)
+ * Fuente única de verdad: Firebase Firestore (userProfiles collection)
  * 
  * Características:
  * - Singleton pattern para instancia única
@@ -89,7 +89,9 @@ interface CacheEntry {
 
 export class UnifiedProfileService {
   private static instance: UnifiedProfileService;
-  private readonly collection = 'companyProfiles';
+  // 🔥 CRITICAL FIX: Use 'userProfiles' to match Settings page and ensure data consistency
+  // Previously used 'companyProfiles' which caused profile changes not to reflect in PDFs
+  private readonly collection = 'userProfiles';
   private cache: Map<string, CacheEntry> = new Map();
   private readonly CACHE_TTL = 30 * 1000; // 30 segundos
   private db: FirebaseFirestore.Firestore | null = null;

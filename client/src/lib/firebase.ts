@@ -1123,20 +1123,20 @@ export const uploadFile = async (file: File, path: string): Promise<string> => {
 // Obtener perfil de usuario
 export const getUserProfile = async (userId: string) => {
   try {
-    console.log(`🔍 [FIREBASE] Obteniendo perfil de companyProfiles para UID: ${userId}`);
+    console.log(`🔍 [FIREBASE] Obteniendo perfil de userProfiles para UID: ${userId}`);
     
-    // CAMBIO CRÍTICO: Usar companyProfiles con document ID directo (firebaseUid)
-    // Esto sincroniza con el backend que usa CompanyProfileService
-    const docRef = doc(db, "companyProfiles", userId);
+    // 🔥 CRITICAL FIX: Use userProfiles to match backend CompanyProfileService
+    // This ensures Settings page and PDF generation use the same data source
+    const docRef = doc(db, "userProfiles", userId);
     const docSnap = await getDoc(docRef);
     
     if (!docSnap.exists()) {
-      console.log(`📭 [FIREBASE] No se encontró perfil en companyProfiles para UID: ${userId}`);
+      console.log(`📭 [FIREBASE] No se encontró perfil en userProfiles para UID: ${userId}`);
       return null;
     }
     
     const data = docSnap.data();
-    console.log(`✅ [FIREBASE] Perfil obtenido de companyProfiles: ${data.companyName || 'Sin nombre'}`);
+    console.log(`✅ [FIREBASE] Perfil obtenido de userProfiles: ${data.companyName || data.company || 'Sin nombre'}`);
     
     // MAPEO INVERSO: Backend usa 'companyName', frontend espera 'company'
     const mappedData = {
@@ -1157,11 +1157,11 @@ export const getUserProfile = async (userId: string) => {
 // Guardar o actualizar perfil de usuario
 export const saveUserProfile = async (userId: string, profileData: any) => {
   try {
-    console.log(`💾 [FIREBASE] Guardando perfil en companyProfiles para UID: ${userId}`);
+    console.log(`💾 [FIREBASE] Guardando perfil en userProfiles para UID: ${userId}`);
     
-    // CAMBIO CRÍTICO: Usar companyProfiles con document ID directo (firebaseUid)
-    // Esto sincroniza con el backend que usa CompanyProfileService
-    const docRef = doc(db, "companyProfiles", userId);
+    // 🔥 CRITICAL FIX: Use userProfiles to match backend CompanyProfileService
+    // This ensures Settings page and PDF generation use the same data source
+    const docRef = doc(db, "userProfiles", userId);
     const docSnap = await getDoc(docRef);
     
     // MAPEO DE CAMPOS: Frontend usa 'company', backend usa 'companyName'
@@ -1186,11 +1186,11 @@ export const saveUserProfile = async (userId: string, profileData: any) => {
       // No existe, crear nuevo perfil
       profileWithMeta.createdAt = Timestamp.now();
       await setDoc(docRef, profileWithMeta);
-      console.log(`✅ [FIREBASE] Nuevo perfil creado en companyProfiles: ${profileData.companyName || profileData.company || 'Sin nombre'}`);
+      console.log(`✅ [FIREBASE] Nuevo perfil creado en userProfiles: ${profileData.companyName || profileData.company || 'Sin nombre'}`);
     } else {
       // Ya existe, actualizar (merge para no sobrescribir campos no enviados)
       await setDoc(docRef, profileWithMeta, { merge: true });
-      console.log(`✅ [FIREBASE] Perfil actualizado en companyProfiles: ${profileData.companyName || profileData.company || 'Sin nombre'}`);
+      console.log(`✅ [FIREBASE] Perfil actualizado en userProfiles: ${profileData.companyName || profileData.company || 'Sin nombre'}`);
     }
     
     // Retornar el perfil guardado

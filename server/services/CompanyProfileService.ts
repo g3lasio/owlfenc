@@ -53,7 +53,9 @@ export interface CompanyProfile {
 }
 
 export class CompanyProfileService {
-  private readonly collection = 'companyProfiles';
+  // 🔥 CRITICAL FIX: Use 'userProfiles' to match Settings page and ensure data consistency
+  // Previously used 'companyProfiles' which caused profile changes not to reflect in PDFs
+  private readonly collection = 'userProfiles';
 
   async getProfileByFirebaseUid(firebaseUid: string): Promise<CompanyProfile | null> {
     try {
