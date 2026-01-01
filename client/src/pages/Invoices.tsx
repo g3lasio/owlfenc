@@ -356,7 +356,101 @@ const Invoices: React.FC = () => {
     }
   };
 
-  // Handle sending invoice by email
+  // Handle sending email from preview
+  const handleSendEmailFromPreview = async () => {
+    if (!selectedEstimate || !profile || !invoiceConfig.recipientEmail) {
+      toast({
+        title: "⚠️ Error",
+        description: "Por favor ingresa un email del destinatario",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsSendingEmail(true);
+      
+      const amounts = calculateAmounts();
+      const invoiceNumber = generateInvoiceNumber();
+
+      // Prepare email data
+      const emailData = {
+        profile: {
+          company: profile.company,
+          email: profile.email || currentUser?.email || "",
+          phone: profile.phone || "",
+          address: profile.address
+            ? `${profile.address}${profile.city ? ", " + profile.city : ""}${profile.state ? ", " + profile.state : ""}${profile.zipCode ? " " + profile.zipCode : ""}`
+            : "",
+          logo: profile.logo || "",
+        },
+        estimate: {
+          clientName: selectedEstimate.clientName,
+          clientEmail: invoiceConfig.recipientEmail,
+          clientPhone: selectedEstimate.clientPhone,
+          clientAddress: selectedEstimate.clientAddress,
+          items: selectedEstimate.items,
+          subtotal: selectedEstimate.subtotal,
+          discountAmount: selectedEstimate.discount,
+          tax: selectedEstimate.tax,
+          total: selectedEstimate.total,
+        },
+        invoiceConfig: {
+          projectCompleted: invoiceConfig.projectCompleted,
+          downPaymentAmount: invoiceConfig.paidAmount.toString(),
+          totalAmountPaid: invoiceConfig.paidAmount >= amounts.total,
+        },
+        emailConfig: {
+          paymentLink: profile.stripeConnectAccountId 
+            ? `${window.location.origin}/project-payments?invoice=${invoiceNumber}&amount=${amounts.balance}`
+            : null,
+          ccContractor: true,
+        },
+      };
+
+      console.log("📧 [PREVIEW] Sending email from preview");
+      console.log("   → To:", emailData.estimate.clientEmail);
+
+      // Validate email
+      if (!emailData.estimate.clientEmail || !emailData.estimate.clientEmail.includes('@')) {
+        throw new Error(`Email del destinatario inválido: ${emailData.estimate.clientEmail}`);
+      }
+
+      const emailResponse = await fetch("/api/invoice-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(emailData),
+      });
+
+      if (!emailResponse.ok) {
+        const error = await emailResponse.json();
+        throw new Error(error.details || "Error al enviar email");
+      }
+
+      const emailResult = await emailResponse.json();
+      console.log("✅ [PREVIEW] Email sent successfully:", emailResult);
+      
+      toast({
+        title: "📧 Email enviado exitosamente",
+        description: `La factura ha sido enviada a ${invoiceConfig.recipientEmail}`,
+      });
+
+      // Close preview after successful send
+      setShowEmailPreview(false);
+    } catch (error) {
+      console.error("❌ [PREVIEW] Error sending email:", error);
+      toast({
+        title: "⚠️ Error al enviar email",
+        description: error instanceof Error ? error.message : "Error desconocido",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
   // Generate email preview HTML
   const generateEmailPreview = () => {
     if (!selectedEstimate || !profile) return "";
@@ -1642,11 +1736,21 @@ const Invoices: React.FC = () => {
               Cancelar
             </Button>
             <Button
-              onClick={() => setShowEmailPreview(false)}
+              onClick={handleSendEmailFromPreview}
               className="flex-1"
+              disabled={isSendingEmail || !invoiceConfig.recipientEmail}
             >
-              <Send className="mr-2 h-4 w-4" />
-              Cerrar Preview
+              {isSendingEmail ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Enviando...
+                </>
+              ) : (
+                <>
+                  <Send className="mr-2 h-4 w-4" />
+                  Enviar Email
+                </>
+              )}
             </Button>
           </div>
         </DialogContent>
