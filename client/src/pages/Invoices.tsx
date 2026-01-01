@@ -1634,24 +1634,11 @@ const Invoices: React.FC = () => {
               Cancelar
             </Button>
             <Button
-              onClick={async () => {
-                setShowEmailPreview(false);
-                await handleSendInvoiceEmail();
-              }}
+              onClick={() => setShowEmailPreview(false)}
               className="flex-1"
-              disabled={isSendingEmail}
             >
-              {isSendingEmail ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Enviando...
-                </>
-              ) : (
-                <>
-                  <Send className="mr-2 h-4 w-4" />
-                  Enviar Email
-                </>
-              )}
+              <Send className="mr-2 h-4 w-4" />
+              Cerrar Preview
             </Button>
           </div>
         </DialogContent>
