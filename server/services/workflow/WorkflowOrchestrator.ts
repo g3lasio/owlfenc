@@ -38,6 +38,9 @@ export interface WorkflowExecutionResult {
 }
 
 export class WorkflowOrchestrator {
+  private readonly MAX_STEPS = 20; // Límite de pasos para prevenir loops infinitos
+  private readonly DEFAULT_TIMEOUT_MS = 60000; // 60 segundos
+
   /**
    * Inicia la ejecución de un workflow
    */
@@ -45,6 +48,11 @@ export class WorkflowOrchestrator {
     workflow: WorkflowMetadata,
     initialContext: WorkflowContext = {}
   ): Promise<WorkflowState> {
+    // Validar que el workflow no tenga demasiados pasos
+    if (workflow.steps.length > this.MAX_STEPS) {
+      throw new Error(`Workflow has too many steps (${workflow.steps.length}). Maximum allowed: ${this.MAX_STEPS}`);
+    }
+
     console.log('[WORKFLOW-ORCHESTRATOR] Starting workflow with', workflow.steps.length, 'steps');
 
     return {
@@ -59,6 +67,33 @@ export class WorkflowOrchestrator {
    * Ejecuta el siguiente paso del workflow
    */
   async executeNextStep(
+    workflow: WorkflowMetadata,
+    state: WorkflowState,
+    userInput?: any,
+    timeoutMs: number = this.DEFAULT_TIMEOUT_MS
+  ): Promise<WorkflowExecutionResult> {
+    // Crear promise con timeout
+    return Promise.race([
+      this._executeNextStepInternal(workflow, state, userInput),
+      this._createTimeoutPromise(timeoutMs)
+    ]);
+  }
+
+  /**
+   * Crea una promise que rechaza después del timeout
+   */
+  private async _createTimeoutPromise(timeoutMs: number): Promise<WorkflowExecutionResult> {
+    return new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error(`Workflow execution timed out after ${timeoutMs}ms`));
+      }, timeoutMs);
+    });
+  }
+
+  /**
+   * Implementación interna de executeNextStep
+   */
+  private async _executeNextStepInternal(
     workflow: WorkflowMetadata,
     state: WorkflowState,
     userInput?: any
@@ -91,7 +126,7 @@ export class WorkflowOrchestrator {
     if (currentStep.conditional && !this.evaluateCondition(currentStep.conditional, state.context)) {
       console.log(`[WORKFLOW-ORCHESTRATOR] Step ${currentStep.title} skipped due to condition`);
       state.currentStepIndex++;
-      return this.executeNextStep(workflow, state, userInput);
+      return this._executeNextStepInternal(workflow, state, userInput);
     }
 
     // Ejecutar el paso según su tipo
@@ -124,8 +159,13 @@ export class WorkflowOrchestrator {
       // Avanzar al siguiente paso
       state.currentStepIndex++;
 
+      // Verificar que no excedamos el límite de pasos
+      if (state.currentStepIndex >= this.MAX_STEPS) {
+        throw new Error(`Workflow exceeded maximum steps limit (${this.MAX_STEPS})`);
+      }
+
       // Ejecutar siguiente paso automáticamente si no necesita input
-      return this.executeNextStep(workflow, state);
+      return this._executeNextStepInternal(workflow, state);
 
     } catch (error: any) {
       console.error(`[WORKFLOW-ORCHESTRATOR] Error executing step ${currentStep.title}:`, error);

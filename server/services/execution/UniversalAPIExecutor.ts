@@ -51,6 +51,10 @@ export interface Attachment {
 
 export class UniversalAPIExecutor {
   private workflowStates: Map<string, WorkflowState> = new Map();
+  private requestCounts: Map<string, { count: number; resetTime: number }> = new Map();
+  private readonly RATE_LIMIT_REQUESTS = 100; // 100 requests por minuto
+  private readonly RATE_LIMIT_WINDOW_MS = 60000; // 1 minuto
+  private readonly MAX_RESPONSE_SIZE_MB = 10; // 10MB máximo
 
   /**
    * Ejecuta un endpoint descubierto
@@ -143,6 +147,60 @@ export class UniversalAPIExecutor {
   }
 
   /**
+   * Valida que una URL sea segura (mismo dominio)
+   */
+  private validateURL(url: string, baseURL: string): boolean {
+    try {
+      const urlObj = new URL(url);
+      const baseURLObj = new URL(baseURL);
+      
+      // Verificar que sea el mismo dominio
+      if (urlObj.hostname !== baseURLObj.hostname) {
+        console.error(`[UNIVERSAL-EXECUTOR] Security: Attempted to access external URL: ${url}`);
+        return false;
+      }
+      
+      // Verificar que no sea un puerto interno sospechoso
+      const suspiciousPorts = [22, 23, 25, 3306, 5432, 6379, 27017];
+      if (suspiciousPorts.includes(urlObj.port ? parseInt(urlObj.port) : 0)) {
+        console.error(`[UNIVERSAL-EXECUTOR] Security: Attempted to access suspicious port: ${urlObj.port}`);
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error(`[UNIVERSAL-EXECUTOR] Invalid URL: ${url}`);
+      return false;
+    }
+  }
+
+  /**
+   * Verifica rate limiting para un usuario
+   */
+  private checkRateLimit(userId: string): boolean {
+    const now = Date.now();
+    const userLimit = this.requestCounts.get(userId);
+    
+    if (!userLimit || now > userLimit.resetTime) {
+      // Crear nuevo contador
+      this.requestCounts.set(userId, {
+        count: 1,
+        resetTime: now + this.RATE_LIMIT_WINDOW_MS
+      });
+      return true;
+    }
+    
+    if (userLimit.count >= this.RATE_LIMIT_REQUESTS) {
+      console.warn(`[UNIVERSAL-EXECUTOR] Rate limit exceeded for user ${userId}`);
+      return false;
+    }
+    
+    // Incrementar contador
+    userLimit.count++;
+    return true;
+  }
+
+  /**
    * Ejecuta un endpoint directamente (sin workflow)
    */
   private async executeEndpoint(
@@ -150,10 +208,23 @@ export class UniversalAPIExecutor {
     params: Record<string, any>,
     context: ExecutionContext
   ): Promise<EnrichedResponse> {
+    // Verificar rate limiting
+    if (!this.checkRateLimit(context.userId)) {
+      return {
+        content: '⚠️ Has excedido el límite de requests. Por favor espera un momento antes de intentar nuevamente.',
+        metadata: { error: 'rate_limit_exceeded' }
+      };
+    }
+
     try {
       // Construir URL
       const baseURL = context.baseURL || 'http://localhost:3000';
       let url = `${baseURL}${endpoint.path}`;
+
+      // Validar URL antes de ejecutar
+      if (!this.validateURL(url, baseURL)) {
+        throw new Error('Invalid or unsafe URL');
+      }
 
       // Reemplazar parámetros de path
       Object.keys(params).forEach(key => {
@@ -180,8 +251,13 @@ export class UniversalAPIExecutor {
         config.params = params;
       }
 
-      // Ejecutar request
-      const response = await axios(config);
+      // Ejecutar request con límite de tamaño
+      const response = await axios({
+        ...config,
+        maxContentLength: this.MAX_RESPONSE_SIZE_MB * 1024 * 1024,
+        maxBodyLength: this.MAX_RESPONSE_SIZE_MB * 1024 * 1024,
+        timeout: 30000 // 30 segundos timeout
+      });
 
       // Enriquecer respuesta
       return this.enrichResponse(response.data, endpoint);

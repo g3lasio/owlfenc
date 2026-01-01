@@ -36,7 +36,26 @@ export class DynamicToolGenerator {
    * Genera múltiples herramientas desde una lista de endpoints
    */
   generateTools(endpoints: DiscoveredEndpoint[]): ClaudeTool[] {
-    return endpoints.map(endpoint => this.generateTool(endpoint));
+    const tools: ClaudeTool[] = [];
+    const nameCount: Map<string, number> = new Map();
+
+    endpoints.forEach(endpoint => {
+      const tool = this.generateTool(endpoint);
+      
+      // Verificar si el nombre ya existe
+      const count = nameCount.get(tool.name) || 0;
+      
+      if (count > 0) {
+        // Agregar sufijo para evitar duplicados
+        tool.name = `${tool.name}_${count}`;
+        console.warn(`[DYNAMIC-TOOL-GENERATOR] Duplicate tool name detected. Renamed to: ${tool.name}`);
+      }
+      
+      nameCount.set(tool.name.replace(/_\d+$/, ''), count + 1);
+      tools.push(tool);
+    });
+
+    return tools;
   }
 
   /**

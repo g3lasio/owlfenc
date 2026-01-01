@@ -521,25 +521,63 @@ export function validateToolParams(toolName: string, params: any): { valid: bool
 
 import { autoDiscoveryIntegration } from '../../services/integration/AutoDiscoveryIntegration';
 
+// Cache para getAllTools
+let toolsCache: ToolDefinition[] | null = null;
+let toolsCacheTimestamp: number = 0;
+const TOOLS_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutos
+const MAX_TOOLS_FOR_CLAUDE = 100; // Claude tiene límite de ~100 herramientas
+
 /**
  * Obtiene todas las herramientas (estáticas + dinámicas)
  */
 export async function getAllTools(): Promise<ToolDefinition[]> {
+  // Verificar cache
+  const now = Date.now();
+  if (toolsCache && (now - toolsCacheTimestamp) < TOOLS_CACHE_TTL_MS) {
+    console.log(`[CLAUDE-TOOLS] Using cached tools (${toolsCache.length} tools)`);
+    return toolsCache;
+  }
+
   try {
     // Obtener herramientas dinámicas
     const dynamicTools = await autoDiscoveryIntegration.getTools();
     
     // Combinar con herramientas estáticas
-    const allTools = [...CLAUDE_WORKFLOW_TOOLS, ...dynamicTools];
+    let allTools = [...CLAUDE_WORKFLOW_TOOLS, ...dynamicTools];
     
-    console.log(`[CLAUDE-TOOLS] Total tools: ${allTools.length} (${CLAUDE_WORKFLOW_TOOLS.length} static + ${dynamicTools.length} dynamic)`);
+    // Limitar a MAX_TOOLS_FOR_CLAUDE si hay demasiadas
+    if (allTools.length > MAX_TOOLS_FOR_CLAUDE) {
+      console.warn(`[CLAUDE-TOOLS] Too many tools (${allTools.length}). Limiting to ${MAX_TOOLS_FOR_CLAUDE} most relevant.`);
+      
+      // Priorizar herramientas estáticas y las dinámicas más usadas
+      const staticTools = CLAUDE_WORKFLOW_TOOLS;
+      const limitedDynamicTools = dynamicTools.slice(0, MAX_TOOLS_FOR_CLAUDE - staticTools.length);
+      allTools = [...staticTools, ...limitedDynamicTools];
+    }
+    
+    console.log(`[CLAUDE-TOOLS] Total tools: ${allTools.length} (${CLAUDE_WORKFLOW_TOOLS.length} static + ${allTools.length - CLAUDE_WORKFLOW_TOOLS.length} dynamic)`);
+    
+    // Actualizar cache
+    toolsCache = allTools;
+    toolsCacheTimestamp = now;
     
     return allTools;
   } catch (error) {
     console.error('[CLAUDE-TOOLS] Error getting dynamic tools:', error);
     // Fallback a herramientas estáticas
+    toolsCache = CLAUDE_WORKFLOW_TOOLS;
+    toolsCacheTimestamp = now;
     return CLAUDE_WORKFLOW_TOOLS;
   }
+}
+
+/**
+ * Invalida el cache de herramientas (para testing o actualizaciones)
+ */
+export function invalidateToolsCache(): void {
+  toolsCache = null;
+  toolsCacheTimestamp = 0;
+  console.log('[CLAUDE-TOOLS] Tools cache invalidated');
 }
 
 /**
