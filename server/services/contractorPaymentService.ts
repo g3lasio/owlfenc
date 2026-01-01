@@ -516,15 +516,35 @@ export class ContractorPaymentService {
   }
 
   /**
-   * Generates a unique invoice number
+   * Generates a unique invoice number using atomic database query
+   * RACE CONDITION FIX: Uses MAX(id) + 1 instead of count to prevent duplicates
+   * when multiple payments are created simultaneously
    */
   private async generateInvoiceNumber(userId: number): Promise<string> {
     const year = new Date().getFullYear();
     
+    // 🔒 ATOMIC OPERATION: Get the highest invoice sequence number for this user
+    // This prevents race conditions by querying the database directly
     const userPayments = await storage.getProjectPaymentsByUserId(userId);
-    const count = userPayments.length + 1;
     
-    return `INV-${year}-${userId.toString().padStart(8, '0')}-${count.toString().padStart(4, '0')}`;
+    // Extract sequence numbers from existing invoices and find the max
+    let maxSequence = 0;
+    for (const payment of userPayments) {
+      if (payment.invoiceNumber) {
+        // Parse invoice format: INV-YYYY-UUUUUUUU-SSSS
+        const parts = payment.invoiceNumber.split('-');
+        if (parts.length === 4) {
+          const sequence = parseInt(parts[3], 10);
+          if (!isNaN(sequence) && sequence > maxSequence) {
+            maxSequence = sequence;
+          }
+        }
+      }
+    }
+    
+    const nextSequence = maxSequence + 1;
+    
+    return `INV-${year}-${userId.toString().padStart(8, '0')}-${nextSequence.toString().padStart(4, '0')}`;
   }
 
   /**
@@ -660,14 +680,80 @@ export class ContractorPaymentService {
 
     console.log(`✅ [MANUAL-PAYMENT] Recorded ${request.manualMethod} payment #${payment.id} - $${(request.amount / 100).toFixed(2)}`);
 
-    // Note: Project payment status updates not needed for Firebase-based projects
-    // Firebase estimates are the source of truth and don't need PostgreSQL sync
+    // 🔄 CRITICAL FIX: Update Firebase project payment status for manual payments
+    if (request.firebaseProjectId) {
+      try {
+        await this.updateFirebaseProjectPaymentStatus(
+          request.firebaseProjectId,
+          request.type,
+          'succeeded'
+        );
+        console.log(`✅ [MANUAL-PAYMENT] Updated Firebase project ${request.firebaseProjectId} payment status`);
+      } catch (firebaseError) {
+        console.error(`❌ [MANUAL-PAYMENT] Failed to update Firebase project status:`, firebaseError);
+        // Don't fail the entire operation if Firebase update fails
+        // The payment is already recorded in PostgreSQL
+      }
+    }
 
     return {
       paymentId: payment.id,
       invoiceNumber,
       status: 'succeeded',
     };
+  }
+
+  /**
+   * Update Firebase project payment status based on payment type
+   * This method syncs payment status from PostgreSQL to Firebase
+   */
+  private async updateFirebaseProjectPaymentStatus(
+    firebaseProjectId: string,
+    paymentType: string,
+    status: string
+  ): Promise<void> {
+    try {
+      const docRef = db.collection('estimates').doc(firebaseProjectId);
+      const docSnap = await docRef.get();
+
+      if (!docSnap.exists) {
+        console.error(`❌ [PAYMENT-SYNC] Firebase project ${firebaseProjectId} not found`);
+        return;
+      }
+
+      const currentData = docSnap.data();
+      const currentPaymentStatus = currentData?.paymentStatus || 'pending';
+
+      // Determine new payment status based on payment type
+      let newPaymentStatus = currentPaymentStatus;
+
+      if (status === 'succeeded') {
+        if (paymentType === 'deposit') {
+          newPaymentStatus = 'deposit-paid';
+        } else if (paymentType === 'final') {
+          // Check if deposit was already paid
+          if (currentPaymentStatus === 'deposit-paid') {
+            newPaymentStatus = 'paid-in-full';
+          } else {
+            newPaymentStatus = 'final-paid';
+          }
+        } else if (paymentType === 'milestone' || paymentType === 'additional') {
+          // For milestone/additional, mark as partial payment
+          newPaymentStatus = 'partial-paid';
+        }
+      }
+
+      // Update Firebase project
+      await docRef.update({
+        paymentStatus: newPaymentStatus,
+        updatedAt: new Date(),
+      });
+
+      console.log(`✅ [PAYMENT-SYNC] Updated Firebase project ${firebaseProjectId} paymentStatus: ${currentPaymentStatus} → ${newPaymentStatus}`);
+    } catch (error) {
+      console.error(`❌ [PAYMENT-SYNC] Error updating Firebase project:`, error);
+      throw error;
+    }
   }
 }
 

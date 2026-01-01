@@ -198,20 +198,26 @@ export default function ProjectPaymentWorkflow({
   }, []);
 
   // Helper functions
-  const formatCurrency = (amount: number) => {
+  // Format currency from cents to dollars for display
+  // IMPORTANT: All amounts in the system are stored in CENTS (integers)
+  // Only divide by 100 for display purposes
+  const formatCurrency = (amountInCents: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
-    }).format(amount);
+    }).format(amountInCents / 100);
   };
 
+  // Calculate suggested payment amount in DOLLARS for display
+  // IMPORTANT: project.totalPrice is stored in DOLLARS in Firebase
+  // We work in dollars here for user input, then convert to cents before API call
   const calculateSuggestedAmount = (project: Project, type: string) => {
-    const total = project.totalPrice || 0;
-    let amount = total;
-    if (type === "deposit") amount = total * 0.5;
-    if (type === "final") amount = total * 0.5;
+    const totalInDollars = project.totalPrice || 0;
+    let amountInDollars = totalInDollars;
+    if (type === "deposit") amountInDollars = totalInDollars * 0.5;
+    if (type === "final") amountInDollars = totalInDollars * 0.5;
     // Round to 2 decimal places to avoid floating point issues
-    return Math.round(amount * 100) / 100;
+    return Math.round(amountInDollars * 100) / 100;
   };
 
   const handleProjectSelect = (project: Project) => {
@@ -341,15 +347,35 @@ export default function ProjectPaymentWorkflow({
         setGuidedStep("execute");
       }
       
-      // Success toast
-      toast({
-        title: "Success!",
-        description: paymentMethod === "terminal" 
-          ? "Terminal payment ready" 
-          : paymentMethod === "link"
-          ? "Payment link created successfully"
-          : "Payment registered successfully",
-      });
+      // Check if email was sent (for auto-send feature)
+      const emailSent = result?.emailSent;
+      const autoSendRequested = paymentConfig.autoSendEmail && paymentMethod === "link";
+      
+      // Success toast with email status
+      if (autoSendRequested && emailSent === false) {
+        // Email failed to send
+        toast({
+          title: "Payment link created",
+          description: "Link created successfully, but email failed to send. Please share the link manually.",
+          variant: "default",
+        });
+      } else if (autoSendRequested && emailSent === true) {
+        // Email sent successfully
+        toast({
+          title: "Success!",
+          description: `Payment link created and email sent to ${paymentConfig.clientEmail}`,
+        });
+      } else {
+        // Standard success message
+        toast({
+          title: "Success!",
+          description: paymentMethod === "terminal" 
+            ? "Terminal payment ready" 
+            : paymentMethod === "link"
+            ? "Payment link created successfully"
+            : "Payment registered successfully",
+        });
+      }
       
     } catch (error: any) {
       console.error("❌ [PAYMENT-WORKFLOW] Error creating payment:", error);

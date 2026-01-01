@@ -358,6 +358,8 @@ router.post(
           
           if (error) {
             console.error('📧 [AUTO-EMAIL] Failed to send payment link email:', error);
+            // Return email failure info to frontend for user notification
+            emailSent = false;
           } else {
             console.log(`📧 [AUTO-EMAIL] Payment link sent to ${validatedData.clientEmail}, ID: ${data?.id}`);
             emailSent = true;
@@ -1169,8 +1171,12 @@ router.post("/stripe/dashboard", isAuthenticated, async (req: Request, res: Resp
 });
 
 /**
- * Create payment
+ * DEPRECATED: Create payment (MOCK ENDPOINT - DUPLICATE)
+ * This endpoint is a duplicate of the /create endpoint above (Line 145)
+ * It returns mock data and should NOT be used in production
+ * Keeping commented out for reference only
  */
+/*
 router.post("/create", isAuthenticated, async (req: Request, res: Response) => {
   try {
     if (!req.firebaseUser) {
@@ -1221,6 +1227,7 @@ router.post("/create", isAuthenticated, async (req: Request, res: Response) => {
     });
   }
 });
+*/
 
 /**
  * Send payment link invoice via email (REAL implementation with Resend)

@@ -89,15 +89,17 @@ export default function IntegratedProjectPaymentFlow({
   const { toast } = useToast();
 
   // Calculate payment amounts
+  // IMPORTANT: project.totalPrice is in DOLLARS (from Firebase)
+  // payment.amount is in CENTS (from PostgreSQL/Stripe)
   const calculateAmounts = (project: Project) => {
-    const totalAmount = project.totalPrice ? project.totalPrice / 100 : 0;
+    const totalAmount = project.totalPrice || 0; // Already in dollars
     const projectPayments = payments?.filter(p => p.projectId === project.id) || [];
     const totalPaid = projectPayments
       .filter(p => p.status === 'paid' || p.status === 'succeeded')
-      .reduce((sum, p) => sum + p.amount, 0) / 100;
+      .reduce((sum, p) => sum + p.amount, 0) / 100; // Convert cents to dollars
     const totalPending = projectPayments
       .filter(p => p.status === 'pending')
-      .reduce((sum, p) => sum + p.amount, 0) / 100;
+      .reduce((sum, p) => sum + p.amount, 0) / 100; // Convert cents to dollars
     
     const depositAmount = totalAmount * 0.5;
     const finalAmount = totalAmount * 0.5;

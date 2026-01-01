@@ -92,6 +92,7 @@ export class StripeWebhookService {
       
       // Route to appropriate handler based on event type
       switch (event.type) {
+        // Subscription events
         case 'invoice.payment_failed':
           await this.handlePaymentFailed(event, result);
           break;
@@ -110,6 +111,27 @@ export class StripeWebhookService {
           
         case 'customer.subscription.created':
           await this.handleSubscriptionCreated(event, result);
+          break;
+        
+        // Payment Tracker events (Checkout Sessions for contractor payments)
+        case 'checkout.session.completed':
+          await this.handleCheckoutSessionCompleted(event, result);
+          break;
+          
+        case 'checkout.session.expired':
+          await this.handleCheckoutSessionExpired(event, result);
+          break;
+          
+        case 'payment_intent.succeeded':
+          await this.handlePaymentIntentSucceeded(event, result);
+          break;
+          
+        case 'payment_intent.payment_failed':
+          await this.handlePaymentIntentFailed(event, result);
+          break;
+          
+        case 'account.updated':
+          await this.handleAccountUpdated(event, result);
           break;
           
         default:
@@ -720,6 +742,358 @@ export class StripeWebhookService {
       
     } catch (error) {
       console.error('❌ [STRIPE-WEBHOOK] Error logging webhook event:', error);
+    }
+  }
+
+  // ==================== PAYMENT TRACKER WEBHOOK HANDLERS ====================
+
+  /**
+   * Handle successful checkout session completion (Payment Tracker)
+   * Updates payment status in PostgreSQL and project status in Firebase
+   */
+  private async handleCheckoutSessionCompleted(event: Stripe.Event, result: WebhookResult): Promise<void> {
+    try {
+      const session = event.data.object as Stripe.Checkout.Session;
+      console.log(`💳 [PAYMENT-WEBHOOK] Processing checkout.session.completed: ${session.id}`);
+
+      const paymentId = session.metadata?.paymentId;
+      const firebaseProjectId = session.metadata?.firebaseProjectId;
+      const paymentType = session.metadata?.type;
+
+      if (!paymentId) {
+        console.error('❌ [PAYMENT-WEBHOOK] Missing paymentId in session metadata');
+        result.success = true; // Don't fail webhook for missing metadata
+        return;
+      }
+
+      // Import storage dynamically to avoid circular dependencies
+      const { storage } = await import('../storage');
+
+      // 1. Get payment record from PostgreSQL
+      const payment = await storage.getProjectPayment(parseInt(paymentId));
+      
+      if (!payment) {
+        console.error(`❌ [PAYMENT-WEBHOOK] Payment ${paymentId} not found in database`);
+        result.success = true; // Don't fail webhook
+        return;
+      }
+
+      // Check if already processed (idempotency)
+      if (payment.status === 'succeeded') {
+        console.log(`ℹ️ [PAYMENT-WEBHOOK] Payment ${paymentId} already marked as succeeded (idempotent)`);
+        result.success = true;
+        result.action = 'already_processed';
+        return;
+      }
+
+      // 2. Update payment record in PostgreSQL
+      await storage.updateProjectPayment(parseInt(paymentId), {
+        status: 'succeeded',
+        stripeCheckoutSessionId: session.id,
+        paidDate: new Date(),
+        paymentMethod: session.payment_method_types?.[0] || 'card',
+      });
+
+      console.log(`✅ [PAYMENT-WEBHOOK] Updated payment ${paymentId} status to succeeded`);
+
+      // 3. Update Firebase project payment status
+      // Wrapped in try-catch to prevent Firebase failures from failing the webhook
+      if (firebaseProjectId) {
+        try {
+          await this.updateFirebaseProjectPaymentStatus(
+            firebaseProjectId,
+            paymentType as string,
+            'succeeded'
+          );
+          console.log(`✅ [PAYMENT-WEBHOOK] Updated Firebase project ${firebaseProjectId} payment status`);
+        } catch (firebaseError) {
+          console.error('🔥 [PAYMENT-WEBHOOK] Failed to update Firebase project status (non-fatal):', firebaseError);
+          // Don't fail the webhook if Firebase sync fails - payment was still recorded in PostgreSQL
+          // This can be manually synced later if needed
+        }
+      }
+
+      // 4. Send receipt email to client (optional)
+      // Wrapped in try-catch to prevent email failures from failing the webhook
+      if (session.customer_email && session.amount_total) {
+        try {
+          await this.sendPaymentReceiptEmail(
+            session.customer_email,
+            session.amount_total,
+            session.id
+          );
+        } catch (emailError) {
+          console.error('📧 [PAYMENT-WEBHOOK] Failed to send receipt email (non-fatal):', emailError);
+          // Don't fail the webhook if email fails - payment was still processed
+        }
+      }
+
+      result.success = true;
+      result.action = 'payment_completed';
+      result.userId = payment.userId.toString();
+
+    } catch (error) {
+      console.error('❌ [PAYMENT-WEBHOOK] Error processing checkout session:', error);
+      result.error = error instanceof Error ? error.message : 'Unknown error';
+    }
+  }
+
+  /**
+   * Handle expired checkout session (Payment Tracker)
+   */
+  private async handleCheckoutSessionExpired(event: Stripe.Event, result: WebhookResult): Promise<void> {
+    try {
+      const session = event.data.object as Stripe.Checkout.Session;
+      console.log(`⏰ [PAYMENT-WEBHOOK] Processing checkout.session.expired: ${session.id}`);
+
+      const paymentId = session.metadata?.paymentId;
+
+      if (!paymentId) {
+        console.error('❌ [PAYMENT-WEBHOOK] Missing paymentId in session metadata');
+        result.success = true;
+        return;
+      }
+
+      const { storage } = await import('../storage');
+      const payment = await storage.getProjectPayment(parseInt(paymentId));
+      
+      if (!payment) {
+        console.error(`❌ [PAYMENT-WEBHOOK] Payment ${paymentId} not found in database`);
+        result.success = true;
+        return;
+      }
+
+      // Only update if still pending
+      if (payment.status === 'pending') {
+        await storage.updateProjectPayment(parseInt(paymentId), {
+          status: 'expired',
+        });
+        console.log(`✅ [PAYMENT-WEBHOOK] Updated payment ${paymentId} status to expired`);
+      }
+
+      result.success = true;
+      result.action = 'payment_expired';
+      result.userId = payment.userId.toString();
+
+    } catch (error) {
+      console.error('❌ [PAYMENT-WEBHOOK] Error processing expired session:', error);
+      result.error = error instanceof Error ? error.message : 'Unknown error';
+    }
+  }
+
+  /**
+   * Handle successful payment intent (Payment Tracker backup handler)
+   */
+  private async handlePaymentIntentSucceeded(event: Stripe.Event, result: WebhookResult): Promise<void> {
+    try {
+      const paymentIntent = event.data.object as Stripe.PaymentIntent;
+      console.log(`💰 [PAYMENT-WEBHOOK] Processing payment_intent.succeeded: ${paymentIntent.id}`);
+      
+      // This is a backup handler - checkout.session.completed is the primary event
+      // Only process if we have metadata
+      if (paymentIntent.metadata?.paymentId) {
+        const paymentId = parseInt(paymentIntent.metadata.paymentId);
+        
+        const { storage } = await import('../storage');
+        const payment = await storage.getProjectPayment(paymentId);
+        
+        if (payment && payment.status !== 'succeeded') {
+          await storage.updateProjectPayment(paymentId, {
+            status: 'succeeded',
+            stripePaymentIntentId: paymentIntent.id,
+            paidDate: new Date(),
+          });
+          console.log(`✅ [PAYMENT-WEBHOOK] Updated payment ${paymentId} via payment_intent.succeeded`);
+          
+          result.success = true;
+          result.action = 'payment_intent_succeeded';
+          result.userId = payment.userId.toString();
+        } else {
+          result.success = true;
+          result.action = 'already_processed';
+        }
+      } else {
+        result.success = true;
+        result.action = 'no_metadata';
+      }
+
+    } catch (error) {
+      console.error('❌ [PAYMENT-WEBHOOK] Error processing payment intent succeeded:', error);
+      result.error = error instanceof Error ? error.message : 'Unknown error';
+    }
+  }
+
+  /**
+   * Handle failed payment intent (Payment Tracker)
+   */
+  private async handlePaymentIntentFailed(event: Stripe.Event, result: WebhookResult): Promise<void> {
+    try {
+      const paymentIntent = event.data.object as Stripe.PaymentIntent;
+      console.log(`❌ [PAYMENT-WEBHOOK] Processing payment_intent.payment_failed: ${paymentIntent.id}`);
+      
+      if (paymentIntent.metadata?.paymentId) {
+        const paymentId = parseInt(paymentIntent.metadata.paymentId);
+        
+        const { storage } = await import('../storage');
+        await storage.updateProjectPayment(paymentId, {
+          status: 'failed',
+          stripePaymentIntentId: paymentIntent.id,
+        });
+        
+        console.log(`✅ [PAYMENT-WEBHOOK] Updated payment ${paymentId} status to failed`);
+        
+        const payment = await storage.getProjectPayment(paymentId);
+        result.success = true;
+        result.action = 'payment_failed';
+        result.userId = payment?.userId.toString();
+      } else {
+        result.success = true;
+        result.action = 'no_metadata';
+      }
+
+    } catch (error) {
+      console.error('❌ [PAYMENT-WEBHOOK] Error processing payment intent failed:', error);
+      result.error = error instanceof Error ? error.message : 'Unknown error';
+    }
+  }
+
+  /**
+   * Handle Stripe Connect account updates (Payment Tracker)
+   */
+  private async handleAccountUpdated(event: Stripe.Event, result: WebhookResult): Promise<void> {
+    try {
+      const account = event.data.object as Stripe.Account;
+      console.log(`🔄 [PAYMENT-WEBHOOK] Processing account.updated: ${account.id}`);
+      
+      // Find user by Stripe Connect account ID
+      const usersSnapshot = await db.collection('users')
+        .where('stripeConnectAccountId', '==', account.id)
+        .limit(1)
+        .get();
+      
+      if (!usersSnapshot.empty) {
+        const userDoc = usersSnapshot.docs[0];
+        console.log(`✅ [PAYMENT-WEBHOOK] Found user ${userDoc.id} for account ${account.id}`);
+        console.log(`📊 [PAYMENT-WEBHOOK] Account charges_enabled: ${account.charges_enabled}, payouts_enabled: ${account.payouts_enabled}`);
+        
+        result.success = true;
+        result.action = 'account_status_logged';
+        result.userId = userDoc.id;
+      } else {
+        console.log(`ℹ️ [PAYMENT-WEBHOOK] No user found for account ${account.id}`);
+        result.success = true;
+        result.action = 'no_user_found';
+      }
+
+    } catch (error) {
+      console.error('❌ [PAYMENT-WEBHOOK] Error processing account update:', error);
+      result.error = error instanceof Error ? error.message : 'Unknown error';
+    }
+  }
+
+  /**
+   * Update Firebase project payment status based on payment type
+   */
+  private async updateFirebaseProjectPaymentStatus(
+    firebaseProjectId: string,
+    paymentType: string,
+    status: string
+  ): Promise<void> {
+    try {
+      const docRef = db.collection('estimates').doc(firebaseProjectId);
+      const docSnap = await docRef.get();
+
+      if (!docSnap.exists) {
+        console.error(`❌ [PAYMENT-WEBHOOK] Firebase project ${firebaseProjectId} not found`);
+        return;
+      }
+
+      const currentData = docSnap.data();
+      const currentPaymentStatus = currentData?.paymentStatus || 'pending';
+
+      // Determine new payment status based on payment type
+      let newPaymentStatus = currentPaymentStatus;
+
+      if (status === 'succeeded') {
+        if (paymentType === 'deposit') {
+          newPaymentStatus = 'deposit-paid';
+        } else if (paymentType === 'final') {
+          // Check if deposit was already paid
+          if (currentPaymentStatus === 'deposit-paid') {
+            newPaymentStatus = 'paid-in-full';
+          } else {
+            newPaymentStatus = 'final-paid';
+          }
+        } else if (paymentType === 'milestone' || paymentType === 'additional') {
+          // For milestone/additional, mark as partial payment
+          newPaymentStatus = 'partial-paid';
+        }
+      }
+
+      // Update Firebase project
+      await docRef.update({
+        paymentStatus: newPaymentStatus,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      console.log(`✅ [PAYMENT-WEBHOOK] Updated Firebase project ${firebaseProjectId} paymentStatus: ${currentPaymentStatus} → ${newPaymentStatus}`);
+    } catch (error) {
+      console.error('❌ [PAYMENT-WEBHOOK] Error updating Firebase project:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Send payment receipt email to client
+   */
+  private async sendPaymentReceiptEmail(
+    clientEmail: string,
+    amountInCents: number,
+    sessionId: string
+  ): Promise<void> {
+    try {
+      const amountFormatted = (amountInCents / 100).toFixed(2);
+
+      const emailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f8f9fa;">
+          <div style="background: white; border-radius: 12px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <h2 style="color: #1a1a1a; margin-bottom: 20px; border-bottom: 3px solid #22c55e; padding-bottom: 10px;">
+              Payment Received ✓
+            </h2>
+            
+            <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6;">
+              Thank you for your payment!
+            </p>
+            
+            <div style="background: #f0fdf4; border-left: 4px solid #22c55e; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+              <p style="margin: 0; color: #166534; font-size: 24px; font-weight: bold;">$${amountFormatted}</p>
+              <p style="margin: 5px 0 0 0; color: #166534; font-size: 14px;">Payment Successful</p>
+            </div>
+            
+            <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+              Your payment has been processed successfully. Transaction ID: ${sessionId}
+            </p>
+            
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 25px 0;">
+            
+            <p style="color: #9ca3af; font-size: 12px; text-align: center;">
+              This is an automated receipt from Owl Fenc. Please save this for your records.
+            </p>
+          </div>
+        </div>
+      `;
+
+      await resendService.sendEmail({
+        from: 'Owl Fenc Payments <payments@owlfenc.com>',
+        to: [clientEmail],
+        subject: `Payment Receipt - $${amountFormatted}`,
+        html: emailHtml,
+      });
+
+      console.log(`📧 [PAYMENT-WEBHOOK] Receipt sent to ${clientEmail}`);
+    } catch (emailError) {
+      console.error('📧 [PAYMENT-WEBHOOK] Error sending receipt email:', emailError);
+      // Don't throw - email failure shouldn't fail the webhook
     }
   }
 }
