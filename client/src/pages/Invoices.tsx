@@ -361,6 +361,11 @@ const Invoices: React.FC = () => {
   const generateEmailPreview = () => {
     if (!selectedEstimate || !profile) return "";
 
+    console.log("📝 [PREVIEW] Generating email preview");
+    console.log("   → Selected Estimate:", selectedEstimate);
+    console.log("   → Items Count:", selectedEstimate.items?.length || 0);
+    console.log("   → Items:", selectedEstimate.items);
+
     const { total, paid, balance } = calculateAmounts();
     const invoiceNumber = generateInvoiceNumber();
     const dueDate = new Date(
@@ -371,7 +376,7 @@ const Invoices: React.FC = () => {
     const hasStripeConnect = !!profile.stripeConnectAccountId;
 
     // Generate items table HTML
-    const itemsHTML = selectedEstimate.items.map((item: any) => {
+    const itemsHTML = selectedEstimate.items?.map((item: any) => {
       const itemQuantity = item.quantity || 1;
       const itemPrice = item.unitPrice || item.price || 0;
       const itemTotal = item.totalPrice || (itemQuantity * itemPrice);
@@ -383,7 +388,10 @@ const Invoices: React.FC = () => {
           <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${itemTotal.toFixed(2)}</td>
         </tr>
       `;
-    }).join('');
+    }).join('') || '';
+
+    console.log("   → Items HTML Length:", itemsHTML.length);
+    console.log("   → Items HTML Preview:", itemsHTML.substring(0, 200));
 
     // Generate payment link only if Stripe Connect is configured
     const paymentLink = hasStripeConnect ? `${window.location.origin}/project-payments?invoice=${invoiceNumber}&amount=${balance}` : null;
@@ -413,7 +421,7 @@ const Invoices: React.FC = () => {
                 <div>
                   <h3 style="color: #374151; margin: 0 0 10px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Facturar A:</h3>
                   <p style="margin: 0; color: #111827; font-weight: 600;">${selectedEstimate.clientName}</p>
-                  ${selectedEstimate.clientEmail ? `<p style="margin: 5px 0 0 0; color: #6b7280; font-size: 14px;">${selectedEstimate.clientEmail}</p>` : ''}
+                  ${invoiceConfig.recipientEmail ? `<p style="margin: 5px 0 0 0; color: #6b7280; font-size: 14px;">${invoiceConfig.recipientEmail}</p>` : selectedEstimate.clientEmail ? `<p style="margin: 5px 0 0 0; color: #6b7280; font-size: 14px;">${selectedEstimate.clientEmail}</p>` : ''}
                   ${selectedEstimate.clientPhone ? `<p style="margin: 5px 0 0 0; color: #6b7280; font-size: 14px;">${selectedEstimate.clientPhone}</p>` : ''}
                   ${selectedEstimate.clientAddress ? `<p style="margin: 5px 0 0 0; color: #6b7280; font-size: 14px;">${selectedEstimate.clientAddress}</p>` : ''}
                 </div>
