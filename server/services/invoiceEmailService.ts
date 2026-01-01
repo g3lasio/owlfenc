@@ -139,6 +139,10 @@ function generateInvoiceEmailHTML(data: InvoiceEmailData): string {
               <a href="${paymentLink}" style="display: inline-block; background: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%); color: white; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-weight: 600; font-size: 16px;">
                 Pagar Ahora
               </a>
+            </div>` : invoice.balanceDue > 0 ? `
+            <!-- Payment Instructions (No Stripe Connect) -->
+            <div style="text-align: center; margin-bottom: 30px; padding: 20px; background-color: #f9fafb; border-radius: 8px;">
+              <p style="color: #6b7280; font-size: 14px; margin: 0;">Para realizar el pago, por favor contacte directamente al contratista.</p>
             </div>` : ''}
 
             <!-- Footer -->

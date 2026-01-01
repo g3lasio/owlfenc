@@ -29,6 +29,7 @@ export interface UserProfile {
   socialMedia: Record<string, string>;
   documents: Record<string, string>;
   logo: string;
+  stripeConnectAccountId?: string | null;
 }
 
 export function useProfile() {

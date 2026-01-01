@@ -367,137 +367,140 @@ const Invoices: React.FC = () => {
       Date.now() + invoiceConfig.paymentTerms * 24 * 60 * 60 * 1000,
     );
 
+    // Check if contractor has Stripe Connect configured
+    const hasStripeConnect = !!profile.stripeConnectAccountId;
+
+    // Generate items table HTML
+    const itemsHTML = selectedEstimate.items.map((item: any) => {
+      const itemQuantity = item.quantity || 1;
+      const itemPrice = item.unitPrice || item.price || 0;
+      const itemTotal = item.totalPrice || (itemQuantity * itemPrice);
+      return `
+        <tr>
+          <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${item.name || item.description || 'Item'}</td>
+          <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">${itemQuantity}</td>
+          <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${itemPrice.toFixed(2)}</td>
+          <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${itemTotal.toFixed(2)}</td>
+        </tr>
+      `;
+    }).join('');
+
+    // Generate payment link only if Stripe Connect is configured
+    const paymentLink = hasStripeConnect ? `${window.location.origin}/project-payments?invoice=${invoiceNumber}&amount=${balance}` : null;
+
     return `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: #1a1a1a; padding: 30px; text-align: center;">
-          ${profile.logo ? `<img src="${profile.logo}" alt="${profile.company}" style="max-height: 60px; margin-bottom: 10px;">` : ""}
-          <h1 style="color: #ffffff; margin: 10px 0;">FACTURA</h1>
-          <p style="color: #888; margin: 0;">${invoiceNumber}</p>
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Factura ${invoiceNumber}</title>
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; margin: 0; padding: 0; background-color: #f3f4f6;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background-color: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden;">
+            
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%); padding: 30px; text-align: center;">
+              ${profile.logo ? `<img src="${profile.logo}" alt="${profile.company}" style="max-height: 60px; margin-bottom: 15px;">` : ''}
+              <h1 style="color: white; margin: 0; font-size: 24px;">${profile.company}</h1>
+              <p style="color: rgba(255,255,255,0.9); margin: 5px 0 0 0; font-size: 14px;">Factura Profesional</p>
+            </div>
+
+            <!-- Invoice Details -->
+            <div style="padding: 30px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
+                <div>
+                  <h3 style="color: #374151; margin: 0 0 10px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Facturar A:</h3>
+                  <p style="margin: 0; color: #111827; font-weight: 600;">${selectedEstimate.clientName}</p>
+                  ${selectedEstimate.clientEmail ? `<p style="margin: 5px 0 0 0; color: #6b7280; font-size: 14px;">${selectedEstimate.clientEmail}</p>` : ''}
+                  ${selectedEstimate.clientPhone ? `<p style="margin: 5px 0 0 0; color: #6b7280; font-size: 14px;">${selectedEstimate.clientPhone}</p>` : ''}
+                  ${selectedEstimate.clientAddress ? `<p style="margin: 5px 0 0 0; color: #6b7280; font-size: 14px;">${selectedEstimate.clientAddress}</p>` : ''}
+                </div>
+                <div style="text-align: right;">
+                  <p style="margin: 0; color: #6b7280; font-size: 14px;">Factura #</p>
+                  <p style="margin: 0; color: #111827; font-weight: 600; font-size: 18px;">${invoiceNumber}</p>
+                  <p style="margin: 15px 0 0 0; color: #6b7280; font-size: 14px;">Fecha: ${new Date().toLocaleDateString('es-ES')}</p>
+                  <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 14px;">Vencimiento: ${dueDate.toLocaleDateString('es-ES')}</p>
+                </div>
+              </div>
+
+              <!-- Items Table -->
+              <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+                <thead>
+                  <tr style="background-color: #f9fafb;">
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e5e7eb; color: #374151; font-size: 12px; text-transform: uppercase;">Descripción</th>
+                    <th style="padding: 12px; text-align: center; border-bottom: 2px solid #e5e7eb; color: #374151; font-size: 12px; text-transform: uppercase;">Cant.</th>
+                    <th style="padding: 12px; text-align: right; border-bottom: 2px solid #e5e7eb; color: #374151; font-size: 12px; text-transform: uppercase;">Precio</th>
+                    <th style="padding: 12px; text-align: right; border-bottom: 2px solid #e5e7eb; color: #374151; font-size: 12px; text-transform: uppercase;">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${itemsHTML}
+                </tbody>
+              </table>
+
+              <!-- Totals -->
+              <div style="background-color: #f9fafb; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                  <span style="color: #6b7280;">Subtotal:</span>
+                  <span style="color: #111827;">$${selectedEstimate.subtotal.toFixed(2)}</span>
+                </div>
+                ${selectedEstimate.discount > 0 ? `
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                  <span style="color: #6b7280;">Descuento:</span>
+                  <span style="color: #10b981;">-$${selectedEstimate.discount.toFixed(2)}</span>
+                </div>` : ''}
+                ${selectedEstimate.tax > 0 ? `
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                  <span style="color: #6b7280;">Impuestos:</span>
+                  <span style="color: #111827;">$${selectedEstimate.tax.toFixed(2)}</span>
+                </div>` : ''}
+                <div style="display: flex; justify-content: space-between; padding-top: 15px; border-top: 2px solid #e5e7eb;">
+                  <span style="color: #111827; font-weight: 600; font-size: 18px;">Total:</span>
+                  <span style="color: #0891b2; font-weight: 700; font-size: 18px;">$${total.toFixed(2)}</span>
+                </div>
+                ${paid > 0 ? `
+                <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+                  <span style="color: #6b7280;">Monto Pagado:</span>
+                  <span style="color: #10b981;">-$${paid.toFixed(2)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e5e7eb;">
+                  <span style="color: #111827; font-weight: 600;">Balance Pendiente:</span>
+                  <span style="color: #dc2626; font-weight: 700;">$${balance.toFixed(2)}</span>
+                </div>` : ''}
+              </div>
+
+              ${balance > 0 && paymentLink ? `
+              <!-- Payment Button -->
+              <div style="text-align: center; margin-bottom: 30px;">
+                <a href="${paymentLink}" style="display: inline-block; background: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%); color: white; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-weight: 600; font-size: 16px;">
+                  Pagar Ahora
+                </a>
+              </div>` : balance > 0 && !paymentLink ? `
+              <!-- Payment Instructions (No Stripe Connect) -->
+              <div style="text-align: center; margin-bottom: 30px; padding: 20px; background-color: #f9fafb; border-radius: 8px;">
+                <p style="color: #6b7280; font-size: 14px; margin: 0;">Para realizar el pago, por favor contacte directamente al contratista.</p>
+              </div>` : ''}
+
+              <!-- Footer -->
+              <div style="text-align: center; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                <p style="color: #6b7280; font-size: 14px; margin: 0;">Gracias por su preferencia</p>
+                <p style="color: #9ca3af; font-size: 12px; margin: 10px 0 0 0;">${profile.company}</p>
+                ${profile.phone ? `<p style="color: #9ca3af; font-size: 12px; margin: 5px 0 0 0;">${profile.phone}</p>` : ''}
+                ${profile.email ? `<p style="color: #9ca3af; font-size: 12px; margin: 5px 0 0 0;">${profile.email}</p>` : ''}
+              </div>
+            </div>
+          </div>
         </div>
-        
-        <div style="padding: 30px; background: #f8f9fa;">
-          <h2 style="color: #333; margin-bottom: 20px;">Resumen de Factura</h2>
-          <table style="width: 100%; border-collapse: collapse;">
-            <tr>
-              <td style="padding: 10px 0;"><strong>Cliente:</strong></td>
-              <td>${selectedEstimate.clientName}</td>
-            </tr>
-            <tr>
-              <td style="padding: 10px 0;"><strong>Proyecto:</strong></td>
-              <td>${selectedEstimate.projectType}</td>
-            </tr>
-            <tr>
-              <td style="padding: 10px 0;"><strong>Total:</strong></td>
-              <td>$${total.toFixed(2)}</td>
-            </tr>
-            <tr>
-              <td style="padding: 10px 0;"><strong>Pagado:</strong></td>
-              <td>$${paid.toFixed(2)}</td>
-            </tr>
-            <tr style="background: #e9ecef;">
-              <td style="padding: 10px 0;"><strong>Balance:</strong></td>
-              <td><strong>$${balance.toFixed(2)}</strong></td>
-            </tr>
-          </table>
-        </div>
-        
-        <div style="padding: 20px; text-align: center; background: #2563eb;">
-          <p style="color: white; margin: 10px 0;">Fecha de vencimiento: ${dueDate.toLocaleDateString("es-ES")}</p>
-          <a href="#" style="display: inline-block; background: white; color: #2563eb; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;">
-            Pagar Ahora
-          </a>
-        </div>
-      </div>
+      </body>
+      </html>
     `;
   };
 
-  const handleSendInvoiceEmail = async () => {
-    if (!selectedEstimate || !profile) {
-      toast({
-        title: "Error",
-        description: "No se pudo enviar el email. Falta información necesaria.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      setIsSendingEmail(true);
-
-      // Prepare data for email service
-      const emailData = {
-        profile,
-        estimate: selectedEstimate,
-        invoiceConfig,
-        emailConfig: {
-          paymentLink: generatePaymentLink(), // You can implement this
-          ccContractor: true,
-        },
-      };
-
-      console.log("📧 Sending invoice email with data:", emailData);
-
-      const response = await fetch("/api/invoice-email", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(emailData),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.details || "Error al enviar email");
-      }
-
-      const result = await response.json();
-      console.log("✅ Invoice email sent:", result);
-
-      toast({
-        title: "¡Factura enviada!",
-        description: `La factura ha sido enviada a ${selectedEstimate.clientEmail}`,
-      });
-
-      // Save invoice to history
-      const invoiceNumber = generateInvoiceNumber();
-      const { total, paid, balance } = calculateAmounts();
-
-      const invoiceData: InvoiceData = {
-        estimateId: selectedEstimate.id,
-        invoiceNumber,
-        clientName: selectedEstimate.clientName,
-        clientEmail: selectedEstimate.clientEmail,
-        projectType: selectedEstimate.projectType,
-        totalAmount: total,
-        paidAmount: paid,
-        balanceAmount: balance,
-        paymentStatus:
-          balance === 0 ? "paid" : paid > 0 ? "partial" : "pending",
-        dueDate: new Date(
-          Date.now() + invoiceConfig.paymentTerms * 24 * 60 * 60 * 1000,
-        ).toISOString(),
-        paymentTerms: invoiceConfig.paymentTerms,
-        createdAt: new Date().toISOString(),
-      };
-
-      await saveInvoiceToHistory(invoiceData);
-    } catch (error) {
-      console.error("❌ Error sending invoice email:", error);
-      toast({
-        title: "Error",
-        description: "No se pudo enviar la factura por email",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSendingEmail(false);
-    }
-  };
-
-  // Generate payment link (if using Stripe)
-  const generatePaymentLink = () => {
-    // This can be implemented with Stripe payment links
-    // For now, return a placeholder
-    return `https://pay.owlfence.com/invoice/${generateInvoiceNumber()}`;
+  // Generate payment link pointing to project-payments system
+  const generatePaymentLink = (invoiceNumber: string, amount: number) => {
+    return `${window.location.origin}/project-payments?invoice=${invoiceNumber}&amount=${amount}`;
   };
 
   // Handle invoice generation - EXACTLY like EstimatesWizard does it
@@ -641,11 +644,77 @@ const Invoices: React.FC = () => {
 
       // Send email if requested
       if (invoiceConfig.sendEmail && invoiceConfig.recipientEmail) {
-        console.log("📧 [INVOICES] Email sending requested");
-        toast({
-          title: "Email pendiente",
-          description: "La funcionalidad de email se implementará próximamente",
-        });
+        console.log("📧 [INVOICES] Email sending requested to:", invoiceConfig.recipientEmail);
+        try {
+          setIsSendingEmail(true);
+          
+          // Prepare email data
+          const emailData = {
+            profile: {
+              company: profile.company,
+              email: profile.email || currentUser?.email || "",
+              phone: profile.phone || "",
+              address: profile.address
+                ? `${profile.address}${profile.city ? ", " + profile.city : ""}${profile.state ? ", " + profile.state : ""}${profile.zipCode ? " " + profile.zipCode : ""}`
+                : "",
+              logo: profile.logo || "",
+            },
+            estimate: {
+              clientName: selectedEstimate.clientName,
+              clientEmail: invoiceConfig.recipientEmail,
+              clientPhone: selectedEstimate.clientPhone,
+              clientAddress: selectedEstimate.clientAddress,
+              items: selectedEstimate.items,
+              subtotal: selectedEstimate.subtotal,
+              discountAmount: selectedEstimate.discount,
+              tax: selectedEstimate.tax,
+              total: selectedEstimate.total,
+            },
+            invoiceConfig: {
+              projectCompleted: invoiceConfig.projectCompleted,
+              downPaymentAmount: invoiceConfig.paidAmount.toString(),
+              totalAmountPaid: invoiceConfig.paidAmount >= amounts.total,
+            },
+            emailConfig: {
+              paymentLink: profile.stripeConnectAccountId 
+                ? `${window.location.origin}/project-payments?invoice=${invoiceNumber}&amount=${amounts.balance}`
+                : null,
+              ccContractor: true,
+            },
+          };
+
+          console.log("📤 [INVOICES] Sending email with data:", emailData);
+
+          const emailResponse = await fetch("/api/invoice-email", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(emailData),
+          });
+
+          if (!emailResponse.ok) {
+            const error = await emailResponse.json();
+            throw new Error(error.details || "Error al enviar email");
+          }
+
+          const emailResult = await emailResponse.json();
+          console.log("✅ [INVOICES] Email sent successfully:", emailResult);
+
+          toast({
+            title: "📧 Email enviado",
+            description: `Factura enviada a ${invoiceConfig.recipientEmail}`,
+          });
+        } catch (emailError) {
+          console.error("❌ [INVOICES] Error sending email:", emailError);
+          toast({
+            title: "⚠️ Email no enviado",
+            description: "La factura se generó pero hubo un error al enviar el email",
+            variant: "destructive",
+          });
+        } finally {
+          setIsSendingEmail(false);
+        }
       }
 
       // Reset wizard

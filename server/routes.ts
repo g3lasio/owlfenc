@@ -7203,6 +7203,7 @@ ENHANCED LEGAL CLAUSE:`;
             specialties: user.specialties || [],
             socialMedia: user.socialMedia || {},
             logo: user.logo || "",
+            stripeConnectAccountId: user.stripeConnectAccountId || null,
           };
 
           console.log("✅ [PROFILE-GET] Returning profile from PostgreSQL, logo length:", user.logo?.length || 0);
