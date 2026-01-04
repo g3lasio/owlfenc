@@ -158,14 +158,16 @@ export class StripeWebhookService {
   }
   
   /**
-   * Handle payment failure - downgrade user immediately
+   * Handle payment failure - log and notify, Stripe Smart Retries will handle attempts
+   * Downgrade only happens on subscription.deleted after 3 failed attempts
    */
   private async handlePaymentFailed(event: Stripe.Event, result: WebhookResult): Promise<void> {
     try {
       const invoice = event.data.object as Stripe.Invoice;
       const customerId = invoice.customer as string;
+      const attemptCount = invoice.attempt_count || 1;
       
-      console.log(`💳 [STRIPE-WEBHOOK] Payment failed for customer: ${customerId}`);
+      console.log(`💳 [STRIPE-WEBHOOK] Payment failed for customer: ${customerId} (Attempt ${attemptCount}/3)`);
       
       // Find user by Stripe customer ID
       const user = await this.findUserByStripeCustomerId(customerId);
@@ -192,31 +194,37 @@ export class StripeWebhookService {
       const currentPlan = currentEntitlements?.planName;
       const freePlanName = PLAN_NAMES[PLAN_IDS.PRIMO_CHAMBEADOR];
       
-      // Don't downgrade if already on free plan
+      // Don't process if already on free plan
       if (currentPlan === freePlanName) {
         console.log(`ℹ️ [STRIPE-WEBHOOK] User ${uid} already on free plan (${freePlanName})`);
         result.success = true;
-        result.action = 'no_downgrade_needed';
+        result.action = 'already_on_free_plan';
         return;
       }
       
-      // Downgrade to free plan
-      await this.downgradeUserToFreePlan(uid, currentEntitlements, 'payment_failed');
+      // ✅ NEW LOGIC: Only log payment failure, don't downgrade yet
+      // Stripe Smart Retries will attempt 3 times before canceling subscription
+      console.log(`⚠️ [STRIPE-WEBHOOK] Payment failed (attempt ${attemptCount}/3) for user ${uid}`);
+      console.log(`📧 [STRIPE-WEBHOOK] Stripe will retry payment automatically`);
       
-      // Execute security operations for payment failure downgrade
-      await securityOptimizationService.handlePlanChangeSecurityOperations(
-        uid,
-        currentPlan,
-        PLAN_NAMES[PLAN_IDS.PRIMO_CHAMBEADOR],
-        'payment_failed',
-        undefined, // IP not available in webhook
-        undefined  // User agent not available in webhook
-      );
+      // Send notification email to user about failed payment
+      try {
+        await subscriptionEmailService.sendPaymentFailedEmail(
+          user.email || '',
+          user.displayName || 'User',
+          attemptCount,
+          currentPlan
+        );
+        console.log(`📧 [STRIPE-WEBHOOK] Sent payment failure notification to ${user.email}`);
+      } catch (emailError) {
+        console.error(`❌ [STRIPE-WEBHOOK] Failed to send payment failure email:`, emailError);
+        // Don't fail webhook if email fails
+      }
       
       result.success = true;
-      result.action = 'downgraded_to_free';
+      result.action = `payment_failed_attempt_${attemptCount}`;
       
-      console.log(`✅ [STRIPE-WEBHOOK] User ${uid} downgraded due to payment failure`);
+      console.log(`✅ [STRIPE-WEBHOOK] Logged payment failure for user ${uid}, waiting for Stripe retries`);
       
     } catch (error) {
       console.error('❌ [STRIPE-WEBHOOK] Error handling payment failure:', error);
