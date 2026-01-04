@@ -6,6 +6,7 @@
 import { resendService } from './resendService';
 
 export interface EstimateData {
+  userId?: string; // Firebase UID of the contractor sending the estimate
   estimateNumber: string;
   date: string;
   client: {
@@ -57,6 +58,7 @@ export interface EstimateData {
 export interface EstimateApproval {
   estimateId: string;
   clientName: string;
+  clientEmail?: string; // Client email for reply-to
   approvalDate: string;
   clientSignature?: string;
   contractorEmail: string;
@@ -1038,10 +1040,12 @@ export class EstimateEmailService {
       // Client sees: "Contractor Name <estimates@owlfenc.com>" and replies go to contractor's real email
       const success = await resendService.sendEmail({
         to: data.client.email,
-        from: `${data.contractor.companyName} <estimates@owlfenc.com>`,
+        // from omitted - uses default noreply@owlfenc.com
         subject: `Estimado ${data.estimateNumber} - ${data.project.type} | ${data.contractor.companyName}`,
         html: htmlContent,
-        replyTo: data.contractor.email
+        replyTo: data.contractor.email,
+        userId: data.userId || 'unknown',
+        emailType: 'estimate'
       });
       
       if (success) {
@@ -1050,7 +1054,7 @@ export class EstimateEmailService {
         // Enviar copia al contratista
         const copySuccess = await resendService.sendEmail({
           to: data.contractor.email,
-          from: `Owl Fenc Platform <noreply@owlfenc.com>`,
+          // from omitted - uses default noreply@owlfenc.com
           subject: `[COPIA] Estimado ${data.estimateNumber} enviado a ${data.client.name}`,
           html: `
             <div style="background: #f0f9ff; padding: 20px; border-left: 4px solid #3b82f6; margin-bottom: 20px;">
@@ -1059,7 +1063,9 @@ export class EstimateEmailService {
             </div>
             ${htmlContent}
           `,
-          replyTo: 'noreply@owlfenc.com'
+          replyTo: data.client.email, // Contractor can reply to client
+          userId: data.userId || 'unknown',
+          emailType: 'estimate'
         });
         
         return {
@@ -1095,7 +1101,7 @@ export class EstimateEmailService {
       // Notificar al contratista sobre la aprobación
       const success = await resendService.sendEmail({
         to: approval.contractorEmail,
-        from: `Owl Fenc Platform <notifications@owlfenc.com>`,
+        // from omitted - uses default noreply@owlfenc.com
         subject: `🎉 Estimado ${approval.estimateId} APROBADO por ${approval.clientName}`,
         html: `
           <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">
@@ -1130,7 +1136,9 @@ export class EstimateEmailService {
             </div>
           </div>
         `,
-        replyTo: 'notifications@owlfenc.com'
+        replyTo: approval.clientEmail || 'noreply@owlfenc.com', // Contractor can reply to client if email provided
+        userId: 'system',
+        emailType: 'notification'
       });
       
       if (success) {
@@ -1168,7 +1176,7 @@ export class EstimateEmailService {
       // Notificar al contratista sobre los ajustes solicitados
       const success = await resendService.sendEmail({
         to: adjustment.contractorEmail,
-        from: `${adjustment.clientName} <notifications@owlfenc.com>`,
+        // from omitted - uses default noreply@owlfenc.com
         subject: `📝 Ajustes solicitados para estimado ${adjustment.estimateId}`,
         html: `
           <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">
@@ -1215,7 +1223,9 @@ export class EstimateEmailService {
             </div>
           </div>
         `,
-        replyTo: adjustment.clientEmail
+        replyTo: adjustment.clientEmail, // Contractor can reply to client
+        userId: 'system',
+        emailType: 'notification'
       });
       
       if (success) {

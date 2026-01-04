@@ -4,6 +4,7 @@
  */
 
 import { Resend } from 'resend';
+import * as emailTrackingService from './emailTrackingService';
 
 // Initialize Resend with proper configuration
 let resend;
@@ -37,6 +38,9 @@ export interface EmailData {
     content: Buffer | string;
     contentType?: string;
   }>;
+  // Email tracking fields
+  userId?: string; // Firebase UID of the user sending the email
+  emailType?: string; // Type: 'invoice', 'estimate', 'contract', 'payment', 'notification', 'otp', 'general'
 }
 
 export class ResendEmailService {
@@ -287,12 +291,36 @@ export class ResendEmailService {
         console.log('✅ [RESEND] Email enviado exitosamente');
         console.log('✅ [RESEND] ID del email:', result.data.id);
         console.log('✅ [RESEND] Destinatario confirmado:', emailData.to);
+        
+        // Track successful email send
+        await emailTrackingService.logEmailSent({
+          userId: emailData.userId || 'system',
+          emailType: emailData.emailType || 'general',
+          recipient: emailData.to,
+          subject: emailData.subject,
+          success: true,
+          sentAt: new Date(),
+          resendMessageId: result.data.id
+        });
+        
         return true;
       } else {
         console.error('❌ [RESEND] Respuesta sin ID:', result);
         if (result.error) {
           console.error('❌ [RESEND] Error detallado:', result.error);
         }
+        
+        // Track failed email send (no ID returned)
+        await emailTrackingService.logEmailSent({
+          userId: emailData.userId || 'system',
+          emailType: emailData.emailType || 'general',
+          recipient: emailData.to,
+          subject: emailData.subject,
+          success: false,
+          sentAt: new Date(),
+          errorMessage: result.error?.message || 'No message ID returned'
+        });
+        
         return false;
       }
 
@@ -315,6 +343,17 @@ export class ResendEmailService {
       } else if (error.status === 429) {
         console.error('❌ [RESEND] Error 429 - Límite de rate exceeded');
       }
+
+      // Track failed email send (exception thrown)
+      await emailTrackingService.logEmailSent({
+        userId: emailData.userId || 'system',
+        emailType: emailData.emailType || 'general',
+        recipient: emailData.to,
+        subject: emailData.subject,
+        success: false,
+        sentAt: new Date(),
+        errorMessage: error.message || 'Unknown error'
+      });
 
       return false;
     }

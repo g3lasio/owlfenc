@@ -8,6 +8,7 @@ interface InvoiceItem {
 }
 
 interface InvoiceEmailData {
+  userId?: string; // Firebase UID of the contractor sending the invoice
   contractor: {
     company: string;
     email: string;
@@ -184,7 +185,9 @@ export async function sendInvoiceEmail(data: InvoiceEmailData): Promise<{
       to: data.client.email,
       subject: `Factura ${data.invoice.number} - ${data.contractor.company}`,
       html: html,
-      replyTo: data.contractor.email
+      replyTo: data.contractor.email,
+      userId: data.userId || 'unknown',
+      emailType: 'invoice'
     });
 
     if (emailSent) {
@@ -196,6 +199,8 @@ export async function sendInvoiceEmail(data: InvoiceEmailData): Promise<{
           to: data.contractor.email,
           subject: `[Copia] Factura ${data.invoice.number} enviada a ${data.client.name}`,
           html: html,
+          userId: data.userId || 'unknown',
+          emailType: 'invoice'
         });
       }
       
