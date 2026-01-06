@@ -105,7 +105,7 @@ export class MonthlyResetService {
           // Check if user already has current month usage
           const currentUsageDoc = await db.collection('usage').doc(`${uid}_${currentMonth}`).get();
           
-          if (!currentUsageDoc.exists()) {
+          if (!currentUsageDoc.exists) {
             // Create new month usage document
             const newUsage = {
               uid,
