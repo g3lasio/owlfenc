@@ -1799,6 +1799,7 @@ Output ONLY the enhanced description. No introductions or meta-commentary.`,
   
   // Data Consistency routes for health checks and monitoring
   app.use("/api/data-consistency", dataConsistencyRoutes);
+  app.use("/api/usage-limits", usageLimitsRoutes); // Usage limits and subscription info
 
   // Registrar rutas de OpenAI chat para onboarding inteligente
   app.use("/api/openai", openaiChatRoutes);

@@ -1,11 +1,13 @@
 /**
  * Endpoints para gestión de límites de uso y validación de suscripciones
+ * Actualizado para usar productionUsageService (Firebase) en lugar de usageTracker (en memoria)
  */
 
 import { Router, Request, Response } from 'express';
 import { verifyFirebaseAuth } from '../middleware/firebase-auth';
-import { usageTracker } from '../middleware/usage-tracking';
 import { firebaseSubscriptionService } from '../services/firebaseSubscriptionService';
+import { productionUsageService } from '../services/productionUsageService';
+import { PLAN_PERMISSIONS } from '../../shared/permissions-config';
 
 const router = Router();
 
@@ -16,102 +18,125 @@ router.get('/current', verifyFirebaseAuth, async (req: Request, res: Response) =
       return res.status(401).json({ error: 'Autenticación requerida' });
     }
 
-    const userId = req.firebaseUser.uid; // USAR Firebase UID directamente
+    const userId = req.firebaseUser.uid;
+    console.log(`📊 [USAGE-LIMITS] Obteniendo límites para usuario: ${userId}`);
+    
+    const subscription = await firebaseSubscriptionService.getUserSubscription(userId);
+    
+    if (!subscription) {
+      console.log(`❌ [USAGE-LIMITS] Suscripción no encontrada para usuario: ${userId}`);
+      return res.status(404).json({ error: 'Suscripción no encontrada' });
+    }
+
+    console.log(`✅ [USAGE-LIMITS] Suscripción encontrada: Plan ${subscription.planId} (${subscription.planName})`);
+
+    // Obtener límites del plan desde permissions-config
+    const planPermissions = PLAN_PERMISSIONS[subscription.planId] || PLAN_PERMISSIONS[5]; // Default to Free
+    
+    // Obtener uso actual desde Firebase
+    const [
+      deepsearchUsage,
+      deepsearchFullCostsUsage,
+      propertyVerificationUsage,
+      contractsUsage,
+      estimatesUsage,
+      permitAdvisorUsage
+    ] = await Promise.all([
+      productionUsageService.getUsageForPeriod(userId, 'deepsearch', new Date()),
+      productionUsageService.getUsageForPeriod(userId, 'deepsearchFullCosts', new Date()),
+      productionUsageService.getUsageForPeriod(userId, 'propertyVerification', new Date()),
+      productionUsageService.getUsageForPeriod(userId, 'contracts', new Date()),
+      productionUsageService.getUsageForPeriod(userId, 'aiEstimates', new Date()),
+      productionUsageService.getUsageForPeriod(userId, 'permitAdvisor', new Date())
+    ]);
+
+    console.log(`📊 [USAGE-LIMITS] Uso actual:`, {
+      deepsearch: deepsearchUsage,
+      deepsearchFullCosts: deepsearchFullCostsUsage,
+      propertyVerification: propertyVerificationUsage
+    });
+
+    // Calcular remaining
+    const calculateRemaining = (limit: number, used: number) => {
+      if (limit === -1) return -1; // Unlimited
+      return Math.max(0, limit - used);
+    };
+
+    const limits = {
+      deepsearch: planPermissions.deepsearch || 0,
+      deepsearchFullCosts: planPermissions.deepsearchFullCosts || 0,
+      propertyVerification: planPermissions.propertyVerification || 0,
+      contracts: planPermissions.contracts || 0,
+      aiEstimates: planPermissions.aiEstimates || 0,
+      permitAdvisor: planPermissions.permitAdvisor || 0
+    };
+
+    const currentUsage = {
+      deepsearch: deepsearchUsage,
+      deepsearchFullCosts: deepsearchFullCostsUsage,
+      propertyVerification: propertyVerificationUsage,
+      contracts: contractsUsage,
+      aiEstimates: estimatesUsage,
+      permitAdvisor: permitAdvisorUsage
+    };
+
+    const remaining = {
+      deepsearch: calculateRemaining(limits.deepsearch, currentUsage.deepsearch),
+      deepsearchFullCosts: calculateRemaining(limits.deepsearchFullCosts, currentUsage.deepsearchFullCosts),
+      propertyVerification: calculateRemaining(limits.propertyVerification, currentUsage.propertyVerification),
+      contracts: calculateRemaining(limits.contracts, currentUsage.contracts),
+      aiEstimates: calculateRemaining(limits.aiEstimates, currentUsage.aiEstimates),
+      permitAdvisor: calculateRemaining(limits.permitAdvisor, currentUsage.permitAdvisor)
+    };
+
+    console.log(`✅ [USAGE-LIMITS] Límites calculados correctamente`);
+
+    res.json({
+      planId: subscription.planId,
+      planName: subscription.planName,
+      isPlatformOwner: subscription.isPlatformOwner || false,
+      limits,
+      currentUsage,
+      remaining
+    });
+  } catch (error) {
+    console.error('❌ [USAGE-LIMITS] Error obteniendo límites de uso:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Endpoint para obtener uso detallado de una feature específica
+router.get('/feature/:featureName', verifyFirebaseAuth, async (req: Request, res: Response) => {
+  try {
+    if (!req.firebaseUser?.uid) {
+      return res.status(401).json({ error: 'Autenticación requerida' });
+    }
+
+    const userId = req.firebaseUser.uid;
+    const featureName = req.params.featureName;
+
+    console.log(`📊 [USAGE-LIMITS] Obteniendo uso de feature '${featureName}' para usuario: ${userId}`);
+
     const subscription = await firebaseSubscriptionService.getUserSubscription(userId);
     
     if (!subscription) {
       return res.status(404).json({ error: 'Suscripción no encontrada' });
     }
 
-    // Obtener límites del plan
-    const planLimits = {
-      1: {
-        estimatesBasic: 10,
-        estimatesAI: 3,
-        contracts: 3,
-        propertyVerification: 5,
-        permitAdvisor: 5,
-      },
-      2: {
-        estimatesBasic: -1,
-        estimatesAI: 50,
-        contracts: -1,
-        propertyVerification: 50,
-        permitAdvisor: 50,
-      },
-      3: {
-        estimatesBasic: -1,
-        estimatesAI: -1,
-        contracts: -1,
-        propertyVerification: -1,
-        permitAdvisor: -1,
-      },
-      4: {
-        estimatesBasic: -1,
-        estimatesAI: -1,
-        contracts: -1,
-        propertyVerification: -1,
-        permitAdvisor: -1,
-      }
-    };
-
-    const limits = planLimits[subscription.planId as keyof typeof planLimits] || planLimits[1];
-    
-    // Obtener uso actual
-    const currentUsage = {
-      estimatesBasic: usageTracker.getUsage(userId, 'basic-estimates'),
-      estimatesAI: usageTracker.getUsage(userId, 'ai-estimates'),
-      contracts: usageTracker.getUsage(userId, 'contracts'),
-      propertyVerification: usageTracker.getUsage(userId, 'property-verification'),
-      permitAdvisor: usageTracker.getUsage(userId, 'permit-advisor'),
-    };
+    const planPermissions = PLAN_PERMISSIONS[subscription.planId] || PLAN_PERMISSIONS[5];
+    const limit = planPermissions[featureName as keyof typeof planPermissions] as number || 0;
+    const used = await productionUsageService.getUsageForPeriod(userId, featureName, new Date());
+    const remaining = limit === -1 ? -1 : Math.max(0, limit - used);
 
     res.json({
-      planId: subscription.planId,
-      planName: subscription.planId === 5 ? 'Primo Chambeador' : 
-                subscription.planId === 9 ? 'Mero Patrón' :
-                subscription.planId === 6 ? 'Master Contractor' : 
-                subscription.planId === 4 ? 'Free Trial' : 'Unknown',
-      limits,
-      currentUsage,
-      remaining: {
-        estimatesBasic: limits.estimatesBasic === -1 ? -1 : Math.max(0, limits.estimatesBasic - currentUsage.estimatesBasic),
-        estimatesAI: limits.estimatesAI === -1 ? -1 : Math.max(0, limits.estimatesAI - currentUsage.estimatesAI),
-        contracts: limits.contracts === -1 ? -1 : Math.max(0, limits.contracts - currentUsage.contracts),
-        propertyVerification: limits.propertyVerification === -1 ? -1 : Math.max(0, limits.propertyVerification - currentUsage.propertyVerification),
-        permitAdvisor: limits.permitAdvisor === -1 ? -1 : Math.max(0, limits.permitAdvisor - currentUsage.permitAdvisor),
-      }
+      featureName,
+      limit,
+      used,
+      remaining,
+      isUnlimited: limit === -1
     });
   } catch (error) {
-    console.error('Error obteniendo límites de uso:', error);
-    res.status(500).json({ error: 'Error interno del servidor' });
-  }
-});
-
-// Resetear contadores de uso (solo para testing o administradores)
-router.post('/reset', verifyFirebaseAuth, async (req: Request, res: Response) => {
-  try {
-    if (!req.firebaseUser?.uid) {
-      return res.status(401).json({ error: 'Autenticación requerida' });
-    }
-
-    const userId = req.firebaseUser.uid; // USAR Firebase UID directamente
-    
-    // Solo permitir reseteo para administradores o en modo desarrollo
-    const isAdmin = req.firebaseUser.email?.includes('shkwahab60') || req.firebaseUser.email?.includes('marcos@ruiz.com');
-    
-    if (!isAdmin) {
-      return res.status(403).json({ error: 'Solo administradores pueden resetear contadores' });
-    }
-
-    usageTracker.resetMonthlyUsage(userId);
-    
-    res.json({
-      success: true,
-      message: 'Contadores de uso reseteados exitosamente'
-    });
-  } catch (error) {
-    console.error('Error reseteando contadores:', error);
+    console.error(`❌ [USAGE-LIMITS] Error obteniendo uso de feature:`, error);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
