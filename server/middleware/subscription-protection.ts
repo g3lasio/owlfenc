@@ -97,6 +97,30 @@ export function subscriptionProtection(config: ProtectionConfig) {
       // 3. SUBSCRIPTION VALIDATION
       let subscription = await firebaseSubscriptionService.getUserSubscription(userId);
       let planId: number;
+      let isPlatformOwner = false;
+      
+      // Check if user is Platform Owner (bypass all limits)
+      if (subscription?.isPlatformOwner) {
+        isPlatformOwner = true;
+        planId = PLAN_IDS.MASTER_CONTRACTOR; // Grant Master Contractor access
+        console.log(`👑 [PROTECTION] Platform Owner detected: ${userId} - bypassing all limits`);
+        
+        // Attach subscription info with unlimited access
+        req.userSubscription = {
+          planId,
+          level: PLAN_PERMISSION_LEVELS[PLAN_IDS.MASTER_CONTRACTOR],
+          limits: getPlanLimits(PLAN_IDS.MASTER_CONTRACTOR)
+        };
+        
+        // Skip all usage validation for Platform Owner
+        req.trackUsage = async () => {
+          console.log(`👑 [PROTECTION] Platform Owner - usage not tracked for ${userId}:${config.feature}`);
+        };
+        
+        const duration = Date.now() - startTime;
+        console.log(`✅ [PROTECTION] ${route} authorized for Platform Owner ${userId} in ${duration}ms`);
+        return next();
+      }
       
       // Check if subscription is active
       const isActive = subscription 
