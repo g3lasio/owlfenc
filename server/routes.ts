@@ -162,6 +162,7 @@ import express from "express"; // Import express to use express.raw
 // REMOVED: Firebase auth middleware for DeepSearch access
 // REMOVED: Subscription auth middleware for DeepSearch access
 import { trackAndValidateUsage } from "./middleware/usage-tracking"; // Import usage tracking middleware
+import { protectPropertyVerification } from "./middleware/subscription-protection"; // Import property verification protection
 
 // Initialize Anthropic Claude API
 // Using Claude 3.7 Sonnet as the primary model for better reasoning and agent capabilities
@@ -7977,7 +7978,7 @@ ENHANCED LEGAL CLAUSE:`;
     },
   );
 
-  app.get("/api/property/details", optionalAuth, async (req: Request, res: Response) => {
+  app.get("/api/property/details", requireAuth, protectPropertyVerification(), async (req: Request, res: Response) => {
     const address = req.query.address as string;
     const city = req.query.city as string;
     const state = req.query.state as string;
@@ -8061,6 +8062,11 @@ ENHANCED LEGAL CLAUSE:`;
             userId: user.id,
             address: savedHistory.address,
           });
+          
+          // Track usage for subscription limits
+          if (req.trackUsage) {
+            await req.trackUsage();
+          }
         } catch (historyError: any) {
           console.error("❌ [PROPERTY-HISTORY-ERROR] Error detallado al guardar en historial:");
           console.error("❌ Error message:", historyError?.message);
