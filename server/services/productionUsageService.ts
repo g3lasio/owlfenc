@@ -84,11 +84,11 @@ export class ProductionUsageService {
         const entitlementsRef = db.collection('entitlements').doc(uid);
         const entitlementsDoc = await transaction.get(entitlementsRef);
         
-        if (!entitlementsDoc.exists()) {
+        if (!entitlementsDoc.exists) {
           throw new Error('User entitlements not found');
         }
         
-        const entitlements = entitlementsDoc.data();
+        const entitlements = entitlementsDoc.data()!;
         const planId = entitlements.planId;
         const planName = entitlements.planName;
         const isTrialing = entitlements.trial?.isTrialing || false;
@@ -99,7 +99,7 @@ export class ProductionUsageService {
         const usageDoc = await transaction.get(usageRef);
         
         let usageData: UsageRecord;
-        if (!usageDoc.exists()) {
+        if (!usageDoc.exists) {
           // Initialize usage for new month
           usageData = await this.initializeMonthlyUsage(uid, monthKey, planId, planName, entitlements.limits);
         } else {
@@ -221,7 +221,7 @@ export class ProductionUsageService {
       
       // Get entitlements
       const entitlementsDoc = await db.collection('entitlements').doc(uid).get();
-      if (!entitlementsDoc.exists()) {
+      if (!entitlementsDoc.exists) {
         return {
           canConsume: false,
           used: 0,
@@ -231,7 +231,7 @@ export class ProductionUsageService {
         };
       }
       
-      const entitlements = entitlementsDoc.data();
+      const entitlements = entitlementsDoc.data()!;
       const isTrialing = entitlements.trial?.isTrialing || false;
       const trialExpired = isTrialing && entitlements.trial?.status === 'expired';
       
@@ -240,7 +240,7 @@ export class ProductionUsageService {
       let used = 0;
       let limit: number | null = 0;
       
-      if (usageDoc.exists()) {
+      if (usageDoc.exists) {
         const usageData = usageDoc.data() as UsageRecord;
         used = usageData.used[feature as keyof typeof usageData.used] || 0;
         limit = usageData.limits[feature as keyof typeof usageData.limits];
