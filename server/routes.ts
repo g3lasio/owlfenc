@@ -148,6 +148,7 @@ import { registerSubscriptionEmailTestRoutes } from "./routes/subscription-email
 import { analyticsRouter } from './analytics-service'; // Import analytics service for system monitoring
 // import legalDefenseRoutes from "./routes/legal-defense-routes"; // Temporarily disabled for horizontal navigation
 import unifiedContractRoutes from "./routes/unifiedContractRoutes"; // Import Unified Contract Management routes
+import dataConsistencyRoutes from "./routes/data-consistency-routes"; // Import Data Consistency routes
 import stripeHealthRoutes from "./routes/stripe-health"; // Import Stripe Health Check routes
 import pdfContractProcessorRoutes from "./routes/pdf-contract-processor"; // Import PDF Contract Processor routes
 import centralizedEmailRoutes from "./routes/centralized-email-routes"; // Import Centralized Email routes
@@ -1796,7 +1797,6 @@ Output ONLY the enhanced description. No introductions or meta-commentary.`,
   app.use("/api/settings", settingsFirebaseRoutes); // Firebase settings routes
   
   // Data Consistency routes for health checks and monitoring
-  const dataConsistencyRoutes = require("./routes/data-consistency-routes").default;
   app.use("/api/data-consistency", dataConsistencyRoutes);
 
   // Registrar rutas de OpenAI chat para onboarding inteligente
