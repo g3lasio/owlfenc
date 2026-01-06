@@ -146,20 +146,18 @@ export function subscriptionProtection(config: ProtectionConfig) {
 
         if (typeof featureLimit === 'number') {
           // Check current usage (using Firebase Firestore for persistence)
-          const canUse = await productionUsageService.canUseFeature(userId, config.feature, featureLimit);
+          const consumptionCheck = await productionUsageService.canConsumeFeature(userId, config.feature);
 
-          if (!canUse) {
-            const usageDetails = await productionUsageService.getUsageDetails(userId, config.feature, featureLimit);
-
+          if (!consumptionCheck.canConsume) {
             return res.status(403).json({
               success: false,
               error: `Límite mensual alcanzado para ${config.feature}`,
               code: 'USAGE_LIMIT_EXCEEDED',
               feature: config.feature,
-              limit: featureLimit,
-              current: usageDetails.current,
+              limit: consumptionCheck.limit,
+              current: consumptionCheck.used,
               remaining: 0,
-              resetDate: usageDetails.resetDate,
+              resetDate: new Date().toISOString().slice(0, 7), // YYYY-MM
               upgradeUrl: '/subscription'
             });
           }
