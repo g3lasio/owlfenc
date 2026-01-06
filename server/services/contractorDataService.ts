@@ -2,13 +2,16 @@
  * Contractor Data Service
  * 
  * Servicio unificado para obtener y validar datos del contratista
- * desde el CompanyProfileService de Firebase.
+ * desde PostgreSQL (SINGLE SOURCE OF TRUTH).
  * 
  * Este servicio asegura que todos los sistemas de generación de PDF
  * usen información consistente y validada del perfil del usuario.
+ * 
+ * CRITICAL: Uses PostgreSQL as the single source of truth for all
+ * document generation (Estimates, Invoices, Contracts).
  */
 
-import { companyProfileService } from './CompanyProfileService';
+import { storage } from '../storage-firebase-only';
 
 export interface ContractorData {
   companyName: string;
@@ -37,7 +40,7 @@ export interface ProfileValidationResult {
 
 export class ContractorDataService {
   /**
-   * Obtiene los datos del contratista desde el perfil de Firebase
+   * Obtiene los datos del contratista desde PostgreSQL (SINGLE SOURCE OF TRUTH)
    * Valida que existan los campos mínimos requeridos
    * 
    * @param firebaseUid - UID de Firebase del usuario autenticado
@@ -45,46 +48,47 @@ export class ContractorDataService {
    * @throws Error si el perfil no existe o está incompleto
    */
   static async getContractorData(firebaseUid: string): Promise<ContractorData> {
-    console.log(`📋 [CONTRACTOR-DATA] Obteniendo datos del contratista para UID: ${firebaseUid}`);
+    console.log(`📋 [CONTRACTOR-DATA] Obteniendo datos del contratista desde PostgreSQL para UID: ${firebaseUid}`);
     
-    const profile = await companyProfileService.getProfileByFirebaseUid(firebaseUid);
+    // Get user from PostgreSQL using storage service
+    const user = await storage.getUserByFirebaseUid(firebaseUid);
     
-    if (!profile) {
-      console.error(`❌ [CONTRACTOR-DATA] Perfil no encontrado para UID: ${firebaseUid}`);
+    if (!user) {
+      console.error(`❌ [CONTRACTOR-DATA] Perfil no encontrado en PostgreSQL para UID: ${firebaseUid}`);
       throw new Error('PROFILE_NOT_FOUND: User must complete profile setup before generating documents');
     }
     
     // Validar campos requeridos
     const missingFields: string[] = [];
-    if (!profile.companyName) missingFields.push('companyName');
-    if (!profile.address) missingFields.push('address');
-    if (!profile.phone) missingFields.push('phone');
-    if (!profile.email) missingFields.push('email');
+    if (!user.company) missingFields.push('company');
+    if (!user.address) missingFields.push('address');
+    if (!user.phone) missingFields.push('phone');
+    if (!user.email) missingFields.push('email');
     
     if (missingFields.length > 0) {
       console.error(`❌ [CONTRACTOR-DATA] Perfil incompleto. Campos faltantes: ${missingFields.join(', ')}`);
       throw new Error(`INCOMPLETE_PROFILE: Missing required fields: ${missingFields.join(', ')}`);
     }
     
-    console.log(`✅ [CONTRACTOR-DATA] Datos del contratista obtenidos exitosamente: ${profile.companyName}`);
+    console.log(`✅ [CONTRACTOR-DATA] Datos del contratista obtenidos exitosamente desde PostgreSQL: ${user.company}`);
     
     return {
-      companyName: profile.companyName,
-      ownerName: profile.ownerName,
-      address: profile.address,
-      phone: profile.phone,
-      email: profile.email,
-      license: profile.license,
-      logo: profile.logo,
-      website: profile.website,
-      city: profile.city,
-      state: profile.state,
-      zipCode: profile.zipCode,
-      mobilePhone: profile.mobilePhone,
-      role: profile.role,
-      businessType: profile.businessType,
-      yearEstablished: profile.yearEstablished,
-      description: profile.description,
+      companyName: user.company, // PostgreSQL uses 'company' field
+      ownerName: user.ownerName,
+      address: user.address,
+      phone: user.phone,
+      email: user.email,
+      license: user.license,
+      logo: user.logo,
+      website: user.website,
+      city: user.city,
+      state: user.state,
+      zipCode: user.zipCode,
+      mobilePhone: user.mobilePhone,
+      role: user.role,
+      businessType: user.businessType,
+      yearEstablished: user.yearEstablished,
+      description: user.description,
     };
   }
   

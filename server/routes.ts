@@ -2067,7 +2067,7 @@ ENHANCED LEGAL CLAUSE:`;
    * Normaliza datos de factura desde diferentes fuentes (project, estimate)
    * a la estructura canónica requerida por invoicePdfService
    */
-  function normalizeInvoicePayload(requestData: any): any {
+  function normalizeInvoicePayload(requestData: any, contractorDataFromDB?: any): any {
     console.log("🔄 Normalizing invoice payload from source:", 
       requestData.profile ? 'estimate-wizard' : 'project-details');
 
@@ -2082,15 +2082,24 @@ ENHANCED LEGAL CLAUSE:`;
         ? new Date().toLocaleDateString()
         : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString();
 
+      // 🔥 PRIORITY: Use PostgreSQL data if available (SINGLE SOURCE OF TRUTH)
+      const companyData = contractorDataFromDB || {
+        name: profile.company || "Your Company",
+        address: profile.address || "Company Address",
+        phone: profile.phone || "Phone Number",
+        email: profile.email || "Email Address",
+        website: profile.website || "Website",
+        logo: profile.logo || "",
+      };
+
+      if (contractorDataFromDB) {
+        console.log("✅ [INVOICE-NORMALIZE] Using contractor data from PostgreSQL (single source of truth)");
+      } else {
+        console.log("⚠️ [INVOICE-NORMALIZE] Using contractor data from frontend (fallback)");
+      }
+
       return {
-        company: {
-          name: profile.company || "Your Company",
-          address: profile.address || "Company Address",
-          phone: profile.phone || "Phone Number",
-          email: profile.email || "Email Address",
-          website: profile.website || "Website",
-          logo: profile.logo || "",
-        },
+        company: companyData,
         invoice: {
           number: `INV-${Date.now()}`,
           date: new Date().toLocaleDateString('en-US'),
@@ -2208,11 +2217,46 @@ ENHANCED LEGAL CLAUSE:`;
     const startTime = Date.now();
 
     try {
+      // 🔥 STEP 1: Authenticate user
+      let firebaseUid: string | undefined;
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        try {
+          const token = authHeader.substring(7);
+          const decodedToken = await admin.auth().verifyIdToken(token);
+          firebaseUid = decodedToken.uid;
+          console.log(`✅ [INVOICE-PDF] Authenticated user: ${firebaseUid}`);
+        } catch (authError) {
+          console.warn('⚠️ [INVOICE-PDF] Auth token invalid');
+        }
+      }
+
+      // 🔥 STEP 2: Get contractor data from PostgreSQL (SINGLE SOURCE OF TRUTH)
+      let contractorDataFromDB: any = null;
+      if (firebaseUid) {
+        try {
+          const user = await storage.getUserByFirebaseUid(firebaseUid);
+          if (user) {
+            contractorDataFromDB = {
+              name: user.company,
+              address: user.address || "",
+              phone: user.phone || "",
+              email: user.email || "",
+              website: user.website || "",
+              logo: user.logo || "",
+            };
+            console.log(`✅ [INVOICE-PDF] Using contractor data from PostgreSQL: ${user.company}`);
+          }
+        } catch (dbError) {
+          console.error(`❌ [INVOICE-PDF] Error fetching contractor from PostgreSQL:`, dbError);
+        }
+      }
+
       // Log raw request for debugging
       console.log("🔍 Raw invoice request:", JSON.stringify(req.body, null, 2));
 
-      // Normalize payload to canonical format
-      const invoiceData = normalizeInvoicePayload(req.body);
+      // Normalize payload to canonical format (will use DB data if available)
+      const invoiceData = normalizeInvoicePayload(req.body, contractorDataFromDB);
 
       console.log("📊 Normalized invoice data:", JSON.stringify(invoiceData, null, 2));
 
@@ -2398,89 +2442,71 @@ ENHANCED LEGAL CLAUSE:`;
           total: projectTotalCosts?.total,
         });
 
-        // 🔥 STEP 2: Try to fetch contractor profile from Firebase Firestore
-        console.log(`🔍 [ESTIMATE-PDF] Fetching contractor profile from Firebase for UID: ${firebaseUid}`);
-        
-        const companyProfileService = new CompanyProfileService();
-        const profile = await companyProfileService.getProfileByFirebaseUid(firebaseUid);
+        // 🔥 STEP 2: Fetch contractor profile from PostgreSQL (SINGLE SOURCE OF TRUTH)
+        console.log(`🔍 [ESTIMATE-PDF] Fetching contractor profile from PostgreSQL for UID: ${firebaseUid}`);
         
         let contractorData;
         
-        if (!profile) {
-          console.warn(`⚠️ [ESTIMATE-PDF] No profile found in Firebase for UID: ${firebaseUid}`);
-          console.log(`🔄 [ESTIMATE-PDF] Using fallback: contractor data from frontend`);
+        try {
+          // Get user from PostgreSQL using storage service
+          const user = await storage.getUserByFirebaseUid(firebaseUid);
           
-          // 🔄 FALLBACK: Use contractor data from frontend if provided
-          const frontendContractor = requestData.contractor || {};
-          
-          if (!frontendContractor.name && !frontendContractor.companyName) {
-            console.error(`❌ [ESTIMATE-PDF] No contractor data available (neither Firebase nor frontend)`);
+          if (!user) {
+            console.error(`❌ [ESTIMATE-PDF] No profile found in PostgreSQL for UID: ${firebaseUid}`);
             return res.status(400).json({
               success: false,
               error: 'PROFILE_NOT_FOUND',
               message: 'Please complete your company profile in Settings before generating PDFs',
               redirectTo: '/profile-setup',
-              hint: 'No contractor information found. Please save your profile in Settings.'
+              hint: 'No contractor information found in database. Please save your profile in Settings.'
             });
           }
           
-          // Build contractor data from frontend
-          contractorData = {
-            name: frontendContractor.companyName || frontendContractor.name || "Your Company",
-            address: frontendContractor.address || "",
-            phone: frontendContractor.phone || "",
-            email: frontendContractor.email || "",
-            website: frontendContractor.website || "",
-            logo: frontendContractor.logo || "",
-            license: frontendContractor.license || "",
-          };
-          
-          console.log("⚠️ [ESTIMATE-PDF] Using contractor data from FRONTEND (fallback):", {
-            companyName: contractorData.name,
-            hasAddress: !!contractorData.address,
-            hasPhone: !!contractorData.phone,
-            hasEmail: !!contractorData.email,
-            hasLogo: !!contractorData.logo,
-            source: "Frontend Fallback"
-          });
-          
-        } else {
-          // 🔥 STEP 3: Validate required fields from Firebase
-          if (!profile.companyName || !profile.email) {
+          // 🔥 STEP 3: Validate required fields from PostgreSQL
+          if (!user.company || !user.email) {
             console.error(`❌ [ESTIMATE-PDF] Profile incomplete:`, {
-              hasCompanyName: !!profile.companyName,
-              hasEmail: !!profile.email
+              hasCompany: !!user.company,
+              hasEmail: !!user.email
             });
             return res.status(400).json({
               success: false,
               error: 'INCOMPLETE_PROFILE',
               message: 'Please complete Company Name and Email in Settings',
               missingFields: [
-                !profile.companyName && 'Company Name',
-                !profile.email && 'Email'
+                !user.company && 'Company Name',
+                !user.email && 'Email'
               ].filter(Boolean),
               redirectTo: '/profile-setup'
             });
           }
           
-          // 🔥 STEP 4: Build contractor data from Firebase profile (PREFERRED)
+          // 🔥 STEP 4: Build contractor data from PostgreSQL (SINGLE SOURCE OF TRUTH)
           contractorData = {
-            name: profile.companyName,
-            address: profile.address || "",
-            phone: profile.phone || "",
-            email: profile.email || "",
-            website: profile.website || "",
-            logo: profile.logo || "",
-            license: profile.license || "",
+            name: user.company,
+            address: user.address || "",
+            phone: user.phone || "",
+            email: user.email || "",
+            website: user.website || "",
+            logo: user.logo || "",
+            license: user.license || "",
           };
           
-          console.log("✅ [ESTIMATE-PDF] Using contractor data from FIREBASE (preferred):", {
+          console.log("✅ [ESTIMATE-PDF] Using contractor data from POSTGRESQL (single source of truth):", {
             companyName: contractorData.name,
             hasAddress: !!contractorData.address,
             hasPhone: !!contractorData.phone,
             hasEmail: !!contractorData.email,
             hasLogo: !!contractorData.logo,
-            source: "Firebase Firestore (Real-time)"
+            logoLength: contractorData.logo ? contractorData.logo.length : 0,
+            source: "PostgreSQL Database"
+          });
+          
+        } catch (dbError) {
+          console.error(`❌ [ESTIMATE-PDF] Error fetching profile from PostgreSQL:`, dbError);
+          return res.status(500).json({
+            success: false,
+            error: 'DATABASE_ERROR',
+            message: 'Error fetching contractor profile from database'
           });
         }
 
