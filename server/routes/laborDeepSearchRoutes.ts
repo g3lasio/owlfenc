@@ -209,10 +209,31 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
       } catch (error: any) {
         console.error(`❌ [LABOR-ITEMS] User: ${userId} - Error:`, error);
         
-        res.status(400).json({
+        // Identificar tipo específico de error
+        let errorMessage = error.message || 'Error generando items de labor';
+        let errorCode = 'LABOR_ITEMS_GENERATION_ERROR';
+        let statusCode = 500;
+        
+        if (error.message?.includes('API key') || error.message?.includes('api_key') || error.message?.includes('Invalid API Key')) {
+          errorMessage = 'Error de configuración de API de IA. Contacte al administrador.';
+          errorCode = 'API_KEY_ERROR';
+          statusCode = 503;
+        } else if (error.message?.includes('timeout') || error.message?.includes('timed out')) {
+          errorMessage = 'La búsqueda tardó demasiado. Intenta con una descripción más corta.';
+          errorCode = 'TIMEOUT_ERROR';
+          statusCode = 504;
+        } else if (error.name === 'ZodError') {
+          errorMessage = 'Datos de entrada inválidos. Verifica la descripción del proyecto.';
+          errorCode = 'VALIDATION_ERROR';
+          statusCode = 400;
+        }
+        
+        res.status(statusCode).json({
           success: false,
-          error: error.message,
-          code: error.name || 'LABOR_ITEMS_GENERATION_ERROR'
+          error: errorMessage,
+          code: errorCode,
+          timestamp: new Date().toISOString(),
+          ...(process.env.NODE_ENV === 'development' && { details: error.message })
         });
       }
     }
@@ -308,10 +329,36 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
       } catch (error: any) {
         console.error(`❌ [FULL COSTS] User: ${userId} - Error:`, error);
         
-        res.status(500).json({
+        // Identificar tipo específico de error
+        let errorMessage = 'Error en análisis combinado de materiales y labor';
+        let errorCode = 'DUAL_DEEPSEARCH_ERROR';
+        let statusCode = 500;
+        
+        if (error.message?.includes('API key') || error.message?.includes('api_key') || error.message?.includes('Invalid API Key')) {
+          errorMessage = 'Error de configuración de API de IA. Contacte al administrador.';
+          errorCode = 'API_KEY_ERROR';
+          statusCode = 503;
+        } else if (error.message?.includes('timeout') || error.message?.includes('timed out')) {
+          errorMessage = 'La búsqueda tardó demasiado. Intenta con una descripción más corta.';
+          errorCode = 'TIMEOUT_ERROR';
+          statusCode = 504;
+        } else if (error.message?.includes('rate limit') || error.message?.includes('quota')) {
+          errorMessage = 'Se alcanzó el límite de búsquedas. Intenta más tarde.';
+          errorCode = 'RATE_LIMIT_ERROR';
+          statusCode = 429;
+        } else if (error.name === 'ZodError') {
+          errorMessage = 'Datos de entrada inválidos. Verifica la descripción del proyecto.';
+          errorCode = 'VALIDATION_ERROR';
+          statusCode = 400;
+        }
+        
+        res.status(statusCode).json({
           success: false,
-          error: error.message || 'Combined DeepSearch analysis failed',
-          code: 'DUAL_DEEPSEARCH_ERROR'
+          error: errorMessage,
+          code: errorCode,
+          searchType: 'dual_deepsearch',
+          timestamp: new Date().toISOString(),
+          ...(process.env.NODE_ENV === 'development' && { details: error.message })
         });
       }
     }

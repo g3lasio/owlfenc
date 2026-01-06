@@ -159,11 +159,38 @@ export function registerDeepSearchRoutes(app: Express): void {
         });
 
       } catch (error: any) {
-        console.error(`❌ [MATERIALS ONLY] User: ${userId} - Error:`, error);
-        res.status(500).json({
+        console.error(`❌ [MATERIALS-ONLY] User: ${userId} - Error:`, error);
+        
+        // Identificar tipo específico de error
+        let errorMessage = 'Error interno del servidor';
+        let errorCode = 'INTERNAL_ERROR';
+        let statusCode = 500;
+        
+        if (error.message?.includes('API key') || error.message?.includes('api_key') || error.message?.includes('Invalid API Key')) {
+          errorMessage = 'Error de configuración de API de IA. Contacte al administrador.';
+          errorCode = 'API_KEY_ERROR';
+          statusCode = 503;
+        } else if (error.message?.includes('timeout') || error.message?.includes('timed out')) {
+          errorMessage = 'La búsqueda tardó demasiado. Intenta con una descripción más corta.';
+          errorCode = 'TIMEOUT_ERROR';
+          statusCode = 504;
+        } else if (error.message?.includes('rate limit') || error.message?.includes('quota')) {
+          errorMessage = 'Se alcanzó el límite de búsquedas. Intenta más tarde.';
+          errorCode = 'RATE_LIMIT_ERROR';
+          statusCode = 429;
+        } else if (error.name === 'ZodError') {
+          errorMessage = 'Datos de entrada inválidos. Verifica la descripción del proyecto.';
+          errorCode = 'VALIDATION_ERROR';
+          statusCode = 400;
+        }
+        
+        res.status(statusCode).json({
           success: false,
-          error: error.message || 'Error interno del servidor',
-          searchType: 'materials_only'
+          error: errorMessage,
+          code: errorCode,
+          searchType: 'materials_only',
+          timestamp: new Date().toISOString(),
+          ...(process.env.NODE_ENV === 'development' && { details: error.message })
         });
       }
     }

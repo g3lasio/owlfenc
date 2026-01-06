@@ -6454,9 +6454,43 @@ ENHANCED LEGAL CLAUSE:`;
       const newClient = await firebaseManager.createClient(req.firebaseUser.uid, clientData);
       console.log(`✅ [FIREBASE-CLIENTS] Client created in Firebase:`, newClient.clientId);
       res.status(201).json(newClient);
-    } catch (error) {
+    } catch (error: any) {
       console.error("❌ [FIREBASE-CLIENTS] Create error:", error);
-      res.status(400).json({ message: "Error al crear el cliente" });
+      
+      // Extraer información útil del error
+      const errorMessage = error instanceof Error ? error.message : "Error desconocido";
+      const errorCode = error?.code || 'UNKNOWN_ERROR';
+      
+      // Construir respuesta detallada
+      const errorResponse: any = {
+        success: false,
+        message: "Error al crear el cliente",
+        error: errorMessage,
+        code: errorCode,
+        userId: req.firebaseUser?.uid,
+        timestamp: new Date().toISOString()
+      };
+      
+      // En desarrollo, incluir stack trace completo
+      if (process.env.NODE_ENV === 'development') {
+        errorResponse.stack = error?.stack;
+        errorResponse.details = error;
+      }
+      
+      // Usar código HTTP apropiado según el tipo de error
+      let statusCode = 400;
+      if (errorCode === 'permission-denied' || errorCode === 'unauthenticated') {
+        statusCode = 401;
+        errorResponse.message = "No tiene permisos para crear clientes";
+      } else if (errorCode.includes('not-found')) {
+        statusCode = 404;
+        errorResponse.message = "Recurso no encontrado";
+      } else if (errorCode.includes('internal') || errorCode.includes('unavailable')) {
+        statusCode = 500;
+        errorResponse.message = "Error interno del servidor";
+      }
+      
+      res.status(statusCode).json(errorResponse);
     }
   });
 

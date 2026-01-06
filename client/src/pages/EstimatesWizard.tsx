@@ -3761,26 +3761,45 @@ This link provides a professional view of your estimate that you can access anyt
           });
         }
 
-        // Save estimate to Firebase for tracking
+        // Save estimate to Firebase for tracking (NO BLOQUEAR envío si falla)
         if (currentUser) {
           try {
-            const estimateRef = doc(collection(db, "estimates"));
-            await setDoc(estimateRef, {
-              ...estimateData,
-              firebaseUserId: currentUser?.uid,
-              status: "sent",
-              sentAt: new Date(),
-              createdAt: new Date(),
-              // Store demo mode information if applicable
-              ...(result.demoMode && {
-                demoMode: true,
-                originalClientEmail: result.originalClient,
-                sentToEmail: result.authorizedEmail,
-              }),
+            // Verificar que db esté inicializado
+            if (!db) {
+              console.warn("⚠️ Firebase db no inicializado, saltando guardado");
+            } else {
+              const estimateRef = doc(collection(db, "estimates"));
+              await setDoc(estimateRef, {
+                ...estimateData,
+                firebaseUserId: currentUser?.uid,
+                status: "sent",
+                sentAt: new Date(),
+                createdAt: new Date(),
+                // Store demo mode information if applicable
+                ...(result.demoMode && {
+                  demoMode: true,
+                  originalClientEmail: result.originalClient,
+                  sentToEmail: result.authorizedEmail,
+                }),
+              });
+              console.log("✅ Estimado guardado en Firebase para seguimiento");
+            }
+          } catch (saveError: any) {
+            // NO fallar el envío de email si falla el guardado en Firebase
+            console.error("❌ Error guardando estimado en Firebase:", saveError);
+            console.error("Error details:", {
+              code: saveError?.code,
+              message: saveError?.message,
+              name: saveError?.name
             });
-            console.log("✅ Estimado guardado en Firebase para seguimiento");
-          } catch (saveError) {
-            console.warn("Error guardando estimado en Firebase:", saveError);
+            
+            // Mostrar warning al usuario pero continuar
+            toast({
+              title: "⚠️ Advertencia",
+              description: "El estimado se envió correctamente pero no se pudo guardar en el historial local.",
+              duration: 5000,
+              className: "bg-yellow-900 border-yellow-600",
+            });
           }
         }
 
@@ -3971,10 +3990,42 @@ This link provides a professional view of your estimate that you can access anyt
         estimateDataKeys: Object.keys(estimateData),
       });
 
-      const response = await fetch("/api/pdfmonkey-estimates/generate", {
+      // 🔧 FIX: Usar la ruta correcta que ya existe y funciona
+      const authHeaders = await getAuthHeaders();
+      
+      // Preparar datos en el formato que espera /api/estimate-puppeteer-pdf
+      const puppeteerPayload = {
+        client: {
+          name: estimate.client?.name || "Cliente Sin Nombre",
+          email: estimate.client?.email || "",
+          phone: estimate.client?.phone || "",
+          address: estimate.client?.address || estimate.client?.fullAddress || "",
+        },
+        items: (estimate.items || []).map((item) => ({
+          name: item.name || "Material",
+          description: item.description || "",
+          quantity: item.quantity || 1,
+          unit: item.unit || "unidad",
+          price: item.price || 0,
+          total: item.total || (item.price * item.quantity) || 0,
+        })),
+        projectTotalCosts: {
+          subtotal: estimate.subtotal || 0,
+          discount: estimate.discountAmount || 0,
+          taxRate: estimate.taxRate || 0,
+          tax: estimate.tax || 0,
+          total: estimate.total || 0,
+        },
+        project_description: estimate.projectDescription || estimate.notes || "Proyecto de construcción",
+      };
+
+      const response = await fetch("/api/estimate-puppeteer-pdf", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(estimateData),
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeaders,
+        },
+        body: JSON.stringify(puppeteerPayload),
       });
 
       console.log(
