@@ -2398,68 +2398,91 @@ ENHANCED LEGAL CLAUSE:`;
           total: projectTotalCosts?.total,
         });
 
-        // 🔥 STEP 2: ALWAYS fetch contractor profile from Firebase Firestore (IGNORE frontend data)
+        // 🔥 STEP 2: Try to fetch contractor profile from Firebase Firestore
         console.log(`🔍 [ESTIMATE-PDF] Fetching contractor profile from Firebase for UID: ${firebaseUid}`);
         
         const companyProfileService = new CompanyProfileService();
         const profile = await companyProfileService.getProfileByFirebaseUid(firebaseUid);
         
+        let contractorData;
+        
         if (!profile) {
-          console.error(`❌ [ESTIMATE-PDF] No profile found for UID: ${firebaseUid}`);
-          return res.status(400).json({
-            success: false,
-            error: 'PROFILE_NOT_FOUND',
-            message: 'Please complete your company profile in Settings before generating PDFs',
-            redirectTo: '/profile-setup'
+          console.warn(`⚠️ [ESTIMATE-PDF] No profile found in Firebase for UID: ${firebaseUid}`);
+          console.log(`🔄 [ESTIMATE-PDF] Using fallback: contractor data from frontend`);
+          
+          // 🔄 FALLBACK: Use contractor data from frontend if provided
+          const frontendContractor = requestData.contractor || {};
+          
+          if (!frontendContractor.name && !frontendContractor.companyName) {
+            console.error(`❌ [ESTIMATE-PDF] No contractor data available (neither Firebase nor frontend)`);
+            return res.status(400).json({
+              success: false,
+              error: 'PROFILE_NOT_FOUND',
+              message: 'Please complete your company profile in Settings before generating PDFs',
+              redirectTo: '/profile-setup',
+              hint: 'No contractor information found. Please save your profile in Settings.'
+            });
+          }
+          
+          // Build contractor data from frontend
+          contractorData = {
+            name: frontendContractor.companyName || frontendContractor.name || "Your Company",
+            address: frontendContractor.address || "",
+            phone: frontendContractor.phone || "",
+            email: frontendContractor.email || "",
+            website: frontendContractor.website || "",
+            logo: frontendContractor.logo || "",
+            license: frontendContractor.license || "",
+          };
+          
+          console.log("⚠️ [ESTIMATE-PDF] Using contractor data from FRONTEND (fallback):", {
+            companyName: contractorData.name,
+            hasAddress: !!contractorData.address,
+            hasPhone: !!contractorData.phone,
+            hasEmail: !!contractorData.email,
+            hasLogo: !!contractorData.logo,
+            source: "Frontend Fallback"
+          });
+          
+        } else {
+          // 🔥 STEP 3: Validate required fields from Firebase
+          if (!profile.companyName || !profile.email) {
+            console.error(`❌ [ESTIMATE-PDF] Profile incomplete:`, {
+              hasCompanyName: !!profile.companyName,
+              hasEmail: !!profile.email
+            });
+            return res.status(400).json({
+              success: false,
+              error: 'INCOMPLETE_PROFILE',
+              message: 'Please complete Company Name and Email in Settings',
+              missingFields: [
+                !profile.companyName && 'Company Name',
+                !profile.email && 'Email'
+              ].filter(Boolean),
+              redirectTo: '/profile-setup'
+            });
+          }
+          
+          // 🔥 STEP 4: Build contractor data from Firebase profile (PREFERRED)
+          contractorData = {
+            name: profile.companyName,
+            address: profile.address || "",
+            phone: profile.phone || "",
+            email: profile.email || "",
+            website: profile.website || "",
+            logo: profile.logo || "",
+            license: profile.license || "",
+          };
+          
+          console.log("✅ [ESTIMATE-PDF] Using contractor data from FIREBASE (preferred):", {
+            companyName: contractorData.name,
+            hasAddress: !!contractorData.address,
+            hasPhone: !!contractorData.phone,
+            hasEmail: !!contractorData.email,
+            hasLogo: !!contractorData.logo,
+            source: "Firebase Firestore (Real-time)"
           });
         }
-        
-        // 🔥 STEP 3: Validate required fields
-        if (!profile.companyName || !profile.email) {
-          console.error(`❌ [ESTIMATE-PDF] Profile incomplete:`, {
-            hasCompanyName: !!profile.companyName,
-            hasEmail: !!profile.email
-          });
-          return res.status(400).json({
-            success: false,
-            error: 'INCOMPLETE_PROFILE',
-            message: 'Please complete Company Name and Email in Settings',
-            missingFields: [
-              !profile.companyName && 'Company Name',
-              !profile.email && 'Email'
-            ].filter(Boolean),
-            redirectTo: '/profile-setup'
-          });
-        }
-        
-        // 🔥 STEP 4: Build contractor data from Firebase profile (REAL-TIME DATA)
-        const contractorData = {
-          name: profile.companyName, // 🔥 ALWAYS use companyName from Firebase
-          address: profile.address || "",
-          phone: profile.phone || "",
-          email: profile.email || "",
-          website: profile.website || "",
-          logo: profile.logo || "",
-          license: profile.license || "",
-        };
-        
-        console.log("✅ [ESTIMATE-PDF] Using contractor data from Firebase:", {
-          companyName: contractorData.name,
-          hasAddress: !!contractorData.address,
-          hasPhone: !!contractorData.phone,
-          hasEmail: !!contractorData.email,
-          hasLogo: !!contractorData.logo,
-        });
-        
-        // 🔥 NO FALLBACKS - We already have fresh data from Firebase above
-        // 🔥 NO GLOBAL STORAGE - Always use Firebase as single source of truth
-        
-        console.log("✅ [ESTIMATE-PDF] Final contractor data (from Firebase):", {
-          companyName: contractorData.name,
-          hasLogo: !!contractorData.logo,
-          logoLength: contractorData.logo ? contractorData.logo.length : 0,
-          source: "Firebase Firestore (Real-time)"
-        });
 
         // Process items data with proper currency formatting
         let processedItems = [];

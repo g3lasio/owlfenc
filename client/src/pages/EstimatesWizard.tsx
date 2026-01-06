@@ -4017,6 +4017,20 @@ This link provides a professional view of your estimate that you can access anyt
           total: estimate.total || 0,
         },
         project_description: estimate.projectDescription || estimate.notes || "Proyecto de construcción",
+        // 🔄 FALLBACK: Enviar datos del contractor como fallback si no hay perfil en Firebase
+        contractor: {
+          companyName: profile?.company || "",
+          name: profile?.company || "",
+          email: profile?.email || currentUser?.email || "",
+          phone: profile?.phone || "",
+          address: profile?.address || "",
+          city: profile?.city || "",
+          state: profile?.state || "",
+          zipCode: profile?.zipCode || "",
+          website: profile?.website || "",
+          logo: profile?.logo || "",
+          license: profile?.license || "",
+        },
       };
 
       const response = await fetch("/api/estimate-puppeteer-pdf", {
