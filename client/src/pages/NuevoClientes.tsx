@@ -1434,7 +1434,15 @@ export default function NuevoClientes() {
                         <FormControl>
                           <AddressAutocomplete
                             value={field.value || ""}
-                            onChange={(value) => field.onChange(value)}
+                            onChange={(value, details) => {
+                              field.onChange(value);
+                              // Auto-fill city, state, zipCode from Mapbox
+                              if (details) {
+                                if (details.city) clientForm.setValue('city', details.city);
+                                if (details.state) clientForm.setValue('state', details.state);
+                                if (details.zipCode) clientForm.setValue('zipCode', details.zipCode);
+                              }
+                            }}
                             placeholder="Street address, apartment, suite, etc."
                           />
                         </FormControl>
@@ -1687,7 +1695,15 @@ export default function NuevoClientes() {
                       <FormControl>
                         <AddressAutocomplete
                           value={field.value || ""}
-                          onChange={(value) => field.onChange(value)}
+                          onChange={(value, details) => {
+                            field.onChange(value);
+                            // Auto-fill city, state, zipCode from Mapbox
+                            if (details) {
+                              if (details.city) clientForm.setValue('city', details.city);
+                              if (details.state) clientForm.setValue('state', details.state);
+                              if (details.zipCode) clientForm.setValue('zipCode', details.zipCode);
+                            }
+                          }}
                           placeholder="Buscar dirección..."
                         />
                       </FormControl>

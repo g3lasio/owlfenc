@@ -4823,10 +4823,13 @@ This link provides a professional view of your estimate that you can access anyt
                               <div className="relative group">
                                 <AddressAutocomplete
                                   value={newClient.address}
-                                  onChange={(address) =>
+                                  onChange={(address, details) =>
                                     setNewClient((prev) => ({
                                       ...prev,
                                       address: address,
+                                      city: details?.city || prev.city,
+                                      state: details?.state || prev.state,
+                                      zipCode: details?.zipCode || prev.zipCode,
                                     }))
                                   }
                                   placeholder="123 Main St"
