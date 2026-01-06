@@ -1794,6 +1794,10 @@ Output ONLY the enhanced description. No introductions or meta-commentary.`,
   // NEW Firebase routes for search and settings
   app.use("/api/search", searchFirebaseRoutes); // Firebase search routes
   app.use("/api/settings", settingsFirebaseRoutes); // Firebase settings routes
+  
+  // Data Consistency routes for health checks and monitoring
+  const dataConsistencyRoutes = require("./routes/data-consistency-routes").default;
+  app.use("/api/data-consistency", dataConsistencyRoutes);
 
   // Registrar rutas de OpenAI chat para onboarding inteligente
   app.use("/api/openai", openaiChatRoutes);
@@ -3766,6 +3770,26 @@ ENHANCED LEGAL CLAUSE:`;
         };
         
         console.log("📋 [API] Extracted requestData keys:", Object.keys(requestData));
+      }
+
+      // 🔥 STEP 1: Get contractor data from PostgreSQL (SINGLE SOURCE OF TRUTH)
+      if (requestData.client && requestData.contractor) {
+        const { getContractorDataOptional } = await import("./utils/contractorDataHelpers");
+        const contractorData = await getContractorDataOptional(req, requestData.contractor);
+        
+        // Override contractor with PostgreSQL data
+        requestData.contractor = {
+          name: contractorData.company,
+          company: contractorData.company,
+          address: contractorData.address,
+          phone: contractorData.phone,
+          email: contractorData.email,
+          license: contractorData.license,
+          logo: contractorData.logo,
+          website: contractorData.website
+        };
+        
+        console.log(`✅ [GENERATE-PDF] Using contractor data from PostgreSQL: ${contractorData.company}`);
       }
 
       // Check if contract data is provided (has client and contractor objects)
@@ -8576,6 +8600,12 @@ ENHANCED LEGAL CLAUSE:`;
         "🎨 [PREMIUM] Starting contract generation with CARDS and borders...",
       );
 
+      // 🔥 STEP 1: Get contractor data from PostgreSQL (SINGLE SOURCE OF TRUTH)
+      const { getContractorDataOptional } = await import("./utils/contractorDataHelpers");
+      const contractorData = await getContractorDataOptional(req, req.body.contractorBranding);
+      
+      console.log(`✅ [PREMIUM] Using contractor data from PostgreSQL: ${contractorData.company}`);
+
       // Transform the request data to premium service format
       const contractData = {
         client: {
@@ -8585,14 +8615,11 @@ ENHANCED LEGAL CLAUSE:`;
           email: req.body.clientInfo?.email || "client@email.com",
         },
         contractor: {
-          name: req.body.contractorBranding?.companyName || "Owl Fenc LLC",
-          address:
-            req.body.contractorBranding?.address ||
-            getCompanyAddress(userContext?.address || userContext?.city),
-          phone: req.body.contractorBranding?.phone || "202 549 3519",
-          email: req.body.contractorBranding?.email || "info@owlfenc.com",
-          license:
-            req.body.contractorBranding?.licenseNumber || "CA-LICENSE-123456",
+          name: contractorData.company,
+          address: contractorData.address,
+          phone: contractorData.phone,
+          email: contractorData.email,
+          license: contractorData.license,
         },
         project: {
           type: req.body.projectDetails?.type || "Construction Project",
@@ -8692,6 +8719,21 @@ ENHANCED LEGAL CLAUSE:`;
       console.log("📄 [PERMIT-REPORT] Generating PDF report...");
       
       const { htmlContent, permitData, companyInfo } = req.body;
+      
+      // 🔥 STEP 1: Get contractor data from PostgreSQL (SINGLE SOURCE OF TRUTH)
+      const { getContractorDataOptional } = await import("./utils/contractorDataHelpers");
+      const contractorData = await getContractorDataOptional(req, companyInfo);
+      
+      console.log(`🏛️ [PERMIT-REPORT] Using contractor data: ${contractorData.company}`);
+      
+      // Override companyInfo with PostgreSQL data
+      const finalCompanyInfo = {
+        name: contractorData.company,
+        address: contractorData.address,
+        phone: contractorData.phone,
+        email: contractorData.email,
+        logo: contractorData.logo
+      };
       
       if (!htmlContent) {
         return res.status(400).json({ 
@@ -8959,6 +9001,24 @@ ENHANCED LEGAL CLAUSE:`;
           error: "Authentication required" 
         });
       }
+      
+      // 🔥 STEP 1: Get contractor data from PostgreSQL (SINGLE SOURCE OF TRUTH)
+      const { getContractorData } = await import("./utils/contractorDataHelpers");
+      const contractorData = await getContractorData(firebaseUid, req.body.contractor);
+      
+      // Override contractor with PostgreSQL data
+      req.body.contractor = {
+        name: contractorData.company,
+        company: contractorData.company,
+        address: contractorData.address,
+        phone: contractorData.phone,
+        email: contractorData.email,
+        license: contractorData.license,
+        logo: contractorData.logo,
+        website: contractorData.website
+      };
+      
+      console.log(`✅ [UNIFIED-GENERATE] Using contractor data from PostgreSQL: ${contractorData.company}`);
       
       const { unifiedContractService } = await import('./services/UnifiedContractService');
       
