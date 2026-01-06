@@ -35,6 +35,7 @@ export interface UserUsage {
   permitAdvisor: number;
   projects: number;
   deepsearch: number;
+  deepsearchFullCosts?: number; // Separate counter for full cost analysis
   month: string; // YYYY-MM format
 }
 
@@ -238,21 +239,23 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
         headers['Authorization'] = `Bearer ${idToken}`;
       }
       
-      const response = await fetch(`/api/usage/${currentUser.uid}`, { headers });
+      const response = await fetch(`/api/usage-limits/current`, { headers });
       
       if (response.ok) {
-        const usageData = await response.json();
+        const data = await response.json();
+        console.log(`📊 [PERMISSION-CONTEXT] Usage data from Firebase:`, data);
         
         // Map backend response to frontend usage structure
         const usage: UserUsage = {
-          basicEstimates: usageData.basicEstimatesUsed || 0,
-          aiEstimates: usageData.aiEstimatesUsed || 0,
-          contracts: usageData.contractsUsed || 0,
-          propertyVerifications: usageData.propertyVerificationsUsed || 0,
-          permitAdvisor: usageData.permitAdvisorUsed || 0,
-          projects: usageData.projectsUsed || 0,
-          deepsearch: usageData.deepsearchUsed || usageData.basicEstimatesUsed || 0, // Deepsearch counts as basic estimate
-          month: usageData.month || new Date().toISOString().slice(0, 7)
+          basicEstimates: data.currentUsage?.basicEstimates || 0,
+          aiEstimates: data.currentUsage?.aiEstimates || 0,
+          contracts: data.currentUsage?.contracts || 0,
+          propertyVerifications: data.currentUsage?.propertyVerification || 0,
+          permitAdvisor: data.currentUsage?.permitAdvisor || 0,
+          projects: data.currentUsage?.projects || 0,
+          deepsearch: data.currentUsage?.deepsearch || 0,
+          deepsearchFullCosts: data.currentUsage?.deepsearchFullCosts || 0,
+          month: new Date().toISOString().slice(0, 7)
         };
         
         setUserUsage(usage);
