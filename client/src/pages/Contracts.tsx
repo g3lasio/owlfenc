@@ -304,7 +304,20 @@ const Contracts = () => {
           <Button 
             onClick={() => {
               if (!featureAccess.canCreateContract()) {
-                featureAccess.showContractUpgrade();
+                // Mostrar mensaje personalizado para usuarios FREE
+                toast({
+                  title: "🔒 Feature Bloqueado",
+                  description: "Los contratos están disponibles en planes pagados. Inicia tu Free Trial de 14 días para crear contratos ilimitados.",
+                  variant: "default",
+                  action: (
+                    <Button 
+                      size="sm" 
+                      onClick={() => setLocation('/subscription?trial=true')}
+                    >
+                      Iniciar Free Trial
+                    </Button>
+                  ),
+                });
                 return;
               }
               setIsCreateDialogOpen(true);
@@ -382,16 +395,44 @@ const Contracts = () => {
               </div>
             ) : filteredContracts.length === 0 ? (
               <div className="col-span-full flex justify-center py-8">
-                <div className="text-center">
-                  <p className="text-muted-foreground">
+                <div className="text-center max-w-md mx-auto">
+                  <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                  <p className="text-muted-foreground mb-4">
                     {searchTerm ? 'No se encontraron contratos con ese criterio de búsqueda.' : 'No has creado ningún contrato todavía.'}
                   </p>
-                  <Button 
-                    onClick={() => setIsCreateDialogOpen(true)}
-                    className="mt-4"
-                  >
-                    Crear Tu Primer Contrato
-                  </Button>
+                  {!featureAccess.canCreateContract() ? (
+                    <div className="space-y-4">
+                      <div className="p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                        <p className="text-sm text-amber-800 dark:text-amber-200 mb-2">
+                          🔒 <strong>Plan Primo Chambeador (FREE)</strong>
+                        </p>
+                        <p className="text-xs text-amber-700 dark:text-amber-300">
+                          Los contratos están disponibles en planes pagados. Inicia tu prueba gratuita de 14 días para crear contratos profesionales ilimitados.
+                        </p>
+                      </div>
+                      <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                        <Button 
+                          onClick={() => setLocation('/subscription')}
+                          variant="default"
+                        >
+                          Ver Planes
+                        </Button>
+                        <Button 
+                          onClick={() => setLocation('/subscription?trial=true')}
+                          variant="outline"
+                        >
+                          Iniciar Free Trial (14 días)
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button 
+                      onClick={() => setIsCreateDialogOpen(true)}
+                      className="mt-4"
+                    >
+                      Crear Tu Primer Contrato
+                    </Button>
+                  )}
                 </div>
               </div>
             ) : (

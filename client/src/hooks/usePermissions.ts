@@ -24,6 +24,20 @@ export function useFeatureAccess() {
     canUseDeepsearchFullCosts: () => canUse('deepsearchFullCosts'),
     remainingDeepsearchFullCosts: () => getRemainingUsage('deepsearchFullCosts'),
     
+    // Deepsearch Material/Labor (solo para planes pagados)
+    canUseDeepsearchMaterialsOnly: () => {
+      const { userPlan } = usePermissionsContext();
+      // FREE users (plan 5) no pueden usar Material/Labor separado
+      if (userPlan?.id === PLAN_IDS.PRIMO_CHAMBEADOR) return false;
+      return canUse('deepsearch');
+    },
+    canUseDeepsearchLaborOnly: () => {
+      const { userPlan } = usePermissionsContext();
+      // FREE users (plan 5) no pueden usar Material/Labor separado
+      if (userPlan?.id === PLAN_IDS.PRIMO_CHAMBEADOR) return false;
+      return canUse('deepsearch');
+    },
+    
     // Contratos
     canCreateContract: () => canUse('contracts'),
     remainingContracts: () => getRemainingUsage('contracts'),
