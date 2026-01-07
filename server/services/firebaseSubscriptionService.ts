@@ -19,6 +19,7 @@ export interface SubscriptionData {
   billingCycle: 'monthly' | 'yearly';
   createdAt: Date;
   updatedAt: Date;
+  isPlatformOwner?: boolean; // Platform owner flag for unlimited access
 }
 
 export class FirebaseSubscriptionService {
@@ -63,7 +64,8 @@ export class FirebaseSubscriptionService {
       cancelAtPeriodEnd: false,
       billingCycle: 'yearly',
       createdAt: currentDate,
-      updatedAt: currentDate
+      updatedAt: currentDate,
+      isPlatformOwner: true // ✅ Flag to bypass all limits in middleware
     };
   }
   
