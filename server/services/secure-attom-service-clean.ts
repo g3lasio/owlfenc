@@ -463,6 +463,111 @@ class SecureAttomService {
     return result;
   }
 
+  /**
+   * Get complete raw property data from ATTOM API (for comprehensive PDF report)
+   * Returns the full ATTOM property record without processing
+   */
+  async getCompletePropertyData(address: string, addressComponents?: {city?: string, state?: string, zip?: string}): Promise<any | null> {
+    console.log('📊 [ATTOM-SERVICE] Getting complete property data for:', address);
+    
+    if (!address?.trim()) {
+      throw new Error('Address is required');
+    }
+
+    try {
+      // Parse address to extract street component properly
+      let components;
+      if (addressComponents && (addressComponents.city || addressComponents.state || addressComponents.zip)) {
+        console.log('🏠 [ATTOM-SERVICE] Using enhanced address components from frontend');
+        const parsedStreet = this.parseAddress(address);
+        components = {
+          address1: parsedStreet.address1,
+          city: addressComponents.city || '',
+          state: addressComponents.state || '',
+          zip: addressComponents.zip || ''
+        };
+      } else {
+        console.log('🏠 [ATTOM-SERVICE] Parsing address components');
+        components = this.parseAddress(address);
+      }
+      
+      // Build address2 parameter
+      const address2Parts = [components.city, components.state, components.zip].filter(part => part && part.trim());
+      const address2 = address2Parts.length > 0 ? address2Parts.join(', ') : '';
+      
+      console.log('🏠 [ATTOM-SERVICE] Final ATTOM parameters:', {
+        address1: components.address1,
+        address2: address2
+      });
+      
+      // Try property/expandedprofile endpoint first (has most complete data)
+      let propertyData;
+      let propertyRecord;
+      
+      try {
+        propertyData = await this.makeSecureRequest('/property/expandedprofile', {
+          address1: components.address1,
+          address2: address2,
+          page: 1,
+          pagesize: 1
+        });
+        
+        if (propertyData && propertyData.property && propertyData.property.length > 0) {
+          propertyRecord = propertyData.property[0];
+          console.log('✅ [ATTOM-SERVICE] Found complete data in expandedprofile endpoint');
+        }
+      } catch (error) {
+        console.log('⚠️ [ATTOM-SERVICE] expandedprofile failed, trying basicprofile');
+      }
+      
+      // Fallback to basicprofile if expandedprofile failed
+      if (!propertyRecord) {
+        try {
+          propertyData = await this.makeSecureRequest('/property/basicprofile', {
+            address1: components.address1,
+            address2: address2,
+            page: 1,
+            pagesize: 1
+          });
+          
+          if (propertyData && propertyData.property && propertyData.property.length > 0) {
+            propertyRecord = propertyData.property[0];
+            console.log('✅ [ATTOM-SERVICE] Found complete data in basicprofile endpoint');
+          }
+        } catch (error) {
+          console.log('⚠️ [ATTOM-SERVICE] basicprofile failed, trying property/detail');
+        }
+      }
+      
+      // Final fallback to property/detail
+      if (!propertyRecord) {
+        propertyData = await this.makeSecureRequest('/property/detail', {
+          address1: components.address1,
+          address2: address2,
+          page: 1,
+          pagesize: 1
+        });
+        
+        if (!propertyData || !propertyData.property || propertyData.property.length === 0) {
+          throw new Error('No se encontraron datos para esta dirección.');
+        }
+        
+        propertyRecord = propertyData.property[0];
+        console.log('✅ [ATTOM-SERVICE] Found complete data in property/detail endpoint');
+      }
+
+      console.log('✅ [ATTOM-SERVICE] Complete property data retrieved successfully');
+      console.log('📊 [ATTOM-SERVICE] Property ID:', propertyRecord.identifier?.attomId);
+      
+      // Return the complete raw record
+      return propertyRecord;
+      
+    } catch (error: any) {
+      console.error('🚨 [ATTOM-SERVICE] Failed to get complete property data:', error.message);
+      throw error;
+    }
+  }
+
   async healthCheck(): Promise<boolean> {
     if (!this.isConfigured()) {
       return false;

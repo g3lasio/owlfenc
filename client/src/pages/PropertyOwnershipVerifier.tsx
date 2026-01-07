@@ -236,7 +236,75 @@ export default function PropertyOwnershipVerifier() {
     }
   }, [toast]);
 
-  // Export property details
+  // Export comprehensive property report (full ATTOM data)
+  const handleExportComprehensiveReport = useCallback(async () => {
+    if (!propertyDetails || !selectedPlace) return;
+    
+    const processingToast = toast({
+      title: "⏳ Generando Reporte Completo",
+      description: "Generando PDF profesional con todos los datos de ATTOM...",
+      duration: 60000, // 60 segundos para PDF completo
+    });
+    
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      
+      if (!token) {
+        throw new Error('No se pudo obtener el token de autenticación');
+      }
+      
+      // Extract address components
+      const addressComponents = {
+        address: selectedPlace.place_name.split(',')[0].trim(),
+        city: selectedPlace.context?.find((c: any) => c.id.startsWith('place'))?.text || '',
+        state: selectedPlace.context?.find((c: any) => c.id.startsWith('region'))?.short_code?.replace('US-', '') || '',
+        zip: selectedPlace.context?.find((c: any) => c.id.startsWith('postcode'))?.text || ''
+      };
+      
+      console.log('📄 [PDF] Requesting comprehensive PDF with address:', addressComponents);
+      
+      // Call backend endpoint to generate comprehensive PDF
+      const response = await fetch('/api/property/generate-full-report-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(addressComponents)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Error al generar el PDF');
+      }
+      
+      // Download the PDF
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `property-report-${addressComponents.address.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "✅ PDF Generado",
+        description: "El reporte completo ha sido descargado exitosamente.",
+      });
+      
+    } catch (error: any) {
+      console.error('❌ [PDF] Error generating comprehensive PDF:', error);
+      toast({
+        variant: "destructive",
+        title: "❌ Error al Generar PDF",
+        description: error.message || "No se pudo generar el reporte completo.",
+      });
+    }
+  }, [propertyDetails, selectedPlace, toast]);
+
+  // Export property details (quick version with html2canvas)
   const handleExportReport = useCallback(async () => {
     if (!propertyDetails) return;
     
@@ -976,12 +1044,21 @@ export default function PropertyOwnershipVerifier() {
                     <CardContent className="p-3 sm:p-4">
                       <div className="flex flex-col sm:flex-row gap-3 justify-center items-stretch sm:items-center">
                         <Button 
+                          onClick={handleExportComprehensiveReport}
+                          className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 border-emerald-400/50 text-white shadow-lg shadow-emerald-500/20 w-full sm:w-auto"
+                          size="sm"
+                        >
+                          <FileText className="w-4 h-4 mr-2" />
+                          <span className="text-sm font-semibold">Descargar Reporte Completo (PDF)</span>
+                        </Button>
+                        <Button 
                           onClick={handleExportReport}
-                          className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 border-cyan-400/50 text-white shadow-lg shadow-cyan-500/20 w-full sm:w-auto"
+                          variant="outline"
+                          className="border-cyan-600 text-cyan-300 hover:bg-cyan-900/30 hover:text-cyan-200 w-full sm:w-auto"
                           size="sm"
                         >
                           <Download className="w-4 h-4 mr-2" />
-                          <span className="text-sm">Exportar Reporte</span>
+                          <span className="text-sm">Exportar Vista Rápida</span>
                         </Button>
                         <Button 
                           variant="outline" 

@@ -8112,6 +8112,90 @@ ENHANCED LEGAL CLAUSE:`;
     }
   });
 
+  // 📄 ENDPOINT: Generate comprehensive property report PDF
+  app.post("/api/property/generate-full-report-pdf", requireAuth, protectPropertyVerification(), async (req: Request, res: Response) => {
+    try {
+      const { address, city, state, zip } = req.body;
+      
+      if (!address) {
+        return res.status(400).json({
+          message: 'Address is required'
+        });
+      }
+      
+      console.log('📄 [PROPERTY-PDF] Generating comprehensive report for:', address);
+      
+      // Get contractor info from authenticated user
+      const authUser = req.authUser;
+      let contractorInfo = undefined;
+      
+      if (authUser?.internalUserId) {
+        try {
+          const user = await storage.getUser(authUser.internalUserId);
+          if (user) {
+            contractorInfo = {
+              companyName: user.companyName || undefined,
+              contractorName: user.fullName || undefined,
+              email: user.email || undefined,
+              phone: user.phone || undefined
+            };
+          }
+        } catch (error) {
+          console.log('⚠️ [PROPERTY-PDF] Could not fetch contractor info:', error);
+        }
+      }
+      
+      // Import services
+      const { secureAttomService } = await import('./services/secure-attom-service-clean');
+      const { mapAttomToComprehensive } = await import('./services/attomDataMapper');
+      const { propertyReportPdfService } = await import('./services/propertyReportPdfService');
+      
+      // Get complete property data from ATTOM
+      console.log('🌐 [PROPERTY-PDF] Fetching complete property data from ATTOM');
+      const attomRecord = await secureAttomService.getCompletePropertyData(address, { city, state, zip });
+      
+      if (!attomRecord) {
+        return res.status(404).json({
+          message: 'Property not found',
+          details: 'No property data found for the provided address'
+        });
+      }
+      
+      // Map ATTOM data to comprehensive format
+      console.log('🗺️ [PROPERTY-PDF] Mapping ATTOM data to comprehensive format');
+      const comprehensiveData = mapAttomToComprehensive(attomRecord, address);
+      
+      // Generate PDF
+      console.log('📄 [PROPERTY-PDF] Generating PDF with comprehensive data');
+      const pdfBuffer = await propertyReportPdfService.generateComprehensiveReport(
+        comprehensiveData,
+        contractorInfo
+      );
+      
+      // Set response headers
+      const filename = `property-report-${address.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.pdf`;
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      
+      // Track usage for subscription limits
+      if (req.trackUsage) {
+        await req.trackUsage();
+      }
+      
+      console.log('✅ [PROPERTY-PDF] PDF generated successfully:', filename);
+      res.send(pdfBuffer);
+      
+    } catch (error: any) {
+      console.error('❌ [PROPERTY-PDF] Error generating PDF:', error);
+      res.status(500).json({
+        message: 'Error generating property report PDF',
+        details: error.message
+      });
+    }
+  });
+
   // Endpoint para Mervin DeepSearch - Permite consultar permisos y regulaciones para proyectos de construcción
   // Endpoints para el historial de búsqueda de permisos (PROTEGIDO POR AUTENTICACIÓN)
   app.get("/api/permit/history", async (req: Request, res: Response) => {
