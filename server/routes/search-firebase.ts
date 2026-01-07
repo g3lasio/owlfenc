@@ -7,6 +7,7 @@ import express from 'express';
 import { z } from 'zod';
 import { verifyFirebaseAuth as requireAuth } from '../middleware/firebase-auth';
 import { firebaseSearchService } from '../services/firebaseSearchService';
+import { protectPermitAdvisor, protectPropertyVerification } from '../middleware/subscription-protection';
 
 const router = express.Router();
 
@@ -86,7 +87,8 @@ router.get('/permits/history', requireAuth, async (req, res) => {
 });
 
 // POST /api/search/property - Realizar búsqueda de propiedad
-router.post('/property', requireAuth, async (req, res) => {
+// 🔒 SUBSCRIPTION PROTECTION: Limit property verifications per plan
+router.post('/property', requireAuth, protectPropertyVerification(), async (req, res) => {
   try {
     const userId = req.firebaseUser?.uid;
     if (!userId) {
@@ -174,7 +176,8 @@ router.post('/property', requireAuth, async (req, res) => {
 });
 
 // POST /api/search/permits - Realizar búsqueda de permisos
-router.post('/permits', requireAuth, async (req, res) => {
+// 🔒 SUBSCRIPTION PROTECTION: Limit permit advisor queries per plan
+router.post('/permits', requireAuth, protectPermitAdvisor(), async (req, res) => {
   try {
     const userId = req.firebaseUser?.uid;
     if (!userId) {

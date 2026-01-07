@@ -259,7 +259,7 @@ export const ProtectionPresets = {
     rateLimit: { windowMs: 3600000, max: 50, message: 'Límite de estimados con IA alcanzado' },
     requirePlan: true,
     trackUsage: true,
-    minimumLevel: PermissionLevel.BASIC
+    minimumLevel: PermissionLevel.FREE // Free users get 5 AI estimates/month
   },
 
   propertyVerification: {
@@ -267,14 +267,23 @@ export const ProtectionPresets = {
     rateLimit: { windowMs: 3600000, max: 150, message: 'Límite de verificaciones de propiedad alcanzado' },
     requirePlan: true,
     trackUsage: true,
-    minimumLevel: PermissionLevel.PREMIUM
+    minimumLevel: PermissionLevel.FREE // Free users get 5/month
   },
 
   permitAdvisor: {
     feature: 'permitAdvisor',
     rateLimit: { windowMs: 3600000, max: 100, message: 'Límite de consultas de permisos alcanzado' },
     requirePlan: true,
-    trackUsage: true
+    trackUsage: true,
+    minimumLevel: PermissionLevel.FREE // Free users get 5/month
+  },
+
+  invoices: {
+    feature: 'invoices',
+    rateLimit: { windowMs: 3600000, max: 100, message: 'Límite de generación de facturas alcanzado' },
+    requirePlan: true,
+    trackUsage: true,
+    minimumLevel: PermissionLevel.BASIC // Only paid plans have access
   },
 
   aiChat: {
@@ -331,3 +340,4 @@ export const protectDeepSearch = () => subscriptionProtection(ProtectionPresets.
 export const protectDeepSearchMaterials = () => subscriptionProtection(ProtectionPresets.deepsearchMaterials);
 export const protectDeepSearchLabor = () => subscriptionProtection(ProtectionPresets.deepsearchLabor);
 export const protectDeepSearchFullCosts = () => subscriptionProtection(ProtectionPresets.deepsearchFullCosts);
+export const protectInvoices = () => subscriptionProtection(ProtectionPresets.invoices);

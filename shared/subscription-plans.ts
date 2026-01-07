@@ -9,7 +9,7 @@
  * 1. Base de datos PostgreSQL (tabla subscription_plans)
  * 2. Productos en Stripe
  * 
- * Última sincronización: 2025-11-08
+ * Última sincronización: 2026-01-07
  */
 
 export interface SubscriptionPlan {
@@ -27,7 +27,7 @@ export interface SubscriptionPlan {
 
 /**
  * CATÁLOGO DE PLANES
- * Datos sincronizados desde PostgreSQL el 2025-11-08
+ * Datos sincronizados desde PostgreSQL el 2026-01-07
  */
 export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
   {
@@ -56,15 +56,11 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     price: 0,
     yearlyPrice: 0,
     features: [
-      "5 basic estimates per month (With watermark)",
-      "1 AI estimate per month (With watermark)",
-      "3 DeepSearch queries",
-      "Legal contracts",
-      "Property verification",
-      "Project management",
-      "Invoicing",
-      "Payment tracking",
-      "Permit advisor",
+      "Unlimited basic estimates (With watermark)",
+      "5 AI estimates per month (With watermark)",
+      "5 property verifications per month",
+      "5 permit advisor queries per month",
+      "Legal contracts: Demo mode (14-day trial available)",
       "Community support"
     ],
     isActive: true,
@@ -77,18 +73,19 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     description: "Para contratistas profesionales",
     motto: "Most popular for growing contractors",
     price: 4999,        // $49.99/mes
-    yearlyPrice: 50988, // $509.88/año (15% de descuento: $49.99 * 12 * 0.85)
+    yearlyPrice: 49990, // $499.90/año (2 meses gratis)
     features: [
       "50 basic estimates per month (No watermark)",
-      "20 AI estimates per month (No watermark)",
-      "50 DeepSearch queries",
+      "50 AI estimates per month (No watermark)",
       "50 legal contracts per month",
-      "15 property verifications",
+      "50 property verifications per month",
+      "50 permit advisor queries per month",
+      "50 invoices per month",
       "Unlimited projects",
-      "Unlimited invoicing",
       "Basic payment tracking",
-      "10 permit advisor queries",
-      "Email support"
+      "Access to networking/training events",
+      "30% discount on LeadPrime CRM",
+      "Priority support"
     ],
     isActive: true,
     interval: 'monthly',
@@ -100,20 +97,19 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     description: "Sin límites para profesionales",
     motto: "Unlimited everything for professionals",
     price: 9999,         // $99.99/mes
-    yearlyPrice: 101989, // $1,019.89/año (15% de descuento: $99.99 * 12 * 0.85)
+    yearlyPrice: 99990,  // $999.90/año (2 meses gratis)
     features: [
       "Unlimited basic estimates (No watermark)",
       "Unlimited AI estimates (No watermark)",
-      "Unlimited DeepSearch",
       "Unlimited legal contracts",
       "Unlimited property verifications",
-      "Unlimited projects",
-      "Unlimited invoicing",
-      "Pro payment tracking",
       "Unlimited permit advisor",
-      "Priority support",
-      "QuickBooks integration",
-      "Advanced analytics"
+      "Unlimited invoices",
+      "Unlimited projects",
+      "Pro payment tracking",
+      "Access to networking/training events",
+      "30% discount on LeadPrime CRM",
+      "VIP support 24/7"
     ],
     isActive: true,
     interval: 'monthly',
@@ -205,7 +201,7 @@ export function calculateYearlySavings(planId: number): { amount: number; percen
  * VERSION INFO - Para tracking de sincronización
  */
 export const PLANS_VERSION = {
-  lastSync: '2025-11-08T04:00:00Z',
+  lastSync: '2026-01-07T00:00:00Z',
   source: 'PostgreSQL',
   totalPlans: SUBSCRIPTION_PLANS.length,
   activePlans: getActivePlans().length,

@@ -11,7 +11,7 @@
  * - Este archivo: Configuración de lógica de negocio
  * - Frontend/Backend: Ambos usan este archivo
  * 
- * Fecha última actualización: 2025-10-26
+ * Fecha última actualización: 2026-01-07
  */
 
 // ============================================================================
@@ -105,39 +105,41 @@ export const PLAN_LIMITS = {
   [PLAN_IDS.PRIMO_CHAMBEADOR]: {
     // Estimados (conteo mensual)
     estimatesBasic: -1,          // ✅ ILIMITADO - Estimados manuales sin IA
-    estimatesAI: 1,              // 1 estimado con IA/mes con marca de agua
+    estimatesAI: 5,              // ✅ 5 estimados con IA/mes (con marca de agua)
     basicEstimates: -1,          // Alias para compatibilidad frontend
-    aiEstimates: 1,              // Alias para compatibilidad frontend
+    aiEstimates: 5,              // Alias para compatibilidad frontend
     
-    // Contratos - LIMITADO (solo PDF, sin firma digital)
-    contracts: 5,                // ✅ 5 contratos/mes (solo descarga PDF)
+    // Contratos - BLOQUEADO (Demo Mode)
+    contracts: 0,                // ❌ BLOQUEADO - puede ver pero no crear (usar Free Trial)
     
     // Herramientas de verificación
     propertyVerifications: 5,    // ✅ 5 verificaciones/mes
     propertyVerification: 5,     // Alias para compatibilidad
     permitAdvisor: 5,            // ✅ 5 consultas/mes
     
-    // Gestión de proyectos
+    // Gestión de proyectos - BLOQUEADO
     projects: 0,                 // ❌ BLOQUEADO - puede ver página pero no detalles
     
-    // Funciones financieras
-    invoices: 5,                 // ✅ 5 invoices/mes
-    paymentTracking: 0,          // ❌ Sin acceso (0=disabled, 1=basic, 2=pro)
+    // Funciones financieras - BLOQUEADO
+    invoices: 0,                 // ❌ BLOQUEADO
+    paymentTracking: 0,          // ❌ BLOQUEADO (0=disabled, 1=basic, 2=pro)
     
-    // Investigación avanzada - DeepSearch con límites diferenciados
-    deepsearch: 5,               // ✅ 5 búsquedas Materials o Labor
-    deepsearchFullCosts: 3,      // ✅ 3 búsquedas Full Costs (la más valiosa)
+    // DeepSearch - Solo Full Costs disponible para Free
+    deepsearch: 0,               // ❌ BLOQUEADO - Only Material/Only Labor solo para pagos
+    deepsearchFullCosts: 5,      // ✅ 5 búsquedas Full Costs/mes (integrado en AI Estimates)
     
     // ===== FEATURE FLAGS BOOLEANAS =====
     hasWatermark: true,          // ✅ SIEMPRE marca de agua
-    hasLegalDefense: true,       // ✅ Acceso limitado (5 contratos, solo PDF)
-    hasInvoices: true,           // ✅ Acceso limitado (5 invoices/mes)
+    hasLegalDefense: false,      // ❌ BLOQUEADO - Demo mode (usar Free Trial)
+    hasInvoices: false,          // ❌ BLOQUEADO
     hasDualSignature: false,     // ❌ NO acceso a firma digital dual (solo paid users)
     hasPaymentTracker: false,    // ❌ NO acceso a tracking de pagos
     hasOwlFunding: false,        // ❌ NO acceso a financiamiento
     hasOwlAcademy: false,        // ❌ NO acceso a academia
     hasAIProjectManager: false,  // ❌ NO acceso a gestión AI de proyectos
     hasQuickBooksIntegration: false, // ❌ NO integración QuickBooks
+    hasEvents: false,            // ❌ NO acceso a eventos de networking/training
+    hasLeadPrimeCRM: false,      // ❌ NO acceso a LeadPrime CRM
     
     // Configuración
     supportLevel: 'community',   // Soporte comunitario
@@ -147,30 +149,30 @@ export const PLAN_LIMITS = {
   // MERO PATRÓN (BASIC) - Plan ID: 9
   // =========================================
   [PLAN_IDS.MERO_PATRON]: {
-    // Estimados (conteo mensual)
-    estimatesBasic: 50,          // 50 estimados básicos/mes sin marca de agua
-    estimatesAI: 20,             // 20 estimados con IA/mes sin marca de agua
+    // Estimados (conteo mensual) - 50 cada uno
+    estimatesBasic: 50,          // ✅ 50 estimados básicos/mes sin marca de agua
+    estimatesAI: 50,             // ✅ 50 estimados con IA/mes sin marca de agua
     basicEstimates: 50,          // Alias para compatibilidad frontend
-    aiEstimates: 20,             // Alias para compatibilidad frontend
+    aiEstimates: 50,             // Alias para compatibilidad frontend
     
-    // Contratos
+    // Contratos - 50/mes
     contracts: 50,               // ✅ 50 contratos/mes
     
-    // Herramientas de verificación
-    propertyVerifications: 15,   // 15 verificaciones/mes
-    propertyVerification: 15,    // Alias para compatibilidad
-    permitAdvisor: 10,           // 10 consultas/mes
+    // Herramientas de verificación - 50 cada uno
+    propertyVerifications: 50,   // ✅ 50 verificaciones/mes
+    propertyVerification: 50,    // Alias para compatibilidad
+    permitAdvisor: 50,           // ✅ 50 consultas/mes
     
-    // Gestión de proyectos
+    // Gestión de proyectos - ILIMITADO
     projects: -1,                // ✅ ILIMITADO - acceso completo sin conteo
     
-    // Funciones financieras
-    invoices: -1,                // ✅ Ilimitado
+    // Funciones financieras - 50 invoices
+    invoices: 50,                // ✅ 50 invoices/mes
     paymentTracking: 1,          // ✅ Básico
     
-    // Investigación avanzada
-    deepsearch: 50,              // 50 búsquedas Materials o Labor/mes
-    deepsearchFullCosts: 50,     // 50 búsquedas Full Costs/mes
+    // DeepSearch - 50 cada tipo
+    deepsearch: 50,              // ✅ 50 búsquedas Materials o Labor/mes
+    deepsearchFullCosts: 50,     // ✅ 50 búsquedas Full Costs/mes
     
     // ===== FEATURE FLAGS BOOLEANAS =====
     hasWatermark: false,         // ✅ SIN marca de agua
@@ -180,8 +182,10 @@ export const PLAN_LIMITS = {
     hasOwlFunding: true,         // ✅ Acceso a financiamiento
     hasOwlAcademy: true,         // ✅ Acceso a academia
     hasAIProjectManager: true,   // ✅ Acceso a gestión AI de proyectos
-    hasQuickBooksIntegration: false, // ❌ NO integración QuickBooks (solo Premium)
+    hasQuickBooksIntegration: false, // ❌ NO integración QuickBooks (no existe)
     hasDualSignature: true,      // ✅ Acceso a firma digital dual
+    hasEvents: true,             // ✅ Acceso a eventos de networking/training
+    hasLeadPrimeCRM: true,       // ✅ Acceso a LeadPrime CRM con 30% descuento
     
     // Configuración
     supportLevel: 'priority',    // Soporte prioritario
@@ -191,28 +195,28 @@ export const PLAN_LIMITS = {
   // MASTER CONTRACTOR (PREMIUM) - Plan ID: 6
   // =========================================
   [PLAN_IDS.MASTER_CONTRACTOR]: {
-    // Estimados (conteo mensual)
+    // Estimados (conteo mensual) - TODO ILIMITADO
     estimatesBasic: -1,          // ✅ ILIMITADO
     estimatesAI: -1,             // ✅ ILIMITADO
     basicEstimates: -1,          // Alias para compatibilidad frontend
     aiEstimates: -1,             // Alias para compatibilidad frontend
     
-    // Contratos
+    // Contratos - ILIMITADO
     contracts: -1,               // ✅ ILIMITADO
     
-    // Herramientas de verificación
+    // Herramientas de verificación - ILIMITADO
     propertyVerifications: -1,   // ✅ ILIMITADO
     propertyVerification: -1,    // Alias para compatibilidad
     permitAdvisor: -1,           // ✅ ILIMITADO
     
-    // Gestión de proyectos
+    // Gestión de proyectos - ILIMITADO
     projects: -1,                // ✅ ILIMITADO
     
-    // Funciones financieras
+    // Funciones financieras - ILIMITADO
     invoices: -1,                // ✅ ILIMITADO
-    paymentTracking: 2,          // ✅ PRO (integración QuickBooks)
+    paymentTracking: 2,          // ✅ PRO
     
-    // Investigación avanzada
+    // DeepSearch - ILIMITADO
     deepsearch: -1,              // ✅ ILIMITADO
     deepsearchFullCosts: -1,     // ✅ ILIMITADO
     
@@ -224,8 +228,10 @@ export const PLAN_LIMITS = {
     hasOwlFunding: true,         // ✅ Acceso a financiamiento
     hasOwlAcademy: true,         // ✅ Acceso a academia
     hasAIProjectManager: true,   // ✅ Acceso a gestión AI de proyectos
-    hasQuickBooksIntegration: true, // ✅ Integración QuickBooks
+    hasQuickBooksIntegration: false, // ❌ NO existe integración QuickBooks
     hasDualSignature: true,      // ✅ Acceso a firma digital dual
+    hasEvents: true,             // ✅ Acceso a eventos de networking/training
+    hasLeadPrimeCRM: true,       // ✅ Acceso a LeadPrime CRM con 30% descuento
     
     // Configuración
     supportLevel: 'vip',         // Soporte VIP 24/7
@@ -258,8 +264,10 @@ export const PLAN_LIMITS = {
     hasOwlFunding: true,         // ✅ Acceso durante trial
     hasOwlAcademy: true,         // ✅ Acceso durante trial
     hasAIProjectManager: true,   // ✅ Acceso durante trial
-    hasQuickBooksIntegration: true, // ✅ Acceso durante trial
+    hasQuickBooksIntegration: false, // ❌ NO existe
     hasDualSignature: true,      // ✅ Acceso a firma digital dual durante trial
+    hasEvents: true,             // ✅ Acceso a eventos durante trial
+    hasLeadPrimeCRM: true,       // ✅ Acceso a LeadPrime CRM durante trial
     
     // Configuración
     supportLevel: 'premium',     // Soporte premium durante trial
@@ -273,34 +281,37 @@ export const PLAN_LIMITS = {
 
 export const PLAN_FEATURES = {
   [PLAN_IDS.PRIMO_CHAMBEADOR]: [
-    "5 estimados básicos/mes (con marca de agua)",
-    "1 estimado con IA/mes (con marca de agua)",
-    "0 contratos (Demo Mode - upgrade para generar)",
-    "0 Property Verification (upgrade requerido)",
-    "Gestión de proyectos bloqueada (upgrade para acceso completo)"
+    "Estimados básicos ilimitados (con marca de agua)",
+    "5 estimados con IA/mes (con marca de agua)",
+    "5 Property Verification/mes",
+    "5 Permit Advisor/mes",
+    "Contratos: Demo mode (prueba gratis 14 días)",
+    "Soporte comunitario"
   ],
   
   [PLAN_IDS.MERO_PATRON]: [
     "50 estimados básicos/mes (sin marca de agua)",
-    "20 estimados con IA/mes (sin marca de agua)",
-    "50 contratos/mes (sin marca de agua)",
-    "15 Property Verification/mes",
-    "10 Permit Advisor/mes",
+    "50 estimados con IA/mes (sin marca de agua)",
+    "50 contratos/mes",
+    "50 Property Verification/mes",
+    "50 Permit Advisor/mes",
+    "50 invoices/mes",
     "Gestión de proyectos ILIMITADA",
-    "Sistema de facturación completo"
+    "Acceso a eventos de networking/training",
+    "30% descuento en LeadPrime CRM",
+    "Soporte prioritario"
   ],
   
   [PLAN_IDS.MASTER_CONTRACTOR]: [
     "TODO ILIMITADO",
     "Sin marcas de agua",
-    "Integración QuickBooks",
-    "Soporte VIP 24/7",
-    "Análisis predictivo avanzado"
+    "Acceso a eventos de networking/training",
+    "30% descuento en LeadPrime CRM",
+    "Soporte VIP 24/7"
   ],
   
   [PLAN_IDS.FREE_TRIAL]: [
     "14 días gratis - TODO ILIMITADO",
-    "DeepSearch ilimitado durante trial",
     "Estimados ilimitados sin marca de agua",
     "Contratos ilimitados sin marca de agua",
     "Acceso completo a todas las funciones premium"
@@ -395,13 +406,13 @@ export function getUpgradeMessage(feature: string, currentPlanId: number): strin
   const messages: Record<string, string> = {
     'basicEstimates': 'Crea estimados básicos ilimitados sin marca de agua',
     'aiEstimates': 'Genera estimados con IA avanzada sin límites',
-    'contracts': 'Crea contratos profesionales ilimitados con Legal Defense',
+    'contracts': 'Tu plan actual no permite crear contratos. Inicia tu prueba gratis de 14 días o ve los planes disponibles.',
     'propertyVerifications': 'Verifica propiedades sin restricciones',
     'permitAdvisor': 'Consulta permisos sin límites mensuales',
     'projects': 'Gestiona proyectos con IA avanzada',
     'invoices': 'Sistema completo de facturación profesional',
-    'paymentTracking': 'Seguimiento avanzado de pagos e integración QuickBooks',
-    'deepsearch': '¡Búsquedas súper potentes para estimados perfectos!',
+    'paymentTracking': 'Seguimiento avanzado de pagos',
+    'deepsearch': 'Búsquedas de materiales y labor disponibles solo para planes de pago',
   };
   
   return messages[feature] || `Accede a ${feature} sin restricciones`;
