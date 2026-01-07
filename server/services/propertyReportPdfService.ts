@@ -169,15 +169,16 @@ export class PropertyReportPdfService {
         waitUntil: 'networkidle0'
       });
       
-      // Generate PDF
+      // Generate PDF with print-safe margins
       const pdfBuffer = await page.pdf({
         format: 'A4',
         printBackground: true,
+        preferCSSPageSize: true,
         margin: {
-          top: '0mm',
-          right: '0mm',
-          bottom: '0mm',
-          left: '0mm'
+          top: '15mm',
+          right: '12mm',
+          bottom: '15mm',
+          left: '12mm'
         }
       });
       
@@ -211,9 +212,11 @@ export class PropertyReportPdfService {
     }
     
     body {
-      font-family: 'Helvetica', 'Arial', sans-serif;
-      color: #1e293b;
-      line-height: 1.6;
+      font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+      color: #0f172a;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
     
     .page {
@@ -239,7 +242,7 @@ export class PropertyReportPdfService {
       justify-content: center;
       align-items: center;
       text-align: center;
-      padding: 60px 40px;
+      padding: 48px 32px;
     }
     
     .cover-logo {
@@ -251,16 +254,20 @@ export class PropertyReportPdfService {
     }
     
     .cover-title {
-      font-size: 36px;
-      font-weight: bold;
-      margin-bottom: 20px;
+      font-size: 32px;
+      font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
       color: white;
     }
     
     .cover-address {
-      font-size: 24px;
+      font-size: 20px;
+      font-weight: 400;
+      line-height: 1.4;
       color: #94a3b8;
-      margin-bottom: 40px;
+      margin-bottom: 32px;
       max-width: 80%;
     }
     
@@ -290,17 +297,19 @@ export class PropertyReportPdfService {
     }
     
     .cover-meta-label {
-      font-size: 12px;
+      font-size: 11px;
+      font-weight: 500;
       color: #94a3b8;
       text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 8px;
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
     }
     
     .cover-meta-value {
-      font-size: 16px;
+      font-size: 14px;
       color: white;
       font-weight: 600;
+      line-height: 1.4;
     }
     
     .cover-footer {
@@ -317,87 +326,132 @@ export class PropertyReportPdfService {
     .page-header {
       background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
       color: white;
-      padding: 20px 40px;
+      padding: 16px 24px;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      height: 50px;
     }
     
     .page-header-logo {
-      font-size: 20px;
-      font-weight: bold;
+      font-size: 16px;
+      font-weight: 700;
       color: #3b82f6;
+      letter-spacing: -0.01em;
     }
     
     .page-header-info {
       text-align: right;
-      font-size: 11px;
+      font-size: 10px;
+      font-weight: 400;
+      line-height: 1.4;
       color: #94a3b8;
     }
     
     /* Content */
     .page-content {
-      padding: 40px;
+      padding: 28px 24px 60px 24px;
+      min-height: calc(297mm - 50px - 40px);
+      page-break-inside: avoid;
     }
     
     .section-title {
-      font-size: 24px;
-      font-weight: bold;
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1.3;
+      letter-spacing: -0.02em;
       color: #0f172a;
-      margin-bottom: 24px;
-      padding-bottom: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
       border-bottom: 3px solid #3b82f6;
+      page-break-after: avoid;
     }
     
     .subsection-title {
-      font-size: 18px;
+      font-size: 16px;
       font-weight: 600;
+      line-height: 1.4;
+      letter-spacing: -0.01em;
       color: #1e293b;
-      margin-top: 32px;
-      margin-bottom: 16px;
+      margin-top: 24px;
+      margin-bottom: 12px;
       display: flex;
       align-items: center;
+      page-break-after: avoid;
     }
     
     .subsection-icon {
-      width: 24px;
-      height: 24px;
+      width: 20px;
+      height: 20px;
       background: #3b82f6;
       border-radius: 50%;
-      margin-right: 12px;
+      margin-right: 10px;
       display: inline-block;
+      flex-shrink: 0;
     }
     
     .info-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 20px;
-      margin-bottom: 24px;
+      gap: 12px;
+      margin-bottom: 20px;
+      page-break-inside: avoid;
+    }
+    
+    .info-grid.single-column {
+      grid-template-columns: 1fr;
+    }
+    
+    .info-grid.three-columns {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    
+    .info-grid.four-columns {
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
     }
     
     .info-card {
-      background: #f8fafc;
+      background: #ffffff;
       border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      padding: 16px;
+      border-radius: 6px;
+      padding: 12px 14px;
+      page-break-inside: avoid;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    }
+    
+    .info-card.highlight {
+      border-left: 3px solid #3b82f6;
+      background: #f8fafc;
+    }
+    
+    .info-card.compact {
+      padding: 8px 12px;
     }
     
     .info-label {
-      font-size: 12px;
+      font-size: 11px;
+      font-weight: 500;
+      line-height: 1.4;
       color: #64748b;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 6px;
+      letter-spacing: 0.03em;
+      margin-bottom: 5px;
     }
     
     .info-value {
-      font-size: 16px;
-      color: #0f172a;
+      font-size: 14px;
       font-weight: 600;
+      line-height: 1.5;
+      color: #0f172a;
+      word-break: break-word;
     }
     
     .info-value.large {
-      font-size: 20px;
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1.3;
     }
     
     .info-value.highlight {
@@ -419,9 +473,10 @@ export class PropertyReportPdfService {
     .alert-box {
       background: #fef2f2;
       border-left: 4px solid #ef4444;
-      padding: 16px;
-      margin: 24px 0;
-      border-radius: 4px;
+      padding: 14px 16px;
+      margin: 20px 0;
+      border-radius: 6px;
+      page-break-inside: avoid;
     }
     
     .alert-box.warning {
@@ -435,47 +490,56 @@ export class PropertyReportPdfService {
     }
     
     .alert-title {
+      font-size: 13px;
       font-weight: 600;
-      margin-bottom: 8px;
-      font-size: 14px;
+      line-height: 1.4;
+      margin-bottom: 6px;
     }
     
     .alert-text {
-      font-size: 13px;
-      color: #64748b;
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 1.5;
+      color: #475569;
     }
     
     .data-table {
       width: 100%;
       border-collapse: collapse;
-      margin: 20px 0;
+      margin: 16px 0;
+      page-break-inside: avoid;
     }
     
     .data-table th {
       background: #f1f5f9;
-      padding: 12px;
+      padding: 10px 12px;
       text-align: left;
-      font-size: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1.4;
       color: #475569;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.03em;
       border-bottom: 2px solid #cbd5e1;
     }
     
     .data-table td {
-      padding: 12px;
+      padding: 10px 12px;
       border-bottom: 1px solid #e2e8f0;
-      font-size: 14px;
+      font-size: 13px;
+      font-weight: 400;
+      line-height: 1.5;
     }
     
     .badge {
       display: inline-block;
-      padding: 4px 12px;
-      border-radius: 12px;
-      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 10px;
+      font-size: 10px;
       font-weight: 600;
+      line-height: 1.4;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.03em;
     }
     
     .badge.success {
@@ -504,44 +568,63 @@ export class PropertyReportPdfService {
       bottom: 0;
       left: 0;
       right: 0;
+      height: 40px;
       background: #f8fafc;
-      padding: 20px 40px;
+      padding: 0 24px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       border-top: 1px solid #e2e8f0;
-      font-size: 11px;
+      font-size: 10px;
+      font-weight: 400;
+      line-height: 1.4;
       color: #64748b;
     }
     
     .page-number {
       font-weight: 600;
+      color: #475569;
+    }
+    
+    .section {
+      page-break-inside: avoid;
+      margin-bottom: 28px;
+    }
+    
+    .subsection {
+      page-break-inside: avoid;
+      margin-bottom: 20px;
     }
     
     /* Recommendations Page */
     .recommendations-box {
       background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
       color: white;
-      padding: 32px;
-      border-radius: 12px;
-      margin: 24px 0;
+      padding: 24px 28px;
+      border-radius: 10px;
+      margin: 20px 0;
       border: 3px solid #f59e0b;
+      page-break-inside: avoid;
     }
     
     .recommendations-title {
-      font-size: 20px;
-      font-weight: bold;
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1.3;
+      letter-spacing: -0.01em;
       color: #fbbf24;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
       text-align: center;
     }
     
     .recommendation-item {
       background: rgba(255, 255, 255, 0.1);
-      padding: 16px;
-      margin: 12px 0;
-      border-radius: 8px;
-      border-left: 4px solid #10b981;
+      padding: 12px 14px;
+      margin: 10px 0;
+      border-radius: 6px;
+      border-left: 3px solid #10b981;
+      font-size: 13px;
+      line-height: 1.6;
     }
     
     .recommendation-item strong {
@@ -551,11 +634,15 @@ export class PropertyReportPdfService {
     .quote-box {
       text-align: center;
       font-style: italic;
+      font-size: 15px;
+      font-weight: 500;
+      line-height: 1.6;
       color: #94a3b8;
-      margin: 32px 0;
-      padding: 24px;
+      margin: 28px 0;
+      padding: 20px;
       border-top: 1px solid rgba(148, 163, 184, 0.3);
       border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+      page-break-inside: avoid;
     }
     
     /* Utility classes */
@@ -569,6 +656,30 @@ export class PropertyReportPdfService {
     
     .mt-4 {
       margin-top: 16px;
+    }
+    
+    /* Disclaimer text */
+    .disclaimer-text {
+      font-size: 10px;
+      line-height: 1.6;
+      color: #64748b;
+      text-align: justify;
+    }
+    
+    /* Print optimization */
+    @media print {
+      body {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      
+      .page {
+        page-break-after: always;
+      }
+      
+      .page:last-child {
+        page-break-after: auto;
+      }
     }
   </style>
 </head>
@@ -750,8 +861,9 @@ export class PropertyReportPdfService {
     </div>
     
     <div class="page-footer">
-      <div>Powered by MERVIN AI • Advanced Property Intelligence</div>
       <div class="page-number">Page 2 of 7</div>
+      <div style="text-align: center;">${currentDate}</div>
+      <div style="text-align: right;">Powered by MERVIN AI</div>
     </div>
   </div>
 
@@ -773,7 +885,7 @@ export class PropertyReportPdfService {
         Building Characteristics
       </div>
       
-      <div class="info-grid">
+      <div class="info-grid three-columns">
         ${data.stories ? `
         <div class="info-card">
           <div class="info-label">Stories</div>
@@ -958,8 +1070,9 @@ export class PropertyReportPdfService {
     </div>
     
     <div class="page-footer">
-      <div>Powered by MERVIN AI • Advanced Property Intelligence</div>
       <div class="page-number">Page 3 of 7</div>
+      <div style="text-align: center;">${currentDate}</div>
+      <div style="text-align: right;">Powered by MERVIN AI</div>
     </div>
   </div>
 
@@ -981,7 +1094,7 @@ export class PropertyReportPdfService {
         Assessed Value
       </div>
       
-      <div class="info-grid">
+      <div class="info-grid three-columns">
         ${data.assessedValue ? `
         <div class="info-card">
           <div class="info-label">Total Assessed Value</div>
@@ -1013,7 +1126,7 @@ export class PropertyReportPdfService {
         Market Value
       </div>
       
-      <div class="info-grid">
+      <div class="info-grid three-columns">
         ${data.marketValue ? `
         <div class="info-card">
           <div class="info-label">Total Market Value</div>
@@ -1131,8 +1244,9 @@ export class PropertyReportPdfService {
     </div>
     
     <div class="page-footer">
-      <div>Powered by MERVIN AI • Advanced Property Intelligence</div>
       <div class="page-number">Page 4 of 7</div>
+      <div style="text-align: center;">${currentDate}</div>
+      <div style="text-align: right;">Powered by MERVIN AI</div>
     </div>
   </div>
 
@@ -1314,8 +1428,9 @@ export class PropertyReportPdfService {
     </div>
     
     <div class="page-footer">
-      <div>Powered by MERVIN AI • Advanced Property Intelligence</div>
       <div class="page-number">Page 5 of 7</div>
+      <div style="text-align: center;">${currentDate}</div>
+      <div style="text-align: right;">Powered by MERVIN AI</div>
     </div>
   </div>
 
@@ -1480,8 +1595,9 @@ export class PropertyReportPdfService {
     </div>
     
     <div class="page-footer">
-      <div>Powered by MERVIN AI • Advanced Property Intelligence</div>
       <div class="page-number">Page 6 of 7</div>
+      <div style="text-align: center;">${currentDate}</div>
+      <div style="text-align: right;">Powered by MERVIN AI</div>
     </div>
   </div>
 
@@ -1551,7 +1667,7 @@ export class PropertyReportPdfService {
         Legal Disclaimer
       </div>
       
-      <div style="font-size: 11px; color: #64748b; line-height: 1.8; text-align: justify;">
+      <div class="disclaimer-text">
         <p style="margin-bottom: 12px;">
           <strong>IMPORTANT NOTICE:</strong> This Property Verification Report is provided for informational purposes only and should not be considered as legal, financial, or professional advice. The information contained in this report is obtained from public records and third-party data sources, including ATTOM Data Solutions.
         </p>
@@ -1585,8 +1701,9 @@ export class PropertyReportPdfService {
     </div>
     
     <div class="page-footer">
-      <div>© ${new Date().getFullYear()} Owl Fenc • Powered by MERVIN AI • www.owlfenc.com</div>
       <div class="page-number">Page 7 of 7</div>
+      <div style="text-align: center;">© ${new Date().getFullYear()} Owl Fenc</div>
+      <div style="text-align: right;">www.owlfenc.com</div>
     </div>
   </div>
 
