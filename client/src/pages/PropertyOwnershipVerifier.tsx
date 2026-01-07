@@ -11,6 +11,14 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Home,
@@ -96,6 +104,7 @@ export default function PropertyOwnershipVerifier() {
   const [propertyDetails, setPropertyDetails] = useState<PropertyDetails | null>(null);
   const [activeTab, setActiveTab] = useState("search");
   const [historySearchTerm, setHistorySearchTerm] = useState("");
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -239,7 +248,7 @@ export default function PropertyOwnershipVerifier() {
 
   // Export comprehensive property report (full ATTOM data)
   const handleExportComprehensiveReport = useCallback(async () => {
-    if (!propertyDetails || !selectedPlace) return;
+    if (!propertyDetails) return;
     
     const processingToast = toast({
       title: "⏳ Generando Reporte Completo",
@@ -254,12 +263,16 @@ export default function PropertyOwnershipVerifier() {
         throw new Error('No se pudo obtener el token de autenticación');
       }
       
-      // Extract address components
+      // Extract address components from propertyDetails
+      // propertyDetails.address format: "2907 Owens Court, Fairfield, California 94534, Estados Unidos"
+      const fullAddress = propertyDetails.address || '';
+      const addressParts = fullAddress.split(',').map(p => p.trim());
+      
       const addressComponents = {
-        address: selectedPlace.place_name.split(',')[0].trim(),
-        city: selectedPlace.context?.find((c: any) => c.id.startsWith('place'))?.text || '',
-        state: selectedPlace.context?.find((c: any) => c.id.startsWith('region'))?.short_code?.replace('US-', '') || '',
-        zip: selectedPlace.context?.find((c: any) => c.id.startsWith('postcode'))?.text || ''
+        address: addressParts[0] || '',
+        city: addressParts[1] || '',
+        state: addressParts[2]?.split(' ')[0] || '', // Extract state from "California 94534"
+        zip: addressParts[2]?.split(' ')[1] || '' // Extract zip from "California 94534"
       };
       
       console.log('📄 [PDF] Requesting comprehensive PDF with address:', addressComponents);
@@ -304,6 +317,12 @@ export default function PropertyOwnershipVerifier() {
       });
     }
   }, [propertyDetails, selectedPlace, toast]);
+
+  // Show preview modal
+  const handleShowPreview = useCallback(() => {
+    if (!propertyDetails) return;
+    setShowPreviewModal(true);
+  }, [propertyDetails]);
 
   // Export property details (quick version with html2canvas)
   const handleExportReport = useCallback(async () => {
@@ -1057,12 +1076,12 @@ export default function PropertyOwnershipVerifier() {
                         {/* Secondary Actions - Side by Side on Mobile */}
                         <div className="grid grid-cols-2 gap-3">
                           <Button 
-                            onClick={handleExportReport}
+                            onClick={handleShowPreview}
                             variant="outline"
                             className="border-cyan-600 text-cyan-300 hover:bg-cyan-900/30 hover:text-cyan-200 h-12 sm:h-10"
                             size="default"
                           >
-                            <Download className="w-4 h-4 mr-1.5 flex-shrink-0" />
+                            <Eye className="w-4 h-4 mr-1.5 flex-shrink-0" />
                             <span className="text-sm">Vista Rápida</span>
                           </Button>
                           <Button 
@@ -1259,6 +1278,121 @@ export default function PropertyOwnershipVerifier() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Preview Modal */}
+      <Dialog open={showPreviewModal} onOpenChange={setShowPreviewModal}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-700">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-white flex items-center gap-2">
+              <Eye className="w-6 h-6 text-cyan-400" />
+              Vista Previa del Reporte
+            </DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Revisa el contenido completo antes de descargar el PDF
+            </DialogDescription>
+          </DialogHeader>
+
+          {propertyDetails && (
+            <div className="space-y-6 py-4" data-report-section>
+              {/* Property Overview */}
+              <Card className="border-slate-700 bg-slate-800/50">
+                <CardHeader>
+                  <CardTitle className="text-xl text-white flex items-center gap-2">
+                    <Home className="w-5 h-5 text-cyan-400" />
+                    Información de la Propiedad
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <div className="text-sm text-slate-400">Propietario</div>
+                      <div className="text-white font-medium">{propertyDetails.owner}</div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="text-sm text-slate-400">Dirección</div>
+                      <div className="text-white font-medium">{propertyDetails.address}</div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="text-sm text-slate-400">Año de Construcción</div>
+                      <div className="text-white font-medium">{propertyDetails.yearBuilt || 'N/A'}</div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="text-sm text-slate-400">Área</div>
+                      <div className="text-white font-medium">{propertyDetails.sqft ? `${propertyDetails.sqft.toLocaleString()} sq ft` : 'N/A'}</div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="text-sm text-slate-400">Habitaciones</div>
+                      <div className="text-white font-medium">{propertyDetails.bedrooms || 'N/A'}</div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="text-sm text-slate-400">Baños</div>
+                      <div className="text-white font-medium">{propertyDetails.bathrooms || 'N/A'}</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Owner History */}
+              {propertyDetails.ownerHistory && propertyDetails.ownerHistory.length > 0 && (
+                <Card className="border-slate-700 bg-slate-800/50">
+                  <CardHeader>
+                    <CardTitle className="text-xl text-white flex items-center gap-2">
+                      <HistoryIcon className="w-5 h-5 text-cyan-400" />
+                      Historial de Propietarios
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {propertyDetails.ownerHistory.map((entry, index) => (
+                        <div key={index} className="border-l-2 border-cyan-500 pl-4 py-2">
+                          <div className="text-white font-medium">{entry.ownerName}</div>
+                          <div className="text-sm text-slate-400">
+                            {entry.saleDate && `Fecha: ${new Date(entry.saleDate).toLocaleDateString()}`}
+                            {entry.salePrice && ` | Precio: $${entry.salePrice.toLocaleString()}`}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Verification Badge */}
+              <Card className="border-emerald-700 bg-emerald-900/20">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-center gap-3">
+                    <CheckCircle className="w-8 h-8 text-emerald-400" />
+                    <div>
+                      <div className="text-lg font-bold text-emerald-400">Verificado por Owl Fenc</div>
+                      <div className="text-sm text-slate-400">Powered by MERVIN AI</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          <DialogFooter className="flex flex-col sm:flex-row gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setShowPreviewModal(false)}
+              className="border-slate-600 text-slate-300 hover:bg-slate-800"
+            >
+              Cerrar
+            </Button>
+            <Button
+              onClick={() => {
+                setShowPreviewModal(false);
+                handleExportReport();
+              }}
+              className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Descargar PDF
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
