@@ -53,16 +53,30 @@ export function subscriptionProtection(config: ProtectionConfig) {
     const startTime = Date.now();
 
     try {
-      // 1. AUTHENTICATION CHECK
-      if (!req.firebaseUser?.uid) {
+      // 1. AUTHENTICATION CHECK (Support both firebaseUser and authUser)
+      let userId: string | undefined;
+      
+      // Try firebaseUser first (from firebase-auth middleware)
+      if (req.firebaseUser?.uid) {
+        userId = req.firebaseUser.uid;
+        console.log(`🔐 [PROTECTION] Auth via firebaseUser: ${userId}`);
+      }
+      // Fallback to authUser (from authMiddleware)
+      else if (req.authUser?.uid) {
+        userId = req.authUser.uid;
+        console.log(`🔐 [PROTECTION] Auth via authUser: ${userId}`);
+      }
+      
+      if (!userId) {
+        console.log('❌ [PROTECTION] No authentication found - neither firebaseUser nor authUser');
+        console.log('🔍 [PROTECTION-DEBUG] req.firebaseUser:', req.firebaseUser);
+        console.log('🔍 [PROTECTION-DEBUG] req.authUser:', req.authUser);
         return res.status(401).json({
           success: false,
           error: 'Autenticación requerida',
           code: 'AUTH_REQUIRED'
         });
       }
-
-      const userId = req.firebaseUser.uid;
       const route = `${req.method}:${req.path}`;
 
       // 2. RATE LIMITING (if configured)
