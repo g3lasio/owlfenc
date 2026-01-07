@@ -45,6 +45,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import MapboxPlacesAutocomplete from "@/components/ui/mapbox-places-autocomplete";
+import { auth } from "@/lib/firebase";
 import {
   propertyVerifierService,
   PropertyDetails,
@@ -1041,39 +1042,44 @@ export default function PropertyOwnershipVerifier() {
                 <div className="relative">
                   <div className="absolute inset-0 bg-gradient-to-r from-slate-500/20 to-slate-600/20 rounded-xl blur-sm"></div>
                   <Card className="relative border border-slate-600/50 bg-slate-900/90 backdrop-blur-sm">
-                    <CardContent className="p-3 sm:p-4">
-                      <div className="flex flex-col sm:flex-row gap-3 justify-center items-stretch sm:items-center">
+                    <CardContent className="p-4 sm:p-6">
+                      <div className="flex flex-col gap-3">
+                        {/* Primary Action - Full Width on Mobile */}
                         <Button 
                           onClick={handleExportComprehensiveReport}
-                          className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 border-emerald-400/50 text-white shadow-lg shadow-emerald-500/20 w-full sm:w-auto"
-                          size="sm"
+                          className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 border-emerald-400/50 text-white shadow-lg shadow-emerald-500/20 w-full h-12 sm:h-10"
+                          size="lg"
                         >
-                          <FileText className="w-4 h-4 mr-2" />
-                          <span className="text-sm font-semibold">Descargar Reporte Completo (PDF)</span>
+                          <FileText className="w-5 h-5 mr-2 flex-shrink-0" />
+                          <span className="text-base sm:text-sm font-semibold">Descargar Reporte Completo (PDF)</span>
                         </Button>
-                        <Button 
-                          onClick={handleExportReport}
-                          variant="outline"
-                          className="border-cyan-600 text-cyan-300 hover:bg-cyan-900/30 hover:text-cyan-200 w-full sm:w-auto"
-                          size="sm"
-                        >
-                          <Download className="w-4 h-4 mr-2" />
-                          <span className="text-sm">Exportar Vista Rápida</span>
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          onClick={() => {
-                            setCurrentStep(1);
-                            setPropertyDetails(null);
-                            setSelectedPlace(null);
-                            setAddress("");
-                            setError(null);
-                          }}
-                          className="border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white w-full sm:w-auto"
-                          size="sm"
-                        >
-                          <span className="text-sm">Nueva Verificación</span>
-                        </Button>
+                        
+                        {/* Secondary Actions - Side by Side on Mobile */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <Button 
+                            onClick={handleExportReport}
+                            variant="outline"
+                            className="border-cyan-600 text-cyan-300 hover:bg-cyan-900/30 hover:text-cyan-200 h-12 sm:h-10"
+                            size="default"
+                          >
+                            <Download className="w-4 h-4 mr-1.5 flex-shrink-0" />
+                            <span className="text-sm">Vista Rápida</span>
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            onClick={() => {
+                              setCurrentStep(1);
+                              setPropertyDetails(null);
+                              setSelectedPlace(null);
+                              setAddress("");
+                              setError(null);
+                            }}
+                            className="border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white h-12 sm:h-10"
+                            size="default"
+                          >
+                            <span className="text-sm">Nueva Verificación</span>
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
