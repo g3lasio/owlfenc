@@ -7,7 +7,7 @@ import { Router, Request, Response } from 'express';
 import { verifyFirebaseAuth } from '../middleware/firebase-auth';
 import { firebaseSubscriptionService } from '../services/firebaseSubscriptionService';
 import { productionUsageService } from '../services/productionUsageService';
-import { PLAN_PERMISSIONS } from '../../shared/permissions-config';
+import { PLAN_LIMITS } from '../../shared/permissions-config';
 
 const router = Router();
 
@@ -31,7 +31,7 @@ router.get('/current', verifyFirebaseAuth, async (req: Request, res: Response) =
     console.log(`✅ [USAGE-LIMITS] Suscripción encontrada: Plan ${subscription.planId} (${subscription.planName})`);
 
     // Obtener límites del plan desde permissions-config
-    const planPermissions = PLAN_PERMISSIONS[subscription.planId] || PLAN_PERMISSIONS[5]; // Default to Free
+    const planPermissions = PLAN_LIMITS[subscription.planId] || PLAN_LIMITS[5]; // Default to Free
     
     // Obtener uso actual desde Firebase
     const [
@@ -123,7 +123,7 @@ router.get('/feature/:featureName', verifyFirebaseAuth, async (req: Request, res
       return res.status(404).json({ error: 'Suscripción no encontrada' });
     }
 
-    const planPermissions = PLAN_PERMISSIONS[subscription.planId] || PLAN_PERMISSIONS[5];
+    const planPermissions = PLAN_LIMITS[subscription.planId] || PLAN_LIMITS[5];
     const limit = planPermissions[featureName as keyof typeof planPermissions] as number || 0;
     const used = await productionUsageService.getUsageForPeriod(userId, featureName, new Date());
     const remaining = limit === -1 ? -1 : Math.max(0, limit - used);
