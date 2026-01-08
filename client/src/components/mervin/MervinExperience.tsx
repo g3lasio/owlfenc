@@ -28,6 +28,9 @@ import { MessageContent } from "./MessageContent";
 import { SmartContextPanel } from "./SmartContextPanel";
 import { WebResearchIndicator } from "./WebResearchIndicator";
 import { ConversationHistory } from "./ConversationHistory";
+import { LiveTaskIndicator } from "./LiveTaskIndicator";
+import { MessageFeedback } from "./MessageFeedback";
+import { EnhancedErrorMessage } from "./EnhancedErrorMessage";
 import { useConversationManager } from "@/hooks/useConversationManager";
 
 // Types
@@ -41,6 +44,10 @@ type Message = {
   action?: string;
   taskResult?: any;
   timestamp?: Date;
+  isError?: boolean;
+  errorId?: string;
+  errorContext?: string;
+  canRetry?: boolean;
 };
 
 type AgentTask = "estimates" | "contracts" | "permits" | "properties" | "analytics" | "chat";
@@ -307,22 +314,25 @@ export function MervinExperience({ mode, onMinimize, isMinimized = false, onClos
         setMessages(prev => [...prev, assistantMessage]);
       }
       
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error processing request:", error);
       
+      // Generar ID de error único
+      const errorId = `M-${Date.now().toString(36).toUpperCase()}`;
+      
       const errorMessage: Message = {
-        id: "assistant-" + Date.now(),
-        content: "¡Órale compadre! Se me trabó el sistema, pero no te preocupes. Dame un momento y vuelve a intentarlo.",
+        id: "error-" + Date.now(),
+        content: error?.message || "Hubo un problema procesando tu solicitud",
         sender: "assistant",
-        timestamp: new Date()
+        timestamp: new Date(),
+        isError: true,
+        errorId: errorId,
+        errorContext: "El agente encontró un problema al procesar tu mensaje. Puedes intentar de nuevo o reformular tu pregunta.",
+        canRetry: true
       };
       setMessages(prev => [...prev, errorMessage]);
       
-      toast({
-        title: "Error en el agente",
-        description: "Hubo un problema procesando tu solicitud. Intenta de nuevo.",
-        variant: "destructive"
-      });
+      // No mostrar toast - el mensaje de error enriquecido es suficiente
     } finally {
       setIsLoading(false);
     }
@@ -470,6 +480,56 @@ export function MervinExperience({ mode, onMinimize, isMinimized = false, onClos
     } catch (error) {
       console.error('Error copying message:', error);
       // Solo log, no toast para errores menores
+    }
+  };
+
+  const handleFeedback = async (messageId: string, feedback: 'positive' | 'negative') => {
+    try {
+      // TODO: Enviar feedback al backend para el SelfEvaluationSystem
+      console.log(`Feedback for message ${messageId}: ${feedback}`);
+      
+      // Aquí se integraría con el endpoint del backend
+      // await fetch('/api/mervin-v2/feedback', {
+      //   method: 'POST',
+      //   body: JSON.stringify({ messageId, feedback, userId: currentUser?.uid })
+      // });
+    } catch (error) {
+      console.error('Error sending feedback:', error);
+    }
+  };
+
+  const handleReportMessage = async (messageId: string, content: string) => {
+    try {
+      // TODO: Enviar reporte al backend
+      console.log(`Reported message ${messageId}`);
+      
+      // Aquí se integraría con el sistema de soporte
+      // await fetch('/api/support/report', {
+      //   method: 'POST',
+      //   body: JSON.stringify({ messageId, content, userId: currentUser?.uid })
+      // });
+    } catch (error) {
+      console.error('Error reporting message:', error);
+    }
+  };
+
+  const handleRetryError = async () => {
+    // Reintentar el último mensaje del usuario
+    const lastUserMessage = messages.filter(m => m.sender === 'user').pop();
+    if (lastUserMessage) {
+      // Eliminar el mensaje de error
+      setMessages(prev => prev.filter(m => !m.isError));
+      // Reenviar el mensaje
+      await handleSendMessage();
+    }
+  };
+
+  const handleReportError = async (errorId: string, errorMessage: string) => {
+    try {
+      console.log(`Reported error ${errorId}: ${errorMessage}`);
+      // TODO: Integrar con sistema de soporte
+    } catch (error) {
+      console.error('Error reporting error:', error);
     }
   };
 
@@ -653,7 +713,7 @@ export function MervinExperience({ mode, onMinimize, isMinimized = false, onClos
               key={`msg-${index}-${message.timestamp?.getTime() || Date.now()}`}
               className={`flex ${
                 message.role === "user" ? "justify-end" : "justify-start"
-              }`}
+              } animate-fade-in animate-slide-up`}
             >
               <div className="relative group">
                 <div
@@ -681,18 +741,14 @@ export function MervinExperience({ mode, onMinimize, isMinimized = false, onClos
                 </div>
                 
                 {message.role === "assistant" && (
-                  <button
-                    onClick={() => handleCopyMessage(`msg-${index}`, message.content)}
-                    className="absolute -top-2 -right-2 md:opacity-0 md:group-hover:opacity-100 opacity-80 transition-opacity bg-gray-700 hover:bg-gray-600 text-gray-300 p-2 md:p-1.5 rounded-lg shadow-lg touch-manipulation"
-                    title="Copiar mensaje"
-                    data-testid={`button-copy-msg-${index}`}
-                  >
-                    {copiedMessageId === `msg-${index}` ? (
-                      <Check className="w-4 h-4 md:w-3.5 md:h-3.5 text-green-400" />
-                    ) : (
-                      <Copy className="w-4 h-4 md:w-3.5 md:h-3.5" />
-                    )}
-                  </button>
+                  <MessageFeedback
+                    messageId={`msg-${index}`}
+                    messageContent={message.content}
+                    onCopy={handleCopyMessage}
+                    onFeedback={handleFeedback}
+                    onReport={handleReportMessage}
+                    isCopied={copiedMessageId === `msg-${index}`}
+                  />
                 )}
               </div>
             </div>
@@ -703,61 +759,77 @@ export function MervinExperience({ mode, onMinimize, isMinimized = false, onClos
               key={message.id || `msg-${index}`}
               className={`flex ${
                 message.sender === "user" ? "justify-end" : "justify-start"
-              }`}
+              } animate-fade-in animate-slide-up`}
             >
               <div className="relative group">
-                <div
-                  className={`max-w-[280px] sm:max-w-sm md:max-w-md lg:max-w-lg px-4 py-3 rounded-2xl md:rounded-lg text-base md:text-sm leading-relaxed ${
-                    message.sender === "user"
-                      ? "bg-cyan-600 text-white shadow-lg"
-                      : "bg-gray-800 text-gray-200 shadow-lg"
-                  }`}
-                >
-                  <MessageContent 
-                    content={message.content}
-                    sender={message.sender}
-                    enableTyping={true}
-                  />
-                  
-                  {message.timestamp && (
-                    <div className={`mt-2 text-xs ${
-                      message.sender === "user" 
-                        ? "text-cyan-200/70" 
-                        : "text-gray-400"
-                    }`}>
-                      {formatMessageTime(message.timestamp)}
+                {message.isError ? (
+                  <div className="max-w-[280px] sm:max-w-sm md:max-w-md lg:max-w-lg w-full">
+                    <EnhancedErrorMessage
+                      errorId={message.errorId || 'UNKNOWN'}
+                      errorMessage={message.content}
+                      errorContext={message.errorContext}
+                      canRetry={message.canRetry}
+                      onRetry={handleRetryError}
+                      onReport={handleReportError}
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <div
+                      className={`max-w-[280px] sm:max-w-sm md:max-w-md lg:max-w-lg px-4 py-3 rounded-2xl md:rounded-lg text-base md:text-sm leading-relaxed ${
+                        message.sender === "user"
+                          ? "bg-cyan-600 text-white shadow-lg"
+                          : "bg-gray-800 text-gray-200 shadow-lg"
+                      }`}
+                    >
+                      <MessageContent 
+                        content={message.content}
+                        sender={message.sender}
+                        enableTyping={true}
+                      />
+                      
+                      {message.timestamp && (
+                        <div className={`mt-2 text-xs ${
+                          message.sender === "user" 
+                            ? "text-cyan-200/70" 
+                            : "text-gray-400"
+                        }`}>
+                          {formatMessageTime(message.timestamp)}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-                
-                {message.sender === "assistant" && (
-                  <button
-                    onClick={() => handleCopyMessage(message.id, message.content)}
-                    className="absolute -top-2 -right-2 md:opacity-0 md:group-hover:opacity-100 opacity-80 transition-opacity bg-gray-700 hover:bg-gray-600 text-gray-300 p-2 md:p-1.5 rounded-lg shadow-lg touch-manipulation"
-                    title="Copiar mensaje"
-                    data-testid={`button-copy-msg-${index}`}
-                  >
-                    {copiedMessageId === message.id ? (
-                      <Check className="w-4 h-4 md:w-3.5 md:h-3.5 text-green-400" />
-                    ) : (
-                      <Copy className="w-4 h-4 md:w-3.5 md:h-3.5" />
+                    
+                    {message.sender === "assistant" && (
+                      <MessageFeedback
+                        messageId={message.id}
+                        messageContent={message.content}
+                        onCopy={handleCopyMessage}
+                        onFeedback={handleFeedback}
+                        onReport={handleReportMessage}
+                        isCopied={copiedMessageId === message.id}
+                      />
                     )}
-                  </button>
+                  </>
                 )}
               </div>
             </div>
           ))
         )}
         
-        {isLoading && (
+        {isLoading && mervinAgent.streamingUpdates.length > 0 && (
+          <div className="flex justify-start">
+            <div className="max-w-[280px] sm:max-w-sm md:max-w-md lg:max-w-lg w-full">
+              <LiveTaskIndicator
+                updates={mervinAgent.streamingUpdates}
+                isActive={isLoading}
+              />
+            </div>
+          </div>
+        )}
+        
+        {isLoading && mervinAgent.streamingUpdates.length === 0 && (
           <div className="flex justify-start px-2">
-            <ThinkingIndicator 
-              currentAction={
-                mervinAgent.streamingUpdates.length > 0
-                  ? mervinAgent.streamingUpdates[mervinAgent.streamingUpdates.length - 1].content
-                  : undefined
-              }
-            />
+            <ThinkingIndicator currentAction={undefined} />
           </div>
         )}
         

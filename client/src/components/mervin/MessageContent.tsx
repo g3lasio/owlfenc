@@ -58,7 +58,9 @@ function parseContentWithLinks(text: string) {
 
 export function MessageContent({ content, sender, enableTyping = true }: MessageContentProps) {
   const shouldType = sender === "assistant" && enableTyping;
-  const { displayedText, isTyping } = useTypingEffect(content, 15, shouldType);
+  // Velocidad variable: más rápido para mensajes largos
+  const speed = content.length > 200 ? 10 : 15;
+  const { displayedText, isTyping } = useTypingEffect(content, speed, shouldType);
   
   const textToRender = shouldType ? displayedText : content;
   const parts = parseContentWithLinks(textToRender);
