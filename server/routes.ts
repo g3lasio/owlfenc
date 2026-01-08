@@ -9944,6 +9944,29 @@ ENHANCED LEGAL CLAUSE:`;
     },
   );
 
+  // 💰 OWL FUNDING - Short Link Redirect
+  // Redirige /fund/:username al link de Acorn Finance
+  app.get("/fund/:username", async (req: Request, res: Response) => {
+    try {
+      const { username } = req.params;
+      
+      // Link de Acorn Finance (mismo para todos por ahora)
+      const acornLink = "https://www.acornfinance.com/pre-qualify/?d=8VXLJ";
+      
+      // TODO: En el futuro, podemos agregar tracking por usuario aquí
+      // Por ejemplo: agregar &ref=${username} al link de Acorn
+      
+      // Log para analytics (opcional)
+      console.log(`🔗 Financing link accessed by contractor: ${username}`);
+      
+      // Redirigir al link de Acorn
+      res.redirect(acornLink);
+    } catch (error) {
+      console.error("Error en redirección de financing link:", error);
+      res.redirect("https://www.acornfinance.com/pre-qualify/?d=8VXLJ");
+    }
+  });
+
   // Crear y retornar el servidor HTTP
   const server = createServer(app);
   return server;
@@ -10114,26 +10137,3 @@ async function generatePDF(
 ): Promise<Buffer> {
   return await documentService.generateDocument(data, type);
 }
-
-  // 💰 OWL FUNDING - Short Link Redirect
-  // Redirige /fund/:username al link de Acorn Finance
-  app.get("/fund/:username", async (req: Request, res: Response) => {
-    try {
-      const { username } = req.params;
-      
-      // Link de Acorn Finance (mismo para todos por ahora)
-      const acornLink = "https://www.acornfinance.com/pre-qualify/?d=8VXLJ";
-      
-      // TODO: En el futuro, podemos agregar tracking por usuario aquí
-      // Por ejemplo: agregar &ref=${username} al link de Acorn
-      
-      // Log para analytics (opcional)
-      console.log(`🔗 Financing link accessed by contractor: ${username}`);
-      
-      // Redirigir al link de Acorn
-      res.redirect(acornLink);
-    } catch (error) {
-      console.error("Error en redirección de financing link:", error);
-      res.redirect("https://www.acornfinance.com/pre-qualify/?d=8VXLJ");
-    }
-  });
