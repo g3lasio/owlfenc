@@ -1,6 +1,5 @@
 import { useTypingEffect } from "@/hooks/useTypingEffect";
 import { ExternalLink } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 
 interface MessageContentProps {
   content: string;
@@ -119,7 +118,6 @@ function parseContentWithLinks(text: string): ContentPart[] {
 }
 
 export function MessageContent({ content, sender, enableTyping = true }: MessageContentProps) {
-  const navigate = useNavigate();
   const shouldType = sender === "assistant" && enableTyping;
   // Velocidad variable: más rápido para mensajes largos
   const speed = content.length > 200 ? 10 : 15;
@@ -129,10 +127,10 @@ export function MessageContent({ content, sender, enableTyping = true }: Message
   const parts = parseContentWithLinks(textToRender);
   
   const handleLinkClick = (url: string, e: React.MouseEvent) => {
-    // Si es una ruta interna (empieza con /), usar navigate
+    // Si es una ruta interna (empieza con /), navegar sin recargar
     if (url.startsWith('/')) {
       e.preventDefault();
-      navigate(url);
+      window.location.href = url;
     }
     // Si es una URL externa, dejar que el navegador la abra normalmente
   };
