@@ -6,28 +6,41 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/contexts/PermissionContext";
 import { useLocation } from "wouter";
-import { Lock, Sparkles, CreditCard, DollarSign, PiggyBank, ChartBar } from "lucide-react";
+import { 
+  Lock, 
+  Sparkles, 
+  CreditCard, 
+  DollarSign, 
+  PiggyBank, 
+  ChartBar,
+  Building2,
+  Users,
+  Copy,
+  Share2,
+  ExternalLink,
+  TrendingUp,
+  Zap
+} from "lucide-react";
+import { useUser } from "@/hooks/use-user";
 
 export default function OwlFunding() {
   const { toast } = useToast();
   const { hasAccess, userPlan, showUpgradeModal } = usePermissions();
   const [, navigate] = useLocation();
+  const { user } = useUser();
   
-  const [contactFormData, setContactFormData] = useState({
-    name: "",
-    email: "",
-    message: "",
-  });
-
   // Verificar si tiene acceso a Owl Funding (solo planes pagados)
   const hasOwlFundingAccess = userPlan?.id !== 5; // Todos excepto Primo Chambeador
   
+  // Link personalizado para el contratista
+  const personalizedLink = user?.username 
+    ? `${window.location.origin}/fund/${user.username}`
+    : `${window.location.origin}/fund/contractor`;
+
   // Si el usuario no tiene acceso, mostrar mensaje de upgrade
   if (!hasOwlFundingAccess) {
     return (
@@ -75,7 +88,7 @@ export default function OwlFunding() {
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-green-400 mt-1">✓</span>
-                    <span>Asesoría financiera personalizada y planificación fiscal</span>
+                    <span>Herramienta para ofrecer financiamiento a tus clientes y cerrar más contratos</span>
                   </li>
                 </ul>
               </div>
@@ -135,288 +148,309 @@ export default function OwlFunding() {
     );
   }
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) => {
-    const { name, value } = e.target;
-    setContactFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleContactSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const handleCopyLink = async () => {
     try {
-      setIsSubmitting(true);
-
-      // Validación básica
-      if (
-        !contactFormData.name ||
-        !contactFormData.email ||
-        !contactFormData.message
-      ) {
-        toast({
-          title: "Error en el formulario",
-          description: "Por favor completa todos los campos.",
-          variant: "destructive",
-        });
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Enviar los datos al servidor
-      const response = await fetch("/api/contact", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(contactFormData),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        // Mostrar confirmación de éxito
-        toast({
-          title: "Mensaje enviado",
-          description: "Nos pondremos en contacto contigo pronto.",
-        });
-
-        // Limpiar el formulario
-        setContactFormData({
-          name: "",
-          email: "",
-          message: "",
-        });
-      } else {
-        // Mostrar error
-        toast({
-          title: "Error al enviar",
-          description:
-            data.message ||
-            "Ha ocurrido un error. Por favor intenta más tarde.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error("Error enviando formulario:", error);
+      await navigator.clipboard.writeText(personalizedLink);
       toast({
-        title: "Error de conexión",
-        description:
-          "No pudimos procesar tu solicitud. Comprueba tu conexión e intenta de nuevo.",
+        title: "¡Link copiado!",
+        description: "El link de financiamiento ha sido copiado al portapapeles",
+      });
+    } catch (error) {
+      toast({
+        title: "Error al copiar",
+        description: "No se pudo copiar el link. Intenta de nuevo.",
         variant: "destructive",
       });
-    } finally {
-      setIsSubmitting(false);
+    }
+  };
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Opciones de Financiamiento',
+          text: '¡Haz tu proyecto realidad! Revisa tus opciones de financiamiento aquí:',
+          url: personalizedLink,
+        });
+      } catch (error) {
+        // Usuario canceló o error en share
+        console.log('Share cancelled or failed');
+      }
+    } else {
+      // Fallback: copiar al clipboard
+      handleCopyLink();
     }
   };
 
   return (
-    <div className="container pb-40 mx-auto p-6 flex flex-col items-center">
+    <div className="container pb-40 mx-auto p-6">
+      {/* Header */}
       <div className="flex flex-col items-center justify-center mb-8 text-center">
         <img
           src="/images/owl-funding-logo-white.png"
           alt="Owl Funding Logo"
           className="h-32 mb-4"
         />
-        <p className="text-muted-foreground max-w-2xl">
+        <p className="text-muted-foreground max-w-2xl text-lg">
           Soluciones de financiamiento exclusivas para contratistas
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl w-full">
-        <Card>
+      {/* Mensajes Motivacionales */}
+      <div className="max-w-5xl mx-auto mb-8 space-y-4">
+        <Card className="border-cyan-900/30 bg-gradient-to-r from-cyan-950/20 to-blue-950/20">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 rounded-full bg-cyan-500/20 flex items-center justify-center">
+                  <TrendingUp className="w-6 h-6 text-cyan-400" />
+                </div>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-2">
+                  ¿Sabías que...?
+                </h3>
+                <p className="text-gray-300">
+                  Los contratistas que ofrecen opciones de financiamiento a sus clientes 
+                  <span className="text-cyan-400 font-bold"> cierran hasta un 40% más contratos</span> que 
+                  aquellos que no lo hacen. El financiamiento elimina la barrera del precio y 
+                  convierte proyectos "imposibles" en realidad.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-purple-900/30 bg-gradient-to-r from-purple-950/20 to-pink-950/20">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center">
+                  <Zap className="w-6 h-6 text-purple-400" />
+                </div>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-2">
+                  Ventaja Competitiva
+                </h3>
+                <p className="text-gray-300">
+                  Mientras tu competencia pierde clientes por falta de liquidez, 
+                  <span className="text-purple-400 font-bold"> tú cierras el trato en el momento</span>. 
+                  Ofrecer financiamiento te posiciona como un profesional completo que piensa 
+                  en las necesidades reales de sus clientes.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Cards */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
+        
+        {/* Card 1: Financiamiento para tu Negocio */}
+        <Card className="border-blue-900/50 bg-gradient-to-br from-blue-950/30 to-indigo-950/30 hover:border-blue-700/70 transition-all duration-300">
           <CardHeader>
-            <CardTitle>Financiamiento para Contratistas</CardTitle>
-            <CardDescription>
-              Opciones financieras diseñadas específicamente para tu negocio
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-12 h-12 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                <Building2 className="w-6 h-6 text-blue-400" />
+              </div>
+              <div className="px-3 py-1 bg-blue-500/20 rounded-full">
+                <span className="text-xs font-semibold text-blue-300">PARA TU NEGOCIO</span>
+              </div>
+            </div>
+            <CardTitle className="text-2xl">Financiamiento Empresarial</CardTitle>
+            <CardDescription className="text-base">
+              Capital para hacer crecer tu compañía de construcción
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <p className="mb-6">
-              Owl Funding ofrece soluciones de financiamiento flexibles y
-              accesibles para contratistas que buscan expandir su negocio,
-              adquirir maquinaria o financiar proyectos específicos. Nuestros
-              productos financieros están diseñados para las necesidades únicas
-              de la industria de la construcción.
+          <CardContent className="space-y-6">
+            <div className="space-y-3">
+              <p className="text-gray-300">
+                Accede a préstamos comerciales, líneas de crédito y financiamiento 
+                especializado para contratistas. Ideal para:
+              </p>
+              <ul className="space-y-2 text-sm text-gray-400">
+                <li className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
+                  Comprar equipos y maquinaria nueva
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
+                  Expandir tu operación o contratar más personal
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
+                  Capital de trabajo para proyectos grandes
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
+                  Consolidar deudas o mejorar flujo de efectivo
+                </li>
+              </ul>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-blue-950/30 rounded-lg p-3 border border-blue-900/30">
+                <p className="text-xs text-gray-400 mb-1">Monto</p>
+                <p className="text-lg font-bold text-white">$10K - $500K</p>
+              </div>
+              <div className="bg-blue-950/30 rounded-lg p-3 border border-blue-900/30">
+                <p className="text-xs text-gray-400 mb-1">Aprobación</p>
+                <p className="text-lg font-bold text-white">24-48 horas</p>
+              </div>
+            </div>
+
+            <Button
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold h-12"
+              onClick={() => window.open("https://apply.0wlfunding.com/", "_blank")}
+            >
+              <ExternalLink className="w-5 h-5 mr-2" />
+              Aplicar Ahora
+            </Button>
+
+            <p className="text-xs text-center text-gray-500">
+              Proceso rápido y seguro • Sin afectar tu crédito inicialmente
             </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-              <div className="flex flex-col items-center p-4 bg-primary/5 rounded-lg">
-                <div className="text-primary text-xl mb-2">
-                  <i className="ri-building-line"></i>
-                </div>
-                <h3 className="font-medium text-center">
-                  Financiamiento Empresarial
-                </h3>
-                <p className="text-sm text-center text-muted-foreground">
-                  Expande tu negocio
-                </p>
-              </div>
-
-              <div className="flex flex-col items-center p-4 bg-primary/5 rounded-lg">
-                <div className="text-primary text-xl mb-2">
-                  <i className="ri-tools-line"></i>
-                </div>
-                <h3 className="font-medium text-center">
-                  Equipos y Maquinaria
-                </h3>
-                <p className="text-sm text-center text-muted-foreground">
-                  Moderniza tu operación
-                </p>
-              </div>
-
-              <div className="flex flex-col items-center p-4 bg-primary/5 rounded-lg">
-                <div className="text-primary text-xl mb-2">
-                  <i className="ri-building-4-line"></i>
-                </div>
-                <h3 className="font-medium text-center">Proyectos</h3>
-                <p className="text-sm text-center text-muted-foreground">
-                  Financiamiento por proyecto
-                </p>
-              </div>
-
-              <div className="flex flex-col items-center p-4 bg-primary/5 rounded-lg">
-                <div className="text-primary text-xl mb-2">
-                  <i className="ri-money-dollar-circle-line"></i>
-                </div>
-                <h3 className="font-medium text-center">Capital de Trabajo</h3>
-                <p className="text-sm text-center text-muted-foreground">
-                  Flujo de efectivo flexible
-                </p>
-              </div>
-
-              <div className="flex flex-col items-center p-4 bg-green-50 border border-green-200 rounded-lg">
-                <div className="text-green-600 text-xl mb-2">
-                  <i className="ri-group-line"></i>
-                </div>
-                <h3 className="font-medium text-center text-green-800">Financiamiento para Clientes</h3>
-                <p className="text-sm text-center text-green-700">
-                  Ahora puedes ofrecer opciones de financiamiento a tus clientes
-                </p>
-              </div>
-
-              <div className="flex flex-col items-center p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="text-blue-600 text-xl mb-2">
-                  <i className="ri-hand-coin-line"></i>
-                </div>
-                <h3 className="font-medium text-center text-blue-800">Pagos Flexibles</h3>
-                <p className="text-sm text-center text-blue-700">
-                  Permite a tus clientes pagar en cuotas cómodas
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button
-                variant="outline"
-                className="flex items-center gap-2"
-                onClick={() => window.open("https://0wlfunding.com/", "_blank")}
-              >
-                <i className="ri-information-line"></i>
-                Learn More
-              </Button>
-
-              <Button
-                className="flex items-center gap-2"
-                onClick={() => {
-                  window.open("https://apply.0wlfunding.com/", "_blank");
-                }}
-              >
-                <i className="ri-check-double-line"></i>
-                Apply Now
-              </Button>
-            </div>
           </CardContent>
         </Card>
 
-        <Card>
+        {/* Card 2: Financiamiento para tus Clientes */}
+        <Card className="border-green-900/50 bg-gradient-to-br from-green-950/30 to-emerald-950/30 hover:border-green-700/70 transition-all duration-300">
           <CardHeader>
-            <CardTitle>Contacta con Nuestro Equipo</CardTitle>
-            <CardDescription>
-              ¿Tienes preguntas específicas? Nuestro equipo está aquí para
-              ayudarte
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-12 h-12 rounded-lg bg-green-500/20 flex items-center justify-center">
+                <Users className="w-6 h-6 text-green-400" />
+              </div>
+              <div className="px-3 py-1 bg-green-500/20 rounded-full">
+                <span className="text-xs font-semibold text-green-300">PARA TUS CLIENTES</span>
+              </div>
+            </div>
+            <CardTitle className="text-2xl">Ofrece Financiamiento</CardTitle>
+            <CardDescription className="text-base">
+              Ayuda a tus clientes a financiar sus proyectos y cierra más contratos
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleContactSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <label htmlFor="name" className="text-sm font-medium">
-                  Nombre
-                </label>
-                <Input
-                  id="name"
-                  name="name"
-                  placeholder="Tu nombre"
-                  value={contactFormData.name}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium">
-                  Email
-                </label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="tu@email.com"
-                  value={contactFormData.email}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="message" className="text-sm font-medium">
-                  Mensaje
-                </label>
-                <Textarea
-                  id="message"
-                  name="message"
-                  placeholder="Describe tu necesidad de financiamiento..."
-                  rows={4}
-                  value={contactFormData.message}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? "Enviando..." : "Enviar Consulta"}
-              </Button>
-            </form>
-
-            <div className="mt-6 pt-6 border-t border-border">
-              <h3 className="font-medium mb-2">
-                También puedes contactarnos directamente:
-              </h3>
-              <div className="space-y-2">
-                <p className="text-sm flex items-center gap-2">
-                  <i className="ri-mail-line text-primary"></i>
-                  <a
-                    href="mailto:info@0wlfunding.com"
-                    className="hover:underline"
+          <CardContent className="space-y-6">
+            <div className="space-y-3">
+              <p className="text-gray-300">
+                Comparte este link con tus clientes para que puedan pre-calificarse 
+                para financiamiento de su proyecto en minutos:
+              </p>
+              
+              {/* Link personalizado */}
+              <div className="bg-green-950/30 rounded-lg p-4 border border-green-900/30">
+                <p className="text-xs text-gray-400 mb-2">Tu link personalizado:</p>
+                <div className="flex items-center gap-2 bg-black/30 rounded px-3 py-2 mb-3">
+                  <code className="text-sm text-green-400 flex-1 truncate">
+                    {personalizedLink}
+                  </code>
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1 border-green-700 hover:bg-green-900/30 text-green-300"
+                    onClick={handleCopyLink}
                   >
-                    info@0wlfunding.com
-                  </a>
+                    <Copy className="w-4 h-4 mr-2" />
+                    Copiar Link
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1 border-green-700 hover:bg-green-900/30 text-green-300"
+                    onClick={handleShare}
+                  >
+                    <Share2 className="w-4 h-4 mr-2" />
+                    Compartir
+                  </Button>
+                </div>
+              </div>
+
+              <ul className="space-y-2 text-sm text-gray-400">
+                <li className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-400"></div>
+                  Pre-calificación instantánea sin afectar crédito
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-400"></div>
+                  Múltiples opciones de lenders y tasas
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-400"></div>
+                  Proceso 100% online y seguro
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-400"></div>
+                  Aprobación en 24 horas o menos
+                </li>
+              </ul>
+            </div>
+
+            <div className="bg-green-950/30 rounded-lg p-3 border border-green-900/30">
+              <p className="text-xs text-gray-400 mb-1">Proyectos desde</p>
+              <p className="text-lg font-bold text-white">$1,000 hasta $100,000</p>
+            </div>
+
+            <Button
+              variant="outline"
+              className="w-full border-green-700 hover:bg-green-900/30 text-green-300 h-12"
+              onClick={() => window.open("https://www.acornfinance.com/pre-qualify/?d=8VXLJ", "_blank")}
+            >
+              <ExternalLink className="w-5 h-5 mr-2" />
+              Ver Experiencia del Cliente
+            </Button>
+
+            <p className="text-xs text-center text-gray-500">
+              Tus clientes verán opciones personalizadas • Sin compromiso
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Info adicional */}
+      <div className="max-w-6xl mx-auto mt-12">
+        <Card className="border-gray-800 bg-gradient-to-br from-gray-900/50 to-gray-950/50">
+          <CardContent className="p-6">
+            <div className="grid md:grid-cols-3 gap-6 text-center">
+              <div>
+                <DollarSign className="w-8 h-8 mx-auto mb-2 text-green-400" />
+                <h3 className="font-semibold text-white mb-1">Sin Costo para Ti</h3>
+                <p className="text-sm text-gray-400">
+                  No pagas nada por ofrecer financiamiento a tus clientes
                 </p>
-                <p className="text-sm flex items-center gap-2">
-                  <i className="ri-phone-line text-primary"></i>
-                  <a href="tel:+12025493519" className="hover:underline">
-                    (202) 549-3519
-                  </a>
+              </div>
+              <div>
+                <Zap className="w-8 h-8 mx-auto mb-2 text-yellow-400" />
+                <h3 className="font-semibold text-white mb-1">Proceso Rápido</h3>
+                <p className="text-sm text-gray-400">
+                  Tus clientes obtienen respuesta en minutos, no días
+                </p>
+              </div>
+              <div>
+                <TrendingUp className="w-8 h-8 mx-auto mb-2 text-cyan-400" />
+                <h3 className="font-semibold text-white mb-1">Más Contratos</h3>
+                <p className="text-sm text-gray-400">
+                  Convierte más estimates en proyectos firmados
                 </p>
               </div>
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Contacto */}
+      <div className="max-w-6xl mx-auto mt-8 text-center">
+        <p className="text-gray-400 text-sm">
+          ¿Preguntas sobre financiamiento? Contáctanos:{" "}
+          <a href="mailto:info@0wlfunding.com" className="text-cyan-400 hover:text-cyan-300">
+            info@0wlfunding.com
+          </a>
+          {" "}o{" "}
+          <a href="tel:+12025493519" className="text-cyan-400 hover:text-cyan-300">
+            (202) 549-3519
+          </a>
+        </p>
       </div>
     </div>
   );
