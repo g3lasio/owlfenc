@@ -433,6 +433,124 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         required: ['estimateId']
       }
     }
+  },
+
+  // 18. LIST AVAILABLE TEMPLATES - Get all legal document templates
+  {
+    type: 'function',
+    function: {
+      name: 'list_available_templates',
+      description: `List all available legal document templates (contracts, agreements, certificates) with detailed guidance on when to use each one. 
+      
+      Use this tool when:
+      - User asks to create a contract but doesn't specify which type
+      - You need to recommend the right template for their situation
+      - User wants to know what document options are available
+      - You need to explain the differences between templates
+      
+      Returns comprehensive information including:
+      - Template name and description
+      - When to use each template (situational guidance)
+      - Required and optional fields
+      - Real-world examples of use cases
+      - Complexity level (simple, medium, complex)`,
+      parameters: {
+        type: 'object',
+        properties: {
+          category: {
+            type: 'string',
+            description: 'Filter by category: contract, document, or protection',
+            enum: ['contract', 'document', 'protection', 'all']
+          }
+        },
+        required: []
+      }
+    }
+  },
+
+  // 19. SEARCH ENTITY - Intelligent search for clients, estimates, contracts
+  {
+    type: 'function',
+    function: {
+      name: 'search_entity',
+      description: `Search for clients, estimates, or contracts using intelligent fuzzy matching.
+      
+      Use this tool when:
+      - User mentions a client but doesn't give the exact ID (e.g., "cliente apellido Web")
+      - User says "the client from last month" or "that fence project"
+      - You need to find a specific estimate or contract by description
+      - User gives partial information (first name only, last name only)
+      
+      The search is smart and finds:
+      - Partial name matches ("María" finds "María González", "María Rodriguez")
+      - Last name matches ("Web" finds all clients with that surname)
+      - Project descriptions ("fence" finds all fence-related projects)
+      - Fuzzy matches ("Jhon" finds "John")
+      
+      Returns multiple results with context so you can ask the user to clarify which one they mean.`,
+      parameters: {
+        type: 'object',
+        properties: {
+          entityType: {
+            type: 'string',
+            description: 'Type of entity to search for',
+            enum: ['client', 'estimate', 'contract', 'permit', 'property']
+          },
+          query: {
+            type: 'string',
+            description: 'Search query (name, description, address, any identifying text)'
+          },
+          limit: {
+            type: 'number',
+            description: 'Maximum number of results to return (default: 10)'
+          }
+        },
+        required: ['entityType', 'query']
+      }
+    }
+  },
+
+  // 20. UPDATE ENTITY - Update client, estimate, contract, or settings
+  {
+    type: 'function',
+    function: {
+      name: 'update_entity',
+      description: `Update information for a client, estimate, contract, or user settings.
+      
+      Use this tool when:
+      - You discover missing critical information (e.g., client has no email)
+      - User provides new information that needs to be saved
+      - You need to correct or update existing data
+      - Client information changes (new phone, new address)
+      
+      Examples:
+      - Client has no email → Ask user for email → Update client with new email
+      - User says "actualiza mi nombre de compañía a XYZ" → Update settings
+      - Estimate needs status change → Update estimate status
+      - Contract terms need modification → Update contract
+      
+      This tool allows Mervin to be proactive and fix data issues automatically.`,
+      parameters: {
+        type: 'object',
+        properties: {
+          entityType: {
+            type: 'string',
+            description: 'Type of entity to update',
+            enum: ['client', 'estimate', 'contract', 'settings']
+          },
+          entityId: {
+            type: 'string',
+            description: 'ID of the entity to update (not required for settings)'
+          },
+          updates: {
+            type: 'object',
+            description: 'Object containing the fields to update with their new values (e.g., {"email": "new@email.com", "phone": "+1234567890"})',
+            additionalProperties: true
+          }
+        },
+        required: ['entityType', 'updates']
+      }
+    }
   }
 ];
 
@@ -567,7 +685,8 @@ const executeCreateContract: ToolExecutor = async (args, userContext) => {
       clientName: args.clientName,
       amount: args.amount,
       status: 'pending_signatures',
-      signatureUrl: contract.signatureUrl,
+      contractorSignUrl: contract.contractorSignUrl,
+      clientSignUrl: contract.clientSignUrl,
       message: `✅ Contract #${contract.id} generated for ${args.clientName}. Amount: $${args.amount}. Awaiting signatures.`
     };
   } catch (error: any) {
@@ -907,6 +1026,185 @@ const executeGenerateEstimatePdf: ToolExecutor = async (args, userContext) => {
 };
 
 /**
+ * Executor para list_available_templates
+ */
+const executeListAvailableTemplates: ToolExecutor = async (args, userContext) => {
+  try {
+    console.log('📚 [TOOL] Listing available templates...');
+    
+    const { ecosystemKnowledge } = await import('../mervin-v3/context/EcosystemKnowledgeBase');
+    
+    const templates = await ecosystemKnowledge.getAvailableTemplates({
+      category: args.category === 'all' ? undefined : args.category
+    });
+    
+    // Formatear respuesta para Mervin
+    const templateList = templates.map(t => ({
+      id: t.id,
+      name: t.name,
+      description: t.description,
+      category: t.category,
+      signatureType: t.signatureType,
+      whenToUse: t.whenToUse,
+      complexity: t.complexity,
+      examples: t.examples.slice(0, 2) // Solo 2 ejemplos para no saturar
+    }));
+    
+    console.log(`✅ [TOOL] Found ${templates.length} templates`);
+    
+    return {
+      templates: templateList,
+      totalCount: templates.length,
+      message: `✅ Encontré ${templates.length} templates disponibles. Cada uno tiene guías específicas de cuándo usarlo.`
+    };
+  } catch (error: any) {
+    console.error('❌ [TOOL] Error listing templates:', error);
+    throw new Error(`Failed to list templates: ${error.message}`);
+  }
+};
+
+/**
+ * Executor para search_entity
+ */
+const executeSearchEntity: ToolExecutor = async (args, userContext) => {
+  try {
+    console.log(`🔍 [TOOL] Searching ${args.entityType}s with query: "${args.query}"`);
+    
+    const { ecosystemKnowledge } = await import('../mervin-v3/context/EcosystemKnowledgeBase');
+    
+    const result = await ecosystemKnowledge.searchEntities({
+      entityType: args.entityType,
+      query: args.query,
+      userId: userContext.userId,
+      limit: args.limit || 10
+    });
+    
+    // Formatear resultados para Mervin
+    const formattedEntities = result.entities.map(e => ({
+      id: e.id,
+      name: e.name,
+      type: e.type,
+      // Información contextual según el tipo
+      ...(
+        e.type === 'client' ? {
+          email: e.data.email,
+          phone: e.data.phone,
+          address: e.data.address,
+          lastProject: e.data.lastProject
+        } : e.type === 'estimate' ? {
+          estimateNumber: e.data.estimateNumber,
+          total: e.data.total,
+          status: e.data.status,
+          clientName: e.data.clientName
+        } : e.type === 'contract' ? {
+          contractId: e.data.contractId,
+          clientName: e.data.clientName,
+          totalAmount: e.data.totalAmount,
+          status: e.data.status
+        } : {}
+      ),
+      lastUpdated: e.lastUpdated,
+      relevanceScore: e.relevanceScore
+    }));
+    
+    console.log(`✅ [TOOL] Found ${result.totalCount} ${args.entityType}(s) in ${result.executionTimeMs}ms`);
+    
+    return {
+      entities: formattedEntities,
+      totalCount: result.totalCount,
+      query: result.query,
+      entityType: args.entityType,
+      message: result.totalCount > 0 
+        ? `✅ Encontré ${result.totalCount} ${args.entityType}(s) que coinciden con "${args.query}"`
+        : `⚠️  No encontré ningún ${args.entityType} que coincida con "${args.query}"`
+    };
+  } catch (error: any) {
+    console.error(`❌ [TOOL] Error searching ${args.entityType}:`, error);
+    throw new Error(`Failed to search ${args.entityType}: ${error.message}`);
+  }
+};
+
+/**
+ * Executor para update_entity
+ */
+const executeUpdateEntity: ToolExecutor = async (args, userContext) => {
+  try {
+    console.log(`📝 [TOOL] Updating ${args.entityType} ${args.entityId || '(settings)'}`);
+    
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? 'https://app.owlfenc.com' 
+      : 'http://localhost:5000';
+    
+    let endpoint = '';
+    let method = 'PATCH';
+    let body: any = args.updates;
+    
+    // Determinar endpoint según el tipo de entidad
+    switch (args.entityType) {
+      case 'client':
+        if (!args.entityId) {
+          throw new Error('entityId is required for updating clients');
+        }
+        endpoint = `/api/clients/${args.entityId}`;
+        break;
+        
+      case 'estimate':
+        if (!args.entityId) {
+          throw new Error('entityId is required for updating estimates');
+        }
+        endpoint = `/api/estimates/${args.entityId}`;
+        break;
+        
+      case 'contract':
+        if (!args.entityId) {
+          throw new Error('entityId is required for updating contracts');
+        }
+        endpoint = `/api/contracts/${args.entityId}`;
+        break;
+        
+      case 'settings':
+        endpoint = '/api/settings';
+        method = 'PUT';
+        break;
+        
+      default:
+        throw new Error(`Unknown entity type: ${args.entityType}`);
+    }
+    
+    // Hacer la llamada al endpoint
+    const response = await fetch(`${baseUrl}${endpoint}`, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userContext.firebaseToken}`
+      },
+      body: JSON.stringify(body)
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `HTTP ${response.status}`);
+    }
+    
+    const result = await response.json();
+    
+    console.log(`✅ [TOOL] ${args.entityType} updated successfully`);
+    
+    return {
+      success: true,
+      entityType: args.entityType,
+      entityId: args.entityId,
+      updates: args.updates,
+      result,
+      message: `✅ ${args.entityType} actualizado exitosamente.`
+    };
+  } catch (error: any) {
+    console.error(`❌ [TOOL] Error updating ${args.entityType}:`, error);
+    throw new Error(`Failed to update ${args.entityType}: ${error.message}`);
+  }
+};
+
+/**
  * Registry completo de herramientas con executors
  */
 export const TOOL_REGISTRY: ToolRegistry = {
@@ -993,6 +1291,21 @@ export const TOOL_REGISTRY: ToolRegistry = {
   generate_estimate_pdf: {
     definition: TOOL_DEFINITIONS[16],
     executor: executeGenerateEstimatePdf,
+    requiresConfirmation: false
+  },
+  list_available_templates: {
+    definition: TOOL_DEFINITIONS[17],
+    executor: executeListAvailableTemplates,
+    requiresConfirmation: false
+  },
+  search_entity: {
+    definition: TOOL_DEFINITIONS[18],
+    executor: executeSearchEntity,
+    requiresConfirmation: false
+  },
+  update_entity: {
+    definition: TOOL_DEFINITIONS[19],
+    executor: executeUpdateEntity,
     requiresConfirmation: false
   }
 };

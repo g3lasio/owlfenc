@@ -151,6 +151,122 @@ export class AgentCore {
     console.log('✅ [AGENT-CORE] Todos los pasos completados. Sintetizando respuesta...');
     const finalMessage = await this.synthesizeResponse(context);
 
+    const executionTime = Date.now() - context.startedAt.getTime();
+
+    // 🧠 APRENDIZAJE: Guardar plan exitoso
+    try {
+      const { planStorage } = await import('../learning/PlanStorage');
+      await planStorage.storePlan({
+        userId: context.userId,
+        taskType: context.plan.intent,
+        userInput: context.userInput,
+        plan: context.plan,
+        executionSuccess: true,
+        executionTimeMs: executionTime
+      });
+      console.log('💾 [AGENT-CORE] Plan exitoso guardado para aprendizaje');
+    } catch (error: any) {
+      console.error('⚠️ [AGENT-CORE] Error guardando plan:', error.message);
+    }
+
+    // 📊 PERSONALIZACIÓN: Actualizar preferencias del usuario
+    try {
+      const { userPersonalization } = await import('../learning/UserPersonalization');
+      
+      // Incrementar contador de interacciones
+      const preferences = await userPersonalization.getUserPreferences(context.userId);
+      
+      // Registrar tipos de proyecto si se crearon estimados/contratos
+      for (const step of context.plan.steps) {
+        if (step.action === 'create_estimate' || step.action === 'create_contract') {
+          const projectType = step.parameters?.projectType;
+          if (projectType) {
+            await userPersonalization.recordProjectType(context.userId, projectType);
+          }
+        }
+      }
+      
+      console.log('📊 [AGENT-CORE] Preferencias actualizadas');
+    } catch (error: any) {
+      console.error('⚠️ [AGENT-CORE] Error actualizando preferencias:', error.message);
+    }
+
+    // 🧠 MEMORIA EPISÓDICA: Guardar episodio completo
+    try {
+      const { episodicMemory } = await import('../memory/EpisodicMemory');
+      await episodicMemory.storeEpisode({
+        userId: context.userId,
+        timestamp: context.startedAt,
+        context: {
+          userMessage: context.userInput,
+          mervinResponse: finalMessage,
+          intent: context.plan.intent,
+          entities: {},
+        },
+        action: {
+          type: context.plan.intent,
+          parameters: {},
+          toolsUsed: context.plan.steps.map(s => s.action),
+        },
+        outcome: {
+          success: true,
+          userSatisfaction: 0.8,
+          completionTime: executionTime,
+        },
+        insights: {
+          whatWorked: ['Plan executed successfully'],
+          whatFailed: [],
+          improvements: [],
+        },
+        metadata: {
+          conversationId: executionId,
+          sessionId: executionId,
+          agentVersion: 'v3',
+        },
+      });
+      console.log('🧠 [AGENT-CORE] Episodio guardado en memoria');
+    } catch (error: any) {
+      console.error('⚠️ [AGENT-CORE] Error guardando episodio:', error.message);
+    }
+
+    // 📈 APRENDIZAJE CONTINUO: Aprender de esta interacción
+    try {
+      const { continuousLearning } = await import('../learning/ContinuousLearningSystem');
+      const insights = await continuousLearning.learnFromInteraction(context.userId, {
+        userId: context.userId,
+        timestamp: context.startedAt,
+        context: {
+          userMessage: context.userInput,
+          mervinResponse: finalMessage,
+          intent: context.plan.intent,
+          entities: {},
+        },
+        action: {
+          type: context.plan.intent,
+          parameters: {},
+          toolsUsed: context.plan.steps.map(s => s.action),
+        },
+        outcome: {
+          success: true,
+          userSatisfaction: 0.8,
+          completionTime: executionTime,
+        },
+        insights: {
+          whatWorked: ['Plan executed successfully'],
+          whatFailed: [],
+          improvements: [],
+        },
+        metadata: {
+          conversationId: executionId,
+          sessionId: executionId,
+          agentVersion: 'v3',
+        },
+      });
+      console.log(`📈 [AGENT-CORE] Aprendizaje continuo: ${insights.length} insights generados`);
+    } catch (error: any) {
+      console.error('⚠️ [AGENT-CORE] Error en aprendizaje continuo:', error.message);
+    }
+
     this.executionContexts.delete(executionId); // Limpiar contexto
 
     return {
@@ -158,7 +274,7 @@ export class AgentCore {
       message: finalMessage,
       data: context.scratchpad,
       executionId,
-      executionTime: Date.now() - context.startedAt.getTime()
+      executionTime
     };
   }
 

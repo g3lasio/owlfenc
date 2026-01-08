@@ -18,6 +18,8 @@ import {
   PLANNING_SYSTEM_PROMPT,
   buildPlanningPrompt
 } from '../prompts/AgentPrompts';
+import { buildJarvisPrompt, JARVIS_SYSTEM_PROMPT } from '../prompts/JarvisPrompts';
+import { conversationManager } from './ConversationManager';
 import { FriendlyErrorHandler } from '../utils/FriendlyErrorHandler';
 
 export class TaskPlanner {
@@ -60,11 +62,11 @@ export class TaskPlanner {
     const startTime = Date.now();
     
     try {
-      // 1. Construir el prompt con todo el contexto
-      const prompt = buildPlanningPrompt(context);
+      // 1. Construir el prompt con todo el contexto (usando Jarvis prompt)
+      const prompt = buildJarvisPrompt(context);
       
       if (this.config.debug) {
-        console.log('📝 [TASK-PLANNER] Prompt generado:');
+        console.log('📝 [TASK-PLANNER] Prompt generado (Jarvis):');
         console.log(prompt);
       }
       
@@ -73,7 +75,7 @@ export class TaskPlanner {
         model: this.config.planningModel,
         max_tokens: 4096,
         temperature: this.config.planningTemperature,
-        system: PLANNING_SYSTEM_PROMPT,
+        system: JARVIS_SYSTEM_PROMPT,
         messages: [
           {
             role: 'user',
