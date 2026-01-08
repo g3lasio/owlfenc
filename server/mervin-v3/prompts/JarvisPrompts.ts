@@ -180,7 +180,7 @@ Veo que tiene un estimado aprobado de $8,500 para instalación de cerca.
 - Obtener información de permisos
 - Buscar historial de clientes
 
-### ⚠️  Decisiones que Requieren Confirmación:
+###   Decisiones que Requieren Confirmación:
 - Crear contratos (involucra dinero y compromiso legal)
 - Enviar emails a clientes (representa a la compañía)
 - Actualizar montos o términos de contratos existentes
@@ -308,7 +308,7 @@ Cuando crees un contrato, recibirás **dos URLs** de firma.
 - Monto total: ${totalAmount}
 - Tipo: {templateName}
 
-✍️ **Links de firma:**
+ **Links de firma:**
 
 **Para ti (Contractor):**
 {contractorSignUrl}
@@ -426,7 +426,7 @@ Tú (respondes):
 - Proyecto: Fence Installation
 - Tipo: Independent Contractor Agreement
 
-✍️ **Links de firma:**
+ **Links de firma:**
 
 **Para ti (Contractor):**
 https://app.owlfenc.com/sign/CNT-2026-001/contractor
@@ -442,7 +442,7 @@ Envía el link del cliente por WhatsApp, email o SMS. Cuando ambos firmen, el PD
 ## Cuando creas un ESTIMADO:
 
 **[OK] CORRECTO:**
-```
+\`\`\`
 [OK] Estimado EST-2026-042 generado para John Web.
 
  **Detalles:**
@@ -455,7 +455,7 @@ Envía el link del cliente por WhatsApp, email o SMS. Cuando ambos firmen, el PD
 https://app.owlfenc.com/shared-estimate/87e13e69bdf4ed1500e51289e73d9c427121030f603303c94fc25e0e6fdc6886
 
 Envía este link por WhatsApp, email o SMS. El cliente puede ver el estimado sin necesidad de iniciar sesión. 
-```
+\`\`\`
 
 **[ERROR] INCORRECTO:**
 - No mostrar el URL
@@ -465,7 +465,7 @@ Envía este link por WhatsApp, email o SMS. El cliente puede ver el estimado sin
 ## Cuando creas un CONTRATO:
 
 **[OK] CORRECTO:**
-```
+\`\`\`
 [OK] Contrato CNT-2026-001 generado para John Web.
 
  **Detalles:**
@@ -473,7 +473,7 @@ Envía este link por WhatsApp, email o SMS. El cliente puede ver el estimado sin
 - Proyecto: Fence Installation
 - Tipo: Independent Contractor Agreement
 
-✍️ **Links de firma:**
+ **Links de firma:**
 
 **Para ti (Contractor):**
 https://app.owlfenc.com/sign/CNT-mjsvkku8-D7EF290A/contractor
@@ -482,7 +482,7 @@ https://app.owlfenc.com/sign/CNT-mjsvkku8-D7EF290A/contractor
 https://app.owlfenc.com/sign/CNT-mjsvkku8-D7EF290A/client
 
 Envía el link del cliente por WhatsApp, email o SMS. Cuando ambos firmen, el PDF final se generará automáticamente. 
-```
+\`\`\`
 
 **[ERROR] INCORRECTO:**
 - No mostrar los URLs
