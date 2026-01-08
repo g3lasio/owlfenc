@@ -1,5 +1,6 @@
 import puppeteer from 'puppeteer';
 import { format } from 'date-fns';
+import { findChromiumPath } from '../utils/chromium-finder';
 
 interface PropertyReportData {
   // Basic Info
@@ -158,14 +159,14 @@ export class PropertyReportPdfService {
     try {
       console.log('🚀 [PDF-SERVICE] Launching Puppeteer...');
       
-      // Try to find Chrome executable (Replit has chromium-browser)
-      const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || 
-                             process.env.CHROME_BIN ||
-                             '/usr/bin/chromium-browser' || // Replit default
-                             '/usr/bin/chromium' ||
-                             undefined; // Let Puppeteer auto-detect
+      // Find Chromium dynamically (works in Replit and other environments)
+      const executablePath = findChromiumPath();
       
-      console.log('👉 [PDF-SERVICE] Using Chrome at:', executablePath);
+      if (executablePath) {
+        console.log('👉 [PDF-SERVICE] Using Chrome at:', executablePath);
+      } else {
+        console.log('👉 [PDF-SERVICE] No Chrome found, letting Puppeteer auto-detect');
+      }
       
       browser = await puppeteer.launch({
         headless: true,
