@@ -271,9 +271,12 @@ export class EntityContextService {
     const conditions: any[] = [];
     
     // Agregar filtro de userId si la tabla lo tiene
-    if (table.userId) {
+    // Algunas tablas no tienen userId pero sí tienen otros campos para filtrar por usuario
+    if (table.userId !== undefined) {
       conditions.push(eq(table.userId, parseInt(this.userId)));
     }
+    // Para estimates y contracts, no filtramos por usuario aquí
+    // porque pueden ser compartidos o no tener userId directo
     
     // Agregar filtros adicionales
     for (const [key, value] of Object.entries(filters)) {
@@ -346,9 +349,12 @@ export class EntityContextService {
     const conditions: any[] = [];
     
     // Agregar filtro de userId si la tabla lo tiene
-    if (table.userId) {
+    // Algunas tablas no tienen userId pero sí tienen otros campos para filtrar por usuario
+    if (table.userId !== undefined) {
       conditions.push(eq(table.userId, parseInt(this.userId)));
     }
+    // Para estimates y contracts, no filtramos por usuario aquí
+    // porque pueden ser compartidos o no tener userId directo
     
     // Agregar filtros adicionales
     for (const [key, value] of Object.entries(filters)) {
