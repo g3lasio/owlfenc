@@ -8152,9 +8152,13 @@ ENHANCED LEGAL CLAUSE:`;
       
       // Get complete property data from ATTOM
       console.log('🌐 [PROPERTY-PDF] Fetching complete property data from ATTOM');
+      console.log('🌐 [PROPERTY-PDF] Request params:', { address, city, state, zip });
+      
       const attomRecord = await secureAttomService.getCompletePropertyData(address, { city, state, zip });
+      console.log('✅ [PROPERTY-PDF] ATTOM data received:', !!attomRecord);
       
       if (!attomRecord) {
+        console.log('❌ [PROPERTY-PDF] No ATTOM data found for address:', address);
         return res.status(404).json({
           message: 'Property not found',
           details: 'No property data found for the provided address'
@@ -8164,6 +8168,11 @@ ENHANCED LEGAL CLAUSE:`;
       // Map ATTOM data to comprehensive format
       console.log('🗺️ [PROPERTY-PDF] Mapping ATTOM data to comprehensive format');
       const comprehensiveData = mapAttomToComprehensive(attomRecord, address);
+      console.log('✅ [PROPERTY-PDF] Data mapped successfully:', {
+        address: comprehensiveData.address,
+        owner: comprehensiveData.owner,
+        hasData: !!comprehensiveData
+      });
       
       // Generate PDF
       console.log('📄 [PROPERTY-PDF] Generating PDF with comprehensive data');
@@ -8171,6 +8180,7 @@ ENHANCED LEGAL CLAUSE:`;
         comprehensiveData,
         contractorInfo
       );
+      console.log('✅ [PROPERTY-PDF] PDF buffer received, size:', pdfBuffer.length, 'bytes');
       
       // Set response headers
       const filename = `property-report-${address.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.pdf`;

@@ -148,28 +148,43 @@ export class PropertyReportPdfService {
     contractorInfo?: ContractorInfo
   ): Promise<Buffer> {
     console.log('📄 [PDF-SERVICE] Starting comprehensive property report generation');
-    
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu'
-      ]
+    console.log('📄 [PDF-SERVICE] Property data:', {
+      address: propertyData.address,
+      owner: propertyData.owner,
+      hasData: !!propertyData
     });
     
+    let browser;
     try {
+      console.log('🚀 [PDF-SERVICE] Launching Puppeteer...');
+      browser = await puppeteer.launch({
+        headless: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu'
+        ]
+      });
+      console.log('✅ [PDF-SERVICE] Puppeteer launched successfully');
+      
       const page = await browser.newPage();
+      console.log('✅ [PDF-SERVICE] New page created');
       
       // Generate HTML content
+      console.log('📝 [PDF-SERVICE] Generating HTML content...');
       const htmlContent = this.generateHtmlContent(propertyData, contractorInfo);
+      console.log('✅ [PDF-SERVICE] HTML content generated, length:', htmlContent.length);
       
+      console.log('🌐 [PDF-SERVICE] Setting page content...');
       await page.setContent(htmlContent, {
-        waitUntil: 'networkidle0'
+        waitUntil: 'networkidle0',
+        timeout: 30000 // 30 seconds timeout
       });
+      console.log('✅ [PDF-SERVICE] Page content set successfully');
       
       // Generate PDF with print-safe margins
+      console.log('📝 [PDF-SERVICE] Generating PDF...');
       const pdfBuffer = await page.pdf({
         format: 'A4',
         printBackground: true,
@@ -179,14 +194,23 @@ export class PropertyReportPdfService {
           right: '12mm',
           bottom: '15mm',
           left: '12mm'
-        }
+        },
+        timeout: 60000 // 60 seconds timeout
       });
       
-      console.log('✅ [PDF-SERVICE] PDF generated successfully');
+      console.log('✅ [PDF-SERVICE] PDF generated successfully, size:', pdfBuffer.length, 'bytes');
       return Buffer.from(pdfBuffer);
       
+    } catch (error: any) {
+      console.error('❌ [PDF-SERVICE] Error generating PDF:', error.message);
+      console.error('❌ [PDF-SERVICE] Error stack:', error.stack);
+      throw new Error(`Failed to generate PDF: ${error.message}`);
     } finally {
-      await browser.close();
+      if (browser) {
+        console.log('🗑️ [PDF-SERVICE] Closing browser...');
+        await browser.close();
+        console.log('✅ [PDF-SERVICE] Browser closed');
+      }
     }
   }
   
