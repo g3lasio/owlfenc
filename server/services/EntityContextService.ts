@@ -159,7 +159,7 @@ export class EntityContextService {
     const conditions: any[] = [or(...searchConditions)];
     
     // Agregar filtro de userId si la tabla lo tiene
-    if (table.userId) {
+    if (table.userId !== undefined) {
       conditions.push(eq(table.userId, parseInt(this.userId)));
     }
     
@@ -214,7 +214,7 @@ export class EntityContextService {
     const conditions: any[] = [eq(table.id, typeof id === 'string' ? parseInt(id) : id)];
     
     // Agregar filtro de userId si la tabla lo tiene
-    if (table.userId) {
+    if (table.userId !== undefined) {
       conditions.push(eq(table.userId, parseInt(this.userId)));
     }
     
