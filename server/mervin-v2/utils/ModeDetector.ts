@@ -130,68 +130,81 @@ export function detectActionType(input: string):
  */
 export function generateFriendlyRedirectMessage(actionType: string): string {
   const messages = {
-    estimate: `¡Claro! Para crear un estimado, usa la herramienta **Estimate Wizard** en el menú principal.
+    estimate: `¡Claro! Para crear un estimado, usa la herramienta **Estimate Wizard**.
 
-📊 **Estimate Wizard** te permite:
+📋 **Estimate Wizard** te permite:
 - Calcular costos de materiales y mano de obra
 - Generar estimados profesionales en PDF
 - Enviar estimados directamente a tus clientes
 
+👉 [Ir a Estimate Wizard](/estimates/create)
+
 🚧 *La creación conversacional de estimados está en desarrollo y estará disponible pronto.*`,
 
-    contract: `¡Perfecto! Para generar un contrato, usa la herramienta **Contract Generator** en el menú.
+    contract: `¡Perfecto! Para generar un contrato, usa la herramienta **Contract Generator**.
 
 📄 **Contract Generator** te permite:
 - Crear contratos legales personalizados
 - Usar templates pre-aprobados
 - Generar documentos listos para firmar
 
+👉 [Ir a Contract Generator](/contracts/create)
+
 🚧 *La generación conversacional de contratos está en desarrollo.*`,
 
-    invoice: `¡Entendido! Para crear una factura, usa la herramienta **Invoice Generator** en el menú.
+    invoice: `¡Entendido! Para crear una factura, usa la herramienta **Invoice Generator**.
 
 💰 **Invoice Generator** te permite:
 - Generar facturas profesionales
 - Rastrear pagos
 - Enviar recordatorios automáticos
 
+👉 [Ir a Invoice Generator](/invoices/create)
+
 🚧 *La creación conversacional de facturas está en desarrollo.*`,
 
-    permit: `¡Claro! Para información sobre permisos, usa la herramienta **Permit Advisor** en el menú.
+    permit: `¡Claro! Para información sobre permisos, usa la herramienta **Permit Advisor**.
 
 📋 **Permit Advisor** te ayuda con:
 - Requisitos de permisos por ciudad
 - Documentación necesaria
 - Proceso de aplicación
 
+👉 [Ir a Permit Advisor](/permit-advisor)
+
 🚧 *El asesor conversacional de permisos está en desarrollo.*`,
 
-    client: `¡Perfecto! Para gestionar clientes, ve a la sección **Clients** en el menú.
+    client: `¡Perfecto! Para gestionar clientes, ve a la sección **Clients**.
 
 👥 **Client Management** te permite:
 - Ver todos tus clientes
 - Agregar nuevos clientes
 - Ver historial de proyectos
 
+👉 [Ir a Clients](/clients)
+
 🚧 *La gestión conversacional de clientes está en desarrollo.*`,
 
-    project: `¡Entendido! Para gestionar proyectos, ve a la sección **Projects** en el menú.
+    project: `¡Entendido! Para gestionar proyectos, ve a la sección **Projects**.
 
 🏗️ **Project Management** te permite:
 - Ver todos tus proyectos
 - Crear nuevos proyectos
 - Rastrear progreso
 
+👉 [Ir a Projects](/projects)
+
 🚧 *La gestión conversacional de proyectos está en desarrollo.*`,
 
-    list: `¡Claro! Para ver tus registros, usa las secciones correspondientes en el menú:
+    list: `¡Claro! Para ver tus registros, usa las secciones correspondientes:
 
-📊 **Menú Principal:**
-- **Estimates** - Ver todos tus estimados
-- **Contracts** - Ver todos tus contratos
-- **Invoices** - Ver todas tus facturas
-- **Clients** - Ver todos tus clientes
-- **Projects** - Ver todos tus proyectos
+📋 **Menú Principal:**
+
+👉 [Ver Estimates](/estimates)
+👉 [Ver Contracts](/contracts)
+👉 [Ver Invoices](/invoices)
+👉 [Ver Clients](/clients)
+👉 [Ver Projects](/projects)
 
 🚧 *La consulta conversacional de datos está en desarrollo.*`,
 

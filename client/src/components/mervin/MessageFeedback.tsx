@@ -71,7 +71,7 @@ export function MessageFeedback({
   };
 
   return (
-    <div className="absolute -top-2 -right-2 md:opacity-0 md:group-hover:opacity-100 opacity-80 transition-opacity flex items-center gap-1">
+    <div className="absolute -bottom-2 -right-2 md:opacity-0 md:group-hover:opacity-100 opacity-80 transition-opacity flex items-center gap-1">
       {/* Botón de copiar */}
       <button
         onClick={handleCopy}
