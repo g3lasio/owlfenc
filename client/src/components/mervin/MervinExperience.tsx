@@ -586,9 +586,14 @@ export function MervinExperience({ mode, onMinimize, isMinimized = false, onClos
               alt="Mervin AI Logo" 
               className="w-6 h-6 hidden md:block"
             />
-            <h1 className="text-sm font-semibold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
-              Mervin AI
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-sm font-semibold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
+                Mervin AI
+              </h1>
+              <span className="px-1.5 py-0.5 text-[10px] font-medium bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded">
+                BETA
+              </span>
+            </div>
           </div>
           
           {/* Action Buttons - Compact */}

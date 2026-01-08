@@ -23,6 +23,7 @@ import { autoDiscoveryIntegration } from '../../services/integration/AutoDiscove
 import type { WorkflowExecutionResult } from '../services/WorkflowRunner';
 import { processWithAgentV3, shouldUseAgentV3 } from '../../mervin-v3/integration/AgentIntegration';
 import { FriendlyErrorHandler } from '../../mervin-v3/utils/FriendlyErrorHandler';
+import { detectActionType, generateFriendlyRedirectMessage } from '../utils/ModeDetector';
 
 // ============= TYPES =============
 
@@ -117,6 +118,21 @@ export class MervinConversationalOrchestrator {
       
       // 3. Determinar modo de operación
       const mode = request.mode || 'agent'; // Default: agent mode
+      
+      // 3.1. Si está en modo CHAT y detectamos una acción, generar mensaje amigable
+      if (mode === 'chat') {
+        const actionType = detectActionType(request.input);
+        if (actionType !== 'general' && actionType !== 'property') {
+          console.log(`💬 [MERVIN-CONVERSATIONAL] Acción '${actionType}' detectada en modo CHAT → Mensaje amigable`);
+          const friendlyMessage = generateFriendlyRedirectMessage(actionType);
+          return {
+            type: 'conversation',
+            message: friendlyMessage,
+            conversationId: state.conversationId,
+            executionTime: Date.now() - startTime
+          };
+        }
+      }
       
       // 3.5. Si está en modo agente y la solicitud es compleja, usar V3
       if (mode === 'agent' && shouldUseAgentV3(request)) {

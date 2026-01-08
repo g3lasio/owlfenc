@@ -104,19 +104,15 @@ export class FriendlyErrorHandler {
    * Mensaje cuando falla la ejecución de un paso
    */
   private static getExecutionErrorMessage(): string {
-    const messages = [
-      `¡Órale! Algo salió mal en el proceso. 🔧\n\nNo te preocupes, déjame intentarlo de nuevo o prueba con otra cosa.`,
-      
-      `¡Ey primo! Hubo un pequeño problema. 😅\n\nEstas cosas pasan, como cuando se cae un clavo. ¿Intentamos de nuevo?`,
-      
-      `¡Ah caray! Se me complicó un poco. 🛠️\n\nComo buen contratista, sé que a veces hay que ajustar el plan. ¿Lo intentamos otra vez?`,
-      
-      `¡Nel! Algo no salió como esperaba. 🎯\n\nPero tranquilo, en la construcción siempre hay plan B. ¿Qué te parece si lo intentamos de nuevo?`,
-      
-      `¡Uy compa! Tuve un tropezón. 🚧\n\nPero como dice el dicho: "El que no tropieza, no avanza". ¿Volvemos a intentarlo?`
-    ];
-    
-    return messages[Math.floor(Math.random() * messages.length)];
+    return `¡Órale! Algo salió mal con esta función conversacional. 🔧
+
+**Mientras tanto, puedes usar las herramientas manuales:**
+• **Estimate Wizard** - Para crear estimados
+• **Contract Generator** - Para generar contratos
+• **Invoice Generator** - Para crear facturas
+• **Permit Advisor** - Para información de permisos
+
+🚧 *Las capacidades conversacionales avanzadas están en desarrollo.*`;
   }
   
   /**
