@@ -62,8 +62,8 @@ export class TaskPlanner {
     const startTime = Date.now();
     
     try {
-      // 1. Construir el prompt con todo el contexto (usando Jarvis prompt)
-      const prompt = buildJarvisPrompt(context);
+      // 1. Construir el prompt con todo el contexto (usando Planning prompt)
+      const prompt = buildPlanningPrompt(context);
       
       if (this.config.debug) {
         console.log('📝 [TASK-PLANNER] Prompt generado (Jarvis):');
@@ -75,7 +75,7 @@ export class TaskPlanner {
         model: this.config.planningModel,
         max_tokens: 4096,
         temperature: this.config.planningTemperature,
-        system: JARVIS_SYSTEM_PROMPT,
+        system: PLANNING_SYSTEM_PROMPT,
         messages: [
           {
             role: 'user',

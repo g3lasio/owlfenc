@@ -34,21 +34,14 @@ router.get('/current', verifyFirebaseAuth, async (req: Request, res: Response) =
     const planPermissions = PLAN_LIMITS[subscription.planId] || PLAN_LIMITS[5]; // Default to Free
     
     // Obtener uso actual desde Firebase
-    const [
-      deepsearchUsage,
-      deepsearchFullCostsUsage,
-      propertyVerificationUsage,
-      contractsUsage,
-      estimatesUsage,
-      permitAdvisorUsage
-    ] = await Promise.all([
-      productionUsageService.getUsageForPeriod(userId, 'deepsearch', new Date()),
-      productionUsageService.getUsageForPeriod(userId, 'deepsearchFullCosts', new Date()),
-      productionUsageService.getUsageForPeriod(userId, 'propertyVerification', new Date()),
-      productionUsageService.getUsageForPeriod(userId, 'contracts', new Date()),
-      productionUsageService.getUsageForPeriod(userId, 'aiEstimates', new Date()),
-      productionUsageService.getUsageForPeriod(userId, 'permitAdvisor', new Date())
-    ]);
+    const usageSummary = await productionUsageService.getUsageSummary(userId);
+    
+    const deepsearchUsage = usageSummary?.used.deepsearch || 0;
+    const deepsearchFullCostsUsage = 0; // No existe en el nuevo sistema
+    const propertyVerificationUsage = usageSummary?.used.propertyVerifications || 0;
+    const contractsUsage = usageSummary?.used.contracts || 0;
+    const estimatesUsage = usageSummary?.used.aiEstimates || 0;
+    const permitAdvisorUsage = usageSummary?.used.permitAdvisor || 0;
 
     console.log(`📊 [USAGE-LIMITS] Uso actual:`, {
       deepsearch: deepsearchUsage,
@@ -125,7 +118,9 @@ router.get('/feature/:featureName', verifyFirebaseAuth, async (req: Request, res
 
     const planPermissions = PLAN_LIMITS[subscription.planId] || PLAN_LIMITS[5];
     const limit = planPermissions[featureName as keyof typeof planPermissions] as number || 0;
-    const used = await productionUsageService.getUsageForPeriod(userId, featureName, new Date());
+    const usageSummary = await productionUsageService.getUsageSummary(userId);
+    const featureKey = featureName as keyof typeof usageSummary.used;
+    const used = usageSummary?.used[featureKey] || 0;
     const remaining = limit === -1 ? -1 : Math.max(0, limit - used);
 
     res.json({
