@@ -17,7 +17,7 @@
     "inventory": "My Inventory",
     "estimates": "Estimates",
     "propertyVerification": "Property Verification",
-    "permitAdvisor": "Mervin Permit Advisor",
+    "permitAdvisor": "Permit Advisor",
     "arFenceEstimator": "AR Fence Estimator",
     "settings": "Settings",
     "subscription": "Subscription",
@@ -32,7 +32,9 @@
     "estimateGenerator": "Estimate Generator",
     "contractGenerator": "Contract Generator",
     "projectPayments": "Project Payments",
-    "paymentTracker": "Payment Tracker"
+    "paymentTracker": "Payment Tracker",
+    "helpCenter": "Help Center",
+    "getSupport": "Get Support"
   },
   "sidebar": {
     "toggleSidebar": "Toggle Sidebar",

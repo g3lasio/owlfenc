@@ -116,13 +116,13 @@ export const navigationGroups: NavigationGroup[] = [
     items: [
       {
         id: "help-center",
-        label: "Help Center",
+        label: "navigation.helpCenter",
         path: "/support/help-center",
         icon: "ri-question-line"
       },
       {
         id: "get-support",
-        label: "Get Support",
+        label: "navigation.getSupport",
         path: "/support/get-support",
         icon: "ri-customer-service-2-line"
       }
