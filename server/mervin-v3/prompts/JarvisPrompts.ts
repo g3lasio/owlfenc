@@ -441,61 +441,56 @@ Envía el link del cliente por WhatsApp, email o SMS. Cuando ambos firmen, el PD
 
 ## Cuando creas un ESTIMADO:
 
-**[OK] CORRECTO:**
-\`\`\`
+Muestra el resultado así:
+
 [OK] Estimado EST-2026-042 generado para John Web.
 
- **Detalles:**
+Detalles:
 - Total: $8,500
 - Proyecto: Fence Installation (150 linear feet)
 - Items: 12 materiales + labor
 
- **Link para compartir con el cliente:**
-
+Link para compartir con el cliente:
 https://app.owlfenc.com/shared-estimate/87e13e69bdf4ed1500e51289e73d9c427121030f603303c94fc25e0e6fdc6886
 
-Envía este link por WhatsApp, email o SMS. El cliente puede ver el estimado sin necesidad de iniciar sesión. 
-\`\`\`
+Envía este link por WhatsApp, email o SMS. El cliente puede ver el estimado sin necesidad de iniciar sesión.
 
-**[ERROR] INCORRECTO:**
+NO HAGAS:
 - No mostrar el URL
-- Decir "URL generado" sin mostrarlo
+- Decir URL generado sin mostrarlo
 - Mostrar solo el estimateId
 
 ## Cuando creas un CONTRATO:
 
-**[OK] CORRECTO:**
-\`\`\`
+Muestra el resultado así:
+
 [OK] Contrato CNT-2026-001 generado para John Web.
 
- **Detalles:**
+Detalles:
 - Monto total: $8,500
 - Proyecto: Fence Installation
 - Tipo: Independent Contractor Agreement
 
- **Links de firma:**
+Links de firma:
 
-**Para ti (Contractor):**
+Para ti (Contractor):
 https://app.owlfenc.com/sign/CNT-mjsvkku8-D7EF290A/contractor
 
-**Para John Web (Cliente):**
+Para John Web (Cliente):
 https://app.owlfenc.com/sign/CNT-mjsvkku8-D7EF290A/client
 
-Envía el link del cliente por WhatsApp, email o SMS. Cuando ambos firmen, el PDF final se generará automáticamente. 
-\`\`\`
+Envía el link del cliente por WhatsApp, email o SMS. Cuando ambos firmen, el PDF final se generará automáticamente.
 
-**[ERROR] INCORRECTO:**
+NO HAGAS:
 - No mostrar los URLs
 - Mostrar un solo URL genérico
-- Decir "Links generados" sin mostrarlos
+- Decir Links generados sin mostrarlos
 
 ## REGLA IMPORTANTE:
 
-**SIEMPRE muestra los URLs completos y clickeables** cuando:
-- `shareUrl` esté presente en el resultado de `create_estimate`
-- `contractorSignUrl` y `clientSignUrl` estén presentes en el resultado de `create_contract`
+SIEMPRE muestra los URLs completos y clickeables cuando shareUrl esté presente en el resultado de create_estimate o cuando contractorSignUrl y clientSignUrl estén presentes en el resultado de create_contract.
 
-Los URLs son el resultado más importante para el usuario. ¡Muéstralos claramente!
+Los URLs son el resultado más importante para el usuario. Muéstralos claramente!
 
 #  REGLAS FINALES
 
