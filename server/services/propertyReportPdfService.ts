@@ -157,13 +157,26 @@ export class PropertyReportPdfService {
     let browser;
     try {
       console.log('🚀 [PDF-SERVICE] Launching Puppeteer...');
+      
+      // Try to find Chrome executable (Replit has chromium-browser)
+      const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || 
+                             process.env.CHROME_BIN ||
+                             '/usr/bin/chromium-browser' || // Replit default
+                             '/usr/bin/chromium' ||
+                             undefined; // Let Puppeteer auto-detect
+      
+      console.log('👉 [PDF-SERVICE] Using Chrome at:', executablePath);
+      
       browser = await puppeteer.launch({
         headless: true,
+        executablePath: executablePath,
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
           '--disable-dev-shm-usage',
-          '--disable-gpu'
+          '--disable-gpu',
+          '--disable-software-rasterizer',
+          '--disable-extensions'
         ]
       });
       console.log('✅ [PDF-SERVICE] Puppeteer launched successfully');
