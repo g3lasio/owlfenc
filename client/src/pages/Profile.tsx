@@ -43,7 +43,6 @@ import {
   Bell,
   Shield,
   User as UserIcon,
-  ShieldAlert,
   Info,
 } from "lucide-react";
 import { SubscriptionInfo } from "@/components/ui/subscription-info";
@@ -65,9 +64,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import PhoneAuthMFA from "@/components/auth/PhoneAuthMFA";
+// import PhoneAuthMFA from "@/components/auth/PhoneAuthMFA"; // REMOVED: 2FA functionality temporarily disabled
 import { ImageCropper } from "@/components/ui/image-cropper";
-import { multiFactor, EmailAuthProvider, reauthenticateWithCredential, signOut } from "firebase/auth";
+import { EmailAuthProvider, reauthenticateWithCredential, signOut } from "firebase/auth";
 import { auth, uploadFile } from "@/lib/firebase";
 import {
   Alert,
@@ -147,10 +146,10 @@ export default function Profile() {
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [smsNotifications, setSmsNotifications] = useState(false);
 
-  // 2FA state
-  const [mfaEnabled, setMfaEnabled] = useState(false);
-  const [enrolling, setEnrolling] = useState(false);
-  const [mfaError, setMfaError] = useState<string | null>(null);
+  // 2FA state - REMOVED: 2FA functionality temporarily disabled
+  // const [mfaEnabled, setMfaEnabled] = useState(false);
+  // const [enrolling, setEnrolling] = useState(false);
+  // const [mfaError, setMfaError] = useState<string | null>(null);
 
   // Email change state
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
@@ -1179,7 +1178,8 @@ export default function Profile() {
     }
   };
 
-  // 2FA Handlers
+  // 2FA Handlers - REMOVED: 2FA functionality temporarily disabled
+  /*
   const handleStartEnrollment = () => {
     if (!currentUser) {
       toast({
@@ -1243,6 +1243,7 @@ export default function Profile() {
       });
     }
   };
+  */
 
   // Sync state with loaded settings
   useEffect(() => {
@@ -2278,76 +2279,9 @@ export default function Profile() {
                   </div>
                 </div>
 
-                <Separator className="bg-gray-700" />
-
-                {/* 2FA Settings */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label className="text-lg font-medium text-cyan-400 flex items-center gap-2">
-                        <ShieldAlert className="h-5 w-5" />
-                        Two-Factor Authentication (2FA)
-                      </Label>
-                      <p className="text-sm text-gray-400">
-                        Add an extra layer of security using SMS verification
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {mfaEnabled && (
-                        <span className="px-2 py-1 text-xs bg-green-500/20 text-green-400 border border-green-500/30 rounded-full">
-                          Active
-                        </span>
-                      )}
-                      <Switch 
-                        checked={mfaEnabled} 
-                        onCheckedChange={(checked) => {
-                          if (!checked && mfaEnabled) {
-                            if (confirm("Are you sure you want to disable two-factor authentication? This may reduce your account security.")) {
-                              handleDisableMfa();
-                            }
-                          } else if (checked && !mfaEnabled) {
-                            handleStartEnrollment();
-                          }
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {enrolling && (
-                    <Card className="border-cyan-400/30 bg-cyan-400/5">
-                      <CardHeader>
-                        <CardTitle className="text-base text-cyan-400">Set Up Two-Factor Authentication</CardTitle>
-                        <CardDescription className="text-gray-400">
-                          Add your phone number to receive verification codes via SMS
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <PhoneAuthMFA 
-                          onSuccess={handleEnrollmentSuccess}
-                          onCancel={handleCancelEnrollment}
-                        />
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {!enrolling && !mfaEnabled && (
-                    <Alert className="border-gray-700 bg-gray-800/50">
-                      <Info className="h-4 w-4 text-cyan-400" />
-                      <AlertTitle className="text-cyan-400">Security Recommendation</AlertTitle>
-                      <AlertDescription className="text-gray-400">
-                        Enable two-factor authentication to increase your account security.
-                      </AlertDescription>
-                    </Alert>
-                  )}
-
-                  {mfaError && (
-                    <Alert variant="destructive" className="border-red-500/30 bg-red-500/10">
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertTitle>Error</AlertTitle>
-                      <AlertDescription>{mfaError}</AlertDescription>
-                    </Alert>
-                  )}
-                </div>
+                {/* 2FA Settings - REMOVED: 2FA functionality temporarily disabled for stability */}
+                {/* The 2FA feature has been temporarily removed to maintain app stability.
+                     It can be re-enabled in the future when the core functionality is fully stable. */}
               </CardContent>
             </Card>
           </TabsContent>
