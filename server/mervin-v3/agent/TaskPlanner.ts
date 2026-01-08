@@ -66,11 +66,17 @@ export class TaskPlanner {
       const prompt = buildPlanningPrompt(context);
       
       if (this.config.debug) {
-        console.log('📝 [TASK-PLANNER] Prompt generado (Jarvis):');
+        console.log('📝 [TASK-PLANNER] Prompt generado (Planning):');
         console.log(prompt);
       }
       
       // 2. Llamar a Claude para generar el plan
+      console.log('\ud83d\udcdd [TASK-PLANNER-DEBUG] Configuración de llamada a Claude:');
+      console.log('   - Model:', this.config.planningModel);
+      console.log('   - Temperature:', this.config.planningTemperature);
+      console.log('   - System prompt length:', PLANNING_SYSTEM_PROMPT.length);
+      console.log('   - User prompt length:', prompt.length);
+      
       const response = await this.anthropic.messages.create({
         model: this.config.planningModel,
         max_tokens: 4096,
@@ -83,6 +89,10 @@ export class TaskPlanner {
           }
         ]
       });
+      
+      console.log('\ud83d\udcdd [TASK-PLANNER-DEBUG] Respuesta de Claude:');
+      console.log('   - Response type:', response.content[0].type);
+      console.log('   - Content length:', response.content[0].type === 'text' ? response.content[0].text.length : 0);
       
       // 3. Extraer el contenido de la respuesta
       const planText = response.content[0].type === 'text' 

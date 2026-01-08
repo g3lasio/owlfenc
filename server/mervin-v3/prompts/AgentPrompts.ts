@@ -72,6 +72,8 @@ IMPORTANTE:
 - NO asumas datos que no tienes
 - SI falta información crítica, incluye un paso para preguntarla
 - SIEMPRE valida que los parámetros requeridos estén presentes
+- TU RESPUESTA DEBE SER SOLO JSON VÁLIDO, sin texto conversacional, saludos, ni explicaciones
+- NO respondas como un asistente conversacional, SOLO genera el plan en formato JSON
 `;
 
 /**
@@ -202,6 +204,8 @@ ${pageContextText}
 # FORMATO DE SALIDA
 
 Responde SOLO con el JSON del plan, sin texto adicional antes o después.
+
+**IMPORTANTE: Tu respuesta DEBE comenzar con { y terminar con }. NO incluyas explicaciones, saludos, ni texto conversacional. SOLO el JSON del plan.**
 `;
 }
 
