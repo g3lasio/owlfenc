@@ -100,7 +100,10 @@ export class DynamicToolGenerator {
   /**
    * Verifica si una palabra es un verbo común
    */
-  private hasVerb(word: string): boolean {
+  private hasVerb(word: string | undefined): boolean {
+    if (!word || typeof word !== 'string') {
+      return false;
+    }
     const verbs = ['create', 'get', 'update', 'delete', 'list', 'search', 'generate', 'send', 'analyze', 'verify', 'check'];
     return verbs.some(verb => word.toLowerCase().includes(verb));
   }

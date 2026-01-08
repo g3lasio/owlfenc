@@ -190,10 +190,9 @@ export class StepExecutor {
       'create_contract_workflow',
       'check_permits_workflow',
       'verify_property_ownership',
-      'analyze_permits',
-      'search_entity',
-      'get_entity',
-      'list_entities'
+      'analyze_permits'
+      // Nota: search_entity, get_entity, list_entities NO son workflows,
+      // son llamadas directas a SystemAPI (ver executeSystemAPI)
     ];
     
     return workflows.includes(action);
