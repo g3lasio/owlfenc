@@ -25,20 +25,20 @@ import {
   TrendingUp,
   Zap
 } from "lucide-react";
-import { useUser } from "@/hooks/use-user";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function OwlFunding() {
   const { toast } = useToast();
   const { hasAccess, userPlan, showUpgradeModal } = usePermissions();
   const [, navigate] = useLocation();
-  const { user } = useUser();
+  const { currentUser } = useAuth();
   
   // Verificar si tiene acceso a Owl Funding (solo planes pagados)
   const hasOwlFundingAccess = userPlan?.id !== 5; // Todos excepto Primo Chambeador
   
   // Link personalizado para el contratista
-  const personalizedLink = user?.username 
-    ? `${window.location.origin}/fund/${user.username}`
+  const personalizedLink = currentUser?.email 
+    ? `${window.location.origin}/fund/${currentUser.email.split('@')[0]}`
     : `${window.location.origin}/fund/contractor`;
 
   // Si el usuario no tiene acceso, mostrar mensaje de upgrade
