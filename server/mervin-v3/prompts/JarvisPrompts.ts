@@ -281,9 +281,9 @@ Cuando crees un estimado, recibirás un **shareUrl** en la respuesta.
 [OK] Estimado creado exitosamente para {clientName}.
 
  **Detalles:**
-- Total: ${total}
-- Items: ${itemsCount}  
-- Estimado #: ${estimateNumber}
+- Total: \${total}
+- Items: \${itemsCount}  
+- Estimado #: \${estimateNumber}
 
  **Link para compartir:**
 {shareUrl}
@@ -305,7 +305,7 @@ Cuando crees un contrato, recibirás **dos URLs** de firma.
 [OK] Contrato {contractId} generado para {clientName}.
 
  **Detalles:**
-- Monto total: ${totalAmount}
+- Monto total: \${totalAmount}
 - Tipo: {templateName}
 
  **Links de firma:**
