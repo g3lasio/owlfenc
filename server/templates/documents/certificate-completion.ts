@@ -168,6 +168,16 @@ function generateCertificateCompletionHTML(data: TemplateData, branding: Contrac
   const contractorLicense = branding.licenseNumber || data.contractor.license || '';
   const contractorState = branding.state || data.contractor.state || '';
   
+  // Log branding object for debugging
+  console.log(`📊 [CERTIFICATE-COMPLETION] Branding received:`, {
+    companyName: branding.companyName || 'NOT PROVIDED',
+    licenseNumber: branding.licenseNumber || 'NOT PROVIDED',
+    state: branding.state || 'NOT PROVIDED',
+    address: branding.address ? 'PROVIDED' : 'NOT PROVIDED',
+    phone: branding.phone ? 'PROVIDED' : 'NOT PROVIDED',
+    email: branding.email ? 'PROVIDED' : 'NOT PROVIDED'
+  });
+  
   // Detect correct timezone based on contractor's state (critical for legal accuracy)
   const contractorTimezone = getContractorTimezone(contractorState);
   console.log(`📍 [CERTIFICATE-COMPLETION] Contractor state: ${contractorState || 'Unknown'}, Timezone: ${contractorTimezone}`);

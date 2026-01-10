@@ -925,6 +925,18 @@ router.post('/templates/:templateId/generate-document',
     try {
       const { data, branding, title } = req.body;
       
+      // Log received data for debugging
+      console.log(`📊 [TEMPLATE-DOC] Received data:`, {
+        templateId,
+        hasData: !!data,
+        hasBranding: !!branding,
+        brandingKeys: branding ? Object.keys(branding) : [],
+        licenseNumber: branding?.licenseNumber || 'NOT PROVIDED',
+        state: branding?.state || 'NOT PROVIDED',
+        title: title || 'NO TITLE',
+        dataKeys: data ? Object.keys(data).slice(0, 10) : []
+      });
+      
       if (!featureFlags.isMultiTemplateSystemEnabled()) {
         return res.status(404).json({
           success: false,
