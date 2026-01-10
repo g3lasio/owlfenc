@@ -195,7 +195,18 @@ export default function DynamicTemplateConfigurator({
   };
 
   const handleFormSubmit = (formData: any) => {
+    console.log('📋 [DYNAMIC-CONFIG] Form data submitted:', JSON.stringify(formData, null, 2));
+    console.log('📋 [DYNAMIC-CONFIG] Base data:', JSON.stringify(baseData, null, 2));
+    
     const transformedData = transformToTemplateData(formData, baseData);
+    
+    console.log('📋 [DYNAMIC-CONFIG] Transformed data:', JSON.stringify(transformedData, null, 2));
+    console.log('📋 [DYNAMIC-CONFIG] Completion dates in transformed:', {
+      projectStartDate: transformedData.completion?.projectStartDate,
+      projectCompletionDate: transformedData.completion?.projectCompletionDate,
+      dateOfAcceptance: transformedData.completion?.dateOfAcceptance,
+    });
+    
     if (aiMetadata && hasEnhanced) {
       transformedData.aiEnhancement = aiMetadata;
     }

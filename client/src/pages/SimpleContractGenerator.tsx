@@ -2499,6 +2499,9 @@ export default function SimpleContractGenerator() {
    * 3. This function automatically routes data correctly
    */
   const buildRegistryDrivenPdfPayload = useCallback((templateId: string) => {
+    console.log('📋 [BUILD-PDF-PAYLOAD] Building payload for template:', templateId);
+    console.log('📋 [BUILD-PDF-PAYLOAD] contractData.completion:', JSON.stringify(contractData?.completion, null, 2));
+    
     const dataSource = templateConfigRegistry.getDataSource(templateId);
     
     // Build contractor data from profile (shared across all templates) - NO automatic fallbacks between fields
@@ -6638,6 +6641,13 @@ export default function SimpleContractGenerator() {
                     templateId="certificate-completion"
                     baseData={contractData}
                     onSubmit={async (transformedData) => {
+                      console.log('📋 [CERTIFICATE-COMPLETION] Received transformedData:', JSON.stringify(transformedData, null, 2));
+                      console.log('📋 [CERTIFICATE-COMPLETION] Completion dates received:', {
+                        projectStartDate: transformedData.completion?.projectStartDate,
+                        projectCompletionDate: transformedData.completion?.projectCompletionDate,
+                        dateOfAcceptance: transformedData.completion?.dateOfAcceptance,
+                      });
+                      
                       setIsLoading(true);
                       try {
                         // Generate Certificate of Completion PDF
