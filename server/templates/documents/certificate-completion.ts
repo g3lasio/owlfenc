@@ -88,16 +88,19 @@ function formatLegalDate(dateInput: string | Date | undefined, timezone: string 
   }
   
   try {
+    // If date string is in YYYY-MM-DD format (no time), format directly without timezone conversion
+    // This prevents the "off by one day" bug caused by UTC interpretation
+    if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
+      const [year, month, day] = dateInput.split('-').map(Number);
+      const months = ['January', 'February', 'March', 'April', 'May', 'June',
+                      'July', 'August', 'September', 'October', 'November', 'December'];
+      return `${months[month - 1]} ${day}, ${year}`;
+    }
+    
     let date: Date;
     
     if (typeof dateInput === 'string') {
-      // If date string is in YYYY-MM-DD format (no time), treat as local date
-      if (/^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
-        const [year, month, day] = dateInput.split('-').map(Number);
-        date = new Date(year, month - 1, day); // Create date in local timezone
-      } else {
-        date = new Date(dateInput);
-      }
+      date = new Date(dateInput);
     } else {
       date = dateInput;
     }
@@ -110,7 +113,7 @@ function formatLegalDate(dateInput: string | Date | undefined, timezone: string 
       year: 'numeric', 
       month: 'long', 
       day: 'numeric',
-      timeZone: timezone // Use contractor's timezone
+      timeZone: timezone // Use contractor's timezone for ISO timestamps
     });
   } catch {
     return String(dateInput);
@@ -124,8 +127,24 @@ function calculateProjectDuration(startDate: string | Date | undefined, endDate:
   if (!startDate || !endDate) return 0;
   
   try {
-    const start = typeof startDate === 'string' ? new Date(startDate) : startDate;
-    const end = typeof endDate === 'string' ? new Date(endDate) : endDate;
+    // Parse dates without timezone conversion for YYYY-MM-DD format
+    let start: Date;
+    let end: Date;
+    
+    if (typeof startDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(startDate)) {
+      const [year, month, day] = startDate.split('-').map(Number);
+      start = new Date(year, month - 1, day);
+    } else {
+      start = typeof startDate === 'string' ? new Date(startDate) : startDate;
+    }
+    
+    if (typeof endDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
+      const [year, month, day] = endDate.split('-').map(Number);
+      end = new Date(year, month - 1, day);
+    } else {
+      end = typeof endDate === 'string' ? new Date(endDate) : endDate;
+    }
+    
     const diffTime = Math.abs(end.getTime() - start.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
@@ -145,7 +164,20 @@ function calculateWarrantyEndDate(completionDate: string | Date | undefined, war
   }
   
   try {
-    const date = typeof completionDate === 'string' ? new Date(completionDate) : completionDate;
+    let date: Date;
+    
+    // Parse YYYY-MM-DD format without timezone conversion
+    if (typeof completionDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(completionDate)) {
+      const [year, month, day] = completionDate.split('-').map(Number);
+      date = new Date(year, month - 1, day);
+      date.setMonth(date.getMonth() + warrantyMonths);
+      // Format directly to avoid timezone issues
+      const months = ['January', 'February', 'March', 'April', 'May', 'June',
+                      'July', 'August', 'September', 'October', 'November', 'December'];
+      return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+    }
+    
+    date = typeof completionDate === 'string' ? new Date(completionDate) : completionDate;
     date.setMonth(date.getMonth() + warrantyMonths);
     return formatLegalDate(date, timezone);
   } catch {
