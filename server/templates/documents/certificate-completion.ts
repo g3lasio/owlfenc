@@ -1,16 +1,22 @@
 /**
  * Certificate of Final Completion Template
- * Version 2.0 - Professional Legal Standard
+ * Version 3.0 - Legal Defense Grade
  * 
  * This template generates court-ready Certificate of Final Completion documents with:
  * - Professional legal language suitable for litigation and legal disputes
  * - Comprehensive completion certification and warranty documentation
+ * - Unique document ID for traceability and authenticity
+ * - Contract reference number for legal linkage
+ * - Complete contractor license information with warnings
+ * - Accurate project duration calculations
+ * - Closeout documentation tracking
  * - Consistent "Powered by Chyrris Technologies" branding
  * - Clean date formatting and impeccable pagination
  * - Robust content for legal defense and final payment authorization
  */
 
 import { templateRegistry, TemplateData, ContractorBranding } from '../registry';
+import { randomUUID } from 'crypto';
 
 /**
  * Formats a date string or Date object to clean legal format
@@ -77,12 +83,25 @@ function calculateWarrantyEndDate(completionDate: string | Date | undefined, war
 }
 
 function generateCertificateCompletionHTML(data: TemplateData, branding: ContractorBranding): string {
+  // Generate unique document ID for traceability
+  const documentId = data.documentId || randomUUID().substring(0, 13).toUpperCase();
+  
+  // Contract reference number from linked contract
+  const contractReferenceNumber = data.linkedContractId || data.contractId || 'N/A';
+  
   // Contractor information from branding (single source of truth)
   const contractorName = branding.companyName || data.contractor.name || 'Contractor';
   const contractorAddress = branding.address || data.contractor.address || '';
   const contractorPhone = branding.phone || data.contractor.phone || '';
   const contractorEmail = branding.email || data.contractor.email || '';
   const contractorLicense = branding.licenseNumber || data.contractor.license || '';
+  
+  // License warning if missing
+  const licenseWarning = !contractorLicense ? 
+    '<div style="background: #FEF2F2; border: 2px solid #DC2626; padding: 12px; margin: 20px 0; border-radius: 4px;">' +
+    '<p style="color: #DC2626; font-weight: bold; margin: 0 0 8px 0;">⚠️ WARNING: No Contractor License Number</p>' +
+    '<p style="color: #991B1B; margin: 0; font-size: 12px;">Working without a valid contractor license may be illegal in your jurisdiction and can invalidate this contract. Please update your profile with your license number immediately.</p>' +
+    '</div>' : '';
 
   const currentDate = formatLegalDate(new Date());
 
@@ -417,7 +436,7 @@ function generateCertificateCompletionHTML(data: TemplateData, branding: Contrac
 <div class="header-section">
     <h1 class="contract-title">Certificate of Final Completion</h1>
     <p class="contract-subtitle">Official Documentation of Project Completion and Final Acceptance</p>
-    <div class="document-id">Document ID: ${contractId} | Issued: ${formattedIssuanceDate}</div>
+    <div class="document-id">Document ID: ${documentId} | Issued: ${formattedIssuanceDate}</div>
 </div>
 
 <!-- CERTIFICATION STATEMENT -->
@@ -451,7 +470,7 @@ function generateCertificateCompletionHTML(data: TemplateData, branding: Contrac
         </tr>
         <tr>
             <td class="label-cell">Contract Reference Number</td>
-            <td class="value-cell">${contractId}</td>
+            <td class="value-cell"><strong>${contractReferenceNumber}</strong></td>
         </tr>
         <tr>
             <td class="label-cell">Total Contract Amount</td>
@@ -484,6 +503,7 @@ function generateCertificateCompletionHTML(data: TemplateData, branding: Contrac
             </div>
         </div>
     </div>
+    ${licenseWarning}
 </div>
 
 <!-- SECTION III: PROJECT TIMELINE -->
