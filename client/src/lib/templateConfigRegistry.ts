@@ -506,3 +506,249 @@ templateConfigRegistry.register({
     };
   },
 });
+
+
+// ===== Certificate of Final Completion Configuration =====
+const certificateCompletionSchema = z.object({
+  projectStartDate: z.string().optional(),
+  projectCompletionDate: z.string().min(1, 'Project completion date is required'),
+  dateOfAcceptance: z.string().min(1, 'Date of acceptance is required'),
+  finalInspectionDate: z.string().optional(),
+  punchListCompleted: z.boolean().default(true),
+  finalInspectionPassed: z.boolean().default(true),
+  siteCleanedAndRestored: z.boolean().default(true),
+  warrantyDurationMonths: z.number().min(1).max(120).default(12),
+  warrantyTerms: z.string().optional(),
+  certificateOfOccupancyNumber: z.string().optional(),
+  asBuiltDrawingsDelivered: z.boolean().default(false),
+  omManualsDelivered: z.boolean().default(false),
+  manufacturerWarrantiesDelivered: z.boolean().default(false),
+  staffTrainingCompleted: z.boolean().default(false),
+  allSubcontractorsPaid: z.boolean().default(true),
+  retainageReleaseAuthorized: z.boolean().default(true),
+  additionalNotes: z.string().optional(),
+});
+
+templateConfigRegistry.register({
+  config: {
+    templateId: 'certificate-completion',
+    title: 'Certificate of Final Completion',
+    subtitle: 'Certify project completion and authorize final payment',
+    icon: 'Award',
+    helpText: 'A Certificate of Final Completion officially documents that all contracted work has been completed, inspected, and accepted. It authorizes final payment and commences the warranty period. This is a legally binding document suitable for use in legal proceedings.',
+    signatureRequirement: 'dual',
+    dataSource: 'contract',
+    groups: [
+      {
+        id: 'project-dates',
+        title: 'Project Timeline',
+        description: 'Key dates for project completion',
+        icon: 'Calendar',
+        fields: [
+          {
+            id: 'projectStartDate',
+            label: 'Project Start Date',
+            type: 'date',
+            helpText: 'The date when work on this project began (leave blank to use contract start date)',
+            required: false,
+          },
+          {
+            id: 'projectCompletionDate',
+            label: 'Project Completion Date',
+            type: 'date',
+            helpText: 'The date when all work was completed',
+            required: true,
+          },
+          {
+            id: 'dateOfAcceptance',
+            label: 'Date of Owner Acceptance',
+            type: 'date',
+            helpText: 'The date when the owner formally accepted the completed work',
+            required: true,
+          },
+          {
+            id: 'finalInspectionDate',
+            label: 'Final Inspection Date',
+            type: 'date',
+            helpText: 'The date when the final inspection was conducted (optional)',
+            required: false,
+          },
+        ],
+      },
+      {
+        id: 'completion-checklist',
+        title: 'Completion Checklist',
+        description: 'Confirm all work requirements are met',
+        icon: 'CheckSquare',
+        fields: [
+          {
+            id: 'punchListCompleted',
+            label: 'All punch list items have been completed',
+            type: 'checkbox',
+            helpText: 'Confirm that all minor deficiencies identified during pre-final inspection have been corrected',
+            required: false,
+            defaultValue: true,
+          },
+          {
+            id: 'finalInspectionPassed',
+            label: 'Final inspection passed successfully',
+            type: 'checkbox',
+            helpText: 'Confirm that the project has passed all required inspections',
+            required: false,
+            defaultValue: true,
+          },
+          {
+            id: 'siteCleanedAndRestored',
+            label: 'Work site has been cleaned and restored',
+            type: 'checkbox',
+            helpText: 'Confirm that all debris has been removed and the property is in clean condition',
+            required: false,
+            defaultValue: true,
+          },
+          {
+            id: 'allSubcontractorsPaid',
+            label: 'All subcontractors and suppliers have been paid',
+            type: 'checkbox',
+            helpText: 'Certify that all parties have been paid and no liens exist',
+            required: false,
+            defaultValue: true,
+          },
+          {
+            id: 'retainageReleaseAuthorized',
+            label: 'Authorize release of retained funds (retainage)',
+            type: 'checkbox',
+            helpText: 'Owner authorizes release of all retained funds upon signing this certificate',
+            required: false,
+            defaultValue: true,
+          },
+        ],
+      },
+      {
+        id: 'closeout-documentation',
+        title: 'Closeout Documentation',
+        description: 'Documentation delivered to owner (optional)',
+        icon: 'FileText',
+        collapsed: true,
+        fields: [
+          {
+            id: 'asBuiltDrawingsDelivered',
+            label: 'As-Built Drawings delivered',
+            type: 'checkbox',
+            helpText: 'Check if updated drawings reflecting all changes have been provided',
+            required: false,
+            defaultValue: false,
+          },
+          {
+            id: 'omManualsDelivered',
+            label: 'Operation & Maintenance Manuals delivered',
+            type: 'checkbox',
+            helpText: 'Check if O&M manuals for all systems and equipment have been provided',
+            required: false,
+            defaultValue: false,
+          },
+          {
+            id: 'manufacturerWarrantiesDelivered',
+            label: 'Manufacturer Warranties delivered',
+            type: 'checkbox',
+            helpText: 'Check if all manufacturer warranties have been transferred to owner',
+            required: false,
+            defaultValue: false,
+          },
+          {
+            id: 'staffTrainingCompleted',
+            label: 'Staff Training completed',
+            type: 'checkbox',
+            helpText: 'Check if training has been provided to owner\'s personnel',
+            required: false,
+            defaultValue: false,
+          },
+          {
+            id: 'certificateOfOccupancyNumber',
+            label: 'Certificate of Occupancy Number',
+            type: 'text',
+            placeholder: 'COO-2026-12345',
+            helpText: 'If applicable, enter the Certificate of Occupancy number issued by local authorities',
+            required: false,
+          },
+        ],
+      },
+      {
+        id: 'warranty-information',
+        title: 'Warranty Information',
+        description: 'Warranty period and terms',
+        icon: 'Shield',
+        fields: [
+          {
+            id: 'warrantyDurationMonths',
+            label: 'Warranty Duration (months)',
+            type: 'number',
+            placeholder: '12',
+            helpText: 'Standard warranty period is 12 months (1 year) from date of acceptance',
+            required: false,
+            defaultValue: 12,
+            validation: {
+              min: 1,
+              max: 120,
+            },
+          },
+          {
+            id: 'warrantyTerms',
+            label: 'Warranty Terms (optional)',
+            type: 'textarea',
+            placeholder: 'Enter custom warranty terms if different from standard...',
+            helpText: 'Leave blank to use standard warranty language covering workmanship and materials',
+            required: false,
+          },
+        ],
+      },
+      {
+        id: 'additional-notes',
+        title: 'Additional Notes',
+        description: 'Any additional remarks or special conditions',
+        icon: 'FileText',
+        collapsed: true,
+        fields: [
+          {
+            id: 'additionalNotes',
+            label: 'Additional Notes or Remarks',
+            type: 'textarea',
+            placeholder: 'Enter any additional information, special conditions, or remarks...',
+            helpText: 'Optional field for any additional information that should be included in the certificate',
+            required: false,
+          },
+        ],
+      },
+    ],
+    zodSchema: certificateCompletionSchema,
+  },
+  transformToTemplateData: (formData: any, baseData: any) => {
+    // Use project dates from baseData if not provided in form
+    const projectStartDate = formData.projectStartDate || baseData.project?.startDate || new Date().toISOString();
+    const projectCompletionDate = formData.projectCompletionDate || new Date().toISOString();
+    const dateOfAcceptance = formData.dateOfAcceptance || new Date().toISOString();
+    const finalInspectionDate = formData.finalInspectionDate || dateOfAcceptance;
+    
+    return {
+      ...baseData,
+      completion: {
+        projectStartDate: projectStartDate,
+        projectCompletionDate: projectCompletionDate,
+        dateOfAcceptance: dateOfAcceptance,
+        finalInspectionDate: finalInspectionDate,
+        punchListCompleted: formData.punchListCompleted ?? true,
+        finalInspectionPassed: formData.finalInspectionPassed ?? true,
+        siteCleanedAndRestored: formData.siteCleanedAndRestored ?? true,
+        warrantyDurationMonths: formData.warrantyDurationMonths || 12,
+        warrantyTerms: formData.warrantyTerms || '',
+        certificateOfOccupancyNumber: formData.certificateOfOccupancyNumber || '',
+        asBuiltDrawingsDelivered: formData.asBuiltDrawingsDelivered ?? false,
+        omManualsDelivered: formData.omManualsDelivered ?? false,
+        manufacturerWarrantiesDelivered: formData.manufacturerWarrantiesDelivered ?? false,
+        staffTrainingCompleted: formData.staffTrainingCompleted ?? false,
+        allSubcontractorsPaid: formData.allSubcontractorsPaid ?? true,
+        retainageReleaseAuthorized: formData.retainageReleaseAuthorized ?? true,
+        additionalNotes: formData.additionalNotes || '',
+      },
+    };
+  },
+});
