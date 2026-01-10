@@ -24,6 +24,7 @@ export interface ContractorBranding {
   email?: string;
   licenseNumber?: string;
   logo?: string;
+  state?: string; // US state code (e.g., 'CA', 'FL', 'TX') for timezone detection
 }
 
 export interface TemplateData {

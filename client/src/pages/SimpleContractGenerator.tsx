@@ -6652,6 +6652,7 @@ export default function SimpleContractGenerator() {
                           licenseNumber: profile?.license || '',
                           logo: profile?.logo || '',
                           website: profile?.website || '',
+                          state: profile?.state || '', // US state code for timezone detection
                         };
                         
                         const response = await fetch('/api/legal-defense/templates/certificate-completion/generate-document', {

@@ -19,16 +19,71 @@ import { templateRegistry, TemplateData, ContractorBranding } from '../registry'
 import { randomUUID } from 'crypto';
 
 /**
+ * Map of US states to their IANA timezone identifiers
+ * Critical for legal documents to use correct timezone based on contractor location
+ */
+const STATE_TIMEZONES: Record<string, string> = {
+  // Eastern Time (UTC-5/-4)
+  'CT': 'America/New_York', 'DE': 'America/New_York', 'FL': 'America/New_York',
+  'GA': 'America/New_York', 'ME': 'America/New_York', 'MD': 'America/New_York',
+  'MA': 'America/New_York', 'MI': 'America/Detroit', 'NH': 'America/New_York',
+  'NJ': 'America/New_York', 'NY': 'America/New_York', 'NC': 'America/New_York',
+  'OH': 'America/New_York', 'PA': 'America/New_York', 'RI': 'America/New_York',
+  'SC': 'America/New_York', 'VT': 'America/New_York', 'VA': 'America/New_York',
+  'WV': 'America/New_York',
+  
+  // Central Time (UTC-6/-5)
+  'AL': 'America/Chicago', 'AR': 'America/Chicago', 'IL': 'America/Chicago',
+  'IA': 'America/Chicago', 'KS': 'America/Chicago', 'KY': 'America/Chicago',
+  'LA': 'America/Chicago', 'MN': 'America/Chicago', 'MS': 'America/Chicago',
+  'MO': 'America/Chicago', 'NE': 'America/Chicago', 'ND': 'America/Chicago',
+  'OK': 'America/Chicago', 'SD': 'America/Chicago', 'TN': 'America/Chicago',
+  'TX': 'America/Chicago', 'WI': 'America/Chicago',
+  
+  // Mountain Time (UTC-7/-6)
+  'AZ': 'America/Phoenix', // Arizona doesn't observe DST
+  'CO': 'America/Denver', 'ID': 'America/Denver', 'MT': 'America/Denver',
+  'NM': 'America/Denver', 'UT': 'America/Denver', 'WY': 'America/Denver',
+  
+  // Pacific Time (UTC-8/-7)
+  'CA': 'America/Los_Angeles', 'NV': 'America/Los_Angeles',
+  'OR': 'America/Los_Angeles', 'WA': 'America/Los_Angeles',
+  
+  // Alaska Time (UTC-9/-8)
+  'AK': 'America/Anchorage',
+  
+  // Hawaii-Aleutian Time (UTC-10/-9)
+  'HI': 'America/Adak',
+};
+
+/**
+ * Detects the correct timezone for a contractor based on their state
+ * Falls back to Pacific Time if state is not provided or not recognized
+ */
+function getContractorTimezone(contractorState: string | undefined): string {
+  if (!contractorState) {
+    return 'America/Los_Angeles'; // Default fallback
+  }
+  
+  // Normalize state code to uppercase
+  const stateCode = contractorState.trim().toUpperCase();
+  
+  // Return mapped timezone or fallback to Pacific
+  return STATE_TIMEZONES[stateCode] || 'America/Los_Angeles';
+}
+
+/**
  * Formats a date string or Date object to clean legal format
  * Converts ISO timestamps to "Month DD, YYYY" format
+ * Uses contractor's timezone for legal accuracy (critical for federal court documents)
  */
-function formatLegalDate(dateInput: string | Date | undefined): string {
+function formatLegalDate(dateInput: string | Date | undefined, timezone: string = 'America/Los_Angeles'): string {
   if (!dateInput) {
     return new Date().toLocaleDateString('en-US', { 
       year: 'numeric', 
       month: 'long', 
       day: 'numeric',
-      timeZone: 'America/Los_Angeles'
+      timeZone: timezone
     });
   }
   
@@ -55,7 +110,7 @@ function formatLegalDate(dateInput: string | Date | undefined): string {
       year: 'numeric', 
       month: 'long', 
       day: 'numeric',
-      timeZone: 'America/Los_Angeles' // PST/PDT (California)
+      timeZone: timezone // Use contractor's timezone
     });
   } catch {
     return String(dateInput);
@@ -82,17 +137,17 @@ function calculateProjectDuration(startDate: string | Date | undefined, endDate:
 /**
  * Calculates warranty end date (1 year from completion by default)
  */
-function calculateWarrantyEndDate(completionDate: string | Date | undefined, warrantyMonths: number = 12): string {
+function calculateWarrantyEndDate(completionDate: string | Date | undefined, warrantyMonths: number = 12, timezone: string = 'America/Los_Angeles'): string {
   if (!completionDate) {
     const date = new Date();
     date.setMonth(date.getMonth() + warrantyMonths);
-    return formatLegalDate(date);
+    return formatLegalDate(date, timezone);
   }
   
   try {
     const date = typeof completionDate === 'string' ? new Date(completionDate) : completionDate;
     date.setMonth(date.getMonth() + warrantyMonths);
-    return formatLegalDate(date);
+    return formatLegalDate(date, timezone);
   } catch {
     return 'N/A';
   }
@@ -111,6 +166,11 @@ function generateCertificateCompletionHTML(data: TemplateData, branding: Contrac
   const contractorPhone = branding.phone || data.contractor.phone || '';
   const contractorEmail = branding.email || data.contractor.email || '';
   const contractorLicense = branding.licenseNumber || data.contractor.license || '';
+  const contractorState = branding.state || data.contractor.state || '';
+  
+  // Detect correct timezone based on contractor's state (critical for legal accuracy)
+  const contractorTimezone = getContractorTimezone(contractorState);
+  console.log(`📍 [CERTIFICATE-COMPLETION] Contractor state: ${contractorState || 'Unknown'}, Timezone: ${contractorTimezone}`);
   
   // License warning if missing
   const licenseWarning = !contractorLicense ? 
@@ -119,7 +179,7 @@ function generateCertificateCompletionHTML(data: TemplateData, branding: Contrac
     '<p style="color: #991B1B; margin: 0; font-size: 12px;">Working without a valid contractor license may be illegal in your jurisdiction and can invalidate this contract. Please update your profile with your license number immediately.</p>' +
     '</div>' : '';
 
-  const currentDate = formatLegalDate(new Date());
+  const currentDate = formatLegalDate(new Date(), contractorTimezone);
 
   // Completion data with comprehensive defaults
   const completion = data.completion || {
@@ -142,11 +202,11 @@ function generateCertificateCompletionHTML(data: TemplateData, branding: Contrac
     additionalNotes: ''
   };
 
-  // Format dates
-  const formattedStartDate = formatLegalDate(completion.projectStartDate);
-  const formattedCompletionDate = formatLegalDate(completion.projectCompletionDate);
-  const formattedAcceptanceDate = formatLegalDate(completion.dateOfAcceptance);
-  const formattedInspectionDate = formatLegalDate(completion.finalInspectionDate);
+  // Format dates using contractor's timezone
+  const formattedStartDate = formatLegalDate(completion.projectStartDate, contractorTimezone);
+  const formattedCompletionDate = formatLegalDate(completion.projectCompletionDate, contractorTimezone);
+  const formattedAcceptanceDate = formatLegalDate(completion.dateOfAcceptance, contractorTimezone);
+  const formattedInspectionDate = formatLegalDate(completion.finalInspectionDate, contractorTimezone);
   const formattedIssuanceDate = currentDate;
   
   // Calculate project duration
@@ -154,7 +214,7 @@ function generateCertificateCompletionHTML(data: TemplateData, branding: Contrac
   
   // Calculate warranty dates
   const warrantyStartDate = formattedAcceptanceDate;
-  const warrantyEndDate = calculateWarrantyEndDate(completion.dateOfAcceptance, completion.warrantyDurationMonths || 12);
+  const warrantyEndDate = calculateWarrantyEndDate(completion.dateOfAcceptance, completion.warrantyDurationMonths || 12, contractorTimezone);
 
   // Financial information
   const totalCost = data.financials?.total || 0;
