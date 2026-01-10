@@ -3777,6 +3777,14 @@ ENHANCED LEGAL CLAUSE:`;
         };
         
         console.log("📋 [API] Extracted requestData keys:", Object.keys(requestData));
+        
+        // 🔥 CRITICAL: Normalize field names from frontend camelCase to backend expected names
+        // Frontend sends 'certificateCompletion' but backend expects 'completion'
+        if (requestData.certificateCompletion && !requestData.completion) {
+          console.log('📋 [API] Normalizing certificateCompletion → completion');
+          requestData.completion = requestData.certificateCompletion;
+          delete requestData.certificateCompletion;
+        }
       }
 
       // 🔥 SINGLE SOURCE OF TRUTH: Firebase Firestore

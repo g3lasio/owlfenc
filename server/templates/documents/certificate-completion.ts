@@ -893,14 +893,14 @@ ${completion.additionalNotes ? `
             <div class="signature-line"></div>
             <div class="signature-label">PROPERTY OWNER</div>
             <div class="signature-name">${data.client.name}</div>
-            <div class="signature-date">Date: _______________</div>
+            <div class="signature-date">Date: ____________________</div>
         </div>
         <div class="signature-block">
             <div class="signature-line"></div>
             <div class="signature-label">LICENSED CONTRACTOR</div>
             <div class="signature-name">${contractorName}</div>
             ${contractorLicense ? `<div class="signature-date">License #: ${contractorLicense}</div>` : ''}
-            <div class="signature-date">Date: _______________</div>
+            <div class="signature-date">Date: ____________________</div>
         </div>
     </div>
 </div>
