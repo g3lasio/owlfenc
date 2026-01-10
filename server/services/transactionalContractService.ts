@@ -59,6 +59,12 @@ class TransactionalContractService {
         .digest('hex');
 
       // 🔐 STEP 1: Create audit metadata (BEFORE transaction)
+      // ⚠️ CRITICAL: Log warning if IP capture failed
+      if (!ipAddress || ipAddress === 'unknown' || ipAddress === 'Unknown') {
+        console.error(`⚠️ [IP-CAPTURE-FAILED] No IP address captured for ${party} signature on contract ${contractId}`);
+        console.error(`⚠️ [IP-CAPTURE-FAILED] This will result in 'Not recorded' in Digital Certificate`);
+      }
+      
       const auditMetadata: SignatureAuditMetadata = {
         ipAddress: ipAddress || 'Unknown',
         userAgent: userAgent || 'Unknown',

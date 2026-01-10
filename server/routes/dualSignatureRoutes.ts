@@ -201,7 +201,53 @@ router.post("/sign", async (req, res) => {
     console.log("✍️ [PUBLIC-API] Processing public signature (no auth required)...");
     
     const { contractId, party, signatureData, signatureType } = req.body;
-    const ipAddress = req.ip || req.headers['x-forwarded-for'] as string || 'unknown';
+    
+    // 🔍 DEBUG: Log all IP-related headers and values
+    console.log(`🔍 [IP-DEBUG] Frontend provided: ${req.body.ipAddress || 'NONE'}`);
+    console.log(`🔍 [IP-DEBUG] x-forwarded-for: ${req.headers['x-forwarded-for'] || 'NONE'}`);
+    console.log(`🔍 [IP-DEBUG] x-real-ip: ${req.headers['x-real-ip'] || 'NONE'}`);
+    console.log(`🔍 [IP-DEBUG] req.ip: ${req.ip || 'NONE'}`);
+    console.log(`🔍 [IP-DEBUG] req.connection.remoteAddress: ${(req.connection as any)?.remoteAddress || 'NONE'}`);
+    console.log(`🔍 [IP-DEBUG] req.socket.remoteAddress: ${(req.socket as any)?.remoteAddress || 'NONE'}`);
+    
+    // 🔐 CRITICAL: Robust IP capture with multiple fallbacks
+    let ipAddress = req.body.ipAddress; // Try frontend-provided IP first
+    
+    if (!ipAddress || ipAddress === 'unknown' || ipAddress === 'Unknown') {
+      // Fallback 1: x-forwarded-for header (for proxies/load balancers)
+      const forwardedFor = req.headers['x-forwarded-for'];
+      if (forwardedFor) {
+        ipAddress = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor.split(',')[0].trim();
+      }
+      
+      // Fallback 2: x-real-ip header (nginx)
+      if (!ipAddress || ipAddress === 'unknown') {
+        ipAddress = req.headers['x-real-ip'] as string;
+      }
+      
+      // Fallback 3: req.ip (Express default)
+      if (!ipAddress || ipAddress === 'unknown') {
+        ipAddress = req.ip;
+      }
+      
+      // Fallback 4: req.connection.remoteAddress (legacy)
+      if (!ipAddress || ipAddress === 'unknown') {
+        ipAddress = (req.connection as any)?.remoteAddress || (req.socket as any)?.remoteAddress;
+      }
+    }
+    
+    // Clean up IPv6 localhost to IPv4
+    if (ipAddress === '::1' || ipAddress === '::ffff:127.0.0.1') {
+      ipAddress = '127.0.0.1';
+    }
+    
+    // Remove IPv6 prefix if present
+    if (ipAddress?.startsWith('::ffff:')) {
+      ipAddress = ipAddress.substring(7);
+    }
+    
+    console.log(`🌍 [IP-CAPTURE] Captured IP address: ${ipAddress || 'FAILED TO CAPTURE'}`);
+    
     const userAgent = req.headers['user-agent'];
 
     // 1. Basic validation
