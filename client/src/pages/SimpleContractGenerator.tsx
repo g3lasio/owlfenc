@@ -6564,7 +6564,8 @@ export default function SimpleContractGenerator() {
                           method: 'POST',
                           headers: {
                             'Content-Type': 'application/json',
-                            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                            // 🔥 CRITICAL: Always send auth header for Firebase profile lookup
+                            ...(token ? { 'Authorization': `Bearer ${token}` } : { 'x-firebase-uid': currentUser?.uid || '' }),
                           },
                           body: JSON.stringify({
                             templateId: 'change-order',
@@ -6659,7 +6660,8 @@ export default function SimpleContractGenerator() {
                           method: 'POST',
                           headers: {
                             'Content-Type': 'application/json',
-                            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                            // 🔥 CRITICAL: Always send auth header for Firebase profile lookup
+                            ...(token ? { 'Authorization': `Bearer ${token}` } : { 'x-firebase-uid': currentUser?.uid || '' }),
                           },
                           body: JSON.stringify({
                             data: {
@@ -6743,7 +6745,8 @@ export default function SimpleContractGenerator() {
                           method: 'POST',
                           headers: {
                             'Content-Type': 'application/json',
-                            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                            // 🔥 CRITICAL: Always send auth header for Firebase profile lookup
+                            ...(token ? { 'Authorization': `Bearer ${token}` } : { 'x-firebase-uid': currentUser?.uid || '' }),
                           },
                           body: JSON.stringify({
                             templateId: 'lien-waiver',

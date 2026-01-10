@@ -53,7 +53,7 @@ import { getCompanyConfig, getCompanyAddress } from "./config/company-config";
 import { registerPromptTemplateRoutes } from "./routes/prompt-templates";
 import { TRIAL_PLAN_ID, SUBSCRIPTION_PLAN_IDS } from "./constants/subscription";
 import { verifyFirebaseAuth } from "./middleware/firebase-auth";
-import { CompanyProfileService } from "./services/CompanyProfileService";
+import { CompanyProfileService, companyProfileService } from "./services/CompanyProfileService";
 import { ContractorDataService } from "./services/contractorDataService";
 
 // 🗺️ FUNCIÓN HELPER PARA LEGAL COMPLIANCE NATIONWIDE
@@ -2237,24 +2237,27 @@ ENHANCED LEGAL CLAUSE:`;
         }
       }
 
-      // 🔥 STEP 2: Get contractor data from PostgreSQL (SINGLE SOURCE OF TRUTH)
+      // 🔥 SINGLE SOURCE OF TRUTH: Firebase Firestore (userProfiles collection)
       let contractorDataFromDB: any = null;
       if (firebaseUid) {
         try {
-          const user = await storage.getUserByFirebaseUid(firebaseUid);
-          if (user) {
+          const profile = await companyProfileService.getProfileByFirebaseUid(firebaseUid);
+          if (profile) {
             contractorDataFromDB = {
-              name: user.company,
-              address: user.address || "",
-              phone: user.phone || "",
-              email: user.email || "",
-              website: user.website || "",
-              logo: user.logo || "",
+              name: profile.companyName,
+              address: profile.address || "",
+              phone: profile.phone || "",
+              email: profile.email || "",
+              website: profile.website || "",
+              logo: profile.logo || "",
+              license: profile.license || "",
+              state: profile.state || "",
             };
-            console.log(`✅ [INVOICE-PDF] Using contractor data from PostgreSQL: ${user.company}`);
+            console.log(`✅ [INVOICE-PDF] Using contractor data from Firebase: ${profile.companyName}`);
+            console.log(`📊 [INVOICE-PDF] Critical fields: license=${profile.license || 'NOT SET'}, state=${profile.state || 'NOT SET'}`);
           }
         } catch (dbError) {
-          console.error(`❌ [INVOICE-PDF] Error fetching contractor from PostgreSQL:`, dbError);
+          console.error(`❌ [INVOICE-PDF] Error fetching contractor from Firebase:`, dbError);
         }
       }
 
@@ -2448,71 +2451,73 @@ ENHANCED LEGAL CLAUSE:`;
           total: projectTotalCosts?.total,
         });
 
-        // 🔥 STEP 2: Fetch contractor profile from PostgreSQL (SINGLE SOURCE OF TRUTH)
-        console.log(`🔍 [ESTIMATE-PDF] Fetching contractor profile from PostgreSQL for UID: ${firebaseUid}`);
+        // 🔥 SINGLE SOURCE OF TRUTH: Firebase Firestore (userProfiles collection)
+        console.log(`🔍 [ESTIMATE-PDF] Fetching contractor profile from Firebase for UID: ${firebaseUid}`);
         
         let contractorData;
         
         try {
-          // Get user from PostgreSQL using storage service
-          const user = await storage.getUserByFirebaseUid(firebaseUid);
+          // Get user from Firebase using CompanyProfileService
+          const profile = await companyProfileService.getProfileByFirebaseUid(firebaseUid);
           
-          if (!user) {
-            console.error(`❌ [ESTIMATE-PDF] No profile found in PostgreSQL for UID: ${firebaseUid}`);
+          if (!profile) {
+            console.error(`❌ [ESTIMATE-PDF] No profile found in Firebase for UID: ${firebaseUid}`);
             return res.status(400).json({
               success: false,
               error: 'PROFILE_NOT_FOUND',
               message: 'Please complete your company profile in Settings before generating PDFs',
               redirectTo: '/profile-setup',
-              hint: 'No contractor information found in database. Please save your profile in Settings.'
+              hint: 'No contractor information found. Please save your profile in Settings.'
             });
           }
           
-          // 🔥 STEP 3: Validate required fields from PostgreSQL
-          if (!user.company || !user.email) {
+          // 🔥 Validate required fields from Firebase
+          if (!profile.companyName || !profile.email) {
             console.error(`❌ [ESTIMATE-PDF] Profile incomplete:`, {
-              hasCompany: !!user.company,
-              hasEmail: !!user.email
+              hasCompany: !!profile.companyName,
+              hasEmail: !!profile.email
             });
             return res.status(400).json({
               success: false,
               error: 'INCOMPLETE_PROFILE',
               message: 'Please complete Company Name and Email in Settings',
               missingFields: [
-                !user.company && 'Company Name',
-                !user.email && 'Email'
+                !profile.companyName && 'Company Name',
+                !profile.email && 'Email'
               ].filter(Boolean),
               redirectTo: '/profile-setup'
             });
           }
           
-          // 🔥 STEP 4: Build contractor data from PostgreSQL (SINGLE SOURCE OF TRUTH)
+          // 🔥 Build contractor data from Firebase (SINGLE SOURCE OF TRUTH)
           contractorData = {
-            name: user.company,
-            address: user.address || "",
-            phone: user.phone || "",
-            email: user.email || "",
-            website: user.website || "",
-            logo: user.logo || "",
-            license: user.license || "",
+            name: profile.companyName,
+            address: profile.address || "",
+            phone: profile.phone || "",
+            email: profile.email || "",
+            website: profile.website || "",
+            logo: profile.logo || "",
+            license: profile.license || "",
+            state: profile.state || "",
           };
           
-          console.log("✅ [ESTIMATE-PDF] Using contractor data from POSTGRESQL (single source of truth):", {
+          console.log("✅ [ESTIMATE-PDF] Using contractor data from FIREBASE (single source of truth):", {
             companyName: contractorData.name,
             hasAddress: !!contractorData.address,
             hasPhone: !!contractorData.phone,
             hasEmail: !!contractorData.email,
             hasLogo: !!contractorData.logo,
-            logoLength: contractorData.logo ? contractorData.logo.length : 0,
-            source: "PostgreSQL Database"
+            license: contractorData.license || 'NOT SET',
+            state: contractorData.state || 'NOT SET',
+            source: "Firebase Firestore"
           });
           
         } catch (dbError) {
-          console.error(`❌ [ESTIMATE-PDF] Error fetching profile from PostgreSQL:`, dbError);
+          console.error(`❌ [ESTIMATE-PDF] Error fetching profile from Firebase:`, dbError);
           return res.status(500).json({
             success: false,
             error: 'DATABASE_ERROR',
-            message: 'Error fetching contractor profile from database'
+            message: 'Error fetching contractor profile from Firebase'
           });
         }
 
