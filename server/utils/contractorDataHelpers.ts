@@ -1,16 +1,17 @@
 /**
  * Contractor Data Helpers
  * 
+ * 🔥 SINGLE SOURCE OF TRUTH: Firebase Firestore (userProfiles collection)
+ * 
  * Funciones unificadas para autenticación y obtención de datos del contractor
- * desde PostgreSQL (SINGLE SOURCE OF TRUTH).
+ * desde Firebase Firestore.
  * 
  * Estas funciones aseguran que TODOS los endpoints que generan documentos
- * usen la misma lógica y fuente de datos.
+ * usen la misma lógica y fuente de datos (Firebase).
  */
 
 import { Request } from 'express';
-import * as admin from 'firebase-admin';
-import { storage } from '../storage-firebase-only';
+import { companyProfileService } from '../services/CompanyProfileService';
 
 export interface ContractorData {
   name: string;
@@ -31,32 +32,34 @@ export interface ContractorData {
 /**
  * Autentica al usuario desde el request
  * Soporta múltiples métodos de autenticación:
- * - Header Authorization Bearer token
- * - Header x-firebase-uid
+ * - Header x-firebase-uid (método principal)
+ * - Header Authorization Bearer token (fallback)
  * 
  * @param req - Express Request object
  * @returns Firebase UID del usuario autenticado
  * @throws Error si no hay autenticación válida
  */
 export async function authenticateUser(req: Request): Promise<string> {
-  // Método 1: x-firebase-uid header (usado por algunos endpoints)
+  // Método 1: x-firebase-uid header (método principal y más confiable)
   const firebaseUidHeader = req.headers["x-firebase-uid"] as string;
   if (firebaseUidHeader) {
     console.log(`✅ [AUTH-HELPER] Authenticated via x-firebase-uid header: ${firebaseUidHeader}`);
     return firebaseUidHeader;
   }
 
-  // Método 2: Authorization Bearer token
+  // Método 2: Authorization Bearer token (requiere Firebase Admin SDK)
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     try {
+      // Intentar verificar el token con Firebase Admin
+      const admin = await import('firebase-admin');
       const token = authHeader.substring(7);
       const decodedToken = await admin.auth().verifyIdToken(token);
       console.log(`✅ [AUTH-HELPER] Authenticated via Bearer token: ${decodedToken.uid}`);
       return decodedToken.uid;
     } catch (error) {
-      console.error('❌ [AUTH-HELPER] Invalid Bearer token:', error);
-      throw new Error('INVALID_TOKEN: Authentication token is invalid');
+      console.warn('⚠️ [AUTH-HELPER] Bearer token verification failed:', error instanceof Error ? error.message : error);
+      // No lanzar error aquí, continuar con otros métodos
     }
   }
 
@@ -66,7 +69,8 @@ export async function authenticateUser(req: Request): Promise<string> {
 }
 
 /**
- * Obtiene los datos del contractor desde PostgreSQL (SINGLE SOURCE OF TRUTH)
+ * 🔥 SINGLE SOURCE OF TRUTH: Firebase Firestore
+ * Obtiene los datos del contractor desde Firebase (userProfiles collection)
  * 
  * @param firebaseUid - Firebase UID del usuario autenticado
  * @param fallbackData - Datos de fallback del frontend (opcional)
@@ -76,42 +80,46 @@ export async function getContractorData(
   firebaseUid: string,
   fallbackData?: any
 ): Promise<ContractorData> {
-  console.log(`📋 [CONTRACTOR-HELPER] Fetching contractor data from PostgreSQL for UID: ${firebaseUid}`);
+  console.log(`📋 [CONTRACTOR-HELPER] Fetching contractor data from Firebase for UID: ${firebaseUid}`);
 
   try {
-    // Obtener usuario de PostgreSQL
-    const user = await storage.getUserByFirebaseUid(firebaseUid);
+    // 🔥 SINGLE SOURCE: Obtener usuario de Firebase via CompanyProfileService
+    const profile = await companyProfileService.getProfileByFirebaseUid(firebaseUid);
 
-    if (user) {
-      console.log(`✅ [CONTRACTOR-HELPER] Using contractor data from PostgreSQL: ${user.company}`);
-      console.log(`📊 [CONTRACTOR-HELPER] Data source: PostgreSQL (SINGLE SOURCE OF TRUTH)`);
+    if (profile) {
+      console.log(`✅ [CONTRACTOR-HELPER] Using contractor data from Firebase: ${profile.companyName}`);
+      console.log(`📊 [CONTRACTOR-HELPER] Critical fields:`, {
+        license: profile.license || 'NOT SET',
+        state: profile.state || 'NOT SET',
+        address: profile.address || 'NOT SET'
+      });
 
       return {
-        name: user.company,
-        company: user.company,
-        address: user.address || "",
-        phone: user.phone || "",
-        email: user.email || "",
-        license: user.license || "",
-        logo: user.logo || "",
-        website: user.website || "",
-        city: user.city || "",
-        state: user.state || "",
-        zipCode: user.zipCode || "",
-        mobilePhone: user.mobilePhone || "",
-        ownerName: user.ownerName || "",
+        name: profile.companyName || "",
+        company: profile.companyName || "",
+        address: profile.address || "",
+        phone: profile.phone || "",
+        email: profile.email || "",
+        license: profile.license || "",
+        logo: profile.logo || "",
+        website: profile.website || "",
+        city: profile.city || "",
+        state: profile.state || "",
+        zipCode: profile.zipCode || "",
+        mobilePhone: profile.mobilePhone || "",
+        ownerName: profile.ownerName || "",
       };
     }
 
-    // Si no hay usuario en PostgreSQL, usar fallback
+    // Si no hay usuario en Firebase, usar fallback
     if (fallbackData) {
-      console.warn(`⚠️ [CONTRACTOR-HELPER] No data in PostgreSQL, using frontend fallback`);
+      console.warn(`⚠️ [CONTRACTOR-HELPER] No data in Firebase, using frontend fallback`);
       console.warn(`⚠️ [CONTRACTOR-HELPER] User should complete profile in Settings`);
 
       return normalizeContractorData(fallbackData);
     }
 
-    // No hay datos ni en PostgreSQL ni en fallback
+    // No hay datos ni en Firebase ni en fallback
     console.error(`❌ [CONTRACTOR-HELPER] No contractor data found for UID: ${firebaseUid}`);
     throw new Error('PROFILE_NOT_FOUND: User must complete profile in Settings before generating documents');
 
@@ -124,7 +132,7 @@ export async function getContractorData(
 
     // Si hay error de base de datos pero tenemos fallback, usarlo
     if (fallbackData) {
-      console.warn(`⚠️ [CONTRACTOR-HELPER] Database error, using frontend fallback`);
+      console.warn(`⚠️ [CONTRACTOR-HELPER] Firebase error, using frontend fallback`);
       return normalizeContractorData(fallbackData);
     }
 
@@ -178,13 +186,14 @@ export async function getAuthenticatedContractorData(
   // Autenticar usuario
   const firebaseUid = await authenticateUser(req);
 
-  // Obtener datos del contractor
+  // Obtener datos del contractor desde Firebase
   const contractorData = await getContractorData(firebaseUid, fallbackData);
 
   return { firebaseUid, contractorData };
 }
 
 /**
+ * 🔥 SINGLE SOURCE OF TRUTH: Firebase Firestore
  * Intenta obtener datos del contractor sin requerir autenticación
  * Útil para endpoints que permiten autenticación opcional
  * 
@@ -200,11 +209,16 @@ export async function getContractorDataOptional(
     // Intentar autenticar
     const firebaseUid = await authenticateUser(req);
 
-    // Intentar obtener datos de PostgreSQL
+    // 🔥 SINGLE SOURCE: Intentar obtener datos de Firebase
     return await getContractorData(firebaseUid, fallbackData);
   } catch (error) {
     // Si falla autenticación o no hay datos, usar fallback
     console.warn(`⚠️ [CONTRACTOR-HELPER] Optional auth failed, using fallback data`);
+    console.warn(`📊 [CONTRACTOR-HELPER] Fallback data:`, {
+      company: fallbackData?.company || fallbackData?.companyName || 'NOT PROVIDED',
+      license: fallbackData?.license || fallbackData?.licenseNumber || 'NOT PROVIDED',
+      state: fallbackData?.state || 'NOT PROVIDED'
+    });
     return normalizeContractorData(fallbackData);
   }
 }

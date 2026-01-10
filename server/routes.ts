@@ -3774,12 +3774,13 @@ ENHANCED LEGAL CLAUSE:`;
         console.log("📋 [API] Extracted requestData keys:", Object.keys(requestData));
       }
 
-      // 🔥 STEP 1: Get contractor data from PostgreSQL (SINGLE SOURCE OF TRUTH)
+      // 🔥 SINGLE SOURCE OF TRUTH: Firebase Firestore
+      // Get contractor data from Firebase (userProfiles collection)
       if (requestData.client && requestData.contractor) {
         const { getContractorDataOptional } = await import("./utils/contractorDataHelpers");
         const contractorData = await getContractorDataOptional(req, requestData.contractor);
         
-        // Override contractor with PostgreSQL data
+        // Override contractor with Firebase data
         requestData.contractor = {
           name: contractorData.company,
           company: contractorData.company,
@@ -3787,11 +3788,13 @@ ENHANCED LEGAL CLAUSE:`;
           phone: contractorData.phone,
           email: contractorData.email,
           license: contractorData.license,
+          state: contractorData.state,
           logo: contractorData.logo,
           website: contractorData.website
         };
         
-        console.log(`✅ [GENERATE-PDF] Using contractor data from PostgreSQL: ${contractorData.company}`);
+        console.log(`✅ [GENERATE-PDF] Using contractor data from Firebase: ${contractorData.company}`);
+        console.log(`📊 [GENERATE-PDF] Critical fields: license=${contractorData.license || 'NOT SET'}, state=${contractorData.state || 'NOT SET'}`);
       }
 
       // Check if contract data is provided (has client and contractor objects)
@@ -3815,13 +3818,26 @@ ENHANCED LEGAL CLAUSE:`;
           console.log(`✅ [API] Found template: ${template.displayName} v${template.templateVersion}`);
           
           // Prepare branding data from requestData (supports both legacy and new format)
+          // 🔥 CRITICAL: Include state and licenseNumber for legal documents
           const branding = {
             companyName: requestData.contractor.company || requestData.contractor.name,
             address: requestData.contractor.address,
             phone: requestData.contractor.phone,
             email: requestData.contractor.email,
             licenseNumber: requestData.contractor.license,
+            state: requestData.contractor.state,
+            logo: requestData.contractor.logo,
+            website: requestData.contractor.website,
           };
+          
+          console.log(`📊 [CERTIFICATE-COMPLETION] Branding received:`, {
+            companyName: branding.companyName || 'NOT PROVIDED',
+            licenseNumber: branding.licenseNumber || 'NOT PROVIDED',
+            state: branding.state || 'NOT PROVIDED',
+            address: branding.address ? 'PROVIDED' : 'NOT PROVIDED',
+            phone: branding.phone ? 'PROVIDED' : 'NOT PROVIDED',
+            email: branding.email ? 'PROVIDED' : 'NOT PROVIDED'
+          });
           
           // Prepare template data from requestData (supports both legacy and new format)
           const templateDataForHtml = {
