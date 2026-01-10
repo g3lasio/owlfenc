@@ -216,12 +216,24 @@ const ContractSignature: React.FC = () => {
     setIsSubmitting(true);
 
     try {
+      // Capture IP address and user agent for audit trail
+      let ipAddress = 'Unknown';
+      try {
+        const ipResponse = await fetch('https://api.ipify.org?format=json');
+        const ipData = await ipResponse.json();
+        ipAddress = ipData.ip;
+      } catch (ipError) {
+        console.warn('Failed to get IP address:', ipError);
+      }
+      
       const requestBody = {
         contractId,
         party,
         signatureData: finalSignatureData,
         signatureType,
         fullName,
+        ipAddress,
+        userAgent: navigator.userAgent,
       };
       
       // 🚨 CRITICAL DEBUG: Log exact request being sent

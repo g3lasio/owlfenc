@@ -931,7 +931,6 @@ ${completion.additionalNotes ? `
             <div class="signature-line"></div>
             <div class="signature-label">LICENSED CONTRACTOR</div>
             <div class="signature-name">${contractorName}</div>
-            ${contractorLicense ? `<div class="signature-date">License #: ${contractorLicense}</div>` : ''}
             <div class="signature-date">Date: ____________________</div>
         </div>
     </div>

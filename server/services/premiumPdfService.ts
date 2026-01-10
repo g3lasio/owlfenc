@@ -757,9 +757,12 @@ class PremiumPdfService {
     
     const formatDate = (date: Date): string => {
       try {
+        // Use Pacific Time (PST/PDT) for signatures
+        // This matches the timezone of most contractors in California
         return date.toLocaleString('en-US', {
           year: 'numeric', month: 'long', day: 'numeric',
-          hour: '2-digit', minute: '2-digit', timeZoneName: 'short'
+          hour: '2-digit', minute: '2-digit', timeZoneName: 'short',
+          timeZone: 'America/Los_Angeles'
         });
       } catch {
         return 'Date unavailable';
