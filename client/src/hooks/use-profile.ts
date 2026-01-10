@@ -66,7 +66,8 @@ export function useProfile() {
   const { currentUser } = useAuth();
   
   // 🔥 SINGLE SOURCE OF TRUTH: Firebase Firestore ONLY
-  const { data: profile, isLoading, error } = useQuery<UserProfile>({
+  // 🔄 REAL-TIME SYNC: Configurado para sincronizar entre dispositivos
+  const { data: profile, isLoading, error, refetch } = useQuery<UserProfile>({
     queryKey: ["userProfile", currentUser?.uid],
     queryFn: async () => {
       if (!currentUser?.uid) {
@@ -106,9 +107,12 @@ export function useProfile() {
       }
     },
     enabled: !!currentUser?.uid,
-    staleTime: 1000 * 30, // Cache for 30 seconds
+    staleTime: 1000 * 10, // Cache for 10 seconds - shorter for better sync
+    gcTime: 1000 * 60 * 5, // Keep in cache for 5 minutes
     retry: 3,
-    refetchOnWindowFocus: true, // Refetch when user returns to tab
+    refetchOnWindowFocus: true, // 🔄 Refetch when user returns to tab (sync between devices)
+    refetchOnReconnect: true, // 🔄 Refetch when network reconnects
+    refetchInterval: 1000 * 60, // 🔄 Refetch every 60 seconds for real-time sync
   });
 
   // 🔥 SINGLE SOURCE OF TRUTH: Save to Firebase ONLY
@@ -158,6 +162,7 @@ export function useProfile() {
     profile,
     isLoading,
     error,
-    updateProfile: updateProfile.mutateAsync
+    updateProfile: updateProfile.mutateAsync,
+    refetch // 🔄 Permite forzar recarga desde Firebase
   };
 }

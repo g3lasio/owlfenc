@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -167,6 +167,11 @@ export default function Profile() {
   const pendingUpdatesRef = useRef<Partial<UserSettings>>({});
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
+  // 🔥 AUTOSAVE: Estados para autoguardado del perfil
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const lastSavedDataRef = useRef<string>('');
+
   // Load settings from backend
   const { data: settings, isLoading: settingsLoading } = useQuery<UserSettings>({
     queryKey: ['/api/settings'],
@@ -222,65 +227,74 @@ export default function Profile() {
     }
   }, [profile, isLoadingProfile]);
 
-  const loadCompanyProfile = async () => {
-    try {
-      console.log("🔄 Cargando perfil de empresa...");
-
-      // Usar ID fijo para desarrollo
-      const userId = currentUser?.uid;
-      console.log(`👤 Usuario actual: ${userId}`);
-
-      // Usar clave específica por usuario para localStorage
-      const profileKey = `userProfile_${userId}`;
-      const localProfile = localStorage.getItem(profileKey);
-
-      if (localProfile) {
-        console.log(
-          "✅ Perfil cargado desde localStorage para usuario:",
-          userId,
-        );
-        const parsedProfile = JSON.parse(localProfile);
-        setCompanyInfo(parsedProfile);
-        return;
-      } else {
-        console.log("📦 No hay perfil guardado para usuario:", userId);
-      }
-
-      // Si no hay datos en localStorage o no estamos en dev, intentamos la API
-      const response = await fetch("/api/user-profile", {
-        method: "GET",
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      setCompanyInfo(data);
-    } catch (error) {
-      console.error("Error loading profile:", error);
-
-      // Si estamos en modo desarrollo y falla la carga, usar un perfil vacío
-      // y guardarlo en localStorage para futuros usos
-      if (
-        window.location.hostname.includes(".replit.dev") ||
-        window.location.hostname.includes(".id.repl.co") ||
-        window.location.hostname === "localhost" ||
-        window.location.hostname.includes("replit.app")
-      ) {
-        toast({
-          title: "Información",
-          description: "Usando perfil en modo desarrollo.",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "No se pudo cargar el perfil.",
-          variant: "destructive",
-        });
-      }
+  // 🔥 AUTOSAVE: Función para guardar automáticamente con debounce
+  const performAutoSave = useCallback(async (dataToSave: CompanyInfoType) => {
+    if (!currentUser?.uid || !updateProfile) return;
+    
+    // Serializar para comparar si hay cambios reales
+    const serialized = JSON.stringify(dataToSave);
+    if (serialized === lastSavedDataRef.current) {
+      console.log('💾 [AUTOSAVE] No hay cambios, omitiendo guardado');
+      return;
     }
+    
+    setAutoSaveStatus('saving');
+    
+    try {
+      console.log('💾 [AUTOSAVE] Guardando cambios automáticamente...');
+      console.log('📊 [AUTOSAVE] Datos a guardar:', {
+        license: dataToSave.license || 'NOT SET',
+        state: dataToSave.state || 'NOT SET',
+        company: dataToSave.company || 'NOT SET'
+      });
+      
+      await updateProfile(dataToSave);
+      
+      lastSavedDataRef.current = serialized;
+      setAutoSaveStatus('saved');
+      console.log('✅ [AUTOSAVE] Guardado exitoso');
+      
+      // Volver a idle después de 2 segundos
+      setTimeout(() => setAutoSaveStatus('idle'), 2000);
+    } catch (error) {
+      console.error('❌ [AUTOSAVE] Error:', error);
+      setAutoSaveStatus('error');
+      setTimeout(() => setAutoSaveStatus('idle'), 3000);
+    }
+  }, [currentUser?.uid, updateProfile]);
+
+  // 🔥 AUTOSAVE: Efecto para detectar cambios y disparar autoguardado
+  useEffect(() => {
+    // No autoguardar si estamos cargando o no hay usuario
+    if (isLoadingProfile || !currentUser?.uid) return;
+    
+    // No autoguardar si el perfil aún no se ha cargado inicialmente
+    if (!profile) return;
+    
+    // Cancelar timer anterior
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+    
+    // Esperar 1.5 segundos después del último cambio para guardar
+    autoSaveTimerRef.current = setTimeout(() => {
+      performAutoSave(companyInfo);
+    }, 1500);
+    
+    // Cleanup
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, [companyInfo, isLoadingProfile, currentUser?.uid, profile, performAutoSave]);
+
+  // 🔥 SINGLE SOURCE OF TRUTH: El perfil se carga desde useProfile hook (Firebase)
+  // Esta función es solo un fallback si el hook no tiene datos
+  const loadCompanyProfile = async () => {
+    console.log("🔄 [LOAD] Perfil se carga automáticamente desde Firebase via useProfile hook");
+    // El perfil se sincroniza automáticamente desde el useEffect que observa `profile`
+    // No necesitamos cargar manualmente ya que useProfile es la fuente de verdad
   };
 
   const handleChange = (
@@ -437,98 +451,45 @@ export default function Profile() {
     }
   };
 
+  // 🔥 SINGLE SOURCE OF TRUTH: Guardar SOLO en Firebase
   const handleSave = async () => {
+    if (!currentUser?.uid) {
+      toast({
+        title: "Error",
+        description: "Debes iniciar sesión para guardar cambios.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setLoading(true);
     try {
-      console.log("💾 Guardando perfil de empresa...");
+      console.log("💾 [SAVE] Guardando perfil en Firebase...");
+      console.log("📊 [SAVE] Datos a guardar:", {
+        license: companyInfo.license || 'NOT SET',
+        state: companyInfo.state || 'NOT SET',
+        company: companyInfo.company || 'NOT SET'
+      });
 
-      // Usar ID fijo para desarrollo
-      const userId = currentUser?.uid;
-      console.log(`👤 Guardando para usuario: ${userId}`);
+      // 🔥 SINGLE SOURCE: Guardar SOLO en Firebase via hook
+      await updateProfile(companyInfo);
+      
+      // Actualizar referencia de últimos datos guardados para evitar autoguardado redundante
+      lastSavedDataRef.current = JSON.stringify(companyInfo);
 
-      // Asegurarnos de que cualquier valor undefined se convierta en cadena vacía
-      const safeCompanyInfo = Object.fromEntries(
-        Object.entries(companyInfo).map(([key, value]) => {
-          if (typeof value === "object" && value !== null) {
-            if (Array.isArray(value)) {
-              return [key, value];
-            } else {
-              return [
-                key,
-                Object.fromEntries(
-                  Object.entries(value).map(([k, v]) => [
-                    k,
-                    v === undefined ? "" : v,
-                  ]),
-                ),
-              ];
-            }
-          }
-          return [key, value === undefined ? "" : value];
-        }),
-      );
-
-      // Usar clave específica por usuario para localStorage
-      const profileKey = `userProfile_${userId}`;
-      localStorage.setItem(profileKey, JSON.stringify(safeCompanyInfo));
-      console.log(
-        `✅ Perfil guardado en localStorage con clave: ${profileKey}`,
-        safeCompanyInfo,
-      );
-
-      // Usar la función updateProfile del hook para consistencia
-      if (updateProfile) {
-        console.log("🔄 Usando updateProfile del hook...");
-        await updateProfile(companyInfo);
-      } else {
-        console.log("🔄 Hook no disponible, guardando directamente...");
-        // Fallback directo a la API con autenticación
-        const authHeaders = await getAuthHeaders();
-        const response = await fetch("/api/profile", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...authHeaders
-          },
-          credentials: "include",
-          body: JSON.stringify(companyInfo),
-        });
-
-        if (!response.ok) {
-          throw new Error(`Error ${response.status}: ${response.statusText}`);
-        }
-
-        const result = await response.json();
-        console.log("✅ Respuesta del servidor:", result);
-      }
-
+      console.log("✅ [SAVE] Perfil guardado exitosamente en Firebase");
+      
       toast({
         title: "Perfil actualizado",
-        description:
-          "La información de la compañía ha sido guardada exitosamente.",
+        description: "La información de la compañía ha sido guardada exitosamente.",
       });
     } catch (error) {
-      console.error("Error saving profile:", error);
-
-      // Si estamos en modo desarrollo, mostrar un mensaje informativo
-      const isDevMode =
-        window.location.hostname.includes(".replit.dev") ||
-        window.location.hostname.includes(".id.repl.co") ||
-        window.location.hostname === "localhost" ||
-        window.location.hostname.includes("replit.app");
-
-      if (isDevMode) {
-        toast({
-          title: "Perfil guardado",
-          description: "El perfil se ha guardado localmente (modo desarrollo).",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "No se pudo guardar la información.",
-          variant: "destructive",
-        });
-      }
+      console.error("❌ [SAVE] Error guardando perfil:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo guardar la información. Intenta de nuevo.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -1381,20 +1342,41 @@ export default function Profile() {
               Manage your fencing company information
             </p>
           </div>
-          <Button
-            onClick={handleSave}
-            disabled={loading}
-            className="bg-cyan-400 hover:bg-cyan-300 text-black font-medium px-6 py-2 rounded-lg transition-colors"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          {/* 🔥 AUTOSAVE: Indicador de estado de guardado */}
+          <div className="flex items-center gap-3">
+            {autoSaveStatus === 'saving' && (
+              <span className="flex items-center text-cyan-400 text-sm">
+                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
                 Saving...
-              </>
-            ) : (
-              "Save Changes"
+              </span>
             )}
-          </Button>
+            {autoSaveStatus === 'saved' && (
+              <span className="flex items-center text-green-400 text-sm">
+                <CheckCircle className="w-4 h-4 mr-1" />
+                Saved
+              </span>
+            )}
+            {autoSaveStatus === 'error' && (
+              <span className="flex items-center text-red-400 text-sm">
+                <AlertCircle className="w-4 h-4 mr-1" />
+                Error saving
+              </span>
+            )}
+            <Button
+              onClick={handleSave}
+              disabled={loading || autoSaveStatus === 'saving'}
+              className="bg-cyan-400 hover:bg-cyan-300 text-black font-medium px-6 py-2 rounded-lg transition-colors"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Changes"
+              )}
+            </Button>
+          </div>
         </div>
 
         <Tabs defaultValue="info" className="space-y-8">
@@ -2463,10 +2445,23 @@ export default function Profile() {
                         onChange={handleChange}
                       />
                     </div>
-                    <div className="flex justify-end gap-4 mt-4">
+                    <div className="flex justify-end gap-4 mt-4 items-center">
+                      {/* 🔥 AUTOSAVE: Indicador de estado */}
+                      {autoSaveStatus === 'saving' && (
+                        <span className="flex items-center text-cyan-400 text-sm">
+                          <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                          Saving...
+                        </span>
+                      )}
+                      {autoSaveStatus === 'saved' && (
+                        <span className="flex items-center text-green-400 text-sm">
+                          <CheckCircle className="w-4 h-4 mr-1" />
+                          Saved
+                        </span>
+                      )}
                       <Button
                         onClick={handleSave}
-                        disabled={loading}
+                        disabled={loading || autoSaveStatus === 'saving'}
                         className="w-full md:w-auto"
                       >
                         {loading ? "Guardando..." : "Guardar Cambios"}

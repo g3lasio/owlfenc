@@ -1,17 +1,18 @@
 /**
  * Contractor Data Service
  * 
- * Servicio unificado para obtener y validar datos del contratista
- * desde PostgreSQL (SINGLE SOURCE OF TRUTH).
+ * 🔥 SINGLE SOURCE OF TRUTH: Firebase Firestore (userProfiles collection)
  * 
  * Este servicio asegura que todos los sistemas de generación de PDF
  * usen información consistente y validada del perfil del usuario.
  * 
- * CRITICAL: Uses PostgreSQL as the single source of truth for all
- * document generation (Estimates, Invoices, Contracts).
+ * CRITICAL: Uses Firebase Firestore as the single source of truth for all
+ * document generation (Estimates, Invoices, Contracts, Certificates).
+ * 
+ * This matches the frontend Profile.tsx which saves to Firebase.
  */
 
-import { storage } from '../storage-firebase-only';
+import { companyProfileService } from './CompanyProfileService';
 
 export interface ContractorData {
   companyName: string;
@@ -40,7 +41,8 @@ export interface ProfileValidationResult {
 
 export class ContractorDataService {
   /**
-   * Obtiene los datos del contratista desde PostgreSQL (SINGLE SOURCE OF TRUTH)
+   * 🔥 SINGLE SOURCE OF TRUTH: Firebase Firestore
+   * Obtiene los datos del contratista desde Firebase (userProfiles collection)
    * Valida que existan los campos mínimos requeridos
    * 
    * @param firebaseUid - UID de Firebase del usuario autenticado
@@ -48,47 +50,55 @@ export class ContractorDataService {
    * @throws Error si el perfil no existe o está incompleto
    */
   static async getContractorData(firebaseUid: string): Promise<ContractorData> {
-    console.log(`📋 [CONTRACTOR-DATA] Obteniendo datos del contratista desde PostgreSQL para UID: ${firebaseUid}`);
+    console.log(`📋 [CONTRACTOR-DATA] Obteniendo datos del contratista desde Firebase para UID: ${firebaseUid}`);
     
-    // Get user from PostgreSQL using storage service
-    const user = await storage.getUserByFirebaseUid(firebaseUid);
+    // 🔥 SINGLE SOURCE: Get user from Firebase using CompanyProfileService
+    const profile = await companyProfileService.getProfileByFirebaseUid(firebaseUid);
     
-    if (!user) {
-      console.error(`❌ [CONTRACTOR-DATA] Perfil no encontrado en PostgreSQL para UID: ${firebaseUid}`);
+    if (!profile) {
+      console.error(`❌ [CONTRACTOR-DATA] Perfil no encontrado en Firebase para UID: ${firebaseUid}`);
       throw new Error('PROFILE_NOT_FOUND: User must complete profile setup before generating documents');
     }
     
+    // Log campos críticos para debugging
+    console.log(`📊 [CONTRACTOR-DATA] Perfil obtenido:`, {
+      companyName: profile.companyName || 'NOT SET',
+      license: profile.license || 'NOT SET',
+      state: profile.state || 'NOT SET',
+      address: profile.address || 'NOT SET'
+    });
+    
     // Validar campos requeridos
     const missingFields: string[] = [];
-    if (!user.company) missingFields.push('company');
-    if (!user.address) missingFields.push('address');
-    if (!user.phone) missingFields.push('phone');
-    if (!user.email) missingFields.push('email');
+    if (!profile.companyName) missingFields.push('companyName');
+    if (!profile.address) missingFields.push('address');
+    if (!profile.phone) missingFields.push('phone');
+    if (!profile.email) missingFields.push('email');
     
     if (missingFields.length > 0) {
       console.error(`❌ [CONTRACTOR-DATA] Perfil incompleto. Campos faltantes: ${missingFields.join(', ')}`);
       throw new Error(`INCOMPLETE_PROFILE: Missing required fields: ${missingFields.join(', ')}`);
     }
     
-    console.log(`✅ [CONTRACTOR-DATA] Datos del contratista obtenidos exitosamente desde PostgreSQL: ${user.company}`);
+    console.log(`✅ [CONTRACTOR-DATA] Datos del contratista obtenidos exitosamente desde Firebase: ${profile.companyName}`);
     
     return {
-      companyName: user.company, // PostgreSQL uses 'company' field
-      ownerName: user.ownerName,
-      address: user.address,
-      phone: user.phone,
-      email: user.email,
-      license: user.license,
-      logo: user.logo,
-      website: user.website,
-      city: user.city,
-      state: user.state,
-      zipCode: user.zipCode,
-      mobilePhone: user.mobilePhone,
-      role: user.role,
-      businessType: user.businessType,
-      yearEstablished: user.yearEstablished,
-      description: user.description,
+      companyName: profile.companyName,
+      ownerName: profile.ownerName,
+      address: profile.address,
+      phone: profile.phone,
+      email: profile.email,
+      license: profile.license,
+      logo: profile.logo,
+      website: profile.website,
+      city: profile.city,
+      state: profile.state,
+      zipCode: profile.zipCode,
+      mobilePhone: profile.mobilePhone,
+      role: profile.role,
+      businessType: profile.businessType,
+      yearEstablished: profile.yearEstablished,
+      description: profile.description,
     };
   }
   
@@ -187,7 +197,7 @@ export class ContractorDataService {
   
   /**
    * Convierte ContractorData al formato ContractorBranding
-   * usado por el sistema de contratos
+   * usado por el sistema de contratos y templates
    * 
    * @param contractorData - Datos del contratista
    * @returns Objeto ContractorBranding
@@ -199,6 +209,7 @@ export class ContractorDataService {
       phone: contractorData.phone,
       email: contractorData.email,
       licenseNumber: contractorData.license,
+      state: contractorData.state,
       logo: contractorData.logo,
       website: contractorData.website,
     };

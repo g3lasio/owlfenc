@@ -61,7 +61,6 @@ export class CompanyProfileService {
     try {
       console.log(`🔍 [COMPANY-PROFILE] Buscando perfil para Firebase UID: ${firebaseUid}`);
       
-      // OPTIMIZACIÓN: Usar document ID directo igual al firebaseUid
       const docRef = getDb().collection(this.collection).doc(firebaseUid);
       const doc = await docRef.get();
       
@@ -78,7 +77,16 @@ export class CompanyProfileService {
         updatedAt: data.updatedAt?.toDate() || new Date(),
       } as CompanyProfile;
 
-      console.log(`✅ [COMPANY-PROFILE] Perfil encontrado para: ${profile.companyName || 'Sin nombre'}`);
+      // 🔥 LOG CAMPOS CRÍTICOS para debugging
+      console.log(`✅ [COMPANY-PROFILE] Perfil encontrado:`, {
+        companyName: profile.companyName || 'NOT SET',
+        license: profile.license || 'NOT SET',
+        state: profile.state || 'NOT SET',
+        address: profile.address || 'NOT SET',
+        phone: profile.phone || 'NOT SET',
+        email: profile.email || 'NOT SET'
+      });
+      
       return profile;
     } catch (error) {
       console.error(`❌ [COMPANY-PROFILE] Error obteniendo perfil:`, error);
@@ -88,9 +96,15 @@ export class CompanyProfileService {
 
   async saveProfile(firebaseUid: string, profileData: Partial<CompanyProfile>): Promise<CompanyProfile> {
     try {
+      // 🔥 LOG DATOS ENTRANTES para debugging
       console.log(`💾 [COMPANY-PROFILE] Guardando perfil para Firebase UID: ${firebaseUid}`);
+      console.log(`📊 [COMPANY-PROFILE] Datos a guardar:`, {
+        companyName: profileData.companyName || 'NOT PROVIDED',
+        license: profileData.license || 'NOT PROVIDED',
+        state: profileData.state || 'NOT PROVIDED',
+        address: profileData.address || 'NOT PROVIDED'
+      });
       
-      // OPTIMIZACIÓN: Usar document ID directo igual al firebaseUid
       const docRef = getDb().collection(this.collection).doc(firebaseUid);
       const existingDoc = await docRef.get();
       
@@ -99,25 +113,32 @@ export class CompanyProfileService {
         ...profileData,
         firebaseUid, // FORZADO: siempre del servidor
         userId: firebaseUid, // FORZADO: siempre igual al firebaseUid
-        updatedAt: FieldValue.serverTimestamp(), // MEJORADO: Usar serverTimestamp
+        updatedAt: FieldValue.serverTimestamp(),
       };
 
       if (existingDoc.exists) {
-        // Actualizar documento existente - mantener createdAt original
+        // Actualizar documento existente - usar update para merge
         await docRef.update(profileToSave);
-        console.log(`✅ [COMPANY-PROFILE] Perfil actualizado para: ${profileToSave.companyName || 'Sin nombre'}`);
+        console.log(`✅ [COMPANY-PROFILE] Perfil actualizado`);
       } else {
         // Crear nuevo documento
         await docRef.set({
           ...profileToSave,
-          createdAt: FieldValue.serverTimestamp(), // MEJORADO: Usar serverTimestamp
+          createdAt: FieldValue.serverTimestamp(),
         });
-        console.log(`✅ [COMPANY-PROFILE] Nuevo perfil creado para UID: ${firebaseUid}`);
+        console.log(`✅ [COMPANY-PROFILE] Nuevo perfil creado`);
       }
 
-      // Retornar el perfil con fechas convertidas
+      // Retornar el perfil guardado y verificar
       const savedDoc = await docRef.get();
       const savedData = savedDoc.data()!;
+      
+      // 🔥 LOG DATOS GUARDADOS para verificación
+      console.log(`📊 [COMPANY-PROFILE] Perfil guardado verificado:`, {
+        companyName: savedData.companyName || 'NOT SET',
+        license: savedData.license || 'NOT SET',
+        state: savedData.state || 'NOT SET'
+      });
       
       return {
         ...savedData,
