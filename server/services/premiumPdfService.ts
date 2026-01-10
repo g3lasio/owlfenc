@@ -1,5 +1,6 @@
-import puppeteer, { Browser } from "puppeteer";
+import puppeteer, { Browser, Page, PDFOptions } from "puppeteer";
 import { getChromiumExecutablePath, launchBrowser } from "../utils/chromiumResolver";
+import { getTimezoneForState } from '../utils/timezoneMapper';
 
 // Production-aware logging helper
 const isProduction = process.env.NODE_ENV === 'production';
@@ -262,6 +263,7 @@ class PremiumPdfService {
       issuer?: string;
     };
     contractId?: string;
+    contractorState?: string; // US state code for timezone detection
     templateOptions?: {
       signatureType?: 'none' | 'single' | 'dual';
       includesSignaturePlaceholders?: boolean;
@@ -302,6 +304,7 @@ class PremiumPdfService {
           clientAudit: data.clientAudit,
           contractorCertificate: data.contractorCertificate,
           clientCertificate: data.clientCertificate,
+          contractorState: data.contractorState,
         });
       }
 
@@ -752,17 +755,21 @@ class PremiumPdfService {
     clientAudit?: { ipAddress?: string; userAgent?: string; deviceType?: string };
     contractorCertificate?: { certificateId?: string; timestamp?: string; documentHash?: string; signatureHash?: string; issuer?: string };
     clientCertificate?: { certificateId?: string; timestamp?: string; documentHash?: string; signatureHash?: string; issuer?: string };
+    contractorState?: string; // US state code for timezone detection
   }): string {
     console.log("🔐 [DIGITAL-SEAL] Adding verification seal to contract...");
     
+    // Determine timezone based on contractor's state
+    const timezone = getTimezoneForState(data.contractorState);
+    console.log(`🌍 [TIMEZONE] Using timezone ${timezone} for state: ${data.contractorState || 'default (CA)'}`);
+    
     const formatDate = (date: Date): string => {
       try {
-        // Use Pacific Time (PST/PDT) for signatures
-        // This matches the timezone of most contractors in California
+        // Use contractor's local timezone based on their state
         return date.toLocaleString('en-US', {
           year: 'numeric', month: 'long', day: 'numeric',
           hour: '2-digit', minute: '2-digit', timeZoneName: 'short',
-          timeZone: 'America/Los_Angeles'
+          timeZone: timezone
         });
       } catch {
         return 'Date unavailable';

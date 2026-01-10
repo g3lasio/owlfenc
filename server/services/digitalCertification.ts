@@ -191,15 +191,21 @@ export function verifyCertifiedSignature(
 export function createDigitalSealHTML(
   signerName: string,
   certificate: DigitalCertificate,
-  audit: SignatureAuditMetadata
+  audit: SignatureAuditMetadata,
+  contractorState?: string // 🌍 TIMEZONE FIX: Optional state for timezone detection
 ): string {
+  // Import timezone mapper
+  const { getTimezoneForState } = require('../utils/timezoneMapper');
+  const timezone = getTimezoneForState(contractorState);
+  
   const formattedDate = new Date(certificate.timestamp).toLocaleString('en-US', {
     month: 'long',
     day: 'numeric',
     year: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
-    timeZoneName: 'short'
+    timeZoneName: 'short',
+    timeZone: timezone // 🌍 Use contractor's timezone
   });
 
   const certIdShort = formatCertificateId(certificate.certificateId);

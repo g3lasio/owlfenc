@@ -9327,6 +9327,7 @@ ENHANCED LEGAL CLAUSE:`;
             license: profile.license,
             logo: profile.logo,
             website: profile.website,
+            state: profile.state, // 🌍 TIMEZONE FIX: Add state for timezone detection
           };
           console.log(`✅ [CONTRACT-PDF] Using contractor data from Firebase: ${profile.companyName}`);
         } else {

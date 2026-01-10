@@ -835,6 +835,9 @@ router.get("/download-html/:contractId", optionalAuth, async (req, res) => {
     // CRITICAL FIX: Only use Firebase - PostgreSQL removed completely
     const { db: firebaseDb } = await import("../lib/firebase-admin");
     
+    // 🌍 TIMEZONE FIX: Variable to store contractor's state
+    let contractorState: string | undefined = undefined;
+    
     // First try dualSignatureContracts (primary)
     let contract: any = null;
     let contractDoc = await firebaseDb
@@ -873,6 +876,20 @@ router.get("/download-html/:contractId", optionalAuth, async (req, res) => {
           success: false,
           message: "Access denied - you can only access your own contracts",
         });
+      }
+      
+      // 🌍 TIMEZONE FIX: Get contractor's state from profile
+      if (contract?.userId) {
+        try {
+          const profileDoc = await firebaseDb.collection('userProfiles').doc(contract.userId).get();
+          if (profileDoc.exists) {
+            const profile = profileDoc.data();
+            contractorState = profile?.state;
+            console.log(`🌍 [TIMEZONE] Contractor state: ${contractorState || 'not found'}`);
+          }
+        } catch (error) {
+          console.warn('⚠️ [TIMEZONE] Could not fetch contractor profile:', error);
+        }
       }
     } else {
       // Fallback to contractHistory collection
@@ -1145,7 +1162,8 @@ router.get("/download-html/:contractId", optionalAuth, async (req, res) => {
                       createDigitalSealHTML(
                         contract.contractorName || 'Contractor',
                         contract.contractorCertificate,
-                        contract.contractorAudit
+                        contract.contractorAudit,
+                        contractorState
                       ) : 
                       ''
                     }
@@ -1163,7 +1181,8 @@ router.get("/download-html/:contractId", optionalAuth, async (req, res) => {
                       createDigitalSealHTML(
                         contract.clientName || 'Client',
                         contract.clientCertificate,
-                        contract.clientAudit
+                        contract.clientAudit,
+                        contractorState
                       ) : 
                       ''
                     }
