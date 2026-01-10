@@ -386,6 +386,11 @@ class PremiumPdfService {
   /**
    * Embed signatures directly into contract HTML
    * 
+   * 📋 SIGNATURE ORDER STANDARD (ALL TEMPLATES MUST FOLLOW):
+   * - First signature placeholder = CONTRACTOR (odd count: 1, 3, 5...)
+   * - Second signature placeholder = CLIENT (even count: 2, 4, 6...)
+   * - This ensures consistency across all templates and prevents signature swapping
+   * 
    * Template-aware behavior:
    * - signatureType 'none': Returns HTML unchanged (no signatures needed)
    * - signatureType 'single': Only injects contractor signature (e.g., Lien Waivers)
@@ -597,13 +602,14 @@ class PremiumPdfService {
       }
     );
 
-    // Strategy 4: Replace date placeholders - alternates contractor/client
+    // Strategy 4: Replace date placeholders - alternates CONTRACTOR/CLIENT
+    // 📋 STANDARD ORDER: CONTRACTOR first (odd count), CLIENT second (even count)
     let dateCount = 0;
     modifiedHTML = modifiedHTML.replace(
       /(.{0,200})Date:\s*____________________/g,
       (match, contextBefore) => {
         dateCount++;
-        const isContractor = dateCount % 2 === 1;
+        const isContractor = dateCount % 2 === 1; // First is CONTRACTOR (standard)
         const sigDate = isContractor ? contractorSignature.signedAt : clientSignature.signedAt;
         const sigName = isContractor ? 'CONTRACTOR' : 'CLIENT';
         const dateObj = parseDateSafe(sigDate, sigName);
@@ -619,13 +625,14 @@ class PremiumPdfService {
 
     // Strategy 5 removed - it was corrupting existing <img> tags by creating nested images
 
-    // ✅ Strategy 6: Replace empty <div class="signature-line"></div> - alternates contractor/client
+    // ✅ Strategy 6: Replace empty <div class="signature-line"></div> - alternates CONTRACTOR/CLIENT
+    // 📋 STANDARD ORDER: CONTRACTOR first (odd count), CLIENT second (even count)
     let signatureLineCount = 0;
     modifiedHTML = modifiedHTML.replace(
       /<div class="signature-line"><\/div>/g,
       (match) => {
         signatureLineCount++;
-        const isContractor = signatureLineCount % 2 === 1;
+        const isContractor = signatureLineCount % 2 === 1; // First is CONTRACTOR (standard)
         const sigImage = isContractor ? contractorSigImage : clientSigImage;
         const sigName = isContractor ? 'CONTRACTOR' : 'CLIENT';
         console.log(`✅ [SIGNATURE-DEBUG] Strategy 6: Replacing signature-line #${signatureLineCount} for ${sigName}`);
@@ -635,13 +642,14 @@ class PremiumPdfService {
       }
     );
 
-    // ✅ Strategy 7: Replace empty <span class="date-line"></span> - alternates contractor/client
+    // ✅ Strategy 7: Replace empty <span class="date-line"></span> - alternates CONTRACTOR/CLIENT
+    // 📋 STANDARD ORDER: CONTRACTOR first (odd count), CLIENT second (even count)
     let dateLineCount = 0;
     modifiedHTML = modifiedHTML.replace(
       /<span class="date-line"><\/span>/g,
       (match) => {
         dateLineCount++;
-        const isContractor = dateLineCount % 2 === 1;
+        const isContractor = dateLineCount % 2 === 1; // First is CONTRACTOR (standard)
         const sigDate = isContractor ? contractorSignature.signedAt : clientSignature.signedAt;
         const sigName = isContractor ? 'CONTRACTOR' : 'CLIENT';
         const dateObj = parseDateSafe(sigDate, sigName);

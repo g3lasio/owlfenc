@@ -48,6 +48,13 @@ const signatureSubmissionSchema = z.object({
   signatureData: z.string(),
   signatureType: z.enum(["drawing", "cursive"]),
   fullName: z.string(),
+  // 🔐 AUDIT METADATA: Optional fields for digital verification
+  ipAddress: z.string().optional(),
+  userAgent: z.string().optional(),
+  geolocation: z.object({
+    latitude: z.number(),
+    longitude: z.number(),
+  }).optional(),
 });
 
 /**

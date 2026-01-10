@@ -921,16 +921,17 @@ ${completion.additionalNotes ? `
 <div class="signature-section">
     <h2 class="section-title">${completion.additionalNotes ? 'X' : 'IX'}. Signatures and Execution</h2>
     <div class="signature-grid">
-        <div class="signature-block">
-            <div class="signature-line"></div>
-            <div class="signature-label">PROPERTY OWNER</div>
-            <div class="signature-name">${data.client.name}</div>
-            <div class="signature-date">Date: ____________________</div>
-        </div>
+        <!-- 📋 STANDARD ORDER: CONTRACTOR first, CLIENT second (matches embedSignaturesInHTML logic) -->
         <div class="signature-block">
             <div class="signature-line"></div>
             <div class="signature-label">LICENSED CONTRACTOR</div>
             <div class="signature-name">${contractorName}</div>
+            <div class="signature-date">Date: ____________________</div>
+        </div>
+        <div class="signature-block">
+            <div class="signature-line"></div>
+            <div class="signature-label">PROPERTY OWNER</div>
+            <div class="signature-name">${data.client.name}</div>
             <div class="signature-date">Date: ____________________</div>
         </div>
     </div>
