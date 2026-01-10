@@ -191,10 +191,39 @@ function generateCertificateCompletionHTML(data: TemplateData, branding: Contrac
 
   const currentDate = formatLegalDate(new Date(), contractorTimezone);
 
-  // Completion data with comprehensive defaults
-  const completion = data.completion || {
-    projectStartDate: data.project.startDate || currentDate,
-    projectCompletionDate: data.project.endDate || currentDate,
+  // 🔥 CRITICAL: Log incoming completion data for debugging
+  console.log('📅 [CERTIFICATE-COMPLETION] Incoming data.completion:', JSON.stringify(data.completion, null, 2));
+  console.log('📅 [CERTIFICATE-COMPLETION] Incoming data.project:', JSON.stringify(data.project, null, 2));
+
+  // 🔥 CRITICAL: Use completion data from frontend - NO FALLBACKS to project dates
+  // The frontend sends the exact dates the user selected in Step 2
+  if (!data.completion) {
+    console.error('❌ [CERTIFICATE-COMPLETION] No completion data received! This should never happen.');
+  }
+  
+  const completion = data.completion ? {
+    // Use ONLY the dates from completion object - these are what the user selected
+    projectStartDate: data.completion.projectStartDate || '',
+    projectCompletionDate: data.completion.projectCompletionDate || '',
+    dateOfAcceptance: data.completion.dateOfAcceptance || '',
+    finalInspectionDate: data.completion.finalInspectionDate || data.completion.dateOfAcceptance || '',
+    punchListCompleted: data.completion.punchListCompleted ?? true,
+    finalInspectionPassed: data.completion.finalInspectionPassed ?? true,
+    siteCleanedAndRestored: data.completion.siteCleanedAndRestored ?? true,
+    warrantyDurationMonths: data.completion.warrantyDurationMonths || 12,
+    warrantyTerms: data.completion.warrantyTerms || 'Standard one-year warranty covering workmanship and materials against defects.',
+    certificateOfOccupancyNumber: data.completion.certificateOfOccupancyNumber || '',
+    asBuiltDrawingsDelivered: data.completion.asBuiltDrawingsDelivered ?? false,
+    omManualsDelivered: data.completion.omManualsDelivered ?? false,
+    manufacturerWarrantiesDelivered: data.completion.manufacturerWarrantiesDelivered ?? false,
+    staffTrainingCompleted: data.completion.staffTrainingCompleted ?? false,
+    allSubcontractorsPaid: data.completion.allSubcontractorsPaid ?? true,
+    retainageReleaseAuthorized: data.completion.retainageReleaseAuthorized ?? true,
+    additionalNotes: data.completion.additionalNotes || ''
+  } : {
+    // Fallback ONLY if completion is completely missing (should never happen)
+    projectStartDate: currentDate,
+    projectCompletionDate: currentDate,
     dateOfAcceptance: currentDate,
     punchListCompleted: true,
     finalInspectionPassed: true,
@@ -211,6 +240,13 @@ function generateCertificateCompletionHTML(data: TemplateData, branding: Contrac
     retainageReleaseAuthorized: true,
     additionalNotes: ''
   };
+  
+  console.log('📅 [CERTIFICATE-COMPLETION] Final completion dates being used:', {
+    projectStartDate: completion.projectStartDate,
+    projectCompletionDate: completion.projectCompletionDate,
+    dateOfAcceptance: completion.dateOfAcceptance,
+    finalInspectionDate: completion.finalInspectionDate,
+  });
 
   // Format dates using contractor's timezone
   const formattedStartDate = formatLegalDate(completion.projectStartDate, contractorTimezone);

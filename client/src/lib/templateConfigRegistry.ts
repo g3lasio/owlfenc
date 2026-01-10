@@ -722,11 +722,35 @@ templateConfigRegistry.register({
     zodSchema: certificateCompletionSchema,
   },
   transformToTemplateData: (formData: any, baseData: any) => {
-    // Use project dates from baseData if not provided in form
-    const projectStartDate = formData.projectStartDate || baseData.project?.startDate || new Date().toISOString();
-    const projectCompletionDate = formData.projectCompletionDate || new Date().toISOString();
-    const dateOfAcceptance = formData.dateOfAcceptance || new Date().toISOString();
+    // 🔥 CRITICAL: Use ONLY form data for dates - NO FALLBACKS to baseData
+    // This ensures the user's selected dates are always used, never overwritten
+    console.log('📅 [CERTIFICATE-COMPLETION] Form dates received:', {
+      projectStartDate: formData.projectStartDate,
+      projectCompletionDate: formData.projectCompletionDate,
+      dateOfAcceptance: formData.dateOfAcceptance,
+      finalInspectionDate: formData.finalInspectionDate,
+    });
+    
+    // Validate required dates - throw error if missing
+    if (!formData.projectCompletionDate) {
+      console.error('❌ [CERTIFICATE-COMPLETION] Missing required date: projectCompletionDate');
+    }
+    if (!formData.dateOfAcceptance) {
+      console.error('❌ [CERTIFICATE-COMPLETION] Missing required date: dateOfAcceptance');
+    }
+    
+    // Use form dates ONLY - no fallbacks that could corrupt the data
+    const projectStartDate = formData.projectStartDate || '';
+    const projectCompletionDate = formData.projectCompletionDate || '';
+    const dateOfAcceptance = formData.dateOfAcceptance || '';
     const finalInspectionDate = formData.finalInspectionDate || dateOfAcceptance;
+    
+    console.log('📅 [CERTIFICATE-COMPLETION] Final dates being sent:', {
+      projectStartDate,
+      projectCompletionDate,
+      dateOfAcceptance,
+      finalInspectionDate,
+    });
     
     return {
       ...baseData,

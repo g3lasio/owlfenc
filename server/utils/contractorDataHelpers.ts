@@ -3,11 +3,11 @@
  * 
  * 🔥 SINGLE SOURCE OF TRUTH: Firebase Firestore (userProfiles collection)
  * 
- * Funciones unificadas para autenticación y obtención de datos del contractor
- * desde Firebase Firestore.
+ * ⚠️ CRITICAL: These functions NEVER use frontend data as fallback.
+ * All contractor profile data MUST come from Firebase to ensure consistency.
  * 
- * Estas funciones aseguran que TODOS los endpoints que generan documentos
- * usen la misma lógica y fuente de datos (Firebase).
+ * If authentication fails or profile is not found, the request MUST fail
+ * with a clear error message directing the user to complete their profile.
  */
 
 import { Request } from 'express';
@@ -30,195 +30,155 @@ export interface ContractorData {
 }
 
 /**
- * Autentica al usuario desde el request
- * Soporta múltiples métodos de autenticación:
- * - Header x-firebase-uid (método principal)
- * - Header Authorization Bearer token (fallback)
+ * 🔥 CRITICAL: Extracts Firebase UID from request headers
+ * 
+ * ONLY accepts x-firebase-uid header - this is the ONLY reliable method
+ * because the frontend sends the UID directly, not a JWT token.
  * 
  * @param req - Express Request object
- * @returns Firebase UID del usuario autenticado
- * @throws Error si no hay autenticación válida
+ * @returns Firebase UID or null if not found
  */
-export async function authenticateUser(req: Request): Promise<string> {
-  // Método 1: x-firebase-uid header (método principal y más confiable)
-  const firebaseUidHeader = req.headers["x-firebase-uid"] as string;
-  if (firebaseUidHeader) {
-    console.log(`✅ [AUTH-HELPER] Authenticated via x-firebase-uid header: ${firebaseUidHeader}`);
-    return firebaseUidHeader;
+export function getFirebaseUidFromRequest(req: Request): string | null {
+  // ONLY method: x-firebase-uid header
+  const firebaseUid = req.headers["x-firebase-uid"] as string;
+  
+  if (firebaseUid && firebaseUid.length > 0) {
+    console.log(`✅ [AUTH-HELPER] Firebase UID from header: ${firebaseUid}`);
+    return firebaseUid;
   }
-
-  // Método 2: Authorization Bearer token (requiere Firebase Admin SDK)
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    try {
-      // Intentar verificar el token con Firebase Admin
-      const admin = await import('firebase-admin');
-      const token = authHeader.substring(7);
-      const decodedToken = await admin.auth().verifyIdToken(token);
-      console.log(`✅ [AUTH-HELPER] Authenticated via Bearer token: ${decodedToken.uid}`);
-      return decodedToken.uid;
-    } catch (error) {
-      console.warn('⚠️ [AUTH-HELPER] Bearer token verification failed:', error instanceof Error ? error.message : error);
-      // No lanzar error aquí, continuar con otros métodos
-    }
-  }
-
-  // No hay autenticación válida
-  console.error('❌ [AUTH-HELPER] No authentication found in request');
-  throw new Error('AUTHENTICATION_REQUIRED: No valid authentication method found');
+  
+  console.warn(`⚠️ [AUTH-HELPER] No x-firebase-uid header found in request`);
+  return null;
 }
 
 /**
  * 🔥 SINGLE SOURCE OF TRUTH: Firebase Firestore
- * Obtiene los datos del contractor desde Firebase (userProfiles collection)
  * 
- * @param firebaseUid - Firebase UID del usuario autenticado
- * @param fallbackData - Datos de fallback del frontend (opcional)
- * @returns ContractorData con información del perfil
+ * Gets contractor data ONLY from Firebase. NEVER uses frontend data.
+ * 
+ * @param firebaseUid - Firebase UID of the authenticated user
+ * @returns ContractorData from Firebase
+ * @throws Error if profile not found
  */
-export async function getContractorData(
-  firebaseUid: string,
-  fallbackData?: any
+export async function getContractorDataFromFirebase(
+  firebaseUid: string
 ): Promise<ContractorData> {
   console.log(`📋 [CONTRACTOR-HELPER] Fetching contractor data from Firebase for UID: ${firebaseUid}`);
 
   try {
-    // 🔥 SINGLE SOURCE: Obtener usuario de Firebase via CompanyProfileService
     const profile = await companyProfileService.getProfileByFirebaseUid(firebaseUid);
 
-    if (profile) {
-      console.log(`✅ [CONTRACTOR-HELPER] Using contractor data from Firebase: ${profile.companyName}`);
-      console.log(`📊 [CONTRACTOR-HELPER] Critical fields:`, {
-        license: profile.license || 'NOT SET',
-        state: profile.state || 'NOT SET',
-        address: profile.address || 'NOT SET'
-      });
-
-      return {
-        name: profile.companyName || "",
-        company: profile.companyName || "",
-        address: profile.address || "",
-        phone: profile.phone || "",
-        email: profile.email || "",
-        license: profile.license || "",
-        logo: profile.logo || "",
-        website: profile.website || "",
-        city: profile.city || "",
-        state: profile.state || "",
-        zipCode: profile.zipCode || "",
-        mobilePhone: profile.mobilePhone || "",
-        ownerName: profile.ownerName || "",
-      };
+    if (!profile) {
+      console.error(`❌ [CONTRACTOR-HELPER] No profile found in Firebase for UID: ${firebaseUid}`);
+      throw new Error('PROFILE_NOT_FOUND: Please complete your profile in Settings before generating documents');
     }
 
-    // Si no hay usuario en Firebase, usar fallback
-    if (fallbackData) {
-      console.warn(`⚠️ [CONTRACTOR-HELPER] No data in Firebase, using frontend fallback`);
-      console.warn(`⚠️ [CONTRACTOR-HELPER] User should complete profile in Settings`);
+    console.log(`✅ [CONTRACTOR-HELPER] Profile loaded from Firebase: ${profile.companyName}`);
+    console.log(`📊 [CONTRACTOR-HELPER] Critical fields:`, {
+      companyName: profile.companyName || 'NOT SET',
+      license: profile.license || 'NOT SET',
+      state: profile.state || 'NOT SET',
+      address: profile.address || 'NOT SET',
+      phone: profile.phone || 'NOT SET',
+      email: profile.email || 'NOT SET'
+    });
 
-      return normalizeContractorData(fallbackData);
-    }
-
-    // No hay datos ni en Firebase ni en fallback
-    console.error(`❌ [CONTRACTOR-HELPER] No contractor data found for UID: ${firebaseUid}`);
-    throw new Error('PROFILE_NOT_FOUND: User must complete profile in Settings before generating documents');
+    return {
+      name: profile.companyName || "",
+      company: profile.companyName || "",
+      address: profile.address || "",
+      phone: profile.phone || "",
+      email: profile.email || "",
+      license: profile.license || "",
+      logo: profile.logo || "",
+      website: profile.website || "",
+      city: profile.city || "",
+      state: profile.state || "",
+      zipCode: profile.zipCode || "",
+      mobilePhone: profile.mobilePhone || "",
+      ownerName: profile.ownerName || "",
+    };
 
   } catch (error) {
     if (error instanceof Error && error.message.startsWith('PROFILE_NOT_FOUND')) {
       throw error;
     }
-
-    console.error(`❌ [CONTRACTOR-HELPER] Error fetching contractor data:`, error);
-
-    // Si hay error de base de datos pero tenemos fallback, usarlo
-    if (fallbackData) {
-      console.warn(`⚠️ [CONTRACTOR-HELPER] Firebase error, using frontend fallback`);
-      return normalizeContractorData(fallbackData);
-    }
-
-    throw new Error('DATABASE_ERROR: Failed to fetch contractor data');
+    console.error(`❌ [CONTRACTOR-HELPER] Error fetching from Firebase:`, error);
+    throw new Error('DATABASE_ERROR: Failed to fetch contractor profile from Firebase');
   }
 }
 
 /**
- * Normaliza datos del contractor desde diferentes formatos del frontend
- * Soporta múltiples formatos:
- * - { name, address, phone, email, ... }
- * - { company, address, phone, email, ... }
- * - { companyName, address, phone, email, ... }
+ * 🔥 MAIN FUNCTION: Get contractor data from request
  * 
- * @param data - Datos del contractor en cualquier formato
- * @returns ContractorData normalizado
+ * This is the ONLY function that should be used by endpoints.
+ * It extracts the Firebase UID from headers and fetches data from Firebase.
+ * 
+ * ⚠️ NEVER uses frontend data as fallback - this prevents data inconsistencies.
+ * 
+ * @param req - Express Request object
+ * @returns ContractorData from Firebase
+ * @throws Error if no UID in headers or profile not found
  */
-function normalizeContractorData(data: any): ContractorData {
-  const companyName = data.companyName || data.company || data.name || "Your Company";
-
-  return {
-    name: companyName,
-    company: companyName,
-    address: data.address || "",
-    phone: data.phone || "",
-    email: data.email || "",
-    license: data.license || data.licenseNumber || "",
-    logo: data.logo || "",
-    website: data.website || "",
-    city: data.city || "",
-    state: data.state || "",
-    zipCode: data.zipCode || "",
-    mobilePhone: data.mobilePhone || "",
-    ownerName: data.ownerName || "",
-  };
+export async function getContractorData(req: Request): Promise<ContractorData> {
+  // Step 1: Get Firebase UID from header
+  const firebaseUid = getFirebaseUidFromRequest(req);
+  
+  if (!firebaseUid) {
+    console.error(`❌ [CONTRACTOR-HELPER] No x-firebase-uid header - cannot fetch profile`);
+    throw new Error('AUTHENTICATION_REQUIRED: x-firebase-uid header is required');
+  }
+  
+  // Step 2: Fetch data from Firebase (NEVER from frontend)
+  return await getContractorDataFromFirebase(firebaseUid);
 }
 
 /**
- * Obtiene datos del contractor con autenticación automática
- * Combina authenticateUser() y getContractorData() en una sola función
- * 
- * @param req - Express Request object
- * @param fallbackData - Datos de fallback del frontend (opcional)
- * @returns ContractorData con información del perfil
- * @throws Error si no hay autenticación o datos
+ * @deprecated Use getContractorData() instead
+ * This function is kept for backward compatibility but should not be used.
+ */
+export async function authenticateUser(req: Request): Promise<string> {
+  const uid = getFirebaseUidFromRequest(req);
+  if (!uid) {
+    throw new Error('AUTHENTICATION_REQUIRED: x-firebase-uid header is required');
+  }
+  return uid;
+}
+
+/**
+ * @deprecated Use getContractorData() instead
+ * This function is kept for backward compatibility but should not be used.
  */
 export async function getAuthenticatedContractorData(
   req: Request,
-  fallbackData?: any
+  _fallbackData?: any // Ignored - NEVER use frontend data
 ): Promise<{ firebaseUid: string; contractorData: ContractorData }> {
-  // Autenticar usuario
-  const firebaseUid = await authenticateUser(req);
-
-  // Obtener datos del contractor desde Firebase
-  const contractorData = await getContractorData(firebaseUid, fallbackData);
-
+  const firebaseUid = getFirebaseUidFromRequest(req);
+  if (!firebaseUid) {
+    throw new Error('AUTHENTICATION_REQUIRED: x-firebase-uid header is required');
+  }
+  
+  const contractorData = await getContractorDataFromFirebase(firebaseUid);
   return { firebaseUid, contractorData };
 }
 
 /**
- * 🔥 SINGLE SOURCE OF TRUTH: Firebase Firestore
- * Intenta obtener datos del contractor sin requerir autenticación
- * Útil para endpoints que permiten autenticación opcional
+ * @deprecated Use getContractorData() instead
  * 
- * @param req - Express Request object
- * @param fallbackData - Datos de fallback del frontend (requerido)
- * @returns ContractorData con información del perfil
+ * ⚠️ CRITICAL CHANGE: This function NO LONGER uses fallback data.
+ * It now requires x-firebase-uid header and fetches from Firebase only.
  */
 export async function getContractorDataOptional(
   req: Request,
-  fallbackData: any
+  _fallbackData?: any // Ignored - NEVER use frontend data
 ): Promise<ContractorData> {
-  try {
-    // Intentar autenticar
-    const firebaseUid = await authenticateUser(req);
-
-    // 🔥 SINGLE SOURCE: Intentar obtener datos de Firebase
-    return await getContractorData(firebaseUid, fallbackData);
-  } catch (error) {
-    // Si falla autenticación o no hay datos, usar fallback
-    console.warn(`⚠️ [CONTRACTOR-HELPER] Optional auth failed, using fallback data`);
-    console.warn(`📊 [CONTRACTOR-HELPER] Fallback data:`, {
-      company: fallbackData?.company || fallbackData?.companyName || 'NOT PROVIDED',
-      license: fallbackData?.license || fallbackData?.licenseNumber || 'NOT PROVIDED',
-      state: fallbackData?.state || 'NOT PROVIDED'
-    });
-    return normalizeContractorData(fallbackData);
+  const firebaseUid = getFirebaseUidFromRequest(req);
+  
+  if (!firebaseUid) {
+    console.error(`❌ [CONTRACTOR-HELPER] No x-firebase-uid header - CANNOT use fallback data`);
+    console.error(`❌ [CONTRACTOR-HELPER] Frontend MUST send x-firebase-uid header`);
+    throw new Error('AUTHENTICATION_REQUIRED: x-firebase-uid header is required. Frontend must include this header in all requests.');
   }
+  
+  return await getContractorDataFromFirebase(firebaseUid);
 }

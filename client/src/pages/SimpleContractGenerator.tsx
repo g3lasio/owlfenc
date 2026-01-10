@@ -2623,7 +2623,8 @@ export default function SimpleContractGenerator() {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${currentUser?.uid || ''}`,
+              // 🔥 CRITICAL: Send x-firebase-uid for Firebase profile lookup
+              'x-firebase-uid': currentUser?.uid || '',
             },
             body: JSON.stringify(payload),
           });
