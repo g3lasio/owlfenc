@@ -908,6 +908,97 @@ router.post('/templates/:templateId/generate-pdf',
 );
 
 /**
+ * Generate template document with JSON response (HTML + PDF base64)
+ * Used by frontend for Step 3 display
+ */
+router.post('/templates/:templateId/generate-document',
+  verifyFirebaseAuth,
+  requireLegalDefenseAccess,
+  validateUsageLimit('contracts'),
+  incrementUsageOnSuccess('contracts'),
+  async (req, res) => {
+    const startTime = Date.now();
+    const { templateId } = req.params;
+    
+    console.log(`📋 [TEMPLATE-DOC] Generating document for template: ${templateId} with JSON response`);
+    
+    try {
+      const { data, branding, title } = req.body;
+      
+      if (!featureFlags.isMultiTemplateSystemEnabled()) {
+        return res.status(404).json({
+          success: false,
+          error: 'Template system is not enabled'
+        });
+      }
+      
+      if (!templateService.isTemplateAvailable(templateId)) {
+        return res.status(404).json({
+          success: false,
+          error: `Template '${templateId}' not found or not available`
+        });
+      }
+      
+      const htmlResult = await templateService.generateDocument(templateId, data, branding || {});
+      
+      if (!htmlResult.success || !htmlResult.html) {
+        return res.status(400).json({
+          success: false,
+          error: htmlResult.error || 'Failed to generate document HTML'
+        });
+      }
+      
+      // Generate PDF from HTML
+      const pdfResult = await modernPdfService.generateFromHtml(htmlResult.html, {
+        format: 'Letter',
+        margin: {
+          top: '0.75in',
+          right: '0.75in',
+          bottom: '0.75in',
+          left: '0.75in'
+        }
+      });
+      
+      if (!pdfResult.success || !pdfResult.buffer) {
+        return res.status(500).json({
+          success: false,
+          error: pdfResult.error || 'PDF generation failed'
+        });
+      }
+      
+      const totalTime = Date.now() - startTime;
+      console.log(`✅ [TEMPLATE-DOC] Document generated: ${templateId} in ${totalTime}ms`);
+      
+      const filename = title 
+        ? `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`
+        : `${templateId}_${Date.now()}.pdf`;
+      
+      // Return JSON with HTML and PDF base64
+      res.json({
+        success: true,
+        templateId,
+        html: htmlResult.html,
+        pdfBase64: pdfResult.buffer.toString('base64'),
+        filename,
+        pdfSize: pdfResult.buffer.length,
+        processingTime: totalTime,
+        method: pdfResult.method
+      });
+      
+    } catch (error) {
+      const totalTime = Date.now() - startTime;
+      console.error('❌ [TEMPLATE-DOC] Error:', error);
+      
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Internal server error',
+        processingTime: totalTime
+      });
+    }
+  }
+);
+
+/**
  * UNIFIED PDF SERVICE HEALTH CHECK
  */
 router.get('/native-pdf/health', async (req, res) => {

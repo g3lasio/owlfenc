@@ -27,19 +27,35 @@ function formatLegalDate(dateInput: string | Date | undefined): string {
     return new Date().toLocaleDateString('en-US', { 
       year: 'numeric', 
       month: 'long', 
-      day: 'numeric' 
+      day: 'numeric',
+      timeZone: 'America/Los_Angeles'
     });
   }
   
   try {
-    const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+    let date: Date;
+    
+    if (typeof dateInput === 'string') {
+      // If date string is in YYYY-MM-DD format (no time), treat as local date
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
+        const [year, month, day] = dateInput.split('-').map(Number);
+        date = new Date(year, month - 1, day); // Create date in local timezone
+      } else {
+        date = new Date(dateInput);
+      }
+    } else {
+      date = dateInput;
+    }
+    
     if (isNaN(date.getTime())) {
       return String(dateInput);
     }
+    
     return date.toLocaleDateString('en-US', { 
       year: 'numeric', 
       month: 'long', 
-      day: 'numeric' 
+      day: 'numeric',
+      timeZone: 'America/Los_Angeles' // PST/PDT (California)
     });
   } catch {
     return String(dateInput);
@@ -415,6 +431,41 @@ function generateCertificateCompletionHTML(data: TemplateData, branding: Contrac
             color: #666;
         }
         
+        /* Professional Page Footer with Pagination */
+        .page-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 0.75in;
+            font-size: 8pt;
+            color: #888;
+            border-top: 1px solid #e0e0e0;
+            background: white;
+        }
+        
+        .page-footer-left {
+            text-align: left;
+        }
+        
+        .page-footer-center {
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        .page-footer-right {
+            text-align: right;
+        }
+        
+        .page-number {
+            font-weight: 600;
+            color: #666;
+        }
+        
         /* Professional Seal Placeholder */
         .seal-section {
             text-align: center;
@@ -761,6 +812,29 @@ ${completion.additionalNotes ? `
     <strong>Powered by Chyrris Technologies</strong><br>
     Professional Construction Document Management System
 </div>
+
+<!-- PROFESSIONAL PAGE FOOTER WITH PAGINATION -->
+<div class="page-footer">
+    <div class="page-footer-left">
+        <span style="font-weight: 500;">Certificate of Final Completion</span>
+    </div>
+    <div class="page-footer-center">
+        <span style="color: #999;">Powered by Chyrris Technologies</span>
+    </div>
+    <div class="page-footer-right">
+        <span class="page-number">Page <span class="pageNumber"></span> of <span class="totalPages"></span></span>
+    </div>
+</div>
+
+<script>
+    // Puppeteer will automatically replace pageNumber and totalPages
+    document.addEventListener('DOMContentLoaded', function() {
+        const pageNumbers = document.querySelectorAll('.pageNumber');
+        const totalPages = document.querySelectorAll('.totalPages');
+        pageNumbers.forEach(el => el.textContent = '1');
+        totalPages.forEach(el => el.textContent = '6');
+    });
+</script>
 
 </body>
 </html>`;

@@ -6643,16 +6643,30 @@ export default function SimpleContractGenerator() {
                         // Generate Certificate of Completion PDF
                         const token = await auth.currentUser?.getIdToken(false).catch(() => null);
                         
-                        const response = await fetch('/api/generate-pdf', {
+                        // Prepare branding object with contractor info
+                        const branding = {
+                          companyName: profile?.companyName || contractData.contractor?.name || 'Contractor',
+                          address: profile?.address || contractData.contractor?.address || '',
+                          phone: profile?.phone || contractData.contractor?.phone || '',
+                          email: profile?.email || contractData.contractor?.email || '',
+                          licenseNumber: profile?.license || '',
+                          logo: profile?.logo || '',
+                          website: profile?.website || '',
+                        };
+                        
+                        const response = await fetch('/api/legal-defense/templates/certificate-completion/generate-document', {
                           method: 'POST',
                           headers: {
                             'Content-Type': 'application/json',
                             ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
                           },
                           body: JSON.stringify({
-                            templateId: 'certificate-completion',
-                            templateData: transformedData,
-                            linkedContractId: contractData.linkedContractId,
+                            data: {
+                              ...contractData,
+                              ...transformedData,
+                            },
+                            branding,
+                            title: `Certificate-of-Completion-${contractData.client?.name || 'Client'}`,
                           }),
                         });
 
