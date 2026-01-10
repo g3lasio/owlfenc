@@ -18,6 +18,7 @@ import {
 import { templateService } from '../templates/templateService';
 import { featureFlags } from '../config/featureFlags';
 import { modernPdfService } from '../services/ModernPdfService';
+import { companyProfileService } from '../services/CompanyProfileService';
 
 const router = Router();
 
@@ -696,9 +697,44 @@ router.post('/templates/:templateId/generate',
   async (req, res) => {
     try {
       const { templateId } = req.params;
-      const { data, branding } = req.body;
+      const { data } = req.body;
+      const firebaseUid = req.firebaseUser?.uid;
 
       console.log(`📋 [TEMPLATE-GENERATE] Generating ${templateId} document...`);
+
+      // 🔥 SINGLE SOURCE OF TRUTH: Firebase is the ONLY source for contractor profile
+      if (!firebaseUid) {
+        return res.status(401).json({
+          success: false,
+          error: 'Authentication required',
+        });
+      }
+      
+      const profile = await companyProfileService.getProfileByFirebaseUid(firebaseUid);
+      
+      if (!profile) {
+        return res.status(400).json({
+          success: false,
+          error: 'Contractor profile not found. Please complete your profile in Settings.',
+        });
+      }
+      
+      // Build branding EXCLUSIVELY from Firebase - no client data accepted
+      const branding = {
+        companyName: profile.companyName || '',
+        address: profile.address || '',
+        city: profile.city || '',
+        state: profile.state || '',
+        zipCode: profile.zipCode || '',
+        phone: profile.phone || '',
+        email: profile.email || '',
+        licenseNumber: profile.license || '',
+        logo: profile.logo || '',
+        website: profile.website || '',
+        ownerName: profile.ownerName || '',
+      };
+      
+      console.log(`✅ [TEMPLATE-GENERATE] Profile from Firebase: license=${branding.licenseNumber || 'EMPTY'}, state=${branding.state || 'EMPTY'}`);
 
       if (!featureFlags.isMultiTemplateSystemEnabled()) {
         return res.status(404).json({
@@ -714,7 +750,7 @@ router.post('/templates/:templateId/generate',
         });
       }
 
-      const result = await templateService.generateDocument(templateId, data, branding || {});
+      const result = await templateService.generateDocument(templateId, data, branding);
 
       if (!result.success) {
         return res.status(400).json({
@@ -821,6 +857,7 @@ router.post('/generate-pdf-native',
  * TEMPLATE + PDF GENERATION (Combined)
  * Generates document from template and converts to PDF using ModernPdfService
  * Same reliable engine as Invoices and Contracts
+ * 🔥 SINGLE SOURCE OF TRUTH: Branding comes ONLY from Firebase
  */
 router.post('/templates/:templateId/generate-pdf',
   verifyFirebaseAuth,
@@ -830,11 +867,46 @@ router.post('/templates/:templateId/generate-pdf',
   async (req, res) => {
     const startTime = Date.now();
     const { templateId } = req.params;
+    const firebaseUid = req.firebaseUser?.uid;
     
-    console.log(`📋 [TEMPLATE-PDF] Generating PDF for template: ${templateId} using ModernPdfService`);
+    console.log(`📋 [TEMPLATE-PDF] Generating PDF for template: ${templateId}`);
     
     try {
-      const { data, branding, title } = req.body;
+      const { data, title } = req.body;
+      
+      // 🔥 SINGLE SOURCE OF TRUTH: Firebase is the ONLY source for contractor profile
+      if (!firebaseUid) {
+        return res.status(401).json({
+          success: false,
+          error: 'Authentication required'
+        });
+      }
+      
+      const profile = await companyProfileService.getProfileByFirebaseUid(firebaseUid);
+      
+      if (!profile) {
+        return res.status(400).json({
+          success: false,
+          error: 'Contractor profile not found. Please complete your profile in Settings.'
+        });
+      }
+      
+      // Build branding EXCLUSIVELY from Firebase - no client data accepted
+      const branding = {
+        companyName: profile.companyName || '',
+        address: profile.address || '',
+        city: profile.city || '',
+        state: profile.state || '',
+        zipCode: profile.zipCode || '',
+        phone: profile.phone || '',
+        email: profile.email || '',
+        licenseNumber: profile.license || '',
+        logo: profile.logo || '',
+        website: profile.website || '',
+        ownerName: profile.ownerName || '',
+      };
+      
+      console.log(`✅ [TEMPLATE-PDF] Profile from Firebase: license=${branding.licenseNumber || 'EMPTY'}, state=${branding.state || 'EMPTY'}`);
       
       if (!featureFlags.isMultiTemplateSystemEnabled()) {
         return res.status(404).json({
@@ -850,7 +922,7 @@ router.post('/templates/:templateId/generate-pdf',
         });
       }
       
-      const htmlResult = await templateService.generateDocument(templateId, data, branding || {});
+      const htmlResult = await templateService.generateDocument(templateId, data, branding);
       
       if (!htmlResult.success || !htmlResult.html) {
         return res.status(400).json({
@@ -920,22 +992,62 @@ router.post('/templates/:templateId/generate-document',
     const startTime = Date.now();
     const { templateId } = req.params;
     
-    console.log(`📋 [TEMPLATE-DOC] Generating document for template: ${templateId} with JSON response`);
+    console.log(`📋 [TEMPLATE-DOC] Generating document for template: ${templateId}`);
     
     try {
-      const { data, branding, title } = req.body;
+      const { data, title } = req.body;
+      const firebaseUid = req.firebaseUser?.uid;
       
-      // Log received data for debugging
-      console.log(`📊 [TEMPLATE-DOC] Received data:`, {
-        templateId,
-        hasData: !!data,
-        hasBranding: !!branding,
-        brandingKeys: branding ? Object.keys(branding) : [],
-        licenseNumber: branding?.licenseNumber || 'NOT PROVIDED',
-        state: branding?.state || 'NOT PROVIDED',
-        title: title || 'NO TITLE',
-        dataKeys: data ? Object.keys(data).slice(0, 10) : []
+      // 🔥 SINGLE SOURCE OF TRUTH: Firebase is the ONLY source for contractor profile
+      // Frontend branding is IGNORED - we always read fresh from Firebase
+      if (!firebaseUid) {
+        return res.status(401).json({
+          success: false,
+          error: 'Authentication required - Firebase UID not found'
+        });
+      }
+      
+      console.log(`🔍 [TEMPLATE-DOC] Fetching contractor profile from Firebase (SINGLE SOURCE) for UID: ${firebaseUid}`);
+      const profile = await companyProfileService.getProfileByFirebaseUid(firebaseUid);
+      
+      if (!profile) {
+        console.error(`❌ [TEMPLATE-DOC] No profile found in Firebase for UID: ${firebaseUid}`);
+        return res.status(400).json({
+          success: false,
+          error: 'Contractor profile not found. Please complete your profile in Settings before generating legal documents.'
+        });
+      }
+      
+      // Build branding EXCLUSIVELY from Firebase profile - no fallbacks, no client data
+      const branding = {
+        companyName: profile.companyName || '',
+        address: profile.address || '',
+        city: profile.city || '',
+        state: profile.state || '',
+        zipCode: profile.zipCode || '',
+        phone: profile.phone || '',
+        email: profile.email || '',
+        licenseNumber: profile.license || '',
+        logo: profile.logo || '',
+        website: profile.website || '',
+        ownerName: profile.ownerName || '',
+        ein: profile.ein || '',
+        insurancePolicy: profile.insurancePolicy || '',
+      };
+      
+      console.log(`✅ [TEMPLATE-DOC] Profile loaded from Firebase:`, {
+        companyName: branding.companyName || 'NOT SET',
+        licenseNumber: branding.licenseNumber || 'NOT SET',
+        state: branding.state || 'NOT SET'
       });
+      
+      // Validate critical fields for legal documents
+      if (!branding.licenseNumber) {
+        console.warn(`⚠️ [TEMPLATE-DOC] License number is missing for UID: ${firebaseUid}`);
+      }
+      if (!branding.state) {
+        console.warn(`⚠️ [TEMPLATE-DOC] State is missing for UID: ${firebaseUid}`);
+      }
       
       if (!featureFlags.isMultiTemplateSystemEnabled()) {
         return res.status(404).json({
@@ -951,7 +1063,7 @@ router.post('/templates/:templateId/generate-document',
         });
       }
       
-      const htmlResult = await templateService.generateDocument(templateId, data, branding || {});
+      const htmlResult = await templateService.generateDocument(templateId, data, branding);
       
       if (!htmlResult.success || !htmlResult.html) {
         return res.status(400).json({

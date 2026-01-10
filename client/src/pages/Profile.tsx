@@ -1683,16 +1683,70 @@ export default function Profile() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="state" className="text-gray-300">State</Label>
-                      <Input
-                        id="state"
-                        name="state"
-                        value={companyInfo.state}
-                        onChange={handleChange}
-                        placeholder="Oregon"
-                        readOnly
-                        className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400"
-                      />
+                      <Label htmlFor="state" className="text-gray-300">State <span className="text-red-400">*</span></Label>
+                      <Select
+                        value={companyInfo.state || ''}
+                        onValueChange={(value) => handleSelectChange('state', value)}
+                      >
+                        <SelectTrigger className="bg-gray-800 border-gray-600 text-white focus:border-cyan-400 focus:ring-cyan-400">
+                          <SelectValue placeholder="Select your state" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-gray-800 border-gray-600 text-white max-h-[300px]">
+                          <SelectItem value="AL">Alabama (AL)</SelectItem>
+                          <SelectItem value="AK">Alaska (AK)</SelectItem>
+                          <SelectItem value="AZ">Arizona (AZ)</SelectItem>
+                          <SelectItem value="AR">Arkansas (AR)</SelectItem>
+                          <SelectItem value="CA">California (CA)</SelectItem>
+                          <SelectItem value="CO">Colorado (CO)</SelectItem>
+                          <SelectItem value="CT">Connecticut (CT)</SelectItem>
+                          <SelectItem value="DE">Delaware (DE)</SelectItem>
+                          <SelectItem value="FL">Florida (FL)</SelectItem>
+                          <SelectItem value="GA">Georgia (GA)</SelectItem>
+                          <SelectItem value="HI">Hawaii (HI)</SelectItem>
+                          <SelectItem value="ID">Idaho (ID)</SelectItem>
+                          <SelectItem value="IL">Illinois (IL)</SelectItem>
+                          <SelectItem value="IN">Indiana (IN)</SelectItem>
+                          <SelectItem value="IA">Iowa (IA)</SelectItem>
+                          <SelectItem value="KS">Kansas (KS)</SelectItem>
+                          <SelectItem value="KY">Kentucky (KY)</SelectItem>
+                          <SelectItem value="LA">Louisiana (LA)</SelectItem>
+                          <SelectItem value="ME">Maine (ME)</SelectItem>
+                          <SelectItem value="MD">Maryland (MD)</SelectItem>
+                          <SelectItem value="MA">Massachusetts (MA)</SelectItem>
+                          <SelectItem value="MI">Michigan (MI)</SelectItem>
+                          <SelectItem value="MN">Minnesota (MN)</SelectItem>
+                          <SelectItem value="MS">Mississippi (MS)</SelectItem>
+                          <SelectItem value="MO">Missouri (MO)</SelectItem>
+                          <SelectItem value="MT">Montana (MT)</SelectItem>
+                          <SelectItem value="NE">Nebraska (NE)</SelectItem>
+                          <SelectItem value="NV">Nevada (NV)</SelectItem>
+                          <SelectItem value="NH">New Hampshire (NH)</SelectItem>
+                          <SelectItem value="NJ">New Jersey (NJ)</SelectItem>
+                          <SelectItem value="NM">New Mexico (NM)</SelectItem>
+                          <SelectItem value="NY">New York (NY)</SelectItem>
+                          <SelectItem value="NC">North Carolina (NC)</SelectItem>
+                          <SelectItem value="ND">North Dakota (ND)</SelectItem>
+                          <SelectItem value="OH">Ohio (OH)</SelectItem>
+                          <SelectItem value="OK">Oklahoma (OK)</SelectItem>
+                          <SelectItem value="OR">Oregon (OR)</SelectItem>
+                          <SelectItem value="PA">Pennsylvania (PA)</SelectItem>
+                          <SelectItem value="RI">Rhode Island (RI)</SelectItem>
+                          <SelectItem value="SC">South Carolina (SC)</SelectItem>
+                          <SelectItem value="SD">South Dakota (SD)</SelectItem>
+                          <SelectItem value="TN">Tennessee (TN)</SelectItem>
+                          <SelectItem value="TX">Texas (TX)</SelectItem>
+                          <SelectItem value="UT">Utah (UT)</SelectItem>
+                          <SelectItem value="VT">Vermont (VT)</SelectItem>
+                          <SelectItem value="VA">Virginia (VA)</SelectItem>
+                          <SelectItem value="WA">Washington (WA)</SelectItem>
+                          <SelectItem value="WV">West Virginia (WV)</SelectItem>
+                          <SelectItem value="WI">Wisconsin (WI)</SelectItem>
+                          <SelectItem value="WY">Wyoming (WY)</SelectItem>
+                          <SelectItem value="DC">Washington D.C. (DC)</SelectItem>
+                          <SelectItem value="PR">Puerto Rico (PR)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-gray-400">Required for legal documents and timezone detection</p>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="zipCode" className="text-gray-300">Zip Code</Label>
@@ -1766,7 +1820,7 @@ export default function Profile() {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="license" className="text-gray-300">License Number</Label>
+                    <Label htmlFor="license" className="text-gray-300">License Number <span className="text-red-400">*</span></Label>
                     <Input
                       id="license"
                       name="license"
@@ -1775,6 +1829,7 @@ export default function Profile() {
                       placeholder="CCB #123456"
                       className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400"
                     />
+                    <p className="text-xs text-gray-400">Required for legal contracts and compliance</p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="ein" className="text-gray-300">EIN (Tax ID)</Label>

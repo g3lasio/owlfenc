@@ -1121,12 +1121,11 @@ export const uploadFile = async (file: File, path: string): Promise<string> => {
 // **************************************
 
 // Obtener perfil de usuario
+// 🔥 SINGLE SOURCE OF TRUTH: This is the ONLY place profile data is read from
 export const getUserProfile = async (userId: string) => {
   try {
     console.log(`🔍 [FIREBASE] Obteniendo perfil de userProfiles para UID: ${userId}`);
     
-    // 🔥 CRITICAL FIX: Use userProfiles to match backend CompanyProfileService
-    // This ensures Settings page and PDF generation use the same data source
     const docRef = doc(db, "userProfiles", userId);
     const docSnap = await getDoc(docRef);
     
@@ -1136,7 +1135,14 @@ export const getUserProfile = async (userId: string) => {
     }
     
     const data = docSnap.data();
-    console.log(`✅ [FIREBASE] Perfil obtenido de userProfiles: ${data.companyName || data.company || 'Sin nombre'}`);
+    
+    // Log critical fields for debugging
+    console.log(`✅ [FIREBASE] Perfil obtenido:`, {
+      companyName: data.companyName || data.company || 'NOT SET',
+      license: data.license || 'NOT SET',
+      state: data.state || 'NOT SET',
+      address: data.address || 'NOT SET'
+    });
     
     // MAPEO INVERSO: Backend usa 'companyName', frontend espera 'company'
     const mappedData = {
@@ -1155,23 +1161,27 @@ export const getUserProfile = async (userId: string) => {
 };
 
 // Guardar o actualizar perfil de usuario
+// 🔥 SINGLE SOURCE OF TRUTH: This is the ONLY place profile data is saved to
 export const saveUserProfile = async (userId: string, profileData: any) => {
   try {
+    // Log what we're saving for debugging
     console.log(`💾 [FIREBASE] Guardando perfil en userProfiles para UID: ${userId}`);
+    console.log(`📊 [FIREBASE] Datos a guardar:`, {
+      license: profileData.license || 'NOT PROVIDED',
+      state: profileData.state || 'NOT PROVIDED',
+      company: profileData.company || profileData.companyName || 'NOT PROVIDED'
+    });
     
-    // 🔥 CRITICAL FIX: Use userProfiles to match backend CompanyProfileService
-    // This ensures Settings page and PDF generation use the same data source
     const docRef = doc(db, "userProfiles", userId);
     const docSnap = await getDoc(docRef);
     
     // MAPEO DE CAMPOS: Frontend usa 'company', backend usa 'companyName'
-    // IMPORTANTE: Priorizar 'company' (lo que edita el usuario) sobre 'companyName' (valor legacy)
     const mappedData = {
       ...profileData,
       companyName: profileData.company || profileData.companyName || "",
     };
     
-    // Eliminar campo 'company' para evitar duplicación
+    // Eliminar campo 'company' para evitar duplicación (backend usa companyName)
     delete mappedData.company;
     
     // Preparar datos con metadata
@@ -1186,18 +1196,26 @@ export const saveUserProfile = async (userId: string, profileData: any) => {
       // No existe, crear nuevo perfil
       profileWithMeta.createdAt = Timestamp.now();
       await setDoc(docRef, profileWithMeta);
-      console.log(`✅ [FIREBASE] Nuevo perfil creado en userProfiles: ${profileData.companyName || profileData.company || 'Sin nombre'}`);
+      console.log(`✅ [FIREBASE] Nuevo perfil creado`);
     } else {
       // Ya existe, actualizar (merge para no sobrescribir campos no enviados)
       await setDoc(docRef, profileWithMeta, { merge: true });
-      console.log(`✅ [FIREBASE] Perfil actualizado en userProfiles: ${profileData.companyName || profileData.company || 'Sin nombre'}`);
+      console.log(`✅ [FIREBASE] Perfil actualizado`);
     }
     
-    // Retornar el perfil guardado
+    // Retornar el perfil guardado y verificar campos críticos
     const savedDoc = await getDoc(docRef);
+    const savedData = savedDoc.data();
+    
+    console.log(`📊 [FIREBASE] Perfil guardado verificado:`, {
+      license: savedData?.license || 'NOT SET',
+      state: savedData?.state || 'NOT SET',
+      companyName: savedData?.companyName || 'NOT SET'
+    });
+    
     return { 
       id: savedDoc.id, 
-      ...savedDoc.data() 
+      ...savedData 
     };
   } catch (error) {
     console.error("❌ [FIREBASE] Error al guardar perfil de usuario:", error);
