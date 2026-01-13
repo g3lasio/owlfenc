@@ -3157,15 +3157,44 @@ export default function SimpleContractGenerator() {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 35000); // 35s client timeout (backend has 30s)
       
+      // 🔐 ENTERPRISE SECURITY: Get Firebase token for authentication
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      
+      // Add Firebase token if user is authenticated
+      if (currentUser) {
+        try {
+          const token = await currentUser.getIdToken();
+          headers['Authorization'] = `Bearer ${token}`;
+          console.log('✅ [UNIFIED-GENERATE] Firebase token added to request');
+        } catch (tokenError) {
+          console.error('❌ [UNIFIED-GENERATE] Failed to get Firebase token:', tokenError);
+          toast({
+            title: "Authentication Error",
+            description: "Please log in again to generate contracts.",
+            variant: "destructive",
+          });
+          setIsGenerating(false);
+          return;
+        }
+      } else {
+        console.error('❌ [UNIFIED-GENERATE] No authenticated user');
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to generate contracts.",
+          variant: "destructive",
+        });
+        setIsGenerating(false);
+        return;
+      }
+      
       const response = await fetch("/api/contracts/generate?htmlOnly=true", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          // ✅ FIXED: Added null check for currentUser to prevent "Cannot read properties of undefined"
-          "x-firebase-uid": currentUser?.uid || '',
-        },
+        headers,
         body: JSON.stringify(contractPayload),
         signal: controller.signal,
+        credentials: 'include', // 🔐 CRITICAL: Include session cookies for hybrid auth
       });
       clearTimeout(timeoutId);
 

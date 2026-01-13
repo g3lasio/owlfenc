@@ -9118,19 +9118,24 @@ ENHANCED LEGAL CLAUSE:`;
   // - Browser pool health gating
   // - Automatic recycle after 3 consecutive failures
   // - Returns both HTML and PDF in single request
-  app.post("/api/contracts/generate", async (req: Request, res: Response) => {
+  // 🔐 SECURITY: Uses verifyFirebaseAuth middleware for enterprise-grade authentication
+  app.post("/api/contracts/generate", verifyFirebaseAuth, async (req: Request, res: Response) => {
     const startTime = Date.now();
     
     try {
       console.log("🚀 [UNIFIED-GENERATE] Starting unified contract generation...");
       
-      const firebaseUid = req.headers["x-firebase-uid"] as string;
+      // 🔐 ENTERPRISE SECURITY: Get Firebase UID from verified middleware
+      const firebaseUid = req.firebaseUser?.uid;
       if (!firebaseUid) {
+        console.error("❌ [UNIFIED-GENERATE] No Firebase UID after authentication middleware");
         return res.status(401).json({ 
           success: false, 
-          error: "Authentication required" 
+          error: "Authentication required - Please log in again" 
         });
       }
+      
+      console.log(`✅ [UNIFIED-GENERATE] Authenticated user: ${firebaseUid}`);
       
       // 🔥 STEP 1: Get contractor data from PostgreSQL (SINGLE SOURCE OF TRUTH)
       const { getContractorData } = await import("./utils/contractorDataHelpers");
