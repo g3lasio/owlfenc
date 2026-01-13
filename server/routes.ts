@@ -9118,57 +9118,38 @@ ENHANCED LEGAL CLAUSE:`;
   // - Browser pool health gating
   // - Automatic recycle after 3 consecutive failures
   // - Returns both HTML and PDF in single request
-  // 🔐 SECURITY: Hybrid authentication (Token + Session Cookie + Manual UID)
+  // 🔐 SECURITY: Session Cookie ONLY (simple, robust, production-ready)
   app.post("/api/contracts/generate", async (req: Request, res: Response) => {
     const startTime = Date.now();
     
     try {
       console.log("🚀 [UNIFIED-GENERATE] Starting unified contract generation...");
       
-      // 🔐 HYBRID AUTHENTICATION: Try multiple strategies
-      let firebaseUid: string | undefined;
+      // 🔐 SESSION COOKIE AUTHENTICATION (ONLY)
+      const sessionCookie = req.cookies?.__session;
       
-      // Strategy 1: Try Authorization Bearer token
-      const authHeader = req.headers.authorization;
-      if (authHeader && authHeader.startsWith('Bearer ')) {
-        try {
-          const token = authHeader.substring(7);
-          const { admin } = await import('./lib/firebase-admin');
-          const decodedToken = await admin.auth().verifyIdToken(token);
-          firebaseUid = decodedToken.uid;
-          console.log(`✅ [UNIFIED-GENERATE] Authenticated via Bearer token: ${firebaseUid}`);
-        } catch (tokenError) {
-          console.warn('⚠️ [UNIFIED-GENERATE] Bearer token verification failed:', (tokenError as Error).message);
-        }
-      }
-      
-      // Strategy 2: Try session cookie
-      if (!firebaseUid && req.cookies?.__session) {
-        try {
-          const { admin } = await import('./lib/firebase-admin');
-          const decodedClaims = await admin.auth().verifySessionCookie(req.cookies.__session);
-          firebaseUid = decodedClaims.uid;
-          console.log(`✅ [UNIFIED-GENERATE] Authenticated via session cookie: ${firebaseUid}`);
-        } catch (cookieError) {
-          console.warn('⚠️ [UNIFIED-GENERATE] Session cookie verification failed:', (cookieError as Error).message);
-        }
-      }
-      
-      // Strategy 3: Fallback to x-firebase-uid header (for backward compatibility)
-      if (!firebaseUid) {
-        const manualUid = req.headers["x-firebase-uid"] as string;
-        if (manualUid && manualUid.trim()) {
-          firebaseUid = manualUid;
-          console.log(`⚠️ [UNIFIED-GENERATE] Using manual UID (backward compatibility): ${firebaseUid}`);
-        }
-      }
-      
-      // No authentication found
-      if (!firebaseUid) {
-        console.error("❌ [UNIFIED-GENERATE] No valid authentication found");
+      if (!sessionCookie) {
+        console.error("❌ [UNIFIED-GENERATE] No session cookie found");
         return res.status(401).json({ 
           success: false, 
-          error: "Authentication required - Please log in again" 
+          error: "Authentication required - Please log in again",
+          code: "NO_SESSION_COOKIE"
+        });
+      }
+      
+      // Verify session cookie with Firebase Admin
+      let firebaseUid: string;
+      try {
+        const { admin } = await import('./lib/firebase-admin');
+        const decodedClaims = await admin.auth().verifySessionCookie(sessionCookie);
+        firebaseUid = decodedClaims.uid;
+        console.log(`✅ [UNIFIED-GENERATE] Authenticated: ${firebaseUid} (${decodedClaims.email})`);
+      } catch (cookieError) {
+        console.error('❌ [UNIFIED-GENERATE] Session cookie verification failed:', (cookieError as Error).message);
+        return res.status(401).json({ 
+          success: false, 
+          error: "Session expired - Please log in again",
+          code: "INVALID_SESSION_COOKIE"
         });
       }
       
