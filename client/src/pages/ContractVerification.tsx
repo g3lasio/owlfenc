@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, CheckCircle, AlertTriangle, XCircle, Shield, FileText, Users, Clock, Hash, ExternalLink } from 'lucide-react';
+import { Search, CheckCircle, AlertTriangle, XCircle, FileText, Users, Clock, Hash, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -106,7 +106,11 @@ const ContractVerification: React.FC = () => {
       <div className="container mx-auto px-4 py-16">
         <div className="text-center mb-12">
           <div className="flex justify-center mb-6">
-            <Shield className="w-20 h-20 text-cyan-400" />
+            <img 
+              src="/assets/owl-fenc-logo-white.png" 
+              alt="Owl Fenc Logo" 
+              className="h-24 w-auto object-contain"
+            />
           </div>
           <h1 className="text-5xl font-bold text-white mb-4">
             Document Verification
