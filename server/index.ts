@@ -30,6 +30,7 @@ import phase4OptimizationRoutes from "./routes/phase4-optimization";
 import adminContractsRoutes from "./routes/admin-contracts";
 import urlShortenerRoutes from "./routes/urlShortener";
 import mervinV2Routes from "./routes/mervin-v2";
+import contractVerificationRoutes from "./routes/contract-verification";
 // import assistantsRoutes from "./routes/assistants"; // DESACTIVADO - Sistema obsoleto de OpenAI Assistants
 // mervinEstimatesRoutes removed - Mervin now uses existing endpoints
 
@@ -1144,6 +1145,10 @@ console.log('⚡ [PHASE4-OPT] Servicios de optimización Fase 4 registrados en /
 // 🔗 Registrar rutas de URL shortener
 app.use("/api/url", urlShortenerRoutes);
 console.log('🔗 [URL-SHORTENER] Sistema de acortamiento de URLs registrado en /api/url');
+
+// 🔍 Registrar rutas de verificación de contratos (PÚBLICO)
+app.use("/api", contractVerificationRoutes);
+console.log('🔍 [VERIFY] Sistema de verificación de contratos registrado en /api/verify');
 
 // 🧪 Endpoints de prueba para verificar conectividad backend
 app.get('/api/test/ping', (req, res) => {

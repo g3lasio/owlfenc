@@ -7,6 +7,7 @@ import { Suspense, lazy } from 'react';
 // 🚀 CRITICAL: Only import essential components statically
 import ContractSignature from './pages/ContractSignature';
 import SharedEstimate from './pages/SharedEstimate';
+import ContractVerification from './pages/ContractVerification';
 
 // 🔄 LAZY LOAD: All other pages load on-demand to improve initial load time
 const NotFound = lazy(() => import("@/pages/not-found"));
@@ -203,6 +204,9 @@ function PublicOnlyRouter() {
       
       {/* Public signature routes - COMPLETELY ISOLATED */}
       <Route path="/sign/:contractId/:party" component={ContractSignature} />
+      
+      {/* Public contract verification route - COMPLETELY ISOLATED */}
+      <Route path="/verify" component={ContractVerification} />
       
       {/* No match for public-only routes */}
       <Route component={() => null} />
