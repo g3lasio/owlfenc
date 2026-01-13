@@ -1472,7 +1472,8 @@ export default function SimpleContractGenerator() {
     selectedClauses,
     suggestedClauses,
     profile,
-    getCorrectProjectTotal,
+    // ✅ FIXED: Removed getCorrectProjectTotal from dependencies to prevent infinite loop
+    // getCorrectProjectTotal is a stable function and doesn't need to be in dependencies
   ]);
 
   // Debounced auto-save trigger
@@ -2266,7 +2267,8 @@ export default function SimpleContractGenerator() {
         const response = await fetch('/api/legal-defense/templates', {
           headers: {
             'Content-Type': 'application/json',
-            ...(token ? { 'Authorization': `Bearer ${token}` } : { 'x-firebase-uid': currentUser.uid }),
+            // ✅ FIXED: Added null check for currentUser to prevent "Cannot read properties of undefined"
+            ...(token ? { 'Authorization': `Bearer ${token}` } : { 'x-firebase-uid': currentUser?.uid || '' }),
           },
         });
         
@@ -3159,7 +3161,8 @@ export default function SimpleContractGenerator() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-firebase-uid": currentUser.uid,
+          // ✅ FIXED: Added null check for currentUser to prevent "Cannot read properties of undefined"
+          "x-firebase-uid": currentUser?.uid || '',
         },
         body: JSON.stringify(contractPayload),
         signal: controller.signal,
