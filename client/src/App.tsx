@@ -416,7 +416,8 @@ function App() {
   const isIsolatedPublicRoute = 
     currentPath.startsWith('/estimate/') ||
     currentPath.startsWith('/shared-estimate/') ||
-    currentPath.startsWith('/sign/');
+    currentPath.startsWith('/sign/') ||
+    currentPath.startsWith('/verify');
 
   // 🔍 DEBUG: Log routing decision (remove in production)
   console.log('🔒 [ROUTING-DECISION]', {
