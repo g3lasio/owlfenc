@@ -94,11 +94,12 @@ router.post("/sessionLogin", loginRateLimit, async (req: Request, res: Response)
     }
 
     // Set secure cookie options
-    // ✅ FIX: sameSite='lax' for same-origin development, 'none' requires secure=true (HTTPS)
+    // 🔐 CRITICAL FIX: sameSite='none' in ALL environments for cross-origin POST requests
+    // Replit preview is considered cross-site, so 'lax' blocks POST requests
     const cookieOptions = {
       httpOnly: true, // Prevent XSS attacks
-      secure: process.env.NODE_ENV === 'production', // HTTPS in production
-      sameSite: process.env.NODE_ENV === 'production' ? ('none' as const) : ('lax' as const),
+      secure: true, // REQUIRED for sameSite='none' (Replit has HTTPS)
+      sameSite: 'none' as const, // Allow cross-origin POST requests
       maxAge: expiresIn,
       path: '/'
     };
@@ -144,8 +145,8 @@ router.post('/sessionLogout', (req: Request, res: Response) => {
     // Clear the session cookie
     res.clearCookie('__session', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      secure: true, // REQUIRED for sameSite='none'
+      sameSite: 'none' as const, // Must match cookie creation settings
       path: '/'
     });
 
@@ -203,8 +204,8 @@ router.get('/sessionStatus', async (req: Request, res: Response) => {
       // Clear invalid cookie
       res.clearCookie('__session', {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        secure: true, // REQUIRED for sameSite='none'
+        sameSite: 'none' as const, // Must match cookie creation settings
         path: '/'
       });
       
