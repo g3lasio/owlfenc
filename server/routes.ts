@@ -9125,10 +9125,6 @@ ENHANCED LEGAL CLAUSE:`;
     try {
       console.log("🚀 [UNIFIED-GENERATE] Starting unified contract generation...");
       
-      // 🔍 DEBUG: Log cookies
-      console.log('🔍 [UNIFIED-GENERATE] req.cookies:', req.cookies);
-      console.log('🔍 [UNIFIED-GENERATE] req.headers.cookie:', req.headers.cookie);
-      
       // 🔐 SESSION COOKIE AUTHENTICATION (ONLY)
       const sessionCookie = req.cookies?.__session;
       
@@ -9157,9 +9153,9 @@ ENHANCED LEGAL CLAUSE:`;
         });
       }
       
-      // 🔥 STEP 1: Get contractor data from PostgreSQL (SINGLE SOURCE OF TRUTH)
-      const { getContractorData } = await import("./utils/contractorDataHelpers");
-      const contractorData = await getContractorData(firebaseUid, req.body.contractor);
+      // 🔥 STEP 1: Get contractor data from Firebase (SINGLE SOURCE OF TRUTH)
+      const { getContractorDataFromFirebase } = await import("./utils/contractorDataHelpers");
+      const contractorData = await getContractorDataFromFirebase(firebaseUid);
       
       // Override contractor with PostgreSQL data
       req.body.contractor = {
