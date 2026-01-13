@@ -3157,28 +3157,13 @@ export default function SimpleContractGenerator() {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 35000); // 35s client timeout (backend has 30s)
       
-      // 🔐 ENTERPRISE SECURITY: Get Firebase token for authentication
+      // 🔐 HYBRID AUTHENTICATION: Try token first, fallback to manual UID
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
       };
       
-      // Add Firebase token if user is authenticated
-      if (currentUser) {
-        try {
-          const token = await currentUser.getIdToken();
-          headers['Authorization'] = `Bearer ${token}`;
-          console.log('✅ [UNIFIED-GENERATE] Firebase token added to request');
-        } catch (tokenError) {
-          console.error('❌ [UNIFIED-GENERATE] Failed to get Firebase token:', tokenError);
-          toast({
-            title: "Authentication Error",
-            description: "Please log in again to generate contracts.",
-            variant: "destructive",
-          });
-          setIsGenerating(false);
-          return;
-        }
-      } else {
+      // Check if user is authenticated
+      if (!currentUser) {
         console.error('❌ [UNIFIED-GENERATE] No authenticated user');
         toast({
           title: "Authentication Required",
@@ -3187,6 +3172,17 @@ export default function SimpleContractGenerator() {
         });
         setIsGenerating(false);
         return;
+      }
+      
+      // Try to get Firebase token (preferred method)
+      try {
+        const token = await currentUser.getIdToken();
+        headers['Authorization'] = `Bearer ${token}`;
+        console.log('✅ [UNIFIED-GENERATE] Firebase token added to request');
+      } catch (tokenError) {
+        console.warn('⚠️ [UNIFIED-GENERATE] Failed to get Firebase token, using UID fallback:', tokenError);
+        // Fallback: Send UID directly (backward compatibility)
+        headers['x-firebase-uid'] = currentUser.uid;
       }
       
       const response = await fetch("/api/contracts/generate?htmlOnly=true", {

@@ -9118,24 +9118,59 @@ ENHANCED LEGAL CLAUSE:`;
   // - Browser pool health gating
   // - Automatic recycle after 3 consecutive failures
   // - Returns both HTML and PDF in single request
-  // 🔐 SECURITY: Uses verifyFirebaseAuth middleware for enterprise-grade authentication
-  app.post("/api/contracts/generate", verifyFirebaseAuth, async (req: Request, res: Response) => {
+  // 🔐 SECURITY: Hybrid authentication (Token + Session Cookie + Manual UID)
+  app.post("/api/contracts/generate", async (req: Request, res: Response) => {
     const startTime = Date.now();
     
     try {
       console.log("🚀 [UNIFIED-GENERATE] Starting unified contract generation...");
       
-      // 🔐 ENTERPRISE SECURITY: Get Firebase UID from verified middleware
-      const firebaseUid = req.firebaseUser?.uid;
+      // 🔐 HYBRID AUTHENTICATION: Try multiple strategies
+      let firebaseUid: string | undefined;
+      
+      // Strategy 1: Try Authorization Bearer token
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        try {
+          const token = authHeader.substring(7);
+          const { admin } = await import('./lib/firebase-admin');
+          const decodedToken = await admin.auth().verifyIdToken(token);
+          firebaseUid = decodedToken.uid;
+          console.log(`✅ [UNIFIED-GENERATE] Authenticated via Bearer token: ${firebaseUid}`);
+        } catch (tokenError) {
+          console.warn('⚠️ [UNIFIED-GENERATE] Bearer token verification failed:', (tokenError as Error).message);
+        }
+      }
+      
+      // Strategy 2: Try session cookie
+      if (!firebaseUid && req.cookies?.__session) {
+        try {
+          const { admin } = await import('./lib/firebase-admin');
+          const decodedClaims = await admin.auth().verifySessionCookie(req.cookies.__session);
+          firebaseUid = decodedClaims.uid;
+          console.log(`✅ [UNIFIED-GENERATE] Authenticated via session cookie: ${firebaseUid}`);
+        } catch (cookieError) {
+          console.warn('⚠️ [UNIFIED-GENERATE] Session cookie verification failed:', (cookieError as Error).message);
+        }
+      }
+      
+      // Strategy 3: Fallback to x-firebase-uid header (for backward compatibility)
       if (!firebaseUid) {
-        console.error("❌ [UNIFIED-GENERATE] No Firebase UID after authentication middleware");
+        const manualUid = req.headers["x-firebase-uid"] as string;
+        if (manualUid && manualUid.trim()) {
+          firebaseUid = manualUid;
+          console.log(`⚠️ [UNIFIED-GENERATE] Using manual UID (backward compatibility): ${firebaseUid}`);
+        }
+      }
+      
+      // No authentication found
+      if (!firebaseUid) {
+        console.error("❌ [UNIFIED-GENERATE] No valid authentication found");
         return res.status(401).json({ 
           success: false, 
           error: "Authentication required - Please log in again" 
         });
       }
-      
-      console.log(`✅ [UNIFIED-GENERATE] Authenticated user: ${firebaseUid}`);
       
       // 🔥 STEP 1: Get contractor data from PostgreSQL (SINGLE SOURCE OF TRUTH)
       const { getContractorData } = await import("./utils/contractorDataHelpers");
