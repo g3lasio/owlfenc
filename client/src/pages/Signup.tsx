@@ -117,7 +117,7 @@ export default function Signup() {
         // Google Ads conversion tracking
         if (window.gtag) {
           window.gtag('event', 'conversion', {
-            'send_to': 'AW-17220070682/CONVERSION_LABEL_PLACEHOLDER',
+            'send_to': 'AW-17220070682/cSJRCNq_x-kbEJralZNA',
             'value': 1.0,
             'currency': 'USD'
           });
@@ -202,7 +202,7 @@ export default function Signup() {
         // Google Ads conversion tracking
         if (window.gtag) {
           window.gtag('event', 'conversion', {
-            'send_to': 'AW-17220070682/CONVERSION_LABEL_PLACEHOLDER',
+            'send_to': 'AW-17220070682/cSJRCNq_x-kbEJralZNA',
             'value': 1.0,
             'currency': 'USD'
           });
