@@ -22,12 +22,18 @@
     })(window,document,'script','dataLayer','GTM-PLACEHOLDER');</script>
     <!-- End Google Tag Manager -->
     
-    <!-- Google Ads Conversion Tracking -->
+    <!-- Google Ads Conversion Tracking with Cross-Domain Support -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=AW-17220070682"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
+      
+      // Configure cross-domain tracking to link landing page and app
+      gtag('set', 'linker', {
+        'domains': ['owllanding.replit.app', 'app.owlfenc.com', 'mervin.chyrris.com']
+      });
+      
       gtag('config', 'AW-17220070682');
     </script>
     <!-- End Google Ads -->
