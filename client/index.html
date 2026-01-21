@@ -13,6 +13,25 @@
     <!-- 🔐 Enable WebAuthn API for biometric authentication in iframes -->
     <meta http-equiv="Permissions-Policy" content="publickey-credentials-get=(self), publickey-credentials-create=(self)" />
     <title>Owl Fenc</title>
+    
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-PLACEHOLDER');</script>
+    <!-- End Google Tag Manager -->
+    
+    <!-- Google Ads Conversion Tracking -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-17220070682"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'AW-17220070682');
+    </script>
+    <!-- End Google Ads -->
+    
     <!-- NOTE: Google Maps removed - using Mapbox for address autocomplete instead -->
     <!-- If Google Maps is needed, configure VITE_GOOGLE_MAPS_API_KEY in secrets -->
     <!-- Apple Sign-In JS SDK for Native Implementation -->
@@ -21,6 +40,11 @@
     <script src="https://js.stripe.com/v3/"></script>
   </head>
   <body>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PLACEHOLDER"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+    
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <!-- This script injects a replit badge into the page, please feel free to remove this line -->

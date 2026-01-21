@@ -114,6 +114,16 @@ export default function Signup() {
           console.warn('⚠️ [SIGNUP] No se pudo enviar email de bienvenida:', emailErr);
         }
         
+        // Google Ads conversion tracking
+        if (window.gtag) {
+          window.gtag('event', 'conversion', {
+            'send_to': 'AW-17220070682/CONVERSION_LABEL_PLACEHOLDER',
+            'value': 1.0,
+            'currency': 'USD'
+          });
+          console.log('✅ [GOOGLE ADS] Conversion tracked: Sign-up');
+        }
+        
         toast({
           title: "Registro exitoso",
           description: "Ahora elige tu plan para empezar.",
@@ -188,6 +198,16 @@ export default function Signup() {
       if (result.success && result.firebaseUser) {
         // Autenticar con el token personalizado de Firebase
         await signInWithCustomToken(auth, result.firebaseUser.customToken);
+        
+        // Google Ads conversion tracking
+        if (window.gtag) {
+          window.gtag('event', 'conversion', {
+            'send_to': 'AW-17220070682/CONVERSION_LABEL_PLACEHOLDER',
+            'value': 1.0,
+            'currency': 'USD'
+          });
+          console.log('✅ [GOOGLE ADS] Conversion tracked: Sign-up (OTP)');
+        }
         
         toast({
           title: "Registro exitoso",
