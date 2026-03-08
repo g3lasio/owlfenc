@@ -178,22 +178,16 @@ export default function Subscription() {
       return;
     }
 
-    // 🎯 LÓGICA CORREGIDA: 
-    // 1. Si es plan gratuito (precio 0) → activar directamente
-    // 2. Si es plan de pago Y usuario NO ha usado trial → activar FREE_TRIAL primero
-    // 3. Si es plan de pago Y usuario YA usó trial → ir a Stripe checkout
+    // 🎯 LÓGICA PAY AS YOU GROW:
+    // 1. Si es plan gratuito (precio 0) → activar Primo Chambeador con 20 créditos de bienvenida
+    // 2. Si es plan de pago → ir directo a Stripe Checkout (sin Free Trial)
     
     if (selectedPlan.price === 0) {
       // Plan gratuito (Primo Chambeador) - activar directamente
       await activateFreePlan(planId, selectedPlan.code);
-    } else if (!hasUsedTrial) {
-      // 🆓 PLAN DE PAGO + NUNCA USÓ TRIAL = Activar FREE_TRIAL (14 días gratis)
-      // Esto es lo que el usuario espera cuando clickea "Start Free Trial"
-      console.log(`🎁 [SUBSCRIPTION] Usuario no ha usado trial - Activando FREE_TRIAL (ID: 4) antes de ${selectedPlan.name}`);
-      await activateFreePlan(4, 'FREE_TRIAL'); // Plan ID 4 = Free Trial
     } else {
-      // Ya usó el trial - ir directo a Stripe Checkout para pagar
-      console.log(`💳 [SUBSCRIPTION] Usuario ya usó trial - Redirigiendo a Stripe para ${selectedPlan.name}`);
+      // Plan de pago → Stripe Checkout directo
+      console.log(`💳 [SUBSCRIPTION] Redirigiendo a Stripe para ${selectedPlan.name}`);
       await createCheckoutSession(planId);
     }
   };

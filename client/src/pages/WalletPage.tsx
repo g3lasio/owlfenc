@@ -101,7 +101,8 @@ function TransactionRow({ tx }: { tx: WalletTransaction }) {
 // ================================
 // MAIN PAGE
 // ================================
-export default function WalletPage() {
+// Named export for embedded use in Billing.tsx
+export function WalletPage({ embedded = false }: { embedded?: boolean }) {
   const [, setLocation] = useLocation();
   const [showTopUpModal, setShowTopUpModal] = useState(false);
   const [fullHistory, setFullHistory] = useState<WalletTransaction[]>([]);
@@ -380,3 +381,6 @@ export default function WalletPage() {
     </div>
   );
 }
+
+// Default export for the standalone /wallet route
+export default WalletPage;
