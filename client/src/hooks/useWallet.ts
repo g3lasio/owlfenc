@@ -43,7 +43,7 @@ export interface CreditPackage {
   totalCredits: number;
   priceUsdCents: number;
   stripePriceId: string | null;
-  isPopular: boolean;
+  isPopular?: boolean; // Opcional: puede no venir del backend (no está en la tabla DB)
   equivalence: {
     aiEstimates: number;
     contracts: number;
@@ -96,6 +96,46 @@ const FEATURE_COSTS: Record<string, number> = {
 };
 
 // ================================
+// FALLBACK PACKAGES (cuando el endpoint falla o la DB no está lista)
+// Garantiza que el TopUpModal siempre muestre los 3 paquetes
+// ================================
+const FALLBACK_PACKAGES: CreditPackage[] = [
+  {
+    id: 1,
+    name: 'Starter Pack — 50 credits',
+    credits: 50,
+    bonusCredits: 0,
+    totalCredits: 50,
+    priceUsdCents: 1000,
+    stripePriceId: null,
+    isPopular: false,
+    equivalence: { aiEstimates: 6, contracts: 4, description: '~6 AI estimates or 10 invoices' },
+  },
+  {
+    id: 2,
+    name: 'Pro Pack — 200 + 25 bonus',
+    credits: 200,
+    bonusCredits: 25,
+    totalCredits: 225,
+    priceUsdCents: 3000,
+    stripePriceId: null,
+    isPopular: true,
+    equivalence: { aiEstimates: 28, contracts: 18, description: '~28 estimates or 18 contracts' },
+  },
+  {
+    id: 3,
+    name: 'Power Pack — 600 + 100 bonus',
+    credits: 600,
+    bonusCredits: 100,
+    totalCredits: 700,
+    priceUsdCents: 7500,
+    stripePriceId: null,
+    isPopular: false,
+    equivalence: { aiEstimates: 87, contracts: 58, description: '~87 estimates · 58 contracts · 140 invoices' },
+  },
+];
+
+// ================================
 // HOOK
 // ================================
 
@@ -144,14 +184,24 @@ export function useWallet(): UseWalletReturn {
         credentials: 'include',
       });
 
-      if (!response.ok) return;
+      if (!response.ok) {
+        // Fallback: mostrar paquetes hardcodeados si el endpoint falla
+        // Esto garantiza que el TopUpModal nunca quede en blanco
+        console.warn('[useWallet] /packages endpoint failed, using fallback data');
+        setPackages(FALLBACK_PACKAGES);
+        return;
+      }
 
       const data = await response.json();
-      if (data.success) {
-        setPackages(data.packages || []);
+      if (data.success && data.packages?.length > 0) {
+        setPackages(data.packages);
+      } else {
+        // Si el endpoint retorna vacío, usar fallback
+        setPackages(FALLBACK_PACKAGES);
       }
     } catch (err) {
-      console.warn('[useWallet] Error fetching packages:', err);
+      console.warn('[useWallet] Error fetching packages, using fallback:', err);
+      setPackages(FALLBACK_PACKAGES);
     }
   }, []);
 

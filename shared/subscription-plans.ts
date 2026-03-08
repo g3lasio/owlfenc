@@ -56,11 +56,10 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     price: 0,
     yearlyPrice: 0,
     features: [
-      "Unlimited basic estimates (With watermark)",
-      "5 AI estimates per month (With watermark)",
-      "5 property verifications per month",
-      "5 permit advisor queries per month",
-      "Legal contracts: Demo mode (14-day trial available)",
+      "Access to all features via AI credits",
+      "20 AI credits included monthly",
+      "Top up anytime — credits never expire",
+      "AI Estimates, Contracts, Permits & more",
       "Community support"
     ],
     isActive: true,
@@ -75,14 +74,12 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     price: 4999,        // $49.99/mes
     yearlyPrice: 49990, // $499.90/año (2 meses gratis)
     features: [
-      "50 basic estimates per month (No watermark)",
-      "50 AI estimates per month (No watermark)",
-      "50 legal contracts per month",
-      "50 property verifications per month",
-      "50 permit advisor queries per month",
-      "50 invoices per month",
-      "Unlimited projects",
-      "Basic payment tracking",
+      "⚡ 600 AI credits included per month",
+      "Access to all features — no limits",
+      "No watermark on estimates & contracts",
+      "AI Estimates, Contracts, Permits, Invoices",
+      "Property Verifier & Dual Signature Protocol",
+      "Top up anytime — credits never expire",
       "Access to networking/training events",
       "30% discount on LeadPrime CRM",
       "Priority support"
@@ -99,14 +96,13 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     price: 9999,         // $99.99/mes
     yearlyPrice: 99990,  // $999.90/año (2 meses gratis)
     features: [
-      "Unlimited basic estimates (No watermark)",
-      "Unlimited AI estimates (No watermark)",
-      "Unlimited legal contracts",
-      "Unlimited property verifications",
-      "Unlimited permit advisor",
-      "Unlimited invoices",
-      "Unlimited projects",
-      "Pro payment tracking",
+      "⚡ 1,500 AI credits included per month",
+      "Access to all features — no limits",
+      "No watermark on estimates & contracts",
+      "AI Estimates, Contracts, Permits, Invoices",
+      "Property Verifier & Dual Signature Protocol",
+      "Top up anytime — credits never expire",
+      "Pro payment tracking & analytics",
       "Access to networking/training events",
       "30% discount on LeadPrime CRM",
       "VIP support 24/7"

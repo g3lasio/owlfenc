@@ -24,11 +24,14 @@ const router = Router();
 // HELPER: Extraer Firebase UID del request
 // ================================
 function getFirebaseUid(req: Request): string | null {
+  // El middleware de Firebase setea req.firebaseUser.uid (ver firebase-auth.ts)
+  // Soportar múltiples patrones para compatibilidad con todos los middlewares del proyecto
   return (
-    (req as any).user?.uid ||
-    (req as any).user?.firebaseUid ||
-    (req as any).firebaseUid ||
-    (req.headers['x-firebase-uid'] as string) ||
+    (req as any).firebaseUser?.uid ||        // Firebase Auth middleware (patrón principal)
+    (req as any).user?.uid ||               // Passport/session middleware
+    (req as any).user?.firebaseUid ||       // Custom session
+    (req as any).firebaseUid ||             // Legacy
+    (req.headers['x-firebase-uid'] as string) || // Header directo (mobile/API)
     null
   );
 }
@@ -142,6 +145,10 @@ router.post('/top-up/checkout', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'packageId is required and must be a number' });
     }
 
+    // Obtener email del usuario para el recibo de Stripe
+    // El middleware de Firebase setea req.firebaseUser con el email verificado
+    const userEmail: string | undefined = (req as any).firebaseUser?.email || undefined;
+
     // URLs de retorno
     const baseUrl = process.env.APP_URL || req.headers.origin || 'https://owlfenc.replit.app';
     const successUrl = `${baseUrl}/wallet/success`;
@@ -152,6 +159,7 @@ router.post('/top-up/checkout', async (req: Request, res: Response) => {
       packageId,
       successUrl,
       cancelUrl,
+      userEmail, // Para receipt_email en Stripe Checkout
     });
 
     return res.json({

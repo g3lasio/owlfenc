@@ -125,6 +125,7 @@ class StripeTopUpService {
     packageId: number;
     successUrl: string;
     cancelUrl: string;
+    userEmail?: string; // Para receipt_email en Stripe Checkout (recibos automáticos)
   }): Promise<TopUpCheckoutResult> {
     if (!pgDb) throw new Error('Database not available');
 
@@ -214,6 +215,13 @@ class StripeTopUpService {
     // Asociar con Stripe Customer si existe
     if (stripeCustomerId) {
       sessionParams.customer = stripeCustomerId;
+    }
+
+    // Configurar receipt_email para recibos automáticos de Stripe
+    // Stripe envía un recibo por email después de cada pago exitoso
+    // NOTA: Si el customer ya tiene email en Stripe, este campo es ignorado
+    if (params.userEmail && !stripeCustomerId) {
+      sessionParams.customer_email = params.userEmail;
     }
 
     const session = await stripe.checkout.sessions.create(sessionParams);
