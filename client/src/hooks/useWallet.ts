@@ -248,6 +248,17 @@ export function useWallet(): UseWalletReturn {
     await Promise.all([fetchBalance(), fetchBillingStatus()]);
   }, [fetchBalance, fetchBillingStatus]);
 
+  /**
+   * Helper para manejar errores 402 (Insufficient Credits) de la API
+   */
+  const handleCreditError = useCallback((error: any) => {
+    if (error?.status === 402 || error?.message?.includes('INSUFFICIENT_CREDITS')) {
+      window.dispatchEvent(new CustomEvent('open-wallet-topup'));
+      return true;
+    }
+    return false;
+  }, []);
+
   const initiateTopUp = useCallback(async (packageId: number) => {
     if (!user) {
       setError('Authentication required');
@@ -310,8 +321,17 @@ export function useWallet(): UseWalletReturn {
     error,
     refreshBalance,
     initiateTopUp,
+    handleCreditError,
     getFeatureCost,
     canAfford,
     isCheckingOut,
   };
+}
+
+/**
+ * Helper global para abrir el modal de Top Up desde cualquier lugar
+ * sin necesidad de estar dentro de un componente React (ej: interceptores de fetch)
+ */
+export function openTopUpModal() {
+  window.dispatchEvent(new CustomEvent('open-wallet-topup'));
 }

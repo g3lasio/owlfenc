@@ -422,9 +422,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ================================
   try {
     const { runWalletMigration } = await import('./migrations/runWalletMigration');
+    const { runAirdrop } = await import('./scripts/airdropCredits');
+    
+    // 1. Ejecutar migración de Wallet (crea tablas, columnas y seeds)
     await runWalletMigration();
+    
+    // 2. Ejecutar Airdrop de 500 créditos para usuarios existentes
+    // Es seguro de correr en cada reinicio por la idempotency key
+    await runAirdrop().catch(err => {
+      console.error('⚠️  [AIRDROP-INIT] Failed to run airdrop:', err);
+    });
   } catch (err) {
-    console.warn('⚠️  [WALLET] Migration skipped at startup:', err instanceof Error ? err.message : err);
+    console.warn('⚠️  [WALLET] Migration/Airdrop skipped at startup:', err instanceof Error ? err.message : err);
   }
 
   // CRITICAL: Initialize secure user mapping system

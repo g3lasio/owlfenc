@@ -215,6 +215,13 @@ class StripeTopUpService {
     // Asociar con Stripe Customer si existe
     if (stripeCustomerId) {
       sessionParams.customer = stripeCustomerId;
+      
+      // Sincronizar email si ha cambiado (Best effort)
+      if (params.userEmail) {
+        stripe.customers.update(stripeCustomerId, { email: params.userEmail }).catch(err => {
+          console.warn(`⚠️ [STRIPE] Failed to sync email for customer ${stripeCustomerId}:`, err.message);
+        });
+      }
     }
 
     // Configurar receipt_email para recibos automáticos de Stripe

@@ -6,7 +6,7 @@
  * Al hacer click, abre el TopUpModal.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Zap, AlertTriangle, Loader2 } from 'lucide-react';
 import { useWallet } from '@/hooks/useWallet';
 import { TopUpModal } from './TopUpModal';
@@ -20,6 +20,13 @@ interface WalletBadgeProps {
 export function WalletBadge({ className, compact = false }: WalletBadgeProps) {
   const { balance, isLoading, walletData } = useWallet();
   const [showTopUpModal, setShowTopUpModal] = useState(false);
+
+  // Escuchar evento global para abrir el modal
+  useEffect(() => {
+    const handleOpenModal = () => setShowTopUpModal(true);
+    window.addEventListener('open-wallet-topup', handleOpenModal);
+    return () => window.removeEventListener('open-wallet-topup', handleOpenModal);
+  }, []);
 
   // Determinar estado visual basado en el balance
   const getBalanceState = () => {
