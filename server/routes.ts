@@ -415,6 +415,18 @@ const setupTemplateServing = (app: Express) => {
 const upload = multer({ storage: multer.memoryStorage() });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // ================================
+  // WALLET MIGRATION — MUST RUN FIRST
+  // Ejecutar ANTES de cualquier query a la DB para garantizar que
+  // monthly_credits_grant y las tablas wallet existan cuando se usen.
+  // ================================
+  try {
+    const { runWalletMigration } = await import('./migrations/runWalletMigration');
+    await runWalletMigration();
+  } catch (err) {
+    console.warn('⚠️  [WALLET] Migration skipped at startup:', err instanceof Error ? err.message : err);
+  }
+
   // CRITICAL: Initialize secure user mapping system
   initSecureUserHelper(storage);
   const authMiddleware = new AuthMiddleware(storage);
@@ -10031,14 +10043,6 @@ ENHANCED LEGAL CLAUSE:`;
     await stripeTopUpService.initializeTopUpProducts();
   } catch (err) {
     console.warn('⚠️  [WALLET] Stripe Top-Up product initialization skipped:', err instanceof Error ? err.message : err);
-  }
-
-  // Ejecutar migración de wallet schema (idempotente, solo cambios aditivos)
-  try {
-    const { runWalletMigration } = await import('./migrations/runWalletMigration');
-    await runWalletMigration();
-  } catch (err) {
-    console.warn('⚠️  [WALLET] Migration skipped:', err instanceof Error ? err.message : err);
   }
 
   // Crear y retornar el servidor HTTP
