@@ -5,6 +5,9 @@ import { z } from 'zod';
 // Import usage schemas
 export * from './usage-schema';
 
+// Import wallet schema — PAY AS YOU GROW system
+export * from './wallet-schema';
+
 // ================================
 // ROBUST SUBSCRIPTION & USAGE CONTROL TABLES
 // ================================
@@ -188,6 +191,8 @@ export const subscriptionPlans = pgTable('subscription_plans', {
   features: jsonb('features').notNull(),
   motto: text('motto'),
   is_active: boolean('is_active').notNull().default(true),
+  // PAY AS YOU GROW — créditos mensuales otorgados al renovar la suscripción
+  monthly_credits_grant: integer('monthly_credits_grant').notNull().default(0),
   created_at: timestamp('created_at').defaultNow().notNull(),
   updated_at: timestamp('updated_at').defaultNow().notNull(),
 });

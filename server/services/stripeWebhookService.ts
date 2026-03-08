@@ -11,8 +11,9 @@ import { productionUsageService } from './productionUsageService.js';
 import { securityOptimizationService } from './securityOptimizationService.js';
 import { createStripeClient } from '../config/stripe.js';
 import { db as pgDb } from '../db.js';
-import { users } from '@shared/schema';
-import { eq } from 'drizzle-orm';
+import { users, userSubscriptions } from '@shared/schema';
+import { eq, sql } from 'drizzle-orm';
+import { walletService } from './walletService.js';
 import { PLAN_IDS, PLAN_LIMITS, PLAN_NAMES } from '@shared/permissions-config';
 import { resendService } from './resendService.js';
 import { subscriptionEmailService } from './subscriptionEmailService';
@@ -107,6 +108,8 @@ export class StripeWebhookService {
           
         case 'invoice.payment_succeeded':
           await this.handlePaymentSucceeded(event, result);
+          // WALLET: Grant monthly credits after successful subscription payment
+          await this.handleWalletSubscriptionGrant(event, result);
           break;
           
         case 'customer.subscription.created':
@@ -114,8 +117,14 @@ export class StripeWebhookService {
           break;
         
         // Payment Tracker events (Checkout Sessions for contractor payments)
+        // WALLET: Top-Up checkout sessions are handled here too (type: 'credit_topup')
         case 'checkout.session.completed':
           await this.handleCheckoutSessionCompleted(event, result);
+          break;
+          
+        // WALLET: Fraud / chargeback — auto-lock wallet
+        case 'charge.dispute.created':
+          await this.handleChargeDisputeCreated(event, result);
           break;
           
         case 'checkout.session.expired':
@@ -157,6 +166,120 @@ export class StripeWebhookService {
     }
   }
   
+  // ================================
+  // WALLET HANDLERS — PAY AS YOU GROW
+  // ================================
+
+  /**
+   * WALLET: Grant monthly credits when subscription invoice is paid.
+   * Idempotent — uses invoiceId as idempotency key.
+   */
+  private async handleWalletSubscriptionGrant(event: Stripe.Event, result: WebhookResult): Promise<void> {
+    try {
+      const invoice = event.data.object as Stripe.Invoice;
+      
+      // Solo procesar invoices de suscripción (no one-time)
+      if (!invoice.subscription) return;
+      
+      const customerId = invoice.customer as string;
+      const user = await this.findUserByStripeCustomerId(customerId);
+      
+      if (!user?.uid) {
+        console.warn(`⚠️  [WALLET-WEBHOOK] User not found for customer ${customerId} — skipping grant`);
+        return;
+      }
+      
+      // Obtener el plan del usuario
+      const subResult = await pgDb?.execute(sql`
+        SELECT us.plan_id, sp.monthly_credits_grant, sp.name
+        FROM user_subscriptions us
+        JOIN subscription_plans sp ON sp.id = us.plan_id
+        JOIN users u ON u.id = us.user_id
+        WHERE u.firebase_uid = ${user.uid}
+          AND us.status IN ('active', 'trialing')
+        ORDER BY us.updated_at DESC
+        LIMIT 1
+      `);
+      
+      if (!subResult?.rows.length) {
+        console.warn(`⚠️  [WALLET-WEBHOOK] No active subscription found for ${user.uid}`);
+        return;
+      }
+      
+      const planId = subResult.rows[0].plan_id as number;
+      const creditsGrant = subResult.rows[0].monthly_credits_grant as number;
+      
+      if (!creditsGrant || creditsGrant === 0) {
+        console.log(`ℹ️  [WALLET-WEBHOOK] Plan ${planId} has 0 credits grant — skipping`);
+        return;
+      }
+      
+      // Asegurar que la wallet existe
+      await walletService.getOrCreateWallet(user.uid);
+      
+      // Calcular expiración: 60 días tras fin del período
+      const periodEnd = invoice.period_end 
+        ? new Date(invoice.period_end * 1000)
+        : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      
+      await walletService.grantMonthlySubscriptionCredits(
+        user.uid,
+        planId,
+        periodEnd,
+        invoice.id || 'unknown',
+        invoice.subscription as string
+      );
+      
+      console.log(`🎁 [WALLET-WEBHOOK] Granted ${creditsGrant} monthly credits to ${user.uid}`);
+      
+    } catch (error) {
+      // No fallar el webhook por errores de wallet
+      console.error('❌ [WALLET-WEBHOOK] Error granting subscription credits (non-fatal):', error);
+    }
+  }
+
+  /**
+   * WALLET: Handle charge dispute (fraud/chargeback) — auto-lock wallet.
+   */
+  private async handleChargeDisputeCreated(event: Stripe.Event, result: WebhookResult): Promise<void> {
+    try {
+      const dispute = event.data.object as Stripe.Dispute;
+      const chargeId = typeof dispute.charge === 'string' ? dispute.charge : dispute.charge?.id;
+      
+      if (!chargeId) {
+        result.success = true;
+        return;
+      }
+      
+      // Obtener el PaymentIntent para encontrar el usuario
+      const stripe = createStripeClient();
+      const charge = await stripe.charges.retrieve(chargeId);
+      const customerId = charge.customer as string;
+      
+      if (!customerId) {
+        result.success = true;
+        return;
+      }
+      
+      const user = await this.findUserByStripeCustomerId(customerId);
+      
+      if (user?.uid) {
+        await walletService.lockWallet(
+          user.uid,
+          `Chargeback dispute created: ${dispute.id} (${dispute.reason})`
+        );
+        console.log(`🔒 [WALLET-WEBHOOK] Auto-locked wallet for ${user.uid} due to chargeback`);
+      }
+      
+      result.success = true;
+      result.action = 'wallet_locked_chargeback';
+      
+    } catch (error) {
+      console.error('❌ [WALLET-WEBHOOK] Error handling dispute (non-fatal):', error);
+      result.success = true; // No fallar el webhook
+    }
+  }
+
   /**
    * Handle payment failure - log and notify, Stripe Smart Retries will handle attempts
    * Downgrade only happens on subscription.deleted after 3 failed attempts
@@ -767,6 +890,39 @@ export class StripeWebhookService {
       const paymentId = session.metadata?.paymentId;
       const firebaseProjectId = session.metadata?.firebaseProjectId;
       const paymentType = session.metadata?.type;
+
+      // ================================
+      // WALLET: Handle credit top-up checkout sessions
+      // ================================
+      if (paymentType === 'credit_topup') {
+        const firebaseUid = session.metadata?.firebase_uid;
+        const packageId = session.metadata?.package_id;
+        
+        if (!firebaseUid || !packageId) {
+          console.error('❌ [WALLET-WEBHOOK] Missing firebase_uid or package_id in top-up session metadata');
+          result.success = true;
+          return;
+        }
+        
+        const paymentIntentId = typeof session.payment_intent === 'string' 
+          ? session.payment_intent 
+          : session.payment_intent?.id || 'unknown';
+        
+        await walletService.processTopUpCompletion(
+          session.id,
+          paymentIntentId,
+          firebaseUid,
+          session.amount_total || 0,
+          parseInt(packageId)
+        );
+        
+        result.success = true;
+        result.action = 'wallet_topup_completed';
+        result.userId = firebaseUid;
+        console.log(`🎉 [WALLET-WEBHOOK] Top-up completed for ${firebaseUid}`);
+        return;
+      }
+      // ================================
 
       if (!paymentId) {
         console.error('❌ [PAYMENT-WEBHOOK] Missing paymentId in session metadata');

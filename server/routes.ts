@@ -150,6 +150,7 @@ import { analyticsRouter } from './analytics-service'; // Import analytics servi
 import unifiedContractRoutes from "./routes/unifiedContractRoutes"; // Import Unified Contract Management routes
 import dataConsistencyRoutes from "./routes/data-consistency-routes"; // Import Data Consistency routes
 import stripeHealthRoutes from "./routes/stripe-health"; // Import Stripe Health Check routes
+import walletRoutes from "./routes/wallet-routes"; // Import Wallet routes — PAY AS YOU GROW
 import pdfContractProcessorRoutes from "./routes/pdf-contract-processor"; // Import PDF Contract Processor routes
 import centralizedEmailRoutes from "./routes/centralized-email-routes"; // Import Centralized Email routes
 import dualSignatureRoutes from "./routes/dualSignatureRoutes"; // Import Dual Signature routes
@@ -10017,6 +10018,28 @@ ENHANCED LEGAL CLAUSE:`;
       res.redirect("https://www.acornfinance.com/pre-qualify/?d=8VXLJ");
     }
   });
+
+  // ================================
+  // WALLET ROUTES — PAY AS YOU GROW
+  // ================================
+  app.use("/api/wallet", walletRoutes);
+  app.use("/api/admin/credits", walletRoutes); // Admin credit grant endpoint
+
+  // Inicializar productos de Top-Up en Stripe (idempotente)
+  try {
+    const { stripeTopUpService } = await import('./services/stripeTopUpService');
+    await stripeTopUpService.initializeTopUpProducts();
+  } catch (err) {
+    console.warn('⚠️  [WALLET] Stripe Top-Up product initialization skipped:', err instanceof Error ? err.message : err);
+  }
+
+  // Ejecutar migración de wallet schema (idempotente, solo cambios aditivos)
+  try {
+    const { runWalletMigration } = await import('./migrations/runWalletMigration');
+    await runWalletMigration();
+  } catch (err) {
+    console.warn('⚠️  [WALLET] Migration skipped:', err instanceof Error ? err.message : err);
+  }
 
   // Crear y retornar el servidor HTTP
   const server = createServer(app);

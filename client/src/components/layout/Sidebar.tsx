@@ -510,6 +510,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                                     case "get-support": return <Headphones className="h-4 w-4 mr-3" />;
                                     case "my-tickets": return <Ticket className="h-4 w-4 mr-3" />;
                                     case "profile": return <Settings className="h-4 w-4 mr-3" />;
+                                    case "wallet": return <Zap className="h-4 w-4 mr-3 text-cyan-400" />;
                                     case "billing": return <CreditCard className="h-4 w-4 mr-3" />;
                                     case "subscription": return <Crown className="h-4 w-4 mr-3" />;
                                     case "about-mervin": return <Bot className="h-4 w-4 mr-3" />;
@@ -555,6 +556,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                                       case "get-support": return <Headphones className="h-4 w-4 mr-3" />;
                                       case "my-tickets": return <Ticket className="h-4 w-4 mr-3" />;
                                       case "profile": return <Settings className="h-4 w-4 mr-3" />;
+                                      case "wallet": return <Zap className="h-4 w-4 mr-3 text-cyan-400" />;
                                       case "billing": return <CreditCard className="h-4 w-4 mr-3" />;
                                       case "subscription": return <Crown className="h-4 w-4 mr-3" />;
                                       case "about-mervin": return <Bot className="h-4 w-4 mr-3" />;
@@ -687,6 +689,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
                                       case "get-support": return <Headphones className="h-4 w-4" />;
                                       case "my-tickets": return <Ticket className="h-4 w-4" />;
                                       case "profile": return <Settings className="h-4 w-4" />;
+                                      case "wallet": return <Zap className="h-4 w-4 text-cyan-400" />;
                                       case "billing": return <CreditCard className="h-4 w-4" />;
                                       case "subscription": return <Crown className="h-4 w-4" />;
                                       case "about-mervin": return <Bot className="h-4 w-4" />;

@@ -138,6 +138,13 @@ export const navigationGroups: NavigationGroup[] = [
         icon: "lucide-settings"
       },
       {
+        id: "wallet",
+        label: "AI Credits",
+        path: "/wallet",
+        icon: "lucide-zap",
+        badge: "NEW"
+      },
+      {
         id: "billing",
         label: "navigation.billing",
         path: "/billing",
