@@ -4,6 +4,9 @@
  * 
  * Muestra los 3 paquetes de créditos con estilo futurista.
  * Integra con Stripe Checkout via /api/wallet/top-up/checkout.
+ * 
+ * DISEÑO: NO muestra $/crédito (confunde al usuario con el Starter Pack).
+ * En su lugar muestra el equivalente en acciones concretas.
  */
 
 import { useState } from 'react';
@@ -25,6 +28,9 @@ import {
   CreditCard,
   TrendingUp,
   Shield,
+  FileText,
+  ScrollText,
+  ClipboardList,
 } from 'lucide-react';
 import { useWallet } from '@/hooks/useWallet';
 import { cn } from '@/lib/utils';
@@ -70,6 +76,25 @@ const PACKAGE_STYLES = [
   },
 ];
 
+// Calcula equivalencias en acciones concretas (sin $/crédito)
+function getActionEquivalents(totalCredits: number): string {
+  // Costos: aiEstimate=8, contract=12, invoice=5, permitReport=15
+  const estimates = Math.floor(totalCredits / 8);
+  const contracts = Math.floor(totalCredits / 12);
+  const invoices = Math.floor(totalCredits / 5);
+
+  if (totalCredits <= 60) {
+    // Starter: mostrar estimates + invoices
+    return `~${estimates} AI estimates or ${invoices} invoices`;
+  } else if (totalCredits <= 250) {
+    // Pro: mostrar estimates + contracts
+    return `~${estimates} estimates or ${contracts} contracts`;
+  } else {
+    // Power: mostrar todo
+    return `~${estimates} estimates · ${contracts} contracts · ${invoices} invoices`;
+  }
+}
+
 export function TopUpModal({
   isOpen,
   onClose,
@@ -89,12 +114,8 @@ export function TopUpModal({
     await initiateTopUp(packageId);
   };
 
-  // Formatear precio
-  const formatPrice = (cents: number) => `$${(cents / 100).toFixed(2)}`;
-
-  // Calcular precio por crédito
-  const pricePerCredit = (pkg: { priceUsdCents: number; totalCredits: number }) =>
-    ((pkg.priceUsdCents / 100) / pkg.totalCredits).toFixed(3);
+  // Formatear precio (solo muestra el precio total, sin $/crédito)
+  const formatPrice = (cents: number) => `$${(cents / 100).toFixed(0)}`;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -154,7 +175,7 @@ export function TopUpModal({
             Array.from({ length: 3 }).map((_, i) => (
               <div
                 key={i}
-                className="h-48 rounded-xl bg-muted/10 border border-border/30 animate-pulse"
+                className="h-52 rounded-xl bg-muted/10 border border-border/30 animate-pulse"
               />
             ))
           ) : (
@@ -163,6 +184,8 @@ export function TopUpModal({
               const Icon = PACKAGE_ICONS[index % PACKAGE_ICONS.length];
               const isSelected = selectedPackageId === pkg.id;
               const isLoading = isCheckingOut && isSelected;
+              const totalCredits = pkg.totalCredits ?? (pkg.credits + pkg.bonusCredits);
+              const actionEquivalent = getActionEquivalents(totalCredits);
 
               return (
                 <button
@@ -214,7 +237,7 @@ export function TopUpModal({
                   {/* Créditos */}
                   <div className="flex items-baseline gap-1 mb-1">
                     <span className={cn('text-2xl font-mono font-black', style.priceColor)}>
-                      {pkg.totalCredits.toLocaleString()}
+                      {totalCredits.toLocaleString()}
                     </span>
                     <span className="text-xs text-muted-foreground">credits</span>
                   </div>
@@ -229,24 +252,25 @@ export function TopUpModal({
                     </div>
                   )}
 
-                  {/* Equivalencia */}
-                  <p className="text-[10px] text-muted-foreground text-center mb-3">
-                    {pkg.equivalence.description}
+                  {/* Equivalencia en acciones (NO $/crédito) */}
+                  <p className="text-[10px] text-muted-foreground text-center mb-3 leading-relaxed">
+                    {actionEquivalent}
                   </p>
 
-                  {/* Precio */}
+                  {/* Precio — solo precio total, sin $/crédito */}
                   <div className="mt-auto w-full">
                     <div className={cn(
                       'flex items-center justify-center gap-1 py-2 px-4 rounded-lg',
                       'bg-background/30 border border-border/30'
                     )}>
                       <CreditCard className="h-3 w-3 text-muted-foreground" />
-                      <span className={cn('text-lg font-bold font-mono', style.priceColor)}>
+                      <span className={cn('text-xl font-bold font-mono', style.priceColor)}>
                         {formatPrice(pkg.priceUsdCents)}
                       </span>
                     </div>
+                    {/* Texto de seguridad en lugar de $/crédito */}
                     <p className="text-[9px] text-muted-foreground text-center mt-1">
-                      ${pricePerCredit(pkg)}/credit
+                      One-time · Credits never expire
                     </p>
                   </div>
                 </button>
@@ -255,11 +279,34 @@ export function TopUpModal({
           )}
         </div>
 
+        {/* Tabla de referencia rápida de costos */}
+        <div className="mt-2 px-3 py-2 rounded-lg bg-muted/5 border border-border/20">
+          <p className="text-[10px] text-muted-foreground font-medium mb-1.5 uppercase tracking-wider">
+            Credit costs per action
+          </p>
+          <div className="grid grid-cols-3 gap-x-4 gap-y-1">
+            {[
+              { icon: FileText, label: 'AI Estimate', cost: 8 },
+              { icon: ScrollText, label: 'Contract', cost: 12 },
+              { icon: ClipboardList, label: 'Invoice', cost: 5 },
+              { icon: Zap, label: 'Permit Report', cost: 15 },
+              { icon: Shield, label: 'Property Verify', cost: 15 },
+              { icon: Star, label: 'Signature', cost: 8 },
+            ].map(({ icon: Icon, label, cost }) => (
+              <div key={label} className="flex items-center gap-1">
+                <Icon className="h-2.5 w-2.5 text-muted-foreground flex-shrink-0" />
+                <span className="text-[9px] text-muted-foreground truncate">{label}</span>
+                <span className="text-[9px] text-cyan-400 font-mono ml-auto flex-shrink-0">{cost}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Footer */}
         <div className="flex items-center justify-between pt-2 border-t border-border/30">
           <p className="text-[10px] text-muted-foreground flex items-center gap-1">
             <Shield className="h-3 w-3" />
-            Secured by Stripe · Credits never expire
+            Secured by Stripe · No subscription required
           </p>
           <Button
             variant="ghost"

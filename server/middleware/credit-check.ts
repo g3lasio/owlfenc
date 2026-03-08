@@ -10,6 +10,9 @@
  * 
  * REGLA DEL BRIEF: Si tienes créditos → puedes usar cualquier feature.
  * Si no tienes créditos → compra o suscríbete.
+ * 
+ * BUNDLE: contractWithSignature (18 créditos) = contract (12) + signatureProtocol (8) con descuento
+ * El bundle se activa cuando el request incluye { includeSignature: true }
  */
 
 import { Request, Response, NextFunction } from 'express';
@@ -29,8 +32,38 @@ export function isWalletEnforcementEnabled(): boolean {
 
 export interface CreditCheckOptions {
   featureName: FeatureName;
+  // Si true, detecta automáticamente el bundle contractWithSignature
+  // cuando req.body.includeSignature === true y featureName === 'contract'
+  detectBundle?: boolean;
   // Función para extraer el Firebase UID del request
   getFirebaseUid?: (req: Request) => string | null;
+}
+
+// ================================
+// HELPER: Detectar bundle contractWithSignature
+// ================================
+
+/**
+ * Detecta si el request debe usar el bundle contractWithSignature.
+ * El bundle se activa cuando:
+ * 1. featureName === 'contract'
+ * 2. req.body.includeSignature === true (o req.body.withSignature === true)
+ * 
+ * Esto permite que el frontend envíe { includeSignature: true } en el body
+ * para activar el bundle con descuento (18 créditos vs 12+8=20).
+ */
+function detectBundleFeature(req: Request, featureName: FeatureName): FeatureName {
+  if (featureName !== 'contract') return featureName;
+
+  const body = req.body || {};
+  const includeSignature = body.includeSignature === true || body.withSignature === true;
+
+  if (includeSignature) {
+    console.log(`🔗 [CREDIT-CHECK] Bundle detected: contractWithSignature (18 credits instead of 20)`);
+    return 'contractWithSignature';
+  }
+
+  return featureName;
 }
 
 // ================================
@@ -42,10 +75,21 @@ export interface CreditCheckOptions {
  * 
  * Uso:
  * router.post('/generate', requireCredits({ featureName: 'aiEstimate' }), handler);
+ * 
+ * Para el bundle:
+ * router.post('/generate', requireCredits({ featureName: 'contract', detectBundle: true }), handler);
+ * → Si req.body.includeSignature === true, usa contractWithSignature (18 créditos)
+ * → Si no, usa contract (12 créditos)
  */
 export function requireCredits(options: CreditCheckOptions) {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const { featureName } = options;
+    let { featureName } = options;
+
+    // Detectar bundle si está habilitado
+    if (options.detectBundle) {
+      featureName = detectBundleFeature(req, featureName);
+    }
+
     const requiredCredits = FEATURE_CREDIT_COSTS[featureName];
 
     // Features gratuitas — siempre pasar
@@ -69,7 +113,10 @@ export function requireCredits(options: CreditCheckOptions) {
         const balance = await walletService.getBalance(firebaseUid);
         const canAfford = balance >= requiredCredits;
 
-        console.log(`👻 [CREDIT-SHADOW] ${featureName}: user=${firebaseUid}, balance=${balance}, required=${requiredCredits}, canAfford=${canAfford}`);
+        console.log(
+          `👻 [CREDIT-SHADOW] ${featureName}: user=${firebaseUid.substring(0, 8)}..., ` +
+          `balance=${balance}, required=${requiredCredits}, canAfford=${canAfford}`
+        );
 
         // Adjuntar info al request para que el handler pueda loggear
         (req as any).walletShadow = {
@@ -91,7 +138,10 @@ export function requireCredits(options: CreditCheckOptions) {
       const affordCheck = await walletService.canAfford(firebaseUid, requiredCredits);
 
       if (!affordCheck.canAfford) {
-        console.log(`🚫 [CREDIT-CHECK] Insufficient credits for ${featureName}: user=${firebaseUid}, balance=${affordCheck.currentBalance}, required=${requiredCredits}`);
+        console.log(
+          `🚫 [CREDIT-CHECK] Insufficient credits for ${featureName}: ` +
+          `user=${firebaseUid.substring(0, 8)}..., balance=${affordCheck.currentBalance}, required=${requiredCredits}`
+        );
 
         res.status(402).json({
           error: 'INSUFFICIENT_CREDITS',
@@ -178,6 +228,7 @@ function extractFirebaseUid(req: Request, customExtractor?: (req: Request) => st
 
   // Buscar en los lugares más comunes donde se guarda el Firebase UID
   const uid =
+    (req as any).firebaseUser?.uid ||
     (req as any).user?.uid ||
     (req as any).user?.firebaseUid ||
     (req as any).firebaseUid ||
