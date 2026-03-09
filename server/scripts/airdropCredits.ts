@@ -93,9 +93,8 @@ async function runAirdrop() {
   }
 }
 
-// Ejecutar si se llama directamente (node airdropCredits.js)
-if (require.main === module) {
-  runAirdrop().then(() => process.exit(0)).catch(() => process.exit(1));
-}
+// Ejecutar si se llama directamente (tsx server/scripts/airdropCredits.ts)
+// NOTE: require.main is not available in ESM — this file is imported as a module
+// To run standalone: npx tsx server/scripts/airdropCredits.ts
 
 export { runAirdrop };
