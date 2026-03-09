@@ -9,7 +9,7 @@
  * Si el script se corre dos veces, el segundo intento es ignorado silenciosamente.
  */
 
-import { pgDb } from '../db';
+import { db as pgDb } from '../db';
 import { users } from '@shared/schema';
 import { walletService } from '../services/walletService';
 import { sql } from 'drizzle-orm';
@@ -22,6 +22,12 @@ async function runAirdrop() {
   console.log(`🚀 [AIRDROP] Starting ${AIRDROP_CREDITS} credits airdrop for existing users...`);
 
   try {
+    // Guard: si la DB no está disponible, salir silenciosamente
+    if (!pgDb) {
+      console.warn('⚠️  [AIRDROP] Database not available — skipping airdrop');
+      return;
+    }
+
     // 1. Obtener todos los usuarios que tienen un Firebase UID
     const allUsers = await pgDb
       .select({ 
@@ -52,8 +58,8 @@ async function runAirdrop() {
         
         const result = await walletService.addCredits({
           firebaseUid: user.firebaseUid,
-          amount: AIRDROP_CREDITS,
-          type: 'grant',
+          amountCredits: AIRDROP_CREDITS,   // FIX: was 'amount', correct param is 'amountCredits'
+          type: 'bonus',                     // FIX: was 'grant' (not in union type), correct is 'bonus'
           description: AIRDROP_DESCRIPTION,
           idempotencyKey,
         });
@@ -62,7 +68,7 @@ async function runAirdrop() {
           console.log(`✅ [AIRDROP] ${AIRDROP_CREDITS} credits granted to ${user.email || user.firebaseUid} (Balance: ${result.balanceAfter})`);
           successCount++;
         } else {
-          if (result.error?.includes('Idempotency key already used')) {
+          if (result.error?.includes('already') || result.error?.includes('Idempotency')) {
             // Silencioso — ya recibió el airdrop en un arranque anterior
             alreadyGrantedCount++;
           } else {

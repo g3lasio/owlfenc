@@ -17,6 +17,7 @@ import { walletService } from '../services/walletService';
 import { stripeTopUpService } from '../services/stripeTopUpService';
 import { billingModeService } from '../services/billingModeService';
 import { FEATURE_CREDIT_COSTS } from '@shared/schema';
+import { requireAuth } from '../middleware/unified-session-auth';
 
 const router = Router();
 
@@ -39,7 +40,7 @@ function getFirebaseUid(req: Request): string | null {
 // ================================
 // GET /api/wallet/balance
 // ================================
-router.get('/balance', async (req: Request, res: Response) => {
+router.get('/balance', requireAuth, async (req: Request, res: Response) => {
   try {
     const firebaseUid = getFirebaseUid(req);
 
@@ -102,7 +103,7 @@ router.get('/packages', async (req: Request, res: Response) => {
 // ================================
 // GET /api/wallet/history
 // ================================
-router.get('/history', async (req: Request, res: Response) => {
+router.get('/history', requireAuth, async (req: Request, res: Response) => {
   try {
     const firebaseUid = getFirebaseUid(req);
 
@@ -131,7 +132,7 @@ router.get('/history', async (req: Request, res: Response) => {
 // ================================
 // POST /api/wallet/top-up/checkout
 // ================================
-router.post('/top-up/checkout', async (req: Request, res: Response) => {
+router.post('/top-up/checkout', requireAuth, async (req: Request, res: Response) => {
   try {
     const firebaseUid = getFirebaseUid(req);
 
@@ -214,7 +215,7 @@ router.get('/top-up/status', async (req: Request, res: Response) => {
 // ================================
 // GET /api/wallet/billing-status
 // ================================
-router.get('/billing-status', async (req: Request, res: Response) => {
+router.get('/billing-status', requireAuth, async (req: Request, res: Response) => {
   try {
     const firebaseUid = getFirebaseUid(req);
 
