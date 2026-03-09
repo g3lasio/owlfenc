@@ -2,17 +2,24 @@
  * SCRIPT DE AIRDROP — PAY AS YOU GROW
  * Mervin AI / Owl Fenc App
  * 
- * Otorga 500 créditos de cortesía a los usuarios actuales.
+ * Otorga 120 créditos de cortesía a los usuarios actuales.
  * Este script es seguro de ejecutar múltiples veces gracias a la idempotencia.
+ * 
+ * IDEMPOTENCY KEY: 'airdrop_launch_120_credits:{firebaseUid}'
+ * Si el script se corre dos veces, el segundo intento es ignorado silenciosamente.
  */
 
 import { pgDb } from '../db';
-import { walletAccounts, users } from '@shared/schema';
+import { users } from '@shared/schema';
 import { walletService } from '../services/walletService';
-import { eq, sql } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
+
+const AIRDROP_CREDITS = 120;
+const AIRDROP_KEY_PREFIX = 'airdrop_launch_120_credits';
+const AIRDROP_DESCRIPTION = '🎁 Welcome Bonus: 120 AI Credits — On us';
 
 async function runAirdrop() {
-  console.log('🚀 [AIRDROP] Starting 500 credits airdrop for existing users...');
+  console.log(`🚀 [AIRDROP] Starting ${AIRDROP_CREDITS} credits airdrop for existing users...`);
 
   try {
     // 1. Obtener todos los usuarios que tienen un Firebase UID
@@ -28,6 +35,7 @@ async function runAirdrop() {
     console.log(`👥 [AIRDROP] Found ${allUsers.length} users in the database.`);
 
     let successCount = 0;
+    let alreadyGrantedCount = 0;
     let errorCount = 0;
 
     for (const user of allUsers) {
@@ -36,28 +44,27 @@ async function runAirdrop() {
       try {
         // 2. Asegurar que el usuario tenga una wallet
         // getOrCreateWallet ya maneja la creación si no existe
-        const wallet = await walletService.getOrCreateWallet(user.firebaseUid);
+        await walletService.getOrCreateWallet(user.firebaseUid);
         
-        // 3. Otorgar los 500 créditos
-        // Usamos una idempotencyKey única para este airdrop específico
-        // para evitar duplicados si el script se corre dos veces.
-        const idempotencyKey = `airdrop_launch_500_credits:${user.firebaseUid}`;
+        // 3. Otorgar los 120 créditos con idempotencyKey única
+        // Si el script se corre dos veces, el segundo intento es ignorado
+        const idempotencyKey = `${AIRDROP_KEY_PREFIX}:${user.firebaseUid}`;
         
         const result = await walletService.addCredits({
           firebaseUid: user.firebaseUid,
-          amount: 500,
+          amount: AIRDROP_CREDITS,
           type: 'grant',
-          description: '🎁 Launch Bonus: 500 AI Credits',
+          description: AIRDROP_DESCRIPTION,
           idempotencyKey,
         });
 
         if (result.success) {
-          console.log(`✅ [AIRDROP] 500 credits granted to ${user.email || user.firebaseUid} (Balance: ${result.balanceAfter})`);
+          console.log(`✅ [AIRDROP] ${AIRDROP_CREDITS} credits granted to ${user.email || user.firebaseUid} (Balance: ${result.balanceAfter})`);
           successCount++;
         } else {
           if (result.error?.includes('Idempotency key already used')) {
-            console.log(`ℹ️  [AIRDROP] User ${user.email || user.firebaseUid} already received this airdrop.`);
-            successCount++;
+            // Silencioso — ya recibió el airdrop en un arranque anterior
+            alreadyGrantedCount++;
           } else {
             console.error(`❌ [AIRDROP] Failed to grant credits to ${user.email}: ${result.error}`);
             errorCount++;
@@ -70,7 +77,8 @@ async function runAirdrop() {
     }
 
     console.log('\n--- AIRDROP SUMMARY ---');
-    console.log(`✅ Success/Already Granted: ${successCount}`);
+    console.log(`✅ Newly Granted: ${successCount}`);
+    console.log(`ℹ️  Already Received: ${alreadyGrantedCount}`);
     console.log(`❌ Errors: ${errorCount}`);
     console.log('-----------------------\n');
 
@@ -79,7 +87,7 @@ async function runAirdrop() {
   }
 }
 
-// Ejecutar si se llama directamente
+// Ejecutar si se llama directamente (node airdropCredits.js)
 if (require.main === module) {
   runAirdrop().then(() => process.exit(0)).catch(() => process.exit(1));
 }

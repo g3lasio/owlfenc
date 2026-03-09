@@ -83,11 +83,28 @@ router.post("/sessionLogin", loginRateLimit, async (req: Request, res: Response)
       // Obtener o crear el mapping
       internalUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(decodedToken.uid, decodedToken.email || '');
 
-      // Si es un usuario nuevo, asignarle el plan gratuito por defecto
+      // Si es un usuario nuevo, asignarle el plan gratuito por defecto + welcome bonus
       if (isNewUser && internalUserId) {
         console.log(`🚀 Nuevo usuario detectado: ${internalUserId}. Asignando plan gratuito por defecto.`);
         const { firebaseSubscriptionService } = await import('../services/firebaseSubscriptionService');
         await firebaseSubscriptionService.assignDefaultFreePlan(decodedToken.uid);
+
+        // 🎁 Welcome Bonus: 120 créditos de bienvenida para todos los usuarios nuevos
+        // Idempotente: si el servidor se reinicia, no se duplica gracias a la idempotencyKey
+        try {
+          const { walletService } = await import('../services/walletService');
+          await walletService.addCredits({
+            firebaseUid: decodedToken.uid,
+            amount: 120,
+            type: 'grant',
+            description: '🎁 Welcome Bonus: 120 AI Credits — On us',
+            idempotencyKey: `welcome_bonus_120:${decodedToken.uid}`,
+          });
+          console.log(`✅ [WELCOME-BONUS] 120 credits granted to new user: ${decodedToken.email}`);
+        } catch (walletError) {
+          // Non-blocking: si falla el wallet, el usuario igual puede entrar
+          console.error('⚠️  [WELCOME-BONUS] Failed to grant welcome credits (non-blocking):', walletError);
+        }
       }
     } catch (mappingError) {
       console.error('⚠️ [SESSION-LOGIN] User mapping failed, continuing with session creation:', mappingError);
