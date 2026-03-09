@@ -49,6 +49,7 @@ router.get('/balance', requireAuth, async (req: Request, res: Response) => {
     }
 
     const walletData = await walletService.getWalletBalance(firebaseUid);
+    console.log(`💰 [WALLET-BALANCE] uid=${firebaseUid} balance=${walletData.balance} earned=${walletData.totalEarned}`);
 
     return res.json({
       success: true,
