@@ -30,6 +30,8 @@ import { firebaseSubscriptionService } from '../services/firebaseSubscriptionSer
 import { redisRateLimiter, RateLimitConfig } from '../services/redisRateLimiter';
 import { productionUsageService } from '../services/productionUsageService';
 import { isRedisAvailable } from '../lib/redis/client';
+import { walletService } from '../services/walletService'; // 💳 PAYG dual-gate bypass
+import { FEATURE_CREDIT_COSTS } from '../../shared/wallet-schema'; // 💳 Credit cost constants
 import { 
   getPlanLimits,
   PLAN_IDS,
@@ -178,37 +180,69 @@ export function subscriptionProtection(config: ProtectionConfig) {
       const shouldTrackUsage = config.trackUsage !== false;
       
       if (shouldTrackUsage && config.feature) {
-        // Get feature limit from plan configuration
-        const featureLimitKey = `${config.feature}` as keyof typeof planLimits;
-        const featureLimit = planLimits[featureLimitKey];
-
-        if (typeof featureLimit === 'number') {
-          // Check current usage (using Firebase Firestore for persistence)
-          const consumptionCheck = await productionUsageService.canConsumeFeature(userId, config.feature);
-
-          if (!consumptionCheck.canConsume) {
-            return res.status(403).json({
-              success: false,
-              error: `Límite mensual alcanzado para ${config.feature}`,
-              code: 'USAGE_LIMIT_EXCEEDED',
-              feature: config.feature,
-              limit: consumptionCheck.limit,
-              current: consumptionCheck.used,
-              remaining: 0,
-              resetDate: new Date().toISOString().slice(0, 7), // YYYY-MM
-              upgradeUrl: '/subscription'
-            });
-          }
-
-          // Attach usage tracking function to request (using Firebase for persistence)
-          req.trackUsage = async () => {
-            try {
-              await productionUsageService.consumeFeature(userId, config.feature);
-              console.log(`✅ [PROTECTION] Usage tracked for ${userId}:${config.feature}`);
-            } catch (error) {
-              console.error(`❌ [PROTECTION] Error tracking usage:`, error);
+        // 💳 PAYG BYPASS: Map old feature names to wallet credit feature names
+        const featureNameMap: Record<string, keyof typeof FEATURE_CREDIT_COSTS> = {
+          contracts: 'contract',
+          estimates: 'aiEstimate',
+          aiEstimates: 'aiEstimate',
+          basicEstimates: 'basicEstimate',
+          invoices: 'invoice',
+          permitAdvisor: 'permitReport',
+          propertyVerifications: 'propertyVerification',
+          deepsearch: 'deepSearchPartial',
+          deepsearchFullCosts: 'deepSearchFull',
+        };
+        const creditFeatureName = featureNameMap[config.feature];
+        let walletBypass = false;
+        if (creditFeatureName) {
+          try {
+            const creditCost = FEATURE_CREDIT_COSTS[creditFeatureName];
+            if (creditCost > 0) { // Only bypass if feature has a credit cost (not free features)
+              const affordCheck = await walletService.canAfford(userId, creditCost);
+              if (affordCheck.canAfford) {
+                walletBypass = true;
+                console.log(`💳 [PROTECTION] Wallet bypass: ${userId} has ${affordCheck.currentBalance} credits (needs ${creditCost}) for ${config.feature}`);
+              }
             }
-          };
+          } catch (walletErr) {
+            // Non-blocking: if wallet check fails, fall back to plan limits
+            console.warn(`⚠️ [PROTECTION] Wallet check failed, falling back to plan limits:`, walletErr);
+          }
+        }
+
+        if (!walletBypass) {
+          // Get feature limit from plan configuration
+          const featureLimitKey = `${config.feature}` as keyof typeof planLimits;
+          const featureLimit = planLimits[featureLimitKey];
+
+          if (typeof featureLimit === 'number') {
+            // Check current usage (using Firebase Firestore for persistence)
+            const consumptionCheck = await productionUsageService.canConsumeFeature(userId, config.feature);
+
+            if (!consumptionCheck.canConsume) {
+              return res.status(403).json({
+                success: false,
+                error: `Límite mensual alcanzado para ${config.feature}. Compra créditos para continuar sin límites.`,
+                code: 'USAGE_LIMIT_EXCEEDED',
+                feature: config.feature,
+                limit: consumptionCheck.limit,
+                current: consumptionCheck.used,
+                remaining: 0,
+                resetDate: new Date().toISOString().slice(0, 7), // YYYY-MM
+                upgradeUrl: '/wallet'
+              });
+            }
+
+            // Attach usage tracking function to request (using Firebase for persistence)
+            req.trackUsage = async () => {
+              try {
+                await productionUsageService.consumeFeature(userId, config.feature);
+                console.log(`✅ [PROTECTION] Usage tracked for ${userId}:${config.feature}`);
+              } catch (error) {
+                console.error(`❌ [PROTECTION] Error tracking usage:`, error);
+              }
+            };
+          }
         }
       }
 

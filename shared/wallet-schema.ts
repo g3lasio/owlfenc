@@ -182,8 +182,8 @@ export const FEATURE_CREDIT_COSTS = {
   invoice: 5,              // $0.50
   permitReport: 15,        // $1.50
   propertyVerification: 15, // $1.50 — Margen 10x sobre costo ATTOM
-  deepSearchFull: 12,      // $1.20
-  deepSearchPartial: 7,    // $0.70
+  deepSearchFull: 20,      // $2.00 — Materials + Labor complete analysis
+  deepSearchPartial: 10,   // $1.00 — Materials only OR Labor only
   paymentLink: 3,          // $0.30
   chatWithMervin: 0,       // SIEMPRE GRATIS
   pdfExport: 0,            // SIEMPRE GRATIS

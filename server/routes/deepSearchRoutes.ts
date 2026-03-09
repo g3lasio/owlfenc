@@ -20,7 +20,8 @@ import { deepSearchService } from '../services/deepSearchService';
 import { smartMaterialCacheService } from '../services/smartMaterialCacheService';
 import { deepSearchRefinementService } from '../services/deepSearchRefinementService';
 import { verifyFirebaseAuth } from '../middleware/firebase-auth';
-import { protectDeepSearch } from '../middleware/subscription-protection';
+import { requireAuth } from '../middleware/unified-session-auth';
+import { requireCredits, deductFeatureCredits } from '../middleware/credit-check';
 
 // Esquemas de validación
 const ProjectAnalysisSchema = z.object({
@@ -119,8 +120,8 @@ export function registerDeepSearchRoutes(app: Express): void {
    * - Rate limiting: 200 requests/hora
    */
   app.post('/api/deepsearch/materials',
-    verifyFirebaseAuth,
-    protectDeepSearch(),
+    requireAuth,
+    requireCredits({ featureName: 'deepSearchPartial' }), // 💳 10 créditos — Materials only
     async (req: Request, res: Response) => {
       const userId = req.firebaseUser?.uid;
       
@@ -141,10 +142,8 @@ export function registerDeepSearchRoutes(app: Express): void {
         analysisResult.totalLaborCost = 0;
         analysisResult.grandTotal = analysisResult.totalMaterialsCost + analysisResult.totalAdditionalCost;
 
-        // ✅ CONTEO AUTOMÁTICO DE USO
-        if (req.trackUsage) {
-          await req.trackUsage();
-        }
+        // 💳 DEDUCIR CRÉDITOS TRAS ÉXITO
+        await deductFeatureCredits(req, undefined, 'DeepSearch Materials Only');
 
         console.log(`✅ [MATERIALS ONLY] User: ${userId} - Completado:`, {
           materialsCount: analysisResult.materials.length,
@@ -206,8 +205,8 @@ export function registerDeepSearchRoutes(app: Express): void {
    * - Rate limiting: 200 requests/hora
    */
   app.post('/api/deepsearch/analyze',
-    verifyFirebaseAuth,
-    protectDeepSearch(),
+    requireAuth,
+    requireCredits({ featureName: 'deepSearchFull' }), // 💳 20 créditos — Full Costs (Materials + Labor)
     async (req: Request, res: Response) => {
       const userId = req.firebaseUser?.uid;
       
@@ -241,10 +240,8 @@ export function registerDeepSearchRoutes(app: Express): void {
                                      analysisResult.totalAdditionalCost;
         }
 
-        // ✅ CONTEO AUTOMÁTICO DE USO
-        if (req.trackUsage) {
-          await req.trackUsage();
-        }
+        // 💳 DEDUCIR CRÉDITOS TRAS ÉXITO
+        await deductFeatureCredits(req, undefined, 'DeepSearch Full Costs Analysis');
 
         console.log(`✅ [DEEPSEARCH-ANALYZE] User: ${userId} - Completado:`, {
           materialsCount: analysisResult.materials.length,

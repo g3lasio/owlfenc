@@ -164,6 +164,8 @@ import express from "express"; // Import express to use express.raw
 // REMOVED: Subscription auth middleware for DeepSearch access
 import { trackAndValidateUsage } from "./middleware/usage-tracking"; // Import usage tracking middleware
 import { protectPropertyVerification } from "./middleware/subscription-protection"; // Import property verification protection
+import { walletService } from "./services/walletService"; // 💳 PAYG credit enforcement
+import { FEATURE_CREDIT_COSTS } from "../shared/wallet-schema"; // 💳 Credit cost constants
 
 // Initialize Anthropic Claude API
 // Using Claude 3.7 Sonnet as the primary model for better reasoning and agent capabilities
@@ -8351,7 +8353,22 @@ ENHANCED LEGAL CLAUSE:`;
       const authenticatedUserId = decodedToken.uid;
       console.log(`🔐 [PERMIT-SEARCH] Usuario autenticado: ${authenticatedUserId}`);
 
-      // Validar el esquema de la solicitud
+      // 💳 PRE-VALIDATION: Check credits BEFORE calling OpenAI (prevents free rides)
+      const permitCreditCost = FEATURE_CREDIT_COSTS.permitReport; // 15 credits
+      const affordCheck = await walletService.canAfford(authenticatedUserId, permitCreditCost);
+      if (!affordCheck.canAfford) {
+        console.log(`🚫 [PERMIT-CREDITS] Insufficient credits: has ${affordCheck.currentBalance}, needs ${permitCreditCost}`);
+        return res.status(402).json({
+          message: `Créditos insuficientes para Permit Advisor. Necesitas ${permitCreditCost} créditos, tienes ${affordCheck.currentBalance}.`,
+          error: "INSUFFICIENT_CREDITS",
+          required: permitCreditCost,
+          available: affordCheck.currentBalance,
+          deficit: affordCheck.deficit,
+        });
+      }
+      console.log(`✅ [PERMIT-CREDITS] User has ${affordCheck.currentBalance} credits, proceeding (cost: ${permitCreditCost})`);
+
+      // Validar el esquema de la solicitudd
       const permitSchema = z.object({
         address: z.string().min(5, "La dirección es demasiado corta"),
         projectType: z
@@ -8444,9 +8461,22 @@ ENHANCED LEGAL CLAUSE:`;
         console.error("Error al guardar historial de búsqueda:", historyError);
       }
 
-      console.log("===== FIN DE SOLICITUD MERVIN DEEPSEARCH =====");
+      // 💳 Deduct credits AFTER successful OpenAI response
+      try {
+        await walletService.deductCredits({
+          firebaseUid: authenticatedUserId,
+          amount: FEATURE_CREDIT_COSTS.permitReport,
+          featureName: 'permitReport',
+          description: `Permit Advisor: ${projectType} at ${address}`,
+          referenceId: `permit_${Date.now()}`,
+        });
+        console.log(`✅ [PERMIT-CREDITS] ${FEATURE_CREDIT_COSTS.permitReport} credits deducted for permitReport`);
+      } catch (creditErr) {
+        console.error('⚠️ [PERMIT-CREDITS] Failed to deduct credits (non-blocking):', creditErr);
+      }
 
-      res.json(permitData);
+      console.log("===== FIN DE SOLICITUD MERVIN DEEPSEARCH =====");
+      res.json(permitData);;
     } catch (error: any) {
       console.error("ERROR EN VERIFICACIÓN DE PERMISOS:");
       console.error("Mensaje:", error.message);

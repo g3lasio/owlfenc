@@ -19,7 +19,8 @@ import { z } from 'zod';
 import { laborDeepSearchService } from '../services/laborDeepSearchService';
 import { deepSearchService } from '../services/deepSearchService';
 import { verifyFirebaseAuth } from '../middleware/firebase-auth';
-import { protectDeepSearch } from '../middleware/subscription-protection';
+import { requireAuth } from '../middleware/unified-session-auth';
+import { requireCredits, deductFeatureCredits } from '../middleware/credit-check';
 
 // Schema para validación de entrada - Labor únicamente
 const LaborAnalysisSchema = z.object({
@@ -169,8 +170,8 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
    * 🔒 PROTEGIDO: Genera lista de items de labor compatible con estimados
    */
   app.post('/api/labor-deepsearch/generate-items',
-    verifyFirebaseAuth,
-    protectDeepSearch(),
+    requireAuth,
+    requireCredits({ featureName: 'deepSearchPartial' }), // 💳 10 créditos — Labor Costs only
     async (req: Request, res: Response) => {
       const userId = req.firebaseUser?.uid;
       
@@ -187,10 +188,8 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
           validatedData.projectType
         );
 
-        // ✅ CONTEO AUTOMÁTICO DE USO
-        if (req.trackUsage) {
-          await req.trackUsage();
-        }
+        // 💳 DEDUCIR CRÉDITOS TRAS ÉXITO
+        await deductFeatureCredits(req, undefined, 'DeepSearch Labor Costs Only');
 
         console.log(`✅ [LABOR-ITEMS] User: ${userId} - Completado:`, {
           laborItemsCount: laborItems.length
@@ -248,8 +247,8 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
    * - Labor: laborDeepSearchService (análisis de labor especializado)
    */
   app.post('/api/labor-deepsearch/combined',
-    verifyFirebaseAuth,
-    protectDeepSearch(),
+    requireAuth,
+    requireCredits({ featureName: 'deepSearchFull' }), // 💳 20 créditos — Full Costs (Materials + Labor)
     async (req: Request, res: Response) => {
       const userId = req.firebaseUser?.uid;
       
@@ -309,9 +308,8 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
           ]
         };
 
-        if (req.trackUsage) {
-          await req.trackUsage();
-        }
+        // 💳 DEDUCIR CRÉDITOS TRAS ÉXITO
+        await deductFeatureCredits(req, undefined, 'DeepSearch Full Costs (Materials + Labor)');
 
         console.log(`✅ [FULL COSTS] User: ${userId} - Completado:`, {
           materialsCount: materialsResult.materials.length,

@@ -210,13 +210,21 @@ export class ContractorPaymentService {
           platformUserId: request.userId.toString(),
         },
         customer_email: resolvedClientEmail || undefined,
+        payment_intent_data: {
+          // 💳 Platform fee: 0.5% of the transaction goes to Owl Fenc platform
+          // Automatically transferred from contractor's payout — no extra charge to client
+          application_fee_amount: Math.round(roundedAmount * 0.005), // 0.5% platform fee
+        },
       }, {
         // Create the session directly on the connected account
         // This ensures all funds go directly to the contractor
         stripeAccount: user.stripeConnectAccountId,
       });
 
+      const platformFee = (roundedAmount * 0.005 / 100).toFixed(2);
+      const totalAmount = (roundedAmount / 100).toFixed(2);
       console.log(`✅ [PAYMENT-LINK] Created checkout session for connected account: ${user.stripeConnectAccountId}`);
+      console.log(`💳 [PAYMENT-FEE] Platform fee: $${platformFee} (0.5% of $${totalAmount})`);
 
       // Update payment with Stripe details
       await storage.updateProjectPayment(payment.id, {

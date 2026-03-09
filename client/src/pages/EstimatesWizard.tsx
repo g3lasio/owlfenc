@@ -1219,29 +1219,10 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
   ) => {
     console.log("🔍 NEW DEEPSEARCH - Starting with type:", searchType);
     
-    // Verificar permisos según el tipo de búsqueda
-    if (searchType === "full") {
-      // Full Costs requiere permiso especial
-      if (!featureAccess.canUseDeepsearchFullCosts()) {
-        console.log("🚫 NEW DEEPSEARCH - Full Costs access denied, showing upgrade prompt");
-        featureAccess.showDeepsearchFullCostsUpgrade();
-        return;
-      }
-    } else if (searchType === "materials") {
-      // Materials solo para planes pagados
-      if (!featureAccess.canUseDeepsearchMaterialsOnly()) {
-        console.log("🚫 NEW DEEPSEARCH - Materials Only access denied (FREE users)");
-        featureAccess.showDeepsearchUpgrade();
-        return;
-      }
-    } else if (searchType === "labor") {
-      // Labor solo para planes pagados
-      if (!featureAccess.canUseDeepsearchLaborOnly()) {
-        console.log("🚫 NEW DEEPSEARCH - Labor Only access denied (FREE users)");
-        featureAccess.showDeepsearchUpgrade();
-        return;
-      }
-    }
+    // ✅ Credit gate is now enforced by the backend (requireCredits middleware).
+    // No frontend plan-lock needed — all users can use DeepSearch if they have credits.
+    const creditCost = searchType === "full" ? 20 : 10;
+    console.log(`🔍 NEW DEEPSEARCH - Type: ${searchType}, Cost: ${creditCost} credits`);
     
     const description = estimate.projectDetails.trim();
     console.log(
@@ -5421,49 +5402,21 @@ This link provides a professional view of your estimate that you can access anyt
                                 e.stopPropagation();
                                 handleNewDeepsearch("materials");
                               }}
-                              className={`group w-full p-3 rounded-lg transition-all duration-300 border ${
-                                !featureAccess.canUseDeepsearchMaterialsOnly()
-                                  ? "border-amber-400/40 bg-gradient-to-r from-amber-500/10 to-yellow-600/10 hover:border-amber-400/70"
-                                  : "border-blue-400/20 bg-gradient-to-r from-blue-500/5 to-blue-600/5 hover:border-blue-400/50 hover:bg-gradient-to-r hover:from-blue-500/15 hover:to-blue-600/15 hover:shadow-lg hover:shadow-blue-400/20"
-                              }`}
+                              className="group w-full p-3 rounded-lg transition-all duration-300 border border-blue-400/20 bg-gradient-to-r from-blue-500/5 to-blue-600/5 hover:border-blue-400/50 hover:from-blue-500/15 hover:to-blue-600/15 hover:shadow-lg hover:shadow-blue-400/20"
                             >
                               <div className="flex items-center gap-3">
-                                <div className={`w-10 h-10 rounded-lg ${
-                                  !featureAccess.canUseDeepsearchMaterialsOnly()
-                                    ? "bg-gradient-to-br from-amber-400/20 to-yellow-600/20 border border-amber-400/30"
-                                    : "bg-gradient-to-br from-blue-400/20 to-blue-600/20 border border-blue-400/30"
-                                } flex items-center justify-center`}>
-                                  {!featureAccess.canUseDeepsearchMaterialsOnly() ? (
-                                    <Lock className="h-5 w-5 text-amber-400" />
-                                  ) : (
-                                    <Package className="h-5 w-5 text-blue-400" />
-                                  )}
+                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-400/20 to-blue-600/20 border border-blue-400/30 flex items-center justify-center">
+                                  <Package className="h-5 w-5 text-blue-400" />
                                 </div>
                                 <div className="flex-1 text-left">
-                                  <div className={`text-sm font-medium transition-colors ${
-                                    !featureAccess.canUseDeepsearchMaterialsOnly()
-                                      ? "text-amber-400"
-                                      : "text-white group-hover:text-blue-400"
-                                  }`}>
+                                  <div className="text-sm font-medium text-white group-hover:text-blue-400 transition-colors">
                                     ONLY MATERIALS
-                                    {!featureAccess.canUseDeepsearchMaterialsOnly() && (
-                                      <Crown className="inline-block h-4 w-4 ml-1 text-amber-400" />
-                                    )}
                                   </div>
-                                  <div className="text-xs text-slate-400 font-mono">
-                                    {!featureAccess.canUseDeepsearchMaterialsOnly()
-                                      ? (userPlan?.id === 5 
-                                          ? "🔒 Solo para planes pagados - Usa Full Costs" 
-                                          : "🔒 Límite alcanzado - Actualiza tu plan")
-                                      : "Search materials database only"
-                                    }
-                                  </div>
+                                  <div className="text-xs text-slate-400 font-mono">Search materials database only</div>
                                 </div>
-                                {!featureAccess.canUseDeepsearchMaterialsOnly() ? (
-                                  <Lock className="h-4 w-4 text-amber-400" />
-                                ) : (
-                                  <ChevronRight className="h-4 w-4 text-blue-400 group-hover:translate-x-1 transition-transform" />
-                                )}
+                                <div className="flex items-center gap-1 px-2 py-1 bg-blue-400/10 border border-blue-400/30 rounded text-xs text-blue-400 font-mono whitespace-nowrap">
+                                  ⚡ 10 cr
+                                </div>
                               </div>
                             </button>
 
@@ -5473,49 +5426,21 @@ This link provides a professional view of your estimate that you can access anyt
                                 e.stopPropagation();
                                 handleNewDeepsearch("labor");
                               }}
-                              className={`group w-full p-3 rounded-lg transition-all duration-300 border ${
-                                !featureAccess.canUseDeepsearchLaborOnly()
-                                  ? "border-amber-400/40 bg-gradient-to-r from-amber-500/10 to-yellow-600/10 hover:border-amber-400/70"
-                                  : "border-orange-400/20 bg-gradient-to-r from-orange-500/5 to-amber-600/5 hover:border-orange-400/50 hover:bg-gradient-to-r hover:from-orange-500/15 hover:to-amber-600/15 hover:shadow-lg hover:shadow-orange-400/20"
-                              }`}
+                              className="group w-full p-3 rounded-lg transition-all duration-300 border border-orange-400/20 bg-gradient-to-r from-orange-500/5 to-amber-600/5 hover:border-orange-400/50 hover:from-orange-500/15 hover:to-amber-600/15 hover:shadow-lg hover:shadow-orange-400/20"
                             >
                               <div className="flex items-center gap-3">
-                                <div className={`w-10 h-10 rounded-lg ${
-                                  !featureAccess.canUseDeepsearchLaborOnly()
-                                    ? "bg-gradient-to-br from-amber-400/20 to-yellow-600/20 border border-amber-400/30"
-                                    : "bg-gradient-to-br from-orange-400/20 to-amber-600/20 border border-orange-400/30"
-                                } flex items-center justify-center`}>
-                                  {!featureAccess.canUseDeepsearchLaborOnly() ? (
-                                    <Lock className="h-5 w-5 text-amber-400" />
-                                  ) : (
-                                    <Wrench className="h-5 w-5 text-orange-400" />
-                                  )}
+                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-400/20 to-amber-600/20 border border-orange-400/30 flex items-center justify-center">
+                                  <Wrench className="h-5 w-5 text-orange-400" />
                                 </div>
                                 <div className="flex-1 text-left">
-                                  <div className={`text-sm font-medium transition-colors ${
-                                    !featureAccess.canUseDeepsearchLaborOnly()
-                                      ? "text-amber-400"
-                                      : "text-white group-hover:text-orange-400"
-                                  }`}>
+                                  <div className="text-sm font-medium text-white group-hover:text-orange-400 transition-colors">
                                     LABOR COSTS
-                                    {!featureAccess.canUseDeepsearchLaborOnly() && (
-                                      <Crown className="inline-block h-4 w-4 ml-1 text-amber-400" />
-                                    )}
                                   </div>
-                                  <div className="text-xs text-slate-400 font-mono">
-                                    {!featureAccess.canUseDeepsearchLaborOnly()
-                                      ? (userPlan?.id === 5 
-                                          ? "🔒 Solo para planes pagados - Usa Full Costs" 
-                                          : "🔒 Límite alcanzado - Actualiza tu plan")
-                                      : "Generate labor service items"
-                                    }
-                                  </div>
+                                  <div className="text-xs text-slate-400 font-mono">Generate labor service items</div>
                                 </div>
-                                {!featureAccess.canUseDeepsearchLaborOnly() ? (
-                                  <Lock className="h-4 w-4 text-amber-400" />
-                                ) : (
-                                  <ChevronRight className="h-4 w-4 text-orange-400 group-hover:translate-x-1 transition-transform" />
-                                )}
+                                <div className="flex items-center gap-1 px-2 py-1 bg-orange-400/10 border border-orange-400/30 rounded text-xs text-orange-400 font-mono whitespace-nowrap">
+                                  ⚡ 10 cr
+                                </div>
                               </div>
                             </button>
 
@@ -5525,59 +5450,29 @@ This link provides a professional view of your estimate that you can access anyt
                                 e.stopPropagation();
                                 handleNewDeepsearch("full");
                               }}
-                              className={`group w-full p-3 rounded-lg transition-all duration-300 border ${
-                                !featureAccess.canUseDeepsearchFullCosts()
-                                  ? "border-amber-400/40 bg-gradient-to-r from-amber-500/10 to-yellow-600/10 hover:border-amber-400/70"
-                                  : "border-emerald-400/40 bg-gradient-to-r from-emerald-500/10 to-green-600/10 hover:border-emerald-400/70 hover:bg-gradient-to-r hover:from-emerald-500/20 hover:to-green-600/20 hover:shadow-lg hover:shadow-emerald-400/25 ring-1 ring-emerald-400/20"
-                              }`}
+                              className="group w-full p-3 rounded-lg transition-all duration-300 border border-emerald-400/40 bg-gradient-to-r from-emerald-500/10 to-green-600/10 hover:border-emerald-400/70 hover:from-emerald-500/20 hover:to-green-600/20 hover:shadow-lg hover:shadow-emerald-400/25 ring-1 ring-emerald-400/20"
                             >
                               <div className="flex items-center gap-3">
-                                <div className={`w-10 h-10 rounded-lg ${
-                                  !featureAccess.canUseDeepsearchFullCosts()
-                                    ? "bg-gradient-to-br from-amber-400/20 to-yellow-600/20 border border-amber-400/30"
-                                    : "bg-gradient-to-br from-emerald-400/20 to-green-600/20 border border-emerald-400/40"
-                                } flex items-center justify-center`}>
-                                  {!featureAccess.canUseDeepsearchFullCosts() ? (
-                                    <Lock className="h-5 w-5 text-amber-400" />
-                                  ) : (
-                                    <div className="w-5 h-5 rounded-full border-2 border-emerald-400 relative">
-                                      <div className="absolute inset-1 rounded-full bg-emerald-400/30" />
-                                      <div className="absolute inset-2 rounded-full bg-emerald-400 animate-pulse" />
-                                    </div>
-                                  )}
+                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-400/20 to-green-600/20 border border-emerald-400/40 flex items-center justify-center">
+                                  <div className="w-5 h-5 rounded-full border-2 border-emerald-400 relative">
+                                    <div className="absolute inset-1 rounded-full bg-emerald-400/30" />
+                                    <div className="absolute inset-2 rounded-full bg-emerald-400 animate-pulse" />
+                                  </div>
                                 </div>
                                 <div className="flex-1 text-left">
                                   <div className="flex items-center gap-2">
-                                    <div className={`text-sm font-medium transition-colors ${
-                                      !featureAccess.canUseDeepsearchFullCosts()
-                                        ? "text-amber-400"
-                                        : "text-white group-hover:text-emerald-400"
-                                    }`}>
+                                    <div className="text-sm font-medium text-white group-hover:text-emerald-400 transition-colors">
                                       FULL COSTS
-                                      {!featureAccess.canUseDeepsearchFullCosts() && (
-                                        <Crown className="inline-block h-4 w-4 ml-1 text-amber-400" />
-                                      )}
                                     </div>
-                                    {featureAccess.canUseDeepsearchFullCosts() && (
-                                      <div className="px-2 py-0.5 bg-emerald-400/20 border border-emerald-400/40 rounded text-xs text-emerald-400 font-mono">
-                                        RECOMMENDED
-                                      </div>
-                                    )}
+                                    <div className="px-2 py-0.5 bg-emerald-400/20 border border-emerald-400/40 rounded text-xs text-emerald-400 font-mono">
+                                      RECOMMENDED
+                                    </div>
                                   </div>
-                                  <div className="text-xs text-slate-400 font-mono">
-                                    {!featureAccess.canUseDeepsearchFullCosts()
-                                      ? (userPlan?.id === 5 
-                                          ? "✨ Primo: 5 búsquedas/mes - Actualiza para más" 
-                                          : "🔒 Límite alcanzado - Actualiza tu plan")
-                                      : "Materials + labor complete analysis"
-                                    }
-                                  </div>
+                                  <div className="text-xs text-slate-400 font-mono">Materials + labor complete analysis</div>
                                 </div>
-                                {!featureAccess.canUseDeepsearchFullCosts() ? (
-                                  <Lock className="h-4 w-4 text-amber-400" />
-                                ) : (
-                                  <ChevronRight className="h-4 w-4 text-emerald-400 group-hover:translate-x-1 transition-transform" />
-                                )}
+                                <div className="flex items-center gap-1 px-2 py-1 bg-emerald-400/10 border border-emerald-400/30 rounded text-xs text-emerald-400 font-mono whitespace-nowrap">
+                                  ⚡ 20 cr
+                                </div>
                               </div>
                             </button>
                           </div>

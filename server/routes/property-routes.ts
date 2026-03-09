@@ -4,6 +4,7 @@ import { verifyFirebaseAuth as requireAuth } from "../middleware/firebase-auth";
 import { getSecureUserId } from "../utils/secureUserHelper";
 import { firebaseSearchService } from "../services/firebaseSearchService";
 import { productionUsageService } from "../services/productionUsageService";
+import { requireCredits, deductFeatureCredits } from "../middleware/credit-check"; // 💳 PAYG pre-validation
 
 /**
  * Esta función registra las rutas relacionadas con la obtención
@@ -11,7 +12,8 @@ import { productionUsageService } from "../services/productionUsageService";
  */
 export function registerPropertyRoutes(app: Express): void {
   // Endpoint para obtener detalles de una propiedad por dirección
-  app.get('/api/property/details', requireAuth, async (req: Request, res: Response) => {
+  // requireCredits validates BEFORE calling ATTOM API (prevents free rides)
+  app.get('/api/property/details', requireAuth, requireCredits({ featureName: 'propertyVerification' }), async (req: Request, res: Response) => {
     const address = req.query.address as string;
     const useMock = req.query.mock === 'true' || false;
     
@@ -108,6 +110,17 @@ export function registerPropertyRoutes(app: Express): void {
         console.error('⚠️ [PROPERTY-HISTORY] Error guardando historial o incrementando contador:', historyError);
       }
       
+      // 💳 Deduct credits AFTER successful ATTOM response
+      try {
+        const uid = req.firebaseUser?.uid;
+        if (uid) {
+          await deductFeatureCredits(uid, 'propertyVerification');
+          console.log('✅ [PROPERTY-CREDITS] 15 credits deducted for propertyVerification');
+        }
+      } catch (creditErr) {
+        console.error('⚠️ [PROPERTY-CREDITS] Failed to deduct credits:', creditErr);
+      }
+
       console.log('===== FIN DE SOLICITUD DE DETALLES DE PROPIEDAD =====');
       return res.json(response);
       
