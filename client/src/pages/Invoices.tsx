@@ -138,8 +138,8 @@ const Invoices: React.FC = () => {
   const [emailPreviewContent, setEmailPreviewContent] = useState("");
 
   // Verificar permisos de invoices
-  const hasInvoiceAccess = hasAccess('invoices');
-  const canUseInvoices = hasInvoiceAccess;
+  const hasInvoiceAccess = true; // 💳 Pure PAYG: always accessible, backend enforces credits
+  const canUseInvoices = true; // 💳 Pure PAYG: always accessible
 
   // Load estimates on mount
   useEffect(() => {

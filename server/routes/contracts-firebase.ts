@@ -7,7 +7,7 @@ import express from 'express';
 import { z } from 'zod';
 import { verifyFirebaseAuth as requireAuth } from '../middleware/firebase-auth';
 import { firebaseContractsService } from '../services/firebaseContractsService';
-import { protectContracts } from '../middleware/subscription-protection';
+import { requireCredits, deductFeatureCredits } from '../middleware/credit-check'; // 💳 Pure PAYG
 
 const router = express.Router();
 
@@ -76,7 +76,7 @@ router.get('/', requireAuth, async (req, res) => {
 
 // POST /api/contracts - Crear un nuevo contrato
 // 🔐 SECURITY: Protected with subscription limits - counts against user's contract quota
-router.post('/', requireAuth, protectContracts(), async (req, res) => {
+router.post('/', requireAuth, requireCredits({ featureName: 'contract' }), async (req, res) => {
   try {
     const userId = req.firebaseUser?.uid;
     if (!userId) {
@@ -116,6 +116,9 @@ router.post('/', requireAuth, protectContracts(), async (req, res) => {
     });
     
     console.log('✅ [CONTRACTS-API] Contrato creado exitosamente, ID:', newContract.id);
+    
+    // 💳 PAYG: Deduct credits after successful contract creation
+    await deductFeatureCredits(req, undefined, 'Contract Generation');
     
     res.status(201).json(newContract);
   } catch (error) {

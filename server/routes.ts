@@ -163,9 +163,9 @@ import express from "express"; // Import express to use express.raw
 // REMOVED: Firebase auth middleware for DeepSearch access
 // REMOVED: Subscription auth middleware for DeepSearch access
 import { trackAndValidateUsage } from "./middleware/usage-tracking"; // Import usage tracking middleware
-import { protectPropertyVerification } from "./middleware/subscription-protection"; // Import property verification protection
 import { walletService } from "./services/walletService"; // 💳 PAYG credit enforcement
 import { FEATURE_CREDIT_COSTS } from "../shared/wallet-schema"; // 💳 Credit cost constants
+import { requireCredits, deductFeatureCredits } from "./middleware/credit-check"; // 💳 Pure PAYG middleware
 
 // Initialize Anthropic Claude API
 // Using Claude 3.7 Sonnet as the primary model for better reasoning and agent capabilities
@@ -8032,7 +8032,7 @@ ENHANCED LEGAL CLAUSE:`;
     },
   );
 
-  app.get("/api/property/details", requireAuth, protectPropertyVerification(), async (req: Request, res: Response) => {
+  app.get("/api/property/details", requireAuth, requireCredits({ featureName: "propertyVerification" }), async (req: Request, res: Response) => {
     const address = req.query.address as string;
     const city = req.query.city as string;
     const state = req.query.state as string;
@@ -8166,7 +8166,7 @@ ENHANCED LEGAL CLAUSE:`;
   });
 
   // 📄 ENDPOINT: Generate comprehensive property report PDF
-  app.post("/api/property/generate-full-report-pdf", requireAuth, protectPropertyVerification(), async (req: Request, res: Response) => {
+  app.post("/api/property/generate-full-report-pdf", requireAuth, requireCredits({ featureName: "propertyVerification" }), async (req: Request, res: Response) => {
     try {
       const { address, city, state, zip } = req.body;
       

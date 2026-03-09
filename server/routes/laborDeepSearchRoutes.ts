@@ -48,8 +48,7 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
    */
   app.post('/api/labor-deepsearch/labor-only',
     verifyFirebaseAuth,
-    protectDeepSearch(),
-    async (req: Request, res: Response) => {
+        async (req: Request, res: Response) => {
       const userId = req.firebaseUser?.uid;
       
       try {
@@ -115,8 +114,7 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
    */
   app.post('/api/labor-deepsearch/analyze',
     verifyFirebaseAuth,
-    protectDeepSearch(),
-    async (req: Request, res: Response) => {
+        async (req: Request, res: Response) => {
       const userId = req.firebaseUser?.uid;
       
       try {

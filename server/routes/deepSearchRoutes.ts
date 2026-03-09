@@ -51,8 +51,7 @@ export function registerDeepSearchRoutes(app: Express): void {
    */
   app.post('/api/deepsearch/refine', 
     verifyFirebaseAuth,
-    protectDeepSearch(),
-    async (req: Request, res: Response) => {
+        async (req: Request, res: Response) => {
       const userId = req.firebaseUser?.uid;
       console.log(`🔍 [DEEPSEARCH-REFINE] User: ${userId} - Nueva solicitud`);
       
@@ -283,8 +282,7 @@ export function registerDeepSearchRoutes(app: Express): void {
    */
   app.post('/api/deepsearch/materials-only',
     verifyFirebaseAuth,
-    protectDeepSearch(),
-    async (req: Request, res: Response) => {
+        async (req: Request, res: Response) => {
       const userId = req.firebaseUser?.uid;
       
       try {
@@ -375,8 +373,7 @@ export function registerDeepSearchRoutes(app: Express): void {
    */
   app.post('/api/deepsearch/estimate-integration',
     verifyFirebaseAuth,
-    protectDeepSearch(),
-    async (req: Request, res: Response) => {
+        async (req: Request, res: Response) => {
       const userId = req.firebaseUser?.uid;
       
       try {

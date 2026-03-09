@@ -5369,28 +5369,12 @@ This link provides a professional view of your estimate that you can access anyt
                               <div className="text-xs font-mono text-cyan-400 tracking-wider">
                                 SELECT.SEARCH.TYPE
                               </div>
-                              {featureAccess.canUseDeepsearch() && (
-                                <div className="flex flex-col gap-1">
-                                  <div className="flex items-center gap-1.5">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-                                    <span className="text-xs font-mono text-blue-400">
-                                      {(() => {
-                                        const remaining = featureAccess.remainingDeepsearch();
-                                        return remaining === -1 ? '∞' : remaining;
-                                      })()} Materials/Labor
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-1.5">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                    <span className="text-xs font-mono text-emerald-400">
-                                      {(() => {
-                                        const remaining = featureAccess.remainingDeepsearchFullCosts();
-                                        return remaining === -1 ? '∞' : remaining;
-                                      })()} Full Costs
-                                    </span>
-                                  </div>
-                                </div>
-                              )}
+                              <div className="flex items-center gap-1.5">
+                                <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                                <span className="text-xs font-mono text-cyan-400">
+                                  ⚡ credit-powered
+                                </span>
+                              </div>
                             </div>
                             <div className="h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent" />
                           </div>
