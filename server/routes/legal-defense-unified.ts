@@ -15,6 +15,7 @@ import {
   validateUsageLimit,
   incrementUsageOnSuccess 
 } from '../middleware/subscription-auth';
+import { requireCredits } from '../middleware/credit-check'; // 💳 Pure PAYG: 12 credits per contract
 import { templateService } from '../templates/templateService';
 import { featureFlags } from '../config/featureFlags';
 import { modernPdfService } from '../services/ModernPdfService';
@@ -41,13 +42,15 @@ const contractGenerator = new HybridContractGenerator();
 /**
  * UNIFIED CONTRACT GENERATION ENDPOINT
  * Consolidates all previous endpoints into one optimized pipeline
- * 🔐 ENTERPRISE SECURITY: CRITICAL - Now fully protected
+ * ✅ PAYG MIGRATION: Plan gate removed. Any user with 12 credits ($1.20) can generate a contract.
+ * Middleware chain: auth → credit check (12 credits) → usage tracking → handler
  */
 router.post('/generate-contract',
-  verifyFirebaseAuth, // ✅ Auth required
-  requireLegalDefenseAccess, // ✅ Bloquea Primo Chambeador
-  validateUsageLimit('contracts'), // ✅ Valida límite
-  incrementUsageOnSuccess('contracts'), // ✅ Cuenta el uso
+  verifyFirebaseAuth,                            // ✅ Auth required
+  requireLegalDefenseAccess,                     // ✅ PAYG: now only checks auth, no plan gate
+  requireCredits({ featureName: 'contract' }),   // 💳 12 credits = $1.20 per contract
+  validateUsageLimit('contracts'),               // ✅ Tracks usage for plan limits
+  incrementUsageOnSuccess('contracts'),          // ✅ Increments usage counter
   async (req, res) => {
   console.log('🛡️ [UNIFIED] Starting optimized contract generation...');
   const startTime = Date.now();
@@ -129,9 +132,9 @@ router.post('/generate-contract',
  */
 router.post('/extract-pdf', 
   upload.single('pdf'),
-  verifyFirebaseAuth, // ✅ Auth required
-  requireLegalDefenseAccess, // ✅ Bloquea Primo Chambeador
-  async (req, res) => {
+  verifyFirebaseAuth,                          // ✅ Auth required
+  requireLegalDefenseAccess,                   // ✅ PAYG: auth only, no plan gate
+  async (req, res) => { // 💡 PDF extraction is FREE (no credit cost — just parsing)
   console.log('🔍 [LEGAL-DEFENSE] Starting PDF extraction for Legal Defense...');
   
   try {
@@ -180,9 +183,9 @@ router.post('/extract-pdf',
  */
 router.post('/extract-and-process', 
   upload.single('pdf'),
-  verifyFirebaseAuth, // ✅ Auth required
-  requireLegalDefenseAccess, // ✅ Bloquea Primo Chambeador
-  async (req, res) => {
+  verifyFirebaseAuth,                          // ✅ Auth required
+  requireLegalDefenseAccess,                   // ✅ PAYG: auth only, no plan gate
+  async (req, res) => { // 💡 PDF extraction is FREE (no credit cost — just parsing)
   console.log('🔍 [UNIFIED] Starting PDF extraction and processing...');
   
   try {
@@ -691,7 +694,8 @@ router.get('/templates/:templateId',
 // POST generate document from template
 router.post('/templates/:templateId/generate',
   verifyFirebaseAuth,
-  requireLegalDefenseAccess,
+  requireLegalDefenseAccess,                     // ✅ PAYG: auth only, no plan gate
+  requireCredits({ featureName: 'contract' }),   // 💳 12 credits = $1.20 per contract
   validateUsageLimit('contracts'),
   incrementUsageOnSuccess('contracts'),
   async (req, res) => {
@@ -788,7 +792,8 @@ router.post('/templates/:templateId/generate',
  */
 router.post('/generate-pdf-native',
   verifyFirebaseAuth,
-  requireLegalDefenseAccess,
+  requireLegalDefenseAccess,                     // ✅ PAYG: auth only, no plan gate
+  requireCredits({ featureName: 'contract' }),   // 💳 12 credits = $1.20 per contract
   validateUsageLimit('contracts'),
   incrementUsageOnSuccess('contracts'),
   async (req, res) => {
@@ -861,7 +866,8 @@ router.post('/generate-pdf-native',
  */
 router.post('/templates/:templateId/generate-pdf',
   verifyFirebaseAuth,
-  requireLegalDefenseAccess,
+  requireLegalDefenseAccess,                     // ✅ PAYG: auth only, no plan gate
+  requireCredits({ featureName: 'contract' }),   // 💳 12 credits = $1.20 per contract
   validateUsageLimit('contracts'),
   incrementUsageOnSuccess('contracts'),
   async (req, res) => {
@@ -985,7 +991,8 @@ router.post('/templates/:templateId/generate-pdf',
  */
 router.post('/templates/:templateId/generate-document',
   verifyFirebaseAuth,
-  requireLegalDefenseAccess,
+  requireLegalDefenseAccess,                     // ✅ PAYG: auth only, no plan gate
+  requireCredits({ featureName: 'contract' }),   // 💳 12 credits = $1.20 per contract
   validateUsageLimit('contracts'),
   incrementUsageOnSuccess('contracts'),
   async (req, res) => {

@@ -65,6 +65,12 @@ const createPaymentSchema = z.object({
   referenceNumber: z.string().optional().nullable(),
   paymentDate: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
+  /**
+   * Fee Pass-Through Toggle (Decisión 2 — PAYG Strategy)
+   * true  = Client pays the 0.5% platform fee (amount is grossed up)
+   * false = Contractor absorbs the 0.5% platform fee (default)
+   */
+  feePassThrough: z.boolean().optional().default(false),
 });
 
 // Schema for quick payment link
@@ -173,6 +179,7 @@ router.post("/create",
       dueDate: validatedData.dueDate
         ? new Date(validatedData.dueDate)
         : undefined,
+      feePassThrough: validatedData.feePassThrough ?? false, // 💰 Fee pass-through toggle
     });
 
     // Auto-send payment link email if requested and payment link was created

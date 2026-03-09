@@ -58,6 +58,8 @@ const WebAuthnPopup = lazy(() => import('./pages/WebAuthnPopup'));
 const HelpCenter = lazy(() => import('./pages/help/HelpCenter'));
 const HelpArticle = lazy(() => import('./pages/help/HelpArticle'));
 const GetSupport = lazy(() => import('./pages/help/GetSupport'));
+// 💰 Public Checkout — Client-facing payment page with tip support (no auth required)
+const PublicCheckout = lazy(() => import('./pages/PublicCheckout'));
 
 // Context providers - load statically as they're needed early
 import { AuthSessionProvider } from "@/components/auth/AuthSessionProvider";
@@ -208,6 +210,9 @@ function PublicOnlyRouter() {
       
       {/* Public contract verification route - COMPLETELY ISOLATED */}
       <Route path="/verify" component={ContractVerification} />
+
+      {/* 💰 Public Client Payment Checkout with Tip Support — No auth required */}
+      <Route path="/pay/:paymentId" component={() => <Suspense fallback={<PageLoadingSpinner />}><PublicCheckout /></Suspense>} />
       
       {/* No match for public-only routes */}
       <Route component={() => null} />
@@ -426,7 +431,8 @@ function App() {
     currentPath.startsWith('/estimate/') ||
     currentPath.startsWith('/shared-estimate/') ||
     currentPath.startsWith('/sign/') ||
-    currentPath.startsWith('/verify');
+    currentPath.startsWith('/verify') ||
+    currentPath.startsWith('/pay/'); // 💰 Public client payment checkout with tip support
 
   // 🔍 DEBUG: Log routing decision (remove in production)
   console.log('🔒 [ROUTING-DECISION]', {

@@ -77,14 +77,11 @@ const CyberpunkContractGenerator = () => {
     }
   });
 
-  // Mutación para generar contrato con validación de permisos
+  // Mutación para generar contrato — PAYG: cualquier usuario autenticado con créditos puede generar
   const generateContractMutation = useMutation({
     mutationFn: async (data: Record<string, any>) => {
-      // SECURITY: Verificar permisos antes de generar
-      if (!canUse('contracts')) {
-        throw new Error('No tienes permisos suficientes para generar contratos');
-      }
-      
+      // ✅ PAYG MIGRATION: Plan gate removed. Credit check happens on the backend.
+      // Any authenticated user with 12 credits ($1.20) can generate a legal contract.
       const template = contractTemplateQuery.data || "";
       const result = await generateContractWithAnthropic(data, template, 'professional');
       
@@ -107,10 +104,15 @@ const CyberpunkContractGenerator = () => {
         throw new Error(result.error || 'Error generating contract');
       }
     },
-    onError: (error) => {
-      const errorMessage = error.message;
-      if (errorMessage.includes('permisos')) {
-        showUpgradeModal('contracts', 'Necesitas un plan superior para generar más contratos');
+    onError: (error: any) => {
+      const errorMessage = error.message || '';
+      // Handle insufficient credits error from backend
+      if (errorMessage.includes('INSUFFICIENT_CREDITS') || errorMessage.includes('créditos') || errorMessage.includes('credits')) {
+        toast({
+          title: "💳 Créditos Insuficientes",
+          description: "Necesitas 12 créditos ($1.20) para generar un contrato. Recarga tu billetera.",
+          variant: "destructive",
+        });
       } else {
         toast({
           title: "Error de Generación",

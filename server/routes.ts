@@ -123,6 +123,7 @@ import { registerRobustFirebaseAuthRoutes } from "./routes/robust-firebase-auth"
 import userProfileRoutes from "./routes/user-profile-routes"; // Import user profile routes
 import openaiChatRoutes from "./routes/openai-chat-routes"; // Import OpenAI chat routes
 import contractorPaymentRoutes from "./routes/contractor-payment-routes"; // Import contractor payment routes
+import publicCheckoutRoutes from "./routes/public-checkout-routes"; // 💰 Public client-facing checkout with tip support
 import estimatesRoutes from "./routes/estimates"; // Import new estimates routes
 import estimatesFirebaseRoutes from "./routes/estimates-firebase"; // Import Firebase estimates routes
 import contractsFirebaseRoutes from "./routes/contracts-firebase"; // Import Firebase contracts routes
@@ -1963,6 +1964,8 @@ ENHANCED LEGAL CLAUSE:`;
   // Registrar rutas del sistema de pagos para contratistas
   // Contractor Payment Routes with FIREBASE authentication middleware
   app.use("/api/contractor-payments", contractorPaymentRoutes); // REMOVED AUTH
+  // 💰 Public Checkout Routes — Client-facing payment page with optional tip (NO AUTH REQUIRED)
+  app.use("/api/public-checkout", publicCheckoutRoutes);
 
   // Registrar rutas de health check de Stripe
   console.log("🔍 [STRIPE-HEALTH] Registrando endpoints de health check...");

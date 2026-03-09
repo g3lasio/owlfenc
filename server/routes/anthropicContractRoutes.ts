@@ -9,6 +9,7 @@ import {
   validateUsageLimit,
   incrementUsageOnSuccess 
 } from '../middleware/subscription-auth';
+import { requireCredits } from '../middleware/credit-check'; // 💳 Pure PAYG: 12 credits per contract
 
 const router = Router();
 
@@ -19,11 +20,13 @@ const anthropic = new Anthropic({
 
 /**
  * Endpoint para generar contratos usando Anthropic Claude
- * 🔐 SECURITY FIX: Added full contract protection middleware
+ * ✅ PAYG MIGRATION: Plan gate removed. Any user with 12 credits ($1.20) can generate a contract.
+ * Middleware chain: auth → credit check (12 credits) → usage tracking → handler
  */
 router.post('/generate-contract', 
   verifyFirebaseAuth,
-  requireLegalDefenseAccess,
+  requireLegalDefenseAccess,       // ✅ PAYG: now only checks auth, no plan gate
+  requireCredits({ featureName: 'contract' }), // 💳 12 credits = $1.20 per contract
   validateUsageLimit('contracts'),
   incrementUsageOnSuccess('contracts'),
   async (req, res) => {
