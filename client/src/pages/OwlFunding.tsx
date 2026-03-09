@@ -33,16 +33,17 @@ export default function OwlFunding() {
   const [, navigate] = useLocation();
   const { currentUser } = useAuth();
   
-  // Verificar si tiene acceso a Owl Funding (solo planes pagados)
-  const hasOwlFundingAccess = userPlan?.id !== 5; // Todos excepto Primo Chambeador
+  // ✅ Pure PAYG: Owl Funding is open to ALL authenticated users (wallet universal)
+  // No plan restriction — any user can access this page regardless of plan
+  const hasOwlFundingAccess = true; // Removed plan gate per PAYG migration
   
   // Link personalizado para el contratista
   const personalizedLink = currentUser?.email 
     ? `${window.location.origin}/fund/${currentUser.email.split('@')[0]}`
     : `${window.location.origin}/fund/contractor`;
 
-  // Si el usuario no tiene acceso, mostrar mensaje de upgrade
-  if (!hasOwlFundingAccess) {
+  // ✅ Pure PAYG: gate removed — all users have access to Owl Funding
+  if (false) { // DISABLED: was plan-based gate, now open to all authenticated users
     return (
       <div className="container mx-auto p-6">
         <div className="max-w-4xl mx-auto">

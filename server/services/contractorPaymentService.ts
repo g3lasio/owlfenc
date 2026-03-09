@@ -221,10 +221,12 @@ export class ContractorPaymentService {
         stripeAccount: user.stripeConnectAccountId,
       });
 
-      const platformFee = (roundedAmount * 0.005 / 100).toFixed(2);
-      const totalAmount = (roundedAmount / 100).toFixed(2);
+      // ✅ FIXED: roundedAmount is in cents. Divide by 100 once to get dollar display value.
+      const platformFeeCents = Math.round(roundedAmount * 0.005); // 0.5% in cents
+      const platformFeeDisplay = (platformFeeCents / 100).toFixed(2); // dollars for log
+      const totalAmountDisplay = (roundedAmount / 100).toFixed(2);
       console.log(`✅ [PAYMENT-LINK] Created checkout session for connected account: ${user.stripeConnectAccountId}`);
-      console.log(`💳 [PAYMENT-FEE] Platform fee: $${platformFee} (0.5% of $${totalAmount})`);
+      console.log(`💳 [PAYMENT-FEE] Platform fee: $${platformFeeDisplay} (0.5% of $${totalAmountDisplay})`);
 
       // Update payment with Stripe details
       await storage.updateProjectPayment(payment.id, {

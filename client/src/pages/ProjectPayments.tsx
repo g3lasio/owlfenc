@@ -113,8 +113,10 @@ const ProjectPayments: React.FC = () => {
   const { hasAccess, userPlan, showUpgradeModal } = usePermissions();
   const hasPaymentTrackingAccess = hasAccess('paymentTracking');
   
-  // CRITICAL: Payment Workflow requires BOTH paid plan AND Stripe Connect account
-  const canUsePaymentTracking = hasPaymentTrackingAccess;
+  // ✅ Pure PAYG: Payment Tracker is open to ALL authenticated users (wallet universal)
+  // No plan restriction — any user can access Payment Tracker regardless of plan
+  // Credits are charged per payment link created (via requireCredits in backend)
+  const canUsePaymentTracking = true; // Removed plan gate per PAYG migration
   
   // 🔄 Detect when user returns from Stripe onboarding and auto-refresh
   useStripeReturnHandler();
@@ -581,8 +583,8 @@ const ProjectPayments: React.FC = () => {
   // Check for data loading errors
   const hasDataErrors = projectsError || paymentsError;
 
-  // Si el usuario no tiene acceso, mostrar mensaje de upgrade completo
-  if (!canUsePaymentTracking) {
+  // ✅ Pure PAYG: gate removed — all users have access to Payment Tracker
+  if (false) { // DISABLED: was plan-based gate, now open to all authenticated users
     return (
       <div className="container mx-auto p-6">
         <div className="max-w-4xl mx-auto">
