@@ -1406,66 +1406,58 @@ console.log('🔧 [UNIFIED-ANALYSIS] Sistema híbrido registrado en /api/analysi
 
 (async () => {
 
-  // Setup server based on environment
-  try {
-    // ✅ CRITICAL FIX: Register ALL routes (including wallet PAYG) BEFORE starting the server
-    // registerRoutes is async — must await so /api/wallet/* routes register BEFORE Vite catch-all
-    // Without await, wallet routes register AFTER Vite, causing /api/wallet/* to return HTML
-    await registerRoutes(app);
-    console.log("✅ [ROUTES] All routes registered (including wallet PAYG routes)");
+  // ✅ CRITICAL FIX: Register ALL routes (including wallet PAYG) BEFORE starting the server
+  // registerRoutes is async — must await so /api/wallet/* routes register BEFORE Vite catch-all
+  // Without await, wallet routes register AFTER Vite, causing /api/wallet/* to return HTML
+  await registerRoutes(app);
+  console.log("✅ [ROUTES] All routes registered (including wallet PAYG routes)");
 
-    const port = parseInt(process.env.PORT ?? '5000', 10);
-    
-    // Create server with timeout configuration for deployment health checks
-    const server = await new Promise<any>((resolve, reject) => {
-      const httpServer = app.listen(port, "0.0.0.0", () => {
-        log(`Server started on port ${port}`);
-        console.log(`✅ Frontend available at: http://localhost:${port}/`);
-        console.log(`✅ API health check at: http://localhost:${port}/api/health`);
-        resolve(httpServer);
-      });
-      
-      // Set server timeout for better deployment compatibility
-      httpServer.timeout = 120000; // 2 minutes for deployment health checks
-      httpServer.keepAliveTimeout = 65000; // 65 seconds
-      httpServer.headersTimeout = 66000; // 66 seconds
-      
-      httpServer.on('error', (error) => {
-        console.error('Server startup error:', error);
-        reject(error);
-      });
-    });
-    
-    // 🔌 WebSocket for Mervin V2 - DEPRECATED (Nov 18, 2025)
-    // Sistema migrado completamente a OpenAI Assistants API - LUEGO MIGRADO A CLAUDE
-    // WebSocket custom removido por problemas de truncación de mensajes
-    // OpenAI Assistants API removido - ahora usa Claude Conversational
-    // const { WebSocketServer } = await import('ws');
-    // const { setupMervinWebSocket } = await import('./websocket/mervin-ws');
-    // const wss = new WebSocketServer({ server, path: '/ws/mervin-v2' });
-    // setupMervinWebSocket(wss);
-    console.log('🤖 [MERVIN] Sistema Mervin Conversational con Claude activo en /api/mervin-v2');
-    
-    // 🔗 URL SHORTENER REDIRECT - Handle /s/:shortCode redirects
-    app.get('/s/:shortCode', async (req, res) => {
-      try {
-        const { shortCode } = req.params;
-        const { UrlShortenerService } = await import('./services/urlShortenerService');
-        
-        const originalUrl = await UrlShortenerService.getOriginalUrl(shortCode);
-        
-        if (!originalUrl) {
-          return res.status(404).send('Short URL not found or expired');
-        }
-        
-        console.log(`🔗 [URL-REDIRECT] ${shortCode} → ${originalUrl}`);
-        res.redirect(originalUrl);
-      } catch (error) {
-        console.error('❌ [URL-REDIRECT] Error:', error);
-        res.status(500).send('Error processing short URL');
+  const port = parseInt(process.env.PORT ?? '5000', 10);
+
+  // 🔗 URL SHORTENER REDIRECT - Handle /s/:shortCode redirects
+  // Registered BEFORE app.listen so the route is available immediately
+  app.get('/s/:shortCode', async (req, res) => {
+    try {
+      const { shortCode } = req.params;
+      const { UrlShortenerService } = await import('./services/urlShortenerService');
+      const originalUrl = await UrlShortenerService.getOriginalUrl(shortCode);
+      if (!originalUrl) {
+        return res.status(404).send('Short URL not found or expired');
       }
+      console.log(`🔗 [URL-REDIRECT] ${shortCode} → ${originalUrl}`);
+      res.redirect(originalUrl);
+    } catch (error) {
+      console.error('❌ [URL-REDIRECT] Error:', error);
+      res.status(500).send('Error processing short URL');
+    }
+  });
+
+  // Start the HTTP server ONCE — outside of try/catch.
+  // Vite/production setup errors must NOT trigger a second app.listen() call.
+  const server = await new Promise<any>((resolve, reject) => {
+    const httpServer = app.listen(port, "0.0.0.0", () => {
+      log(`Server started on port ${port}`);
+      console.log(`✅ Frontend available at: http://localhost:${port}/`);
+      console.log(`✅ API health check at: http://localhost:${port}/api/health`);
+      resolve(httpServer);
     });
-    
+
+    // Set server timeout for better deployment compatibility
+    httpServer.timeout = 120000; // 2 minutes for deployment health checks
+    httpServer.keepAliveTimeout = 65000; // 65 seconds
+    httpServer.headersTimeout = 66000; // 66 seconds
+
+    httpServer.on('error', (error: any) => {
+      console.error('Server startup error:', error);
+      reject(error);
+    });
+  });
+
+  // Setup Vite (dev) or production static files.
+  // Errors here are non-fatal — the server is already running and API routes work.
+  try {
+    console.log('🤖 [MERVIN] Sistema Mervin Conversational con Claude activo en /api/mervin-v2');
+
     // Only setup Vite in development mode
     if (process.env.NODE_ENV !== 'production') {
       await setupVite(app, server);
@@ -1476,40 +1468,35 @@ console.log('🔧 [UNIFIED-ANALYSIS] Sistema híbrido registrado en /api/analysi
       setupProductionErrorHandlers();
       console.log('📄 Frontend served from production build');
     }
-    
-    console.log('✅ OWL FENCE AI PLATFORM READY FOR DEPLOYMENT!');
-    console.log('📊 Multi-tenant contractor management system active');
-    console.log('🎯 Professional contract generation and email delivery enabled');
-    
-    // ⚡ PERFORMANCE OPTIMIZATION: Pre-warm the browser pool for signature PDFs
-    // This runs async after server startup to eliminate cold-start latency for clients
-    import('./services/premiumPdfService').then(({ warmupBrowserPool }) => {
-      warmupBrowserPool().catch(err => {
-        console.warn('⚠️ [STARTUP] Browser pool warmup failed:', err.message);
-      });
-    });
-    
-    // Add error handler after all routes and Vite setup
-    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-      const status = err.status || err.statusCode || 500;
-      const message = err.message || "Internal Server Error";
-      
-      console.error('Error handler:', err);
-      res.status(status).json({ message });
-      // No lanzar el error en producción
-      if (process.env.NODE_ENV !== 'production') {
-        throw err;
-      }
-    });
-    
-  } catch (error) {
-    console.error('Server setup error:', error instanceof Error ? error.message : String(error));
-    // Fallback: start basic server without Vite
-    const server = app.listen(parseInt(process.env.PORT || '5000', 10), "0.0.0.0", () => {
-      log(`Fallback server started on port ${process.env.PORT || '5000'}`);
-      console.log('⚠️ Running in fallback mode - some features may be limited');
-    });
+  } catch (viteError) {
+    // Vite failed to start, but the HTTP server and all API routes are already running.
+    // Log the error and continue — the app is functional without the frontend dev server.
+    console.error('⚠️ [STARTUP] Vite/production setup failed (non-fatal):', viteError instanceof Error ? viteError.message : String(viteError));
+    console.warn('⚠️ Running without frontend dev server — API routes are still active');
   }
-  
+
+  console.log('✅ OWL FENCE AI PLATFORM READY FOR DEPLOYMENT!');
+  console.log('📊 Multi-tenant contractor management system active');
+  console.log('🎯 Professional contract generation and email delivery enabled');
+
+  // ⚡ PERFORMANCE OPTIMIZATION: Pre-warm the browser pool for signature PDFs
+  // This runs async after server startup to eliminate cold-start latency for clients
+  import('./services/premiumPdfService').then(({ warmupBrowserPool }) => {
+    warmupBrowserPool().catch((err: any) => {
+      console.warn('⚠️ [STARTUP] Browser pool warmup failed:', err.message);
+    });
+  });
+
+  // Add error handler after all routes and Vite setup
+  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+    const status = err.status || err.statusCode || 500;
+    const message = err.message || "Internal Server Error";
+    console.error('Error handler:', err);
+    res.status(status).json({ message });
+    // No lanzar el error en producción
+    if (process.env.NODE_ENV !== 'production') {
+      throw err;
+    }
+  });
 
 })();
