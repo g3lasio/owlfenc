@@ -18,6 +18,7 @@ import { stripeTopUpService } from '../services/stripeTopUpService';
 import { billingModeService } from '../services/billingModeService';
 import { FEATURE_CREDIT_COSTS } from '@shared/schema';
 import { requireAuth } from '../middleware/unified-session-auth';
+import { pool } from '../db';
 
 const router = Router();
 
@@ -48,16 +49,74 @@ router.get('/balance', requireAuth, async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    const walletData = await walletService.getWalletBalance(firebaseUid);
-    console.log(`💰 [WALLET-BALANCE] uid=${firebaseUid} balance=${walletData.balance} earned=${walletData.totalEarned}`);
+    // PRIMARY: Use raw pool.query for reliability during cold start.
+    // Drizzle WebSocket pool can silently return empty results on first connection,
+    // causing getOrCreateWallet to attempt a duplicate INSERT (fails with UNIQUE constraint)
+    // and returning balance=0 instead of the real balance.
+    let balance = 0;
+    let totalEarned = 0;
+    let totalSpent = 0;
+    let isLocked = false;
+    let recentTransactions: any[] = [];
 
+    if (pool) {
+      try {
+        const walletResult = await pool.query(
+          'SELECT balance_credits, total_credits_earned, total_credits_spent, is_locked FROM wallet_accounts WHERE firebase_uid = $1 LIMIT 1',
+          [firebaseUid]
+        );
+        if (walletResult.rows.length > 0) {
+          const row = walletResult.rows[0];
+          balance = row.balance_credits ?? 0;
+          totalEarned = row.total_credits_earned ?? 0;
+          totalSpent = row.total_credits_spent ?? 0;
+          isLocked = row.is_locked ?? false;
+          console.log(`💰 [WALLET-BALANCE-RAW] uid=${firebaseUid} balance=${balance} earned=${totalEarned}`);
+        } else {
+          // No wallet yet — create via service (new user)
+          console.log(`⚠️ [WALLET-BALANCE] No wallet found for ${firebaseUid}, creating via service...`);
+          const walletData = await walletService.getWalletBalance(firebaseUid);
+          balance = walletData.balance;
+          totalEarned = walletData.totalEarned;
+          totalSpent = walletData.totalSpent;
+          isLocked = walletData.isLocked;
+          recentTransactions = walletData.recentTransactions;
+        }
+        // Get recent transactions via raw query
+        if (recentTransactions.length === 0) {
+          const txResult = await pool.query(
+            'SELECT * FROM wallet_transactions WHERE firebase_uid = $1 ORDER BY created_at DESC LIMIT 10',
+            [firebaseUid]
+          );
+          recentTransactions = txResult.rows;
+        }
+      } catch (poolError) {
+        console.error('⚠️ [WALLET-BALANCE] pool.query failed, falling back to Drizzle:', poolError);
+        const walletData = await walletService.getWalletBalance(firebaseUid);
+        balance = walletData.balance;
+        totalEarned = walletData.totalEarned;
+        totalSpent = walletData.totalSpent;
+        isLocked = walletData.isLocked;
+        recentTransactions = walletData.recentTransactions;
+      }
+    } else {
+      // No pool available — use Drizzle service
+      const walletData = await walletService.getWalletBalance(firebaseUid);
+      balance = walletData.balance;
+      totalEarned = walletData.totalEarned;
+      totalSpent = walletData.totalSpent;
+      isLocked = walletData.isLocked;
+      recentTransactions = walletData.recentTransactions;
+    }
+
+    console.log(`💰 [WALLET-BALANCE] uid=${firebaseUid} balance=${balance} earned=${totalEarned}`);
     return res.json({
       success: true,
-      balance: walletData.balance,
-      totalEarned: walletData.totalEarned,
-      totalSpent: walletData.totalSpent,
-      isLocked: walletData.isLocked,
-      recentTransactions: walletData.recentTransactions,
+      balance,
+      totalEarned,
+      totalSpent,
+      isLocked,
+      recentTransactions,
     });
 
   } catch (error) {
