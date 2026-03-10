@@ -44,6 +44,17 @@ export async function setupVite(app: Express, server: Server) {
   app.use("*", async (req, res, next) => {
     const url = req.originalUrl;
 
+    // Never intercept API routes — let Express handle them properly
+    // This prevents the Vite catch-all from returning HTML for API requests
+    if (
+      url.startsWith('/api/') ||
+      url.startsWith('/auth/') ||
+      url.startsWith('/webhook') ||
+      url.startsWith('/s/')
+    ) {
+      return next();
+    }
+
     try {
       const clientTemplate = path.resolve(
         import.meta.dirname,

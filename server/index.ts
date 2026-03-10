@@ -1044,7 +1044,7 @@ app.post('/api/generate-contract-html', async (req, res) => {
 });
 
 // 🔧 Registrar rutas principales (incluye AI enhancement y DeepSearch)
-registerRoutes(app);
+// registerRoutes(app) moved to async block below — await is required for wallet routes to register before Vite
 
 // 🔧 Registrar rutas centralizadas DESPUÉS del middleware de body-parser
 app.use("/api/centralized-email", centralizedEmailRoutes);
@@ -1408,6 +1408,12 @@ console.log('🔧 [UNIFIED-ANALYSIS] Sistema híbrido registrado en /api/analysi
 
   // Setup server based on environment
   try {
+    // ✅ CRITICAL FIX: Register ALL routes (including wallet PAYG) BEFORE starting the server
+    // registerRoutes is async — must await so /api/wallet/* routes register BEFORE Vite catch-all
+    // Without await, wallet routes register AFTER Vite, causing /api/wallet/* to return HTML
+    await registerRoutes(app);
+    console.log("✅ [ROUTES] All routes registered (including wallet PAYG routes)");
+
     const port = parseInt(process.env.PORT ?? '5000', 10);
     
     // Create server with timeout configuration for deployment health checks
