@@ -55,8 +55,11 @@ function TransactionIcon({ type }: { type: WalletTransaction['type'] }) {
 // TRANSACTION ROW
 // ================================
 function TransactionRow({ tx }: { tx: WalletTransaction }) {
-  const isCredit = tx.amountCredits > 0;
-  const date = new Date(tx.createdAt).toLocaleDateString('en-US', {
+  // Defensive: handle null/undefined amountCredits from legacy or raw SQL rows
+  const amount = tx.amountCredits ?? 0;
+  const isCredit = amount > 0;
+  const dateValue = tx.createdAt ? new Date(tx.createdAt) : new Date();
+  const date = dateValue.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
@@ -92,7 +95,7 @@ function TransactionRow({ tx }: { tx: WalletTransaction }) {
         'text-sm font-mono font-bold flex-shrink-0',
         isCredit ? 'text-green-400' : 'text-cyan-300'
       )}>
-        {isCredit ? '+' : ''}{tx.amountCredits.toLocaleString()}
+        {isCredit ? '+' : ''}{amount.toLocaleString()}
       </div>
     </div>
   );

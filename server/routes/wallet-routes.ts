@@ -88,7 +88,22 @@ router.get('/balance', requireAuth, async (req: Request, res: Response) => {
             'SELECT * FROM wallet_transactions WHERE firebase_uid = $1 ORDER BY created_at DESC LIMIT 10',
             [firebaseUid]
           );
-          recentTransactions = txResult.rows;
+          // Map snake_case DB columns to camelCase for frontend compatibility
+          recentTransactions = txResult.rows.map((row: any) => ({
+            id: row.id,
+            walletId: row.wallet_id,
+            userId: row.user_id,
+            firebaseUid: row.firebase_uid,
+            type: row.type,
+            direction: row.direction,
+            amountCredits: row.amount_credits ?? 0,
+            balanceAfter: row.balance_after ?? 0,
+            featureName: row.feature_name,
+            resourceId: row.resource_id,
+            description: row.description,
+            metadata: row.metadata,
+            createdAt: row.created_at,
+          }));
         }
       } catch (poolError) {
         console.error('⚠️ [WALLET-BALANCE] pool.query failed, falling back to Drizzle:', poolError);
