@@ -9,7 +9,7 @@ import {
   validateUsageLimit,
   incrementUsageOnSuccess 
 } from '../middleware/subscription-auth';
-import { requireCredits } from '../middleware/credit-check'; // 💳 Pure PAYG: 12 credits per contract
+import { requireCredits, deductFeatureCredits } from '../middleware/credit-check'; // 💳 Pure PAYG: 12 credits per contract
 
 const router = Router();
 
@@ -107,6 +107,8 @@ Output high-quality HTML using the specified CSS classes and professional format
     // Analizar mejoras aplicadas
     const enhancements = analyzeContractEnhancements(html, enhancementLevel);
 
+    // 💳 PAYG: Deduct credits AFTER successful contract generation
+    await deductFeatureCredits(req, undefined, 'Contract generated via Anthropic Claude');
     res.json({
       success: true,
       html,
@@ -118,7 +120,6 @@ Output high-quality HTML using the specified CSS classes and professional format
         complianceScore: legalCompliance?.complianceScore || 0
       }
     });
-
   } catch (error) {
     console.error('Error generating contract with Anthropic:', error);
     

@@ -3776,7 +3776,7 @@ ENHANCED LEGAL CLAUSE:`;
     }
   });
 
-  app.post("/api/generate-pdf", async (req: Request, res: Response) => {
+  app.post("/api/generate-pdf", requireAuth, requireCredits({ featureName: "contract" }), async (req: Request, res: Response) => {
     try {
       console.log("🎨 [API] Processing PDF generation request...");
       console.log("Request body keys:", Object.keys(req.body));
@@ -3971,6 +3971,8 @@ ENHANCED LEGAL CLAUSE:`;
           // Otherwise return JSON response with base64 for state tracking
           const pdfBase64 = pdfBuffer.toString('base64');
           
+          // 💳 PAYG: Deduct credits AFTER successful PDF generation
+          await deductFeatureCredits(req, `${templateId}-pdf`, 'PDF generated via template registry');
           return res.json({
             success: true,
             templateId: templateId,
@@ -4302,6 +4304,8 @@ ENHANCED LEGAL CLAUSE:`;
         console.log(
           `✅ [API] Enhanced contract generated: ${pdfBuffer.length} bytes`,
         );
+        // 💳 PAYG: Deduct credits AFTER successful PDF generation
+        await deductFeatureCredits(req, undefined, 'Contract PDF generated via premium service');
         return res.send(pdfBuffer);
       } else if (req.body.html && req.body.filename) {
         console.log("📄 [API] Detected HTML format - using simple service...");
@@ -8250,6 +8254,8 @@ ENHANCED LEGAL CLAUSE:`;
         await req.trackUsage();
       }
       
+      // 💳 PAYG: Deduct credits AFTER successful PDF generation
+      await deductFeatureCredits(req, address, 'Property report PDF generated');
       console.log('✅ [PROPERTY-PDF] PDF generated successfully:', filename);
       res.send(pdfBuffer);
       
@@ -9174,7 +9180,7 @@ ENHANCED LEGAL CLAUSE:`;
   // - Automatic recycle after 3 consecutive failures
   // - Returns both HTML and PDF in single request
   // 🔐 SECURITY: Session Cookie ONLY (simple, robust, production-ready)
-  app.post("/api/contracts/generate", async (req: Request, res: Response) => {
+  app.post("/api/contracts/generate", requireCredits({ featureName: "contract" }), async (req: Request, res: Response) => {
     const startTime = Date.now();
     
     try {
@@ -9314,6 +9320,9 @@ ENHANCED LEGAL CLAUSE:`;
       }
       
       console.log(`✅ [UNIFIED-GENERATE] Success in ${result.metrics?.totalMs}ms`);
+      
+      // 💳 PAYG: Deduct credits AFTER successful contract generation
+      await deductFeatureCredits(req, result.contractId, 'Unified contract generated');
       
       // If PDF was generated, encode as base64
       const pdfBase64 = result.pdfBuffer ? result.pdfBuffer.toString('base64') : undefined;

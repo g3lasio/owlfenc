@@ -112,11 +112,8 @@ export function registerPropertyRoutes(app: Express): void {
       
       // 💳 Deduct credits AFTER successful ATTOM response
       try {
-        const uid = req.firebaseUser?.uid;
-        if (uid) {
-          await deductFeatureCredits(uid, 'propertyVerification');
-          console.log('✅ [PROPERTY-CREDITS] 15 credits deducted for propertyVerification');
-        }
+        await deductFeatureCredits(req, address, 'Property verification details');
+        console.log('✅ [PROPERTY-CREDITS] 15 credits deducted for propertyVerification');
       } catch (creditErr) {
         console.error('⚠️ [PROPERTY-CREDITS] Failed to deduct credits:', creditErr);
       }

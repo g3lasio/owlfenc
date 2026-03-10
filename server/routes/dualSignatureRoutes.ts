@@ -17,7 +17,7 @@ import {
 } from "../middleware/subscription-auth";
 import { z } from "zod";
 import { createDigitalSealHTML } from "../services/digitalCertification";
-import { requireCredits } from "../middleware/credit-check"; // PAY AS YOU GROW
+import { requireCredits, deductFeatureCredits } from "../middleware/credit-check"; // PAY AS YOU GROW
 
 const router = Router();
 
@@ -83,6 +83,8 @@ router.post("/initiate",
         "✅ [API] Dual signature initiated successfully:",
         result.contractId,
       );
+      // 💳 PAYG: Deduct credits AFTER successful operation
+      await deductFeatureCredits(req, result.contractId, 'Dual signature protocol initiated');
       res.json({
         success: true,
         contractId: result.contractId,

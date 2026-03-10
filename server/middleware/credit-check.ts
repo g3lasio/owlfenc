@@ -23,7 +23,8 @@ import { FEATURE_CREDIT_COSTS, type FeatureName } from '@shared/schema';
 // FEATURE FLAG
 // ================================
 export function isWalletEnforcementEnabled(): boolean {
-  return process.env.WALLET_ENFORCEMENT_ENABLED === 'true';
+  // Case-insensitive: accepts 'true', 'True', 'TRUE' etc.
+  return process.env.WALLET_ENFORCEMENT_ENABLED?.toLowerCase() === 'true';
 }
 
 // ================================

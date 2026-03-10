@@ -161,6 +161,8 @@ router.post('/property', requireAuth, requireCredits({ featureName: 'propertyVer
     
     console.log('✅ [SEARCH-API] Búsqueda de propiedad completada, ID:', newSearch.id);
     
+    // 💳 PAYG: Deduct credits AFTER successful property search
+    await deductFeatureCredits(req, newSearch.id, 'Property search via Firebase');
     res.json({
       ...newSearch,
       ...mockResults,
@@ -269,6 +271,8 @@ router.post('/permits', requireAuth, requireCredits({ featureName: 'permitReport
     
     console.log('✅ [SEARCH-API] Búsqueda de permisos completada, ID:', newSearch.id);
     
+    // 💳 PAYG: Deduct credits AFTER successful permit search
+    await deductFeatureCredits(req, newSearch.id, 'Permit search via Firebase');
     res.json({
       ...newSearch,
       ...mockResults,

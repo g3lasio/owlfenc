@@ -15,7 +15,7 @@ import {
   validateUsageLimit,
   incrementUsageOnSuccess 
 } from '../middleware/subscription-auth';
-import { requireCredits } from '../middleware/credit-check'; // 💳 Pure PAYG: 12 credits per contract
+import { requireCredits, deductFeatureCredits } from '../middleware/credit-check'; // 💳 Pure PAYG: 12 credits per contract
 import { templateService } from '../templates/templateService';
 import { featureFlags } from '../config/featureFlags';
 import { modernPdfService } from '../services/ModernPdfService';
@@ -106,6 +106,9 @@ router.post('/generate-contract',
     
     console.log(`✅ [UNIFIED] Contract generated in ${totalTime}ms`);
     
+    // 💳 PAYG: Deduct credits AFTER successful contract generation
+    await deductFeatureCredits(req, undefined, 'Contract generated via Legal Defense Unified');
+    
     res.json({
       success: true,
       contract: contractResult.html,
@@ -115,7 +118,6 @@ router.post('/generate-contract',
         optimized: enableOptimizations
       }
     });
-
   } catch (error) {
     console.error('❌ [UNIFIED] Contract generation error:', error);
     res.status(500).json({
