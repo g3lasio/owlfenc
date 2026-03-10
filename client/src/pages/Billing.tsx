@@ -20,6 +20,7 @@ import { IntelligentAlerts } from "@/components/ui/intelligent-alerts";
 import { EnhancedCustomerPortal } from "@/components/subscription/enhanced-customer-portal";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { UnifiedContainer, UnifiedCard, designSystem } from "@/components/ui/visual-design-system";
+import { WalletPage } from "@/pages/WalletPage";
 
 // Interfaces para tipos de datos
 interface PaymentMethod {
@@ -284,7 +285,7 @@ export default function Billing() {
 
       <Tabs defaultValue="benefits" className={designSystem.spacing.section}>
         <div className="overflow-x-auto">
-          <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full gap-2 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+          <TabsList className="grid grid-cols-2 sm:grid-cols-5 w-full gap-2 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
             <TabsTrigger 
               value="benefits" 
               className="text-xs sm:text-sm font-semibold whitespace-nowrap data-[state=active]:bg-emerald-700 data-[state=active]:text-white text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
@@ -302,6 +303,12 @@ export default function Billing() {
               className="text-xs sm:text-sm font-semibold whitespace-nowrap data-[state=active]:bg-emerald-700 data-[state=active]:text-white text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
             >
               <span className="hidden sm:inline">💳 </span>Métodos
+            </TabsTrigger>
+            <TabsTrigger 
+              value="ai-credits" 
+              className="text-xs sm:text-sm font-semibold whitespace-nowrap data-[state=active]:bg-cyan-700 data-[state=active]:text-white text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+            >
+              <span className="hidden sm:inline">⚡ </span>AI Credits
             </TabsTrigger>
             <TabsTrigger 
               value="billing-history" 
@@ -504,6 +511,11 @@ export default function Billing() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* TAB: AI CREDITS */}
+        <TabsContent value="ai-credits" className="space-y-4">
+          <WalletPage embedded={true} />
         </TabsContent>
 
         {/* TAB: USO DE BENEFICIOS */}

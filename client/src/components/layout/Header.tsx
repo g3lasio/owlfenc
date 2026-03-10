@@ -1,13 +1,12 @@
 import { Link, useLocation } from "wouter";
 import { useState, useEffect } from "react";
-// No usamos useAuth en este componente, así que removemos la importación innecesaria
-import { useToast } from "@/hooks/use-toast";
-
-
+import { useAuth } from "@/hooks/use-auth";
+import { WalletBadge } from "@/components/wallet";
 
 export default function Header() {
   const [path] = useLocation();
   const [glowPulse, setGlowPulse] = useState(false);
+  const { user } = useAuth();
 
   // Efecto para animar el pulso del logo
   useEffect(() => {
@@ -17,8 +16,6 @@ export default function Header() {
 
     return () => clearInterval(interval);
   }, []);
-
-
 
   // Verificar si estamos en la página de Materials para evitar duplicación de header
   const isMaterialsPage = path === '/materials';
@@ -37,7 +34,10 @@ export default function Header() {
         zIndex: 'var(--z-header)'
       }}
     >
-
+      {/* Espacio izquierdo para balance visual */}
+      <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
+        {/* Reservado para futuras acciones izquierda */}
+      </div>
 
       {/* Logo centrado */}
       <div className="flex-1 flex flex-col items-center justify-center">
@@ -71,10 +71,12 @@ export default function Header() {
         </Link>
       </div>
 
-      {/* Espacio derecho para mantener el balance visual */}
-      <div className="absolute right-4 top-1/2 transform -translate-y-1/2 w-12 h-12">
-        {/* Reservado para futuros elementos del header */}
-      </div>
+      {/* Wallet Badge — PAY AS YOU GROW (solo si el usuario está autenticado) */}
+      {user && (
+        <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+          <WalletBadge compact={false} />
+        </div>
+      )}
     </header>
   );
 }

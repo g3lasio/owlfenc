@@ -123,6 +123,7 @@ import { registerRobustFirebaseAuthRoutes } from "./routes/robust-firebase-auth"
 import userProfileRoutes from "./routes/user-profile-routes"; // Import user profile routes
 import openaiChatRoutes from "./routes/openai-chat-routes"; // Import OpenAI chat routes
 import contractorPaymentRoutes from "./routes/contractor-payment-routes"; // Import contractor payment routes
+import publicCheckoutRoutes from "./routes/public-checkout-routes"; // 💰 Public client-facing checkout with tip support
 import estimatesRoutes from "./routes/estimates"; // Import new estimates routes
 import estimatesFirebaseRoutes from "./routes/estimates-firebase"; // Import Firebase estimates routes
 import contractsFirebaseRoutes from "./routes/contracts-firebase"; // Import Firebase contracts routes
@@ -150,6 +151,7 @@ import { analyticsRouter } from './analytics-service'; // Import analytics servi
 import unifiedContractRoutes from "./routes/unifiedContractRoutes"; // Import Unified Contract Management routes
 import dataConsistencyRoutes from "./routes/data-consistency-routes"; // Import Data Consistency routes
 import stripeHealthRoutes from "./routes/stripe-health"; // Import Stripe Health Check routes
+import walletRoutes from "./routes/wallet-routes"; // Import Wallet routes — PAY AS YOU GROW
 import pdfContractProcessorRoutes from "./routes/pdf-contract-processor"; // Import PDF Contract Processor routes
 import centralizedEmailRoutes from "./routes/centralized-email-routes"; // Import Centralized Email routes
 import dualSignatureRoutes from "./routes/dualSignatureRoutes"; // Import Dual Signature routes
@@ -162,7 +164,9 @@ import express from "express"; // Import express to use express.raw
 // REMOVED: Firebase auth middleware for DeepSearch access
 // REMOVED: Subscription auth middleware for DeepSearch access
 import { trackAndValidateUsage } from "./middleware/usage-tracking"; // Import usage tracking middleware
-import { protectPropertyVerification } from "./middleware/subscription-protection"; // Import property verification protection
+import { walletService } from "./services/walletService"; // 💳 PAYG credit enforcement
+import { FEATURE_CREDIT_COSTS } from "../shared/wallet-schema"; // 💳 Credit cost constants
+import { requireCredits, deductFeatureCredits } from "./middleware/credit-check"; // 💳 Pure PAYG middleware
 
 // Initialize Anthropic Claude API
 // Using Claude 3.7 Sonnet as the primary model for better reasoning and agent capabilities
@@ -414,6 +418,27 @@ const setupTemplateServing = (app: Express) => {
 const upload = multer({ storage: multer.memoryStorage() });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // ================================
+  // WALLET MIGRATION — MUST RUN FIRST
+  // Ejecutar ANTES de cualquier query a la DB para garantizar que
+  // monthly_credits_grant y las tablas wallet existan cuando se usen.
+  // ================================
+  try {
+    const { runWalletMigration } = await import('./migrations/runWalletMigration');
+    const { runAirdrop } = await import('./scripts/airdropCredits');
+    
+    // 1. Ejecutar migración de Wallet (crea tablas, columnas y seeds)
+    await runWalletMigration();
+    
+    // 2. Ejecutar Airdrop de 500 créditos para usuarios existentes
+    // Es seguro de correr en cada reinicio por la idempotency key
+    await runAirdrop().catch(err => {
+      console.error('⚠️  [AIRDROP-INIT] Failed to run airdrop:', err);
+    });
+  } catch (err) {
+    console.warn('⚠️  [WALLET] Migration/Airdrop skipped at startup:', err instanceof Error ? err.message : err);
+  }
+
   // CRITICAL: Initialize secure user mapping system
   initSecureUserHelper(storage);
   const authMiddleware = new AuthMiddleware(storage);
@@ -1939,6 +1964,8 @@ ENHANCED LEGAL CLAUSE:`;
   // Registrar rutas del sistema de pagos para contratistas
   // Contractor Payment Routes with FIREBASE authentication middleware
   app.use("/api/contractor-payments", contractorPaymentRoutes); // REMOVED AUTH
+  // 💰 Public Checkout Routes — Client-facing payment page with optional tip (NO AUTH REQUIRED)
+  app.use("/api/public-checkout", publicCheckoutRoutes);
 
   // Registrar rutas de health check de Stripe
   console.log("🔍 [STRIPE-HEALTH] Registrando endpoints de health check...");
@@ -8008,7 +8035,7 @@ ENHANCED LEGAL CLAUSE:`;
     },
   );
 
-  app.get("/api/property/details", requireAuth, protectPropertyVerification(), async (req: Request, res: Response) => {
+  app.get("/api/property/details", requireAuth, requireCredits({ featureName: "propertyVerification" }), async (req: Request, res: Response) => {
     const address = req.query.address as string;
     const city = req.query.city as string;
     const state = req.query.state as string;
@@ -8142,7 +8169,7 @@ ENHANCED LEGAL CLAUSE:`;
   });
 
   // 📄 ENDPOINT: Generate comprehensive property report PDF
-  app.post("/api/property/generate-full-report-pdf", requireAuth, protectPropertyVerification(), async (req: Request, res: Response) => {
+  app.post("/api/property/generate-full-report-pdf", requireAuth, requireCredits({ featureName: "propertyVerification" }), async (req: Request, res: Response) => {
     try {
       const { address, city, state, zip } = req.body;
       
@@ -8329,7 +8356,22 @@ ENHANCED LEGAL CLAUSE:`;
       const authenticatedUserId = decodedToken.uid;
       console.log(`🔐 [PERMIT-SEARCH] Usuario autenticado: ${authenticatedUserId}`);
 
-      // Validar el esquema de la solicitud
+      // 💳 PRE-VALIDATION: Check credits BEFORE calling OpenAI (prevents free rides)
+      const permitCreditCost = FEATURE_CREDIT_COSTS.permitReport; // 15 credits
+      const affordCheck = await walletService.canAfford(authenticatedUserId, permitCreditCost);
+      if (!affordCheck.canAfford) {
+        console.log(`🚫 [PERMIT-CREDITS] Insufficient credits: has ${affordCheck.currentBalance}, needs ${permitCreditCost}`);
+        return res.status(402).json({
+          message: `Créditos insuficientes para Permit Advisor. Necesitas ${permitCreditCost} créditos, tienes ${affordCheck.currentBalance}.`,
+          error: "INSUFFICIENT_CREDITS",
+          required: permitCreditCost,
+          available: affordCheck.currentBalance,
+          deficit: affordCheck.deficit,
+        });
+      }
+      console.log(`✅ [PERMIT-CREDITS] User has ${affordCheck.currentBalance} credits, proceeding (cost: ${permitCreditCost})`);
+
+      // Validar el esquema de la solicitudd
       const permitSchema = z.object({
         address: z.string().min(5, "La dirección es demasiado corta"),
         projectType: z
@@ -8422,9 +8464,22 @@ ENHANCED LEGAL CLAUSE:`;
         console.error("Error al guardar historial de búsqueda:", historyError);
       }
 
-      console.log("===== FIN DE SOLICITUD MERVIN DEEPSEARCH =====");
+      // 💳 Deduct credits AFTER successful OpenAI response
+      try {
+        await walletService.deductCredits({
+          firebaseUid: authenticatedUserId,
+          amount: FEATURE_CREDIT_COSTS.permitReport,
+          featureName: 'permitReport',
+          description: `Permit Advisor: ${projectType} at ${address}`,
+          referenceId: `permit_${Date.now()}`,
+        });
+        console.log(`✅ [PERMIT-CREDITS] ${FEATURE_CREDIT_COSTS.permitReport} credits deducted for permitReport`);
+      } catch (creditErr) {
+        console.error('⚠️ [PERMIT-CREDITS] Failed to deduct credits (non-blocking):', creditErr);
+      }
 
-      res.json(permitData);
+      console.log("===== FIN DE SOLICITUD MERVIN DEEPSEARCH =====");
+      res.json(permitData);;
     } catch (error: any) {
       console.error("ERROR EN VERIFICACIÓN DE PERMISOS:");
       console.error("Mensaje:", error.message);
@@ -10017,6 +10072,20 @@ ENHANCED LEGAL CLAUSE:`;
       res.redirect("https://www.acornfinance.com/pre-qualify/?d=8VXLJ");
     }
   });
+
+  // ================================
+  // WALLET ROUTES — PAY AS YOU GROW
+  // ================================
+  app.use("/api/wallet", walletRoutes);
+  app.use("/api/admin/credits", walletRoutes); // Admin credit grant endpoint
+
+  // Inicializar productos de Top-Up en Stripe (idempotente)
+  try {
+    const { stripeTopUpService } = await import('./services/stripeTopUpService');
+    await stripeTopUpService.initializeTopUpProducts();
+  } catch (err) {
+    console.warn('⚠️  [WALLET] Stripe Top-Up product initialization skipped:', err instanceof Error ? err.message : err);
+  }
 
   // Crear y retornar el servidor HTTP
   const server = createServer(app);

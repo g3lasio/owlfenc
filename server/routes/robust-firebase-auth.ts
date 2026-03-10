@@ -95,6 +95,21 @@ export function registerRobustFirebaseAuthRoutes(app: any) {
         } catch (emailError) {
           console.error('⚠️ [ROBUST-AUTH] Welcome email failed (non-blocking):', emailError);
         }
+
+        // 🎁 Welcome Bonus: 120 créditos de bienvenida (idempotente)
+        try {
+          const { walletService } = await import('../services/walletService');
+          await walletService.addCredits({
+            firebaseUid,
+            amount: 120,
+            type: 'grant',
+            description: '🎁 Welcome Bonus: 120 AI Credits — On us',
+            idempotencyKey: `welcome_bonus_120:${firebaseUid}`,
+          });
+          console.log(`✅ [WELCOME-BONUS] 120 credits granted to new user: ${email}`);
+        } catch (walletError) {
+          console.error('⚠️  [WELCOME-BONUS] Failed to grant welcome credits (non-blocking):', walletError);
+        }
       } else if (!subscription && !isNewUser) {
         console.log(`🔒 [ROBUST-AUTH] Usuario existente ${email} sin suscripción - Debe elegir plan`);
       }

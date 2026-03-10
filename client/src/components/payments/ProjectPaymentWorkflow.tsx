@@ -184,6 +184,10 @@ export default function ProjectPaymentWorkflow({
     notes: "",
     // Email settings
     autoSendEmail: true,
+    // 💰 Fee Pass-Through Toggle (Decisión 2 — PAYG Strategy)
+    // false = contractor absorbs 0.5% fee (default)
+    // true  = client pays the 0.5% fee (amount is grossed up)
+    feePassThrough: false,
   });
   
   const [generatedLink, setGeneratedLink] = useState<string>("");
@@ -291,6 +295,7 @@ export default function ProjectPaymentWorkflow({
       // Auto-send email flag for payment links
       ...(paymentMethod === "link" && {
         autoSendEmail: paymentConfig.autoSendEmail,
+        feePassThrough: paymentConfig.feePassThrough, // 💰 Fee pass-through toggle
       }),
       // Manual payment specific
       ...(paymentMethod === "manual" && {
@@ -757,6 +762,34 @@ export default function ProjectPaymentWorkflow({
                       placeholder="client@example.com"
                       data-testid="input-client-email"
                     />
+
+                    {/* 💰 Fee Pass-Through Toggle */}
+                    <div className="bg-gray-700/50 border border-gray-600 rounded-lg p-3 mt-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 mr-3">
+                          <div className="text-white text-sm font-medium flex items-center gap-2">
+                            <span>💰</span>
+                            <span>¿Quién absorbe la tarifa de plataforma (0.5%)?</span>
+                          </div>
+                          <div className="text-gray-400 text-xs mt-1">
+                            {paymentConfig.feePassThrough
+                              ? `✅ Cliente paga la tarifa — Tú recibes exactamente $${parseFloat(paymentConfig.amount || '0').toFixed(2)}`
+                              : `⚠️ Tú absorbes la tarifa — Recibes $${(parseFloat(paymentConfig.amount || '0') * 0.995).toFixed(2)} de $${parseFloat(paymentConfig.amount || '0').toFixed(2)}`
+                            }
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-center gap-1">
+                          <Switch
+                            checked={paymentConfig.feePassThrough}
+                            onCheckedChange={(checked) => setPaymentConfig({ ...paymentConfig, feePassThrough: checked })}
+                            data-testid="toggle-fee-pass-through"
+                          />
+                          <span className="text-xs text-gray-400">
+                            {paymentConfig.feePassThrough ? 'Cliente' : 'Yo'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
 

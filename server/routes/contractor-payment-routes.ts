@@ -25,6 +25,7 @@ function getErrorStatusCode(errorMessage: string): number {
 // Use Firebase Authentication instead of JWT
 import { verifyFirebaseAuth } from "../middleware/firebase-auth";
 import { requireSubscriptionLevel, PermissionLevel } from "../middleware/subscription-auth";
+import { requireCredits } from "../middleware/credit-check"; // 💳 Pure PAYG: credit-based access
 
 // DEPRECATED: Using Firebase Auth instead of JWT
 export const authenticateJWT = verifyFirebaseAuth;
@@ -64,6 +65,12 @@ const createPaymentSchema = z.object({
   referenceNumber: z.string().optional().nullable(),
   paymentDate: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
+  /**
+   * Fee Pass-Through Toggle (Decisión 2 — PAYG Strategy)
+   * true  = Client pays the 0.5% platform fee (amount is grossed up)
+   * false = Contractor absorbs the 0.5% platform fee (default)
+   */
+  feePassThrough: z.boolean().optional().default(false),
 });
 
 // Schema for quick payment link
@@ -93,7 +100,7 @@ const manualPaymentSchema = z.object({
 router.post(
   "/projects/:projectId/payment-structure",
   isAuthenticated,
-  requireSubscriptionLevel(PermissionLevel.BASIC),
+  // ✅ Pure PAYG: payment structure creation is free (no credit cost, just auth required)
   async (req: Request, res: Response) => {
     try {
       if (!req.firebaseUser) {
@@ -142,7 +149,10 @@ router.post(
  * Create individual payment and payment link
  * Uses Firebase projectId (string) as source of truth for project data
  */
-router.post("/create", isAuthenticated, requireSubscriptionLevel(PermissionLevel.BASIC), async (req: Request, res: Response) => {
+router.post("/create",
+  isAuthenticated,
+  requireCredits({ featureName: 'paymentLink' }), // 💳 3 créditos por Payment Link generado
+  async (req: Request, res: Response) => {
   try {
     if (!req.firebaseUser) {
       return res.status(401).json({ error: "User not authenticated" });
@@ -169,6 +179,7 @@ router.post("/create", isAuthenticated, requireSubscriptionLevel(PermissionLevel
       dueDate: validatedData.dueDate
         ? new Date(validatedData.dueDate)
         : undefined,
+      feePassThrough: validatedData.feePassThrough ?? false, // 💰 Fee pass-through toggle
     });
 
     // Auto-send payment link email if requested and payment link was created
@@ -266,7 +277,7 @@ router.post("/create", isAuthenticated, requireSubscriptionLevel(PermissionLevel
 router.post(
   "/payments",
   isAuthenticated,
-  requireSubscriptionLevel(PermissionLevel.BASIC),
+  requireCredits({ featureName: 'paymentLink' }), // 💳 3 créditos por Payment Link generado
   async (req: Request, res: Response) => {
     try {
       if (!req.firebaseUser) {
@@ -394,7 +405,7 @@ router.post(
 router.post(
   "/payments/manual",
   isAuthenticated,
-  requireSubscriptionLevel(PermissionLevel.BASIC),
+  // ✅ Pure PAYG: manual payment registration is free (no Stripe session, just record-keeping)
   async (req: Request, res: Response) => {
     try {
       if (!req.firebaseUser) {
@@ -465,7 +476,7 @@ router.post(
 router.post(
   "/payments/quick-link",
   isAuthenticated,
-  requireSubscriptionLevel(PermissionLevel.BASIC),
+  requireCredits({ featureName: 'paymentLink' }), // 💳 3 créditos por Quick Payment Link
   async (req: Request, res: Response) => {
     try {
       if (!req.firebaseUser) {
@@ -774,7 +785,7 @@ router.post("/webhooks/stripe", async (req: Request, res: Response) => {
 /**
  * Get all payments for the authenticated user
  */
-router.get("/payments", isAuthenticated, requireSubscriptionLevel(PermissionLevel.BASIC), async (req: Request, res: Response) => {
+router.get("/payments", isAuthenticated, async (req: Request, res: Response) => { // ✅ Pure PAYG: viewing payments is free
   try {
     if (!req.firebaseUser) {
       return res.status(401).json({ error: "User not authenticated" });
@@ -803,7 +814,7 @@ router.get("/payments", isAuthenticated, requireSubscriptionLevel(PermissionLeve
 /**
  * Get payment dashboard summary
  */
-router.get("/dashboard/summary", isAuthenticated, requireSubscriptionLevel(PermissionLevel.BASIC), async (req: Request, res: Response) => {
+router.get("/dashboard/summary", isAuthenticated, async (req: Request, res: Response) => { // ✅ Pure PAYG: viewing dashboard is free
   try {
     if (!req.firebaseUser) {
       return res.status(401).json({ error: "User not authenticated" });

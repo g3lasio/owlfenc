@@ -19,6 +19,18 @@ export interface CreateProjectPaymentRequest {
   clientPhone?: string;
   address?: string;
   dueDate?: Date;
+  /**
+   * Fee Pass-Through Toggle (Decisión 2 — PAYG Strategy)
+   * 
+   * When true: The 0.5% platform fee is passed to the CLIENT.
+   *   grossAmount = Math.round(netAmount / 0.995)
+   *   Client pays slightly more; contractor receives the full net amount.
+   *
+   * When false (default): The contractor absorbs the 0.5% platform fee.
+   *   grossAmount = netAmount (as entered by contractor)
+   *   Contractor receives net after platform fee deduction.
+   */
+  feePassThrough?: boolean;
 }
 
 export interface PaymentLinkResponse {
@@ -182,7 +194,29 @@ export class ContractorPaymentService {
       // For Express accounts, we create the session directly on their account
       // All payments go directly to the contractor's bank account
       // CRITICAL: unit_amount must be an integer (cents) - Stripe rejects floats
-      const roundedAmount = Math.round(request.amount);
+      const netAmount = Math.round(request.amount);
+
+      /**
+       * 💰 FEE PASS-THROUGH LOGIC (Decisión 2 — PAYG Strategy)
+       * 
+       * feePassThrough = true  → Client pays gross; contractor receives net
+       *   grossAmount = ceil(netAmount / 0.995)  → e.g. $1000 net → $1005.03 gross
+       *   application_fee_amount = grossAmount * 0.005 ≈ $5.03
+       *   Contractor receives: grossAmount - application_fee_amount ≈ $1000.00 ✅
+       * 
+       * feePassThrough = false (default) → Contractor absorbs fee
+       *   grossAmount = netAmount  → e.g. $1000 gross
+       *   application_fee_amount = $5.00
+       *   Contractor receives: $1000 - $5.00 = $995.00
+       */
+      const feePassThrough = request.feePassThrough === true;
+      const roundedAmount = feePassThrough
+        ? Math.round(netAmount / 0.995) // Gross up: client pays fee
+        : netAmount;                     // Contractor absorbs fee
+
+      const platformFeeCents = Math.round(roundedAmount * 0.005);
+      const feeMode = feePassThrough ? 'CLIENT pays fee (gross-up)' : 'CONTRACTOR absorbs fee';
+
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [
@@ -193,7 +227,7 @@ export class ContractorPaymentService {
                 name: request.description,
                 description: `Invoice #${invoiceNumber} - ${resolvedAddress}`,
               },
-              unit_amount: roundedAmount,
+              unit_amount: roundedAmount, // Gross amount (may include fee pass-through)
             },
             quantity: 1,
           },
@@ -208,15 +242,24 @@ export class ContractorPaymentService {
           type: request.type,
           invoiceNumber,
           platformUserId: request.userId.toString(),
+          feePassThrough: feePassThrough.toString(), // Track for analytics
         },
         customer_email: resolvedClientEmail || undefined,
+        payment_intent_data: {
+          // 💳 Platform fee: 0.5% of gross transaction goes to Owl Fenc platform
+          application_fee_amount: platformFeeCents,
+        },
       }, {
         // Create the session directly on the connected account
         // This ensures all funds go directly to the contractor
         stripeAccount: user.stripeConnectAccountId,
       });
 
+      const platformFeeDisplay = (platformFeeCents / 100).toFixed(2);
+      const totalAmountDisplay = (roundedAmount / 100).toFixed(2);
+      const netAmountDisplay = (netAmount / 100).toFixed(2);
       console.log(`✅ [PAYMENT-LINK] Created checkout session for connected account: ${user.stripeConnectAccountId}`);
+      console.log(`💳 [PAYMENT-FEE] Mode: ${feeMode} | Net: $${netAmountDisplay} | Gross: $${totalAmountDisplay} | Platform fee: $${platformFeeDisplay}`);
 
       // Update payment with Stripe details
       await storage.updateProjectPayment(payment.id, {

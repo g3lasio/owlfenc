@@ -1,78 +1,74 @@
 import { usePermissions as usePermissionsContext } from '@/contexts/PermissionContext';
-import { PLAN_IDS } from '@shared/permissions-config';
+import { useWallet } from '@/hooks/useWallet';
 
 // Re-export del hook desde el contexto para consistencia
 export { usePermissions } from '@/contexts/PermissionContext';
 
-// Hook auxiliar para verificaciones específicas de features
+/**
+ * 💳 Pure PAYG Feature Access Hook
+ * 
+ * All features are available to all authenticated users.
+ * Access is controlled exclusively by wallet credits (enforced on the backend).
+ * No more plan-based locks or monthly usage counters.
+ */
 export function useFeatureAccess() {
-  const { hasAccess, canUse, getRemainingUsage, isLimitReached, showUpgradeModal } = usePermissionsContext();
+  const { walletData } = useWallet();
+  const balance = walletData?.balance ?? 0;
+
+  // Helper: user can afford a feature if they have enough credits
+  const canAfford = (cost: number) => balance >= cost;
 
   return {
-    // Estimados
-    canCreateBasicEstimate: () => canUse('basicEstimates'),
-    canCreateAIEstimate: () => canUse('aiEstimates'),
-    remainingBasicEstimates: () => getRemainingUsage('basicEstimates'),
-    remainingAIEstimates: () => getRemainingUsage('aiEstimates'),
-    
-    // Deepsearch
-    canUseDeepsearch: () => canUse('deepsearch'),
-    hasDeepsearchAccess: () => hasAccess('deepsearch'),
-    remainingDeepsearch: () => getRemainingUsage('deepsearch'),
-    
-    // Deepsearch Full Costs (análisis completo - más valioso)
-    canUseDeepsearchFullCosts: () => canUse('deepsearchFullCosts'),
-    remainingDeepsearchFullCosts: () => getRemainingUsage('deepsearchFullCosts'),
-    
-    // Deepsearch Material/Labor (solo para planes pagados)
-    canUseDeepsearchMaterialsOnly: () => {
-      const { userPlan } = usePermissionsContext();
-      // FREE users (plan 5) no pueden usar Material/Labor separado
-      if (userPlan?.id === PLAN_IDS.PRIMO_CHAMBEADOR) return false;
-      return canUse('deepsearch');
-    },
-    canUseDeepsearchLaborOnly: () => {
-      const { userPlan } = usePermissionsContext();
-      // FREE users (plan 5) no pueden usar Material/Labor separado
-      if (userPlan?.id === PLAN_IDS.PRIMO_CHAMBEADOR) return false;
-      return canUse('deepsearch');
-    },
-    
-    // Contratos
-    canCreateContract: () => canUse('contracts'),
-    remainingContracts: () => getRemainingUsage('contracts'),
-    
-    // Herramientas premium
-    canUsePropertyVerifier: () => canUse('propertyVerifications'),
-    canUsePermitAdvisor: () => canUse('permitAdvisor'),
-    
-    // Sistema financiero
-    hasInvoiceAccess: () => hasAccess('invoices'),
-    hasPaymentTrackingAccess: () => hasAccess('paymentTracking'),
-    
-    // Utilidades
-    showEstimateUpgrade: () => showUpgradeModal('aiEstimates', 'Genera estimados ilimitados con IA avanzada'),
-    showContractUpgrade: () => showUpgradeModal('contracts', 'Crea contratos profesionales sin límites'),
-    showInvoiceUpgrade: () => showUpgradeModal('invoices', 'Gestiona tus pagos como un profesional'),
-    showProjectUpgrade: () => showUpgradeModal('projects', 'Administra proyectos con IA avanzada'),
-    showDeepsearchUpgrade: () => showUpgradeModal('deepsearch', '¡Búsquedas súper potentes para estimados perfectos!'),
-    showDeepsearchFullCostsUpgrade: () => showUpgradeModal('deepsearchFullCosts', '¡Análisis completos ilimitados de materiales y labor!'),
+    // Estimados — always available, backend enforces credit deduction
+    canCreateBasicEstimate: () => true,
+    canCreateAIEstimate: () => true,
+    remainingBasicEstimates: () => -1, // -1 = unlimited
+    remainingAIEstimates: () => -1,
+
+    // DeepSearch — credit-gated (10 cr partial, 20 cr full)
+    canUseDeepsearch: () => true,
+    hasDeepsearchAccess: () => true,
+    remainingDeepsearch: () => -1,
+
+    // DeepSearch Full Costs
+    canUseDeepsearchFullCosts: () => true,
+    remainingDeepsearchFullCosts: () => -1,
+
+    // DeepSearch Material/Labor — available to ALL users (credit-gated, not plan-gated)
+    canUseDeepsearchMaterialsOnly: () => true,
+    canUseDeepsearchLaborOnly: () => true,
+
+    // Contratos — always available, backend enforces credit deduction
+    canCreateContract: () => true,
+    remainingContracts: () => -1,
+
+    // Premium tools — always available, backend enforces credit deduction
+    canUsePropertyVerifier: () => true,
+    canUsePermitAdvisor: () => true,
+
+    // Financial system — always available
+    hasInvoiceAccess: () => true,
+    hasPaymentTrackingAccess: () => true,
+
+    // Upgrade modals — now redirect to wallet top-up instead of subscription
+    showEstimateUpgrade: () => {},
+    showContractUpgrade: () => {},
+    showInvoiceUpgrade: () => {},
+    showProjectUpgrade: () => {},
+    showDeepsearchUpgrade: () => {},
+    showDeepsearchFullCostsUpgrade: () => {},
   };
 }
 
 // Hook para obtener información de marcas de agua
+// Watermarks are now tied to subscription plan (paid plan = no watermark), not usage limits
 export function useWatermark() {
   const { userPlan } = usePermissionsContext();
-  
+
   const shouldShowWatermark = (feature: 'estimates' | 'contracts'): boolean => {
     if (!userPlan) return true;
-    
-    // Plan gratuito PRIMO CHAMBEADOR siempre tiene marca de agua
-    // ✅ MIGRADO: Usa constante centralizada en lugar de ID hardcoded
-    if (userPlan.id === PLAN_IDS.PRIMO_CHAMBEADOR) return true;
-    
-    // Trial y planes pagados no tienen marca de agua
-    return false;
+    // Free plan always has watermark; paid plans do not
+    return userPlan.id === 'primo_chambeador' || userPlan.id === 'free';
   };
 
   const getWatermarkText = (feature: 'estimates' | 'contracts'): string => {

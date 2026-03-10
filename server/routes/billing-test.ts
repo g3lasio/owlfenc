@@ -14,8 +14,7 @@ import { z } from 'zod';
 import { storage } from '../storage';
 import { verifyFirebaseAuth } from '../middleware/firebase-auth';
 import { userMappingService } from '../services/userMappingService';
-import { protectInvoices } from '../middleware/subscription-protection';
-import { productionUsageService } from '../services/productionUsageService';
+import { requireCredits, deductFeatureCredits } from '../middleware/credit-check'; // 💳 Pure PAYG
 
 const router = Router();
 
@@ -35,7 +34,7 @@ const GenerateInvoiceSchema = z.object({
  * Generar factura desde un proyecto - COMPLETAMENTE SEGURO
  * 🔒 SUBSCRIPTION PROTECTION: Only paid plans can create invoices
  */
-router.post('/generate-from-project', protectInvoices(), async (req: Request, res: Response) => {
+router.post('/generate-from-project', requireCredits({ featureName: 'invoice' }), async (req: Request, res: Response) => {
   try {
     const { projectId, dueDate, customMessage, paymentTerms } = GenerateInvoiceSchema.parse(req.body);
     
@@ -87,10 +86,8 @@ router.post('/generate-from-project', protectInvoices(), async (req: Request, re
     
     console.log(`✅ Factura generada exitosamente por usuario ${req.firebaseUser.uid}: ${invoiceNumber}`);
     
-    // 🔒 Track invoice usage for subscription limits
-    if (req.trackUsage) {
-      await req.trackUsage();
-    }
+    // 💳 PAYG: Deduct credits after successful invoice generation
+    await deductFeatureCredits(req, undefined, 'Invoice Generation');
     
     res.json({
       success: true,

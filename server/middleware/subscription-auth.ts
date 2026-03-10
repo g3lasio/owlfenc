@@ -249,13 +249,19 @@ export const requirePremiumFeature = (feature: string) => {
 };
 
 /**
- * 🔐 ENTERPRISE SECURITY: Legal Defense Access Validator
- * Validates that user has explicit access to Legal Defense features
- * Blocks Primo Chambeador (FREE) users completely
+ * ✅ PAYG MIGRATION: Legal Defense Access Validator
+ * Pure Pay-As-You-Go model: ANY authenticated user can access Legal Defense
+ * Access is controlled by requireCredits({ featureName: 'contract' }) — not by plan
+ * 
+ * This middleware now ONLY validates authentication and populates req.userSubscription
+ * for downstream middleware (validateUsageLimit, incrementUsageOnSuccess) to use.
+ * 
+ * Previously blocked Primo Chambeador (plan 5) — REMOVED per PAYG migration decision.
+ * Any user with sufficient credits (12 credits = $1.20) can generate a legal contract.
  */
 export const requireLegalDefenseAccess = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // 1. Verificar autenticación
+    // 1. Verificar autenticación — ONLY gate remaining
     if (!req.firebaseUser?.uid) {
       console.warn('🚨 [LEGAL-DEFENSE-SECURITY] Unauthenticated access attempt blocked');
       return res.status(401).json({
@@ -269,40 +275,27 @@ export const requireLegalDefenseAccess = async (req: Request, res: Response, nex
     const userId = req.firebaseUser.uid;
     const subscription = await getUserActiveSubscription(userId);
 
-    // 2. Determinar plan del usuario
+    // 2. Determinar plan del usuario (for downstream usage tracking only)
     let userSubscription = subscription;
     if (!userSubscription) {
-      userSubscription = { planId: PLAN_IDS.PRIMO_CHAMBEADOR, status: 'free' }; // Default: Primo Chambeador
+      userSubscription = { planId: PLAN_IDS.PRIMO_CHAMBEADOR, status: 'free' };
     }
 
     const planId = userSubscription.planId;
     const limits = getPlanLimits(planId);
 
-    // 3. Validar acceso a Legal Defense
-    if (!limits || !limits.hasLegalDefense) {
-      console.warn(`🚨 [LEGAL-DEFENSE-SECURITY] User ${userId} (Plan ${planId}) blocked - NO Legal Defense access`);
-      
-      return res.status(403).json({
-        success: false,
-        error: 'Legal Defense requiere suscripción de paga',
-        code: 'LEGAL_DEFENSE_PREMIUM_REQUIRED',
-        userPlan: planId,
-        requiredPlans: [PLAN_IDS.MERO_PATRON, PLAN_IDS.MASTER_CONTRACTOR, PLAN_IDS.FREE_TRIAL],
-        upgradeUrl: '/subscription',
-        message: planId === PLAN_IDS.PRIMO_CHAMBEADOR 
-          ? 'Usuarios de Primo Chambeador no tienen acceso a Legal Defense. Actualiza a Mero Patrón ($49.99/mes) para desbloquear 50 contratos mensuales.'
-          : 'Tu suscripción no incluye acceso a Legal Defense. Por favor actualiza tu plan.'
-      });
-    }
+    // 3. ✅ PAYG: Plan-based gate REMOVED — all authenticated users can access Legal Defense
+    // Credit check is handled by requireCredits({ featureName: 'contract' }) middleware
+    // which runs AFTER this middleware in the chain
+    console.log(`✅ [LEGAL-DEFENSE-PAYG] User ${userId} (Plan ${planId}) — plan gate bypassed, credit check will follow`);
 
-    // 4. Añadir información al request
+    // 4. Populate req.userSubscription for downstream middleware
     req.userSubscription = {
       planId: planId,
       level: PLAN_PERMISSION_LEVELS[planId as keyof typeof PLAN_PERMISSION_LEVELS] || [PermissionLevel.FREE],
-      limits: limits
+      limits: limits || {}
     };
 
-    console.log(`✅ [LEGAL-DEFENSE-SECURITY] User ${userId} (Plan ${planId}) authorized for Legal Defense`);
     next();
 
   } catch (error) {

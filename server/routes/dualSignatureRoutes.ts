@@ -17,6 +17,7 @@ import {
 } from "../middleware/subscription-auth";
 import { z } from "zod";
 import { createDigitalSealHTML } from "../services/digitalCertification";
+import { requireCredits } from "../middleware/credit-check"; // PAY AS YOU GROW
 
 const router = Router();
 
@@ -66,6 +67,7 @@ router.post("/initiate",
   verifyFirebaseAuth, // ✅ Autenticación requerida
   requireLegalDefenseAccess, // ✅ Bloquea Primo Chambeador
   validateUsageLimit('contracts'), // ✅ Valida límite de contratos
+  requireCredits({ featureName: 'signatureProtocol' }), // 💳 PAY AS YOU GROW: 8 créditos
   incrementUsageOnSuccess('contracts'), // ✅ Cuenta el uso
   async (req, res) => {
   try {
