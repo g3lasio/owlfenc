@@ -120,9 +120,9 @@ export const PLAN_LIMITS = {
     // Gestión de proyectos - BLOQUEADO
     projects: 0,                 // ❌ BLOQUEADO - puede ver página pero no detalles
     
-    // Funciones financieras - BLOQUEADO
-    invoices: 0,                 // ❌ BLOQUEADO
-    paymentTracking: 0,          // ❌ BLOQUEADO (0=disabled, 1=basic, 2=pro)
+    // Funciones financieras - PAYG (abierto con créditos)
+    invoices: 0,                 // ❌ BLOQUEADO (invoices siguen requiriendo plan pagado)
+    paymentTracking: 1,          // ✅ PAYG: abierto a todos — créditos cobrados por Payment Link
     
     // DeepSearch - Solo Full Costs disponible para Free
     deepsearch: 0,               // ❌ BLOQUEADO - Only Material/Only Labor solo para pagos
@@ -133,8 +133,8 @@ export const PLAN_LIMITS = {
     hasLegalDefense: false,      // ❌ BLOQUEADO - Demo mode (usar Free Trial)
     hasInvoices: false,          // ❌ BLOQUEADO
     hasDualSignature: false,     // ❌ NO acceso a firma digital dual (solo paid users)
-    hasPaymentTracker: false,    // ❌ NO acceso a tracking de pagos
-    hasOwlFunding: false,        // ❌ NO acceso a financiamiento
+    hasPaymentTracker: true,     // ✅ PAYG: abierto a todos los usuarios autenticados
+    hasOwlFunding: true,         // ✅ PAYG: abierto a todos los usuarios autenticados
     hasOwlAcademy: false,        // ❌ NO acceso a academia
     hasAIProjectManager: false,  // ❌ NO acceso a gestión AI de proyectos
     hasQuickBooksIntegration: false, // ❌ NO integración QuickBooks

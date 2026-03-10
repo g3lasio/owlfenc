@@ -767,20 +767,8 @@ const ProjectPayments: React.FC = () => {
 
           {/* Simplified Payment Workflow Tab */}
           <TabsContent value="workflow" className="space-y-6">
-            {!canUsePaymentTracking ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="text-center">
-                  <Lock className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-                  <p className="text-gray-400">Esta función requiere un plan pagado</p>
-                  <Button
-                    onClick={() => showUpgradeModal('paymentTracking', 'Para usar Payment Workflow necesitas un plan pagado')}
-                    className="mt-4 bg-cyan-400 text-black hover:bg-cyan-300"
-                  >
-                    Upgrade Plan
-                  </Button>
-                </div>
-              </div>
-            ) : !canUsePaymentWorkflow ? (
+            {/* ✅ PAYG: plan gate removed — open to all authenticated users */}
+            {!canUsePaymentWorkflow ? (
               <div className="flex items-center justify-center py-12">
                 <div className="text-center space-y-4">
                   <Building2 className="w-12 h-12 text-cyan-400 mx-auto" />
@@ -811,46 +799,30 @@ const ProjectPayments: React.FC = () => {
 
           {/* Payment History Tab */}
           <TabsContent value="history" className="space-y-6">
-            {canUsePaymentTracking ? (
-              <PaymentHistory
-                payments={payments}
-                projects={projects}
-                isLoading={paymentsLoading}
-                onResendPaymentLink={resendPaymentLinkMutation.mutate}
-                onRefresh={refreshData}
-              />
-            ) : (
-              <div className="flex items-center justify-center py-12">
-                <div className="text-center">
-                  <Lock className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-                  <p className="text-gray-400">Esta función requiere un plan pagado</p>
-                </div>
-              </div>
-            )}
+            {/* ✅ PAYG: plan gate removed — open to all authenticated users */}
+            <PaymentHistory
+              payments={payments}
+              projects={projects}
+              isLoading={paymentsLoading}
+              onResendPaymentLink={resendPaymentLinkMutation.mutate}
+              onRefresh={refreshData}
+            />
           </TabsContent>
 
           {/* Settings Tab */}
           <TabsContent value="settings" className="space-y-6">
-            {canUsePaymentTracking ? (
-              <PaymentSettings
-                stripeAccountStatus={stripeAccountStatus}
-                onConnectStripe={connectToStripe}
-                onRefreshStatus={async () => {
-                  // Trigger refetch and wait for completion
-                  await refetchStripeStatus();
-                  // Get the fresh data from cache
-                  const freshData = queryClient.getQueryData(["/api/contractor-payments/stripe/account-status"]);
-                  return freshData as any;
-                }}
-              />
-            ) : (
-              <div className="flex items-center justify-center py-12">
-                <div className="text-center">
-                  <Lock className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-                  <p className="text-gray-400">Esta función requiere un plan pagado</p>
-                </div>
-              </div>
-            )}
+            {/* ✅ PAYG: plan gate removed — open to all authenticated users */}
+            <PaymentSettings
+              stripeAccountStatus={stripeAccountStatus}
+              onConnectStripe={connectToStripe}
+              onRefreshStatus={async () => {
+                // Trigger refetch and wait for completion
+                await refetchStripeStatus();
+                // Get the fresh data from cache
+                const freshData = queryClient.getQueryData(["/api/contractor-payments/stripe/account-status"]);
+                return freshData as any;
+              }}
+            />
           </TabsContent>
         </Tabs>
       </div>
