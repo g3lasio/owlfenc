@@ -386,50 +386,69 @@ class WalletService {
       }
     }
 
-    // Obtener o crear wallet
+    // Obtener o crear wallet (fuera de la transacción para evitar deadlocks)
     const wallet = await this.getOrCreateWallet(params.firebaseUid);
 
-    // Actualizar balance atómicamente
+    // V7 FIX: Wrap balance update + ledger insert in a single DB transaction.
+    // Previously these were two separate queries: if the server crashed between them,
+    // the balance would be updated but no ledger entry would exist — creating an audit gap.
+    // With db.transaction(), both operations succeed or both are rolled back atomically.
     const isTopUp = params.type === 'topup';
-    const updateResult = await pgDb.execute(sql`
-      UPDATE wallet_accounts 
-      SET 
-        balance_credits = balance_credits + ${params.amountCredits},
-        total_credits_earned = total_credits_earned + ${params.amountCredits},
-        ${isTopUp ? sql`total_top_up_amount_cents = total_top_up_amount_cents + ${params.topUpAmountCents || 0},` : sql``}
-        updated_at = NOW()
-      WHERE firebase_uid = ${params.firebaseUid}
-      RETURNING balance_credits, id
-    `);
 
-    if (!updateResult.rows || updateResult.rows.length === 0) {
+    const { newBalance, walletId, transactionId } = await pgDb.transaction(async (tx) => {
+      // Step 1: Update balance atomically
+      const updateResult = await tx.execute(sql`
+        UPDATE wallet_accounts 
+        SET 
+          balance_credits = balance_credits + ${params.amountCredits},
+          total_credits_earned = total_credits_earned + ${params.amountCredits},
+          ${isTopUp ? sql`total_top_up_amount_cents = total_top_up_amount_cents + ${params.topUpAmountCents || 0},` : sql``}
+          updated_at = NOW()
+        WHERE firebase_uid = ${params.firebaseUid}
+        RETURNING balance_credits, id
+      `);
+
+      if (!updateResult.rows || updateResult.rows.length === 0) {
+        throw new Error('Wallet not found during addCredits transaction');
+      }
+
+      const newBal = updateResult.rows[0].balance_credits as number;
+      const wId = updateResult.rows[0].id as number;
+
+      // Step 2: Insert ledger entry in the same transaction
+      const txRecord = await tx
+        .insert(walletTransactions)
+        .values({
+          walletId: wId,
+          userId: wallet.userId,
+          firebaseUid: params.firebaseUid,
+          type: params.type,
+          direction: 'credit',
+          amountCredits: params.amountCredits,
+          balanceAfter: newBal,
+          description: params.description,
+          idempotencyKey: params.idempotencyKey,
+          stripePaymentIntentId: params.stripePaymentIntentId,
+          stripeCheckoutSessionId: params.stripeCheckoutSessionId,
+          topUpAmountCents: params.topUpAmountCents,
+          subscriptionPlanId: params.subscriptionPlanId,
+          expiresAt: params.expiresAt,
+          metadata: params.metadata ? params.metadata as any : null,
+        })
+        .returning({ id: walletTransactions.id });
+
+      return { newBalance: newBal, walletId: wId, transactionId: txRecord[0].id };
+    }).catch((txError: unknown) => {
+      // Unwrap 'Wallet not found' as a non-error return
+      if (txError instanceof Error && txError.message.includes('Wallet not found')) {
+        return null;
+      }
+      throw txError;
+    });
+
+    if (!newBalance && newBalance !== 0) {
       return { success: false, creditsAdded: 0, balanceAfter: 0, transactionId: 0, error: 'Wallet not found' };
     }
-
-    const newBalance = updateResult.rows[0].balance_credits as number;
-    const walletId = updateResult.rows[0].id as number;
-
-    // Registrar en el ledger
-    const transaction = await pgDb
-      .insert(walletTransactions)
-      .values({
-        walletId,
-        userId: wallet.userId,
-        firebaseUid: params.firebaseUid,
-        type: params.type,
-        direction: 'credit',
-        amountCredits: params.amountCredits,
-        balanceAfter: newBalance,
-        description: params.description,
-        idempotencyKey: params.idempotencyKey,
-        stripePaymentIntentId: params.stripePaymentIntentId,
-        stripeCheckoutSessionId: params.stripeCheckoutSessionId,
-        topUpAmountCents: params.topUpAmountCents,
-        subscriptionPlanId: params.subscriptionPlanId,
-        expiresAt: params.expiresAt,
-        metadata: params.metadata ? params.metadata as any : null,
-      })
-      .returning({ id: walletTransactions.id });
 
     console.log(`✅ [WALLET] Added ${params.amountCredits} credits (${params.type}). New balance: ${newBalance}`);
 
@@ -437,7 +456,7 @@ class WalletService {
       success: true,
       creditsAdded: params.amountCredits,
       balanceAfter: newBalance,
-      transactionId: transaction[0].id,
+      transactionId,
     };
   }
 

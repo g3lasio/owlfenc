@@ -27,6 +27,53 @@ export function isWalletEnforcementEnabled(): boolean {
 }
 
 // ================================
+// V3 FIX: CIRCUIT BREAKER — Fail-Open with Error Tracking
+// ================================
+// When the wallet DB is unreachable, the middleware fails-open (lets requests through).
+// This is intentional to protect app uptime, but we must:
+//   1. Log every fail-open event with full error details (for incident investigation)
+//   2. Track consecutive failures — after CIRCUIT_BREAKER_THRESHOLD, emit a CRITICAL alert
+//   3. Expose a health flag so the monitoring system can detect wallet degradation
+// The circuit does NOT block requests (that would break the app during DB downtime),
+// but it makes the failure loud and observable.
+let walletCircuitFailures = 0;
+let walletCircuitOpenAt: Date | null = null;
+const CIRCUIT_BREAKER_THRESHOLD = 5; // consecutive failures before CRITICAL alert
+
+export function getWalletCircuitStatus(): { failures: number; openAt: Date | null; isOpen: boolean } {
+  return {
+    failures: walletCircuitFailures,
+    openAt: walletCircuitOpenAt,
+    isOpen: walletCircuitFailures >= CIRCUIT_BREAKER_THRESHOLD,
+  };
+}
+
+function recordWalletFailure(featureName: string, error: unknown): void {
+  walletCircuitFailures++;
+  if (walletCircuitFailures === 1) {
+    walletCircuitOpenAt = new Date();
+  }
+  console.error(
+    `🚨 [CREDIT-CHECK-CIRCUIT] Wallet DB error #${walletCircuitFailures} for feature=${featureName}. ` +
+    `Failing open (request allowed). Error: ${error instanceof Error ? error.message : String(error)}`
+  );
+  if (walletCircuitFailures >= CIRCUIT_BREAKER_THRESHOLD) {
+    console.error(
+      `🚨 [CREDIT-CHECK-CIRCUIT] CRITICAL: Wallet circuit open after ${walletCircuitFailures} consecutive failures. ` +
+      `Features are running WITHOUT credit enforcement. First failure at: ${walletCircuitOpenAt?.toISOString()}`
+    );
+  }
+}
+
+function recordWalletSuccess(): void {
+  if (walletCircuitFailures > 0) {
+    console.log(`✅ [CREDIT-CHECK-CIRCUIT] Wallet recovered after ${walletCircuitFailures} failures. Circuit reset.`);
+    walletCircuitFailures = 0;
+    walletCircuitOpenAt = null;
+  }
+}
+
+// ================================
 // TIPOS
 // ================================
 
@@ -164,12 +211,16 @@ export function requireCredits(options: CreditCheckOptions) {
         currentBalance: affordCheck.currentBalance,
       };
 
+      // V3 FIX: Reset circuit breaker on successful wallet check
+      recordWalletSuccess();
+
       next();
 
     } catch (error) {
-      console.error(`❌ [CREDIT-CHECK] Error checking credits for ${featureName}:`, error);
-      // En caso de error del sistema de wallet, dejar pasar (fail-open)
-      // Esto protege contra downtime del wallet afectando la app principal
+      // V3 FIX: Record failure in circuit breaker (makes fail-open observable and alertable)
+      // We still fail-open to protect app uptime during wallet DB downtime,
+      // but now every failure is logged with full details and tracked for CRITICAL alerting.
+      recordWalletFailure(featureName, error);
       next();
     }
   };

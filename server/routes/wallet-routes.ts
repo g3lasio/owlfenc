@@ -327,7 +327,7 @@ router.post('/admin/grant', async (req: Request, res: Response) => {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
-    const { targetType, firebaseUid, planId, credits, description, expiresAt } = req.body;
+    const { targetType, firebaseUid, planId, credits, description, expiresAt, idempotencyKey: callerKey } = req.body;
 
     if (!credits || typeof credits !== 'number' || credits <= 0) {
       return res.status(400).json({ error: 'credits must be a positive number' });
@@ -340,6 +340,17 @@ router.post('/admin/grant', async (req: Request, res: Response) => {
     const adminUid = (req as any).user?.uid || 'admin';
     const results: Array<{ firebaseUid: string; success: boolean; error?: string }> = [];
 
+    // V4 FIX: Deterministic idempotency keys to prevent double-grant on retry/double-submit.
+    // The key is derived from the grant's semantic content, NOT from Date.now().
+    // If the caller provides an explicit idempotencyKey in the request body, use it.
+    // Otherwise, derive it from: adminUid + targetFirebaseUid + credits + description.
+    // This means the same admin grant request is idempotent regardless of how many times it's submitted.
+    const buildIdempotencyKey = (targetUid: string): string => {
+      if (callerKey) return `admin:${callerKey}:${targetUid}`;
+      const descSlug = description.toLowerCase().replace(/[^a-z0-9]/g, '_').slice(0, 30);
+      return `admin:${adminUid}:${targetUid}:${credits}cr:${descSlug}`;
+    };
+
     if (targetType === 'single' && firebaseUid) {
       // Dar créditos a un usuario específico
       try {
@@ -350,7 +361,7 @@ router.post('/admin/grant', async (req: Request, res: Response) => {
           type: 'admin_adjustment',
           description,
           expiresAt: expiresAt ? new Date(expiresAt) : undefined,
-          idempotencyKey: `admin:${adminUid}:${firebaseUid}:${Date.now()}`,
+          idempotencyKey: buildIdempotencyKey(firebaseUid),
           metadata: { grantedBy: adminUid, reason: description },
         });
         results.push({ firebaseUid, success: true });
@@ -376,7 +387,7 @@ router.post('/admin/grant', async (req: Request, res: Response) => {
             type: 'admin_adjustment',
             description,
             expiresAt: expiresAt ? new Date(expiresAt) : undefined,
-            idempotencyKey: `admin:${adminUid}:all:${wallet.firebaseUid}:${Date.now()}`,
+            idempotencyKey: buildIdempotencyKey(wallet.firebaseUid),
             metadata: { grantedBy: adminUid, reason: description, bulkGrant: true },
           });
           results.push({ firebaseUid: wallet.firebaseUid, success: true });

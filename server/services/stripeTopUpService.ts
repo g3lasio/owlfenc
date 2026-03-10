@@ -212,15 +212,36 @@ class StripeTopUpService {
       },
     };
 
-    // Asociar con Stripe Customer si existe
+    // V1 FIX: Validate Stripe customer exists before using it.
+    // A stored customer ID can become stale if:
+    //   - The Stripe account was switched between test/live mode
+    //   - The customer was manually deleted in the Stripe dashboard
+    // If validation fails, we clear the stored ID and fall through to customer_email.
     if (stripeCustomerId) {
-      sessionParams.customer = stripeCustomerId;
-      
-      // Sincronizar email si ha cambiado (Best effort)
-      if (params.userEmail) {
-        stripe.customers.update(stripeCustomerId, { email: params.userEmail }).catch(err => {
-          console.warn(`⚠️ [STRIPE] Failed to sync email for customer ${stripeCustomerId}:`, err.message);
-        });
+      try {
+        await stripe.customers.retrieve(stripeCustomerId);
+        // Customer is valid — associate with checkout session
+        sessionParams.customer = stripeCustomerId;
+        // Sincronizar email si ha cambiado (Best effort)
+        if (params.userEmail) {
+          stripe.customers.update(stripeCustomerId, { email: params.userEmail }).catch(err => {
+            console.warn(`⚠️ [STRIPE] Failed to sync email for customer ${stripeCustomerId}:`, err.message);
+          });
+        }
+      } catch (customerErr: any) {
+        if (customerErr?.code === 'resource_missing') {
+          // Customer no longer exists in Stripe — clear the stale ID from DB
+          console.warn(`⚠️ [STRIPE-TOPUP] Stale customer ID ${stripeCustomerId} cleared for ${params.firebaseUid}`);
+          await pgDb
+            .update(walletAccounts)
+            .set({ stripeCustomerId: null })
+            .where(eq(walletAccounts.firebaseUid, params.firebaseUid));
+          stripeCustomerId = undefined;
+          // Fall through: session will use customer_email instead
+        } else {
+          // Unexpected Stripe error — re-throw to avoid silently proceeding
+          throw customerErr;
+        }
       }
     }
 
