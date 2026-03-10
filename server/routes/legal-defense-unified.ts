@@ -1106,6 +1106,9 @@ router.post('/templates/:templateId/generate-document',
         ? `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`
         : `${templateId}_${Date.now()}.pdf`;
       
+      // 💳 PAYG: Deduct credits after successful document generation
+      await deductFeatureCredits(req, `${templateId}-doc`, `${templateId} document generated`);
+      
       // Return JSON with HTML and PDF base64
       res.json({
         success: true,

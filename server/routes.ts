@@ -2321,6 +2321,16 @@ ENHANCED LEGAL CLAUSE:`;
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader("X-Engine", "puppeteer-invoice-service");
 
+      // 💳 PAYG: Deduct 5 credits for invoice generation
+      if (firebaseUid) {
+        try {
+          const { walletService } = await import('./services/walletService');
+          await walletService.deductCredits({ firebaseUid, featureName: 'invoice', resourceId: `invoice-${invoiceData.invoice?.number || Date.now()}`, description: 'Invoice PDF generated' });
+          console.log(`💳 [INVOICE-PDF] Deducted 5 credits. UID: ${firebaseUid}`);
+        } catch (creditError) {
+          console.error(`❌ [INVOICE-PDF] Credit deduction failed (non-blocking):`, creditError);
+        }
+      }
       // Send PDF buffer as binary data
       res.end(pdfBuffer, "binary");
 
@@ -3776,7 +3786,7 @@ ENHANCED LEGAL CLAUSE:`;
     }
   });
 
-  app.post("/api/generate-pdf", requireAuth, requireCredits({ featureName: "contract" }), async (req: Request, res: Response) => {
+  app.post("/api/generate-pdf", requireAuth, async (req: Request, res: Response) => {
     try {
       console.log("🎨 [API] Processing PDF generation request...");
       console.log("Request body keys:", Object.keys(req.body));
@@ -3971,8 +3981,12 @@ ENHANCED LEGAL CLAUSE:`;
           // Otherwise return JSON response with base64 for state tracking
           const pdfBase64 = pdfBuffer.toString('base64');
           
-          // 💳 PAYG: Deduct credits AFTER successful PDF generation
-          await deductFeatureCredits(req, `${templateId}-pdf`, 'PDF generated via template registry');
+          // 💳 PAYG: Deduct credits ONLY for template-based documents (change-order, lien-waiver, etc.)
+          // Independent-contractor PDFs are already charged at /api/contracts/generate - no double charge
+          const isSecondaryTemplate = templateId && templateId !== 'independent-contractor';
+          if (isSecondaryTemplate) {
+            await deductFeatureCredits(req, `${templateId}-pdf`, `${templateId} document generated`);
+          }
           return res.json({
             success: true,
             templateId: templateId,
@@ -4304,8 +4318,7 @@ ENHANCED LEGAL CLAUSE:`;
         console.log(
           `✅ [API] Enhanced contract generated: ${pdfBuffer.length} bytes`,
         );
-        // 💳 PAYG: Deduct credits AFTER successful PDF generation
-        await deductFeatureCredits(req, undefined, 'Contract PDF generated via premium service');
+        // 💡 No credit deduction here: independent-contractor PDFs are charged at /api/contracts/generate
         return res.send(pdfBuffer);
       } else if (req.body.html && req.body.filename) {
         console.log("📄 [API] Detected HTML format - using simple service...");

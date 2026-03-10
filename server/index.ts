@@ -495,7 +495,7 @@ app.get('/api/contractor-payments/stripe/account-status', async (req, res) => {
   }
 });
 
-app.post('/api/contractor-payments/create-payment-link', async (req, res) => {
+app.post('/api/contractor-payments/create-payment-link', async (req: any, res) => {
   try {
     console.log('💳 [PAYMENT-LINK] Generando link de pago desde cuenta conectada');
     const { projectId, amount, description } = req.body;
@@ -507,7 +507,31 @@ app.post('/api/contractor-payments/create-payment-link', async (req, res) => {
       });
     }
     
-    const firebaseUid = "qztot1YEy3UWz605gIH2iwwWhW53"; // TEMPORARY for testing
+    // 🔐 AUTH: Extract firebaseUid from session cookie or Bearer token
+    let firebaseUid: string | undefined;
+    // Try session cookie first (primary auth method)
+    const sessionCookie = req.cookies?.__session;
+    if (sessionCookie) {
+      try {
+        const { admin } = await import('./firebaseAdmin');
+        const decoded = await admin.auth().verifySessionCookie(sessionCookie, true);
+        firebaseUid = decoded.uid;
+      } catch {}
+    }
+    // Fallback to Bearer token
+    if (!firebaseUid) {
+      const authHeader = req.headers.authorization;
+      if (authHeader?.startsWith('Bearer ')) {
+        try {
+          const { admin } = await import('./firebaseAdmin');
+          const decoded = await admin.auth().verifyIdToken(authHeader.substring(7));
+          firebaseUid = decoded.uid;
+        } catch {}
+      }
+    }
+    if (!firebaseUid) {
+      return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
     const { userMappingService } = await import('./services/userMappingService');
     const dbUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(firebaseUid);
     
@@ -558,6 +582,14 @@ app.post('/api/contractor-payments/create-payment-link', async (req, res) => {
     }, { stripeAccount: user.stripeConnectAccountId });
     
     console.log('✅ [PAYMENT-LINK] Link creado:', paymentLink.url);
+    // 💳 PAYG: Deduct 3 credits for payment link creation
+    try {
+      const { walletService } = await import('./services/walletService');
+      await walletService.deductCredits({ firebaseUid, featureName: 'paymentLink', resourceId: paymentLink.id, description: 'Payment link created' });
+      console.log(`💳 [PAYMENT-LINK] Deducted 3 credits. UID: ${firebaseUid}`);
+    } catch (creditError) {
+      console.error('❌ [PAYMENT-LINK] Credit deduction failed (non-blocking):', creditError);
+    }
     res.json({
       success: true,
       paymentLink: paymentLink.url,
