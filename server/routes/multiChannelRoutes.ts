@@ -290,6 +290,40 @@ router.post('/initiate-public', async (req, res) => {
     console.log('✅ [MULTI-CHANNEL PUBLIC] Links generated successfully');
     console.log('✅ [MULTI-CHANNEL PUBLIC] Contract ID:', result.contractId);
 
+    // 💳 PAY AS YOU GROW: Deduct 8 credits for signature protocol
+    // Only when a real Firebase UID is provided (not a guest_ ID)
+    if (providedUserId && !providedUserId.startsWith('guest_')) {
+      try {
+        const { walletService } = await import('../services/walletService');
+        const isWalletEnforcementEnabled = process.env.WALLET_ENFORCEMENT_ENABLED === 'true';
+        const affordCheck = await walletService.canAfford(providedUserId, 8);
+        if (isWalletEnforcementEnabled && !affordCheck.canAfford) {
+          return res.status(402).json({
+            success: false,
+            code: 'INSUFFICIENT_CREDITS',
+            required: 8,
+            current: affordCheck.currentBalance,
+            showTopUpModal: true,
+            message: `You need 8 credits to use Signature Protocol. You have ${affordCheck.currentBalance}.`,
+          });
+        }
+        const deductResult = await walletService.deductCredits({
+          firebaseUid: providedUserId,
+          featureName: 'signatureProtocol',
+          resourceId: `sig-${result.contractId}`,
+          idempotencyKey: `signatureProtocol:sig-${result.contractId}`,
+          description: 'Dual signature protocol initiated',
+        });
+        if (deductResult.success) {
+          console.log(`💳 [MULTI-CHANNEL PUBLIC] Deducted 8 credits for signatureProtocol. UID: ${providedUserId.substring(0, 8)}...`);
+        } else {
+          console.warn(`⚠️ [MULTI-CHANNEL PUBLIC] Credit deduction failed (non-blocking): ${deductResult.error}`);
+        }
+      } catch (creditError) {
+        console.error('❌ [MULTI-CHANNEL PUBLIC] Credit deduction error (non-blocking):', creditError);
+      }
+    }
+
     // Return success response
     res.json({
       success: true,

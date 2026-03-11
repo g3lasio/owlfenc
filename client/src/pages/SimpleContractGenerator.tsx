@@ -6586,8 +6586,9 @@ export default function SimpleContractGenerator() {
                           method: 'POST',
                           headers: {
                             'Content-Type': 'application/json',
-                            // 🔥 CRITICAL: Always send auth header for Firebase profile lookup
-                            ...(token ? { 'Authorization': `Bearer ${token}` } : { 'x-firebase-uid': currentUser?.uid || '' }),
+                            // 🔥 CRITICAL: Send BOTH headers — x-firebase-uid for contractorDataHelpers, Authorization for wallet
+                            'x-firebase-uid': currentUser?.uid || '',
+                            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
                           },
                           body: JSON.stringify({
                             templateId: 'change-order',
@@ -6689,8 +6690,9 @@ export default function SimpleContractGenerator() {
                           method: 'POST',
                           headers: {
                             'Content-Type': 'application/json',
-                            // 🔥 CRITICAL: Always send auth header for Firebase profile lookup
-                            ...(token ? { 'Authorization': `Bearer ${token}` } : { 'x-firebase-uid': currentUser?.uid || '' }),
+                            // 🔥 CRITICAL: Send BOTH headers — x-firebase-uid for contractorDataHelpers, Authorization for wallet
+                            'x-firebase-uid': currentUser?.uid || '',
+                            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
                           },
                           body: JSON.stringify({
                             data: {
@@ -6774,8 +6776,9 @@ export default function SimpleContractGenerator() {
                           method: 'POST',
                           headers: {
                             'Content-Type': 'application/json',
-                            // 🔥 CRITICAL: Always send auth header for Firebase profile lookup
-                            ...(token ? { 'Authorization': `Bearer ${token}` } : { 'x-firebase-uid': currentUser?.uid || '' }),
+                            // 🔥 CRITICAL: Send BOTH headers — x-firebase-uid for contractorDataHelpers, Authorization for wallet
+                            'x-firebase-uid': currentUser?.uid || '',
+                            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
                           },
                           body: JSON.stringify({
                             templateId: 'lien-waiver',

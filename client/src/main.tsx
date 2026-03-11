@@ -11,6 +11,11 @@ import './lib/unified-error-handler';
 
 console.log('🛡️ [MAIN] Sistema unificado de errores activado');
 
+// 🔑 AXIOS AUTH INTERCEPTOR: Register globally so ALL axios calls include Firebase Bearer token
+// This ensures credit deduction works for invoices, contracts, and all features
+import './lib/axios-config';
+console.log('🔑 [MAIN] Axios auth interceptor registered globally');
+
 // 🛡️ SISTEMA DE AUTENTICACIÓN BASADO EN COOKIES DE SESIÓN
 // El nuevo AuthSessionProvider maneja la autenticación de forma confiable
 console.log('✅ [ENTERPRISE] Sistema de autenticación basado en cookies inicializado');
