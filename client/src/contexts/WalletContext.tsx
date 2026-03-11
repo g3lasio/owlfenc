@@ -12,7 +12,7 @@
  */
 
 import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/use-auth';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
