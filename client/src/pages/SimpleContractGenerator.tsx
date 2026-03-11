@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from "react";
+import { notifyCreditsSpent } from '@/hooks/useWallet';
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -3204,6 +3205,7 @@ export default function SimpleContractGenerator() {
       setIsContractReady(true);
       setCurrentStep(3);
 
+      notifyCreditsSpent(); // 🔄 Update wallet badge after contract credit deduction
       toast({
         title: "Contract Ready",
         description: `Contract generated for ${selectedProject.clientName}. Proceed with legal workflow.`,

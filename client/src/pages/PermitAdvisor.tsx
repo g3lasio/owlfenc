@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { notifyCreditsSpent } from '@/hooks/useWallet';
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { usePageContext } from "@/contexts/PageContext";
@@ -899,6 +900,7 @@ export default function PermitAdvisor() {
       // Guardar automáticamente en historial
       await saveToHistory(data);
 
+      notifyCreditsSpent(); // 🔄 Update wallet badge after permit advisor credit deduction
       toast({
         title: "✅ DeepSearch Complete",
         description: "Permit analysis generated and saved to history!",

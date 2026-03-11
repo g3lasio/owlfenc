@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from "react";
+import { notifyCreditsSpent } from '@/hooks/useWallet';
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useProfile } from "@/hooks/use-profile";
@@ -1629,29 +1630,16 @@ const Invoices: React.FC = () => {
                                             },
                                           };
 
-                                          // Generate PDF using the same endpoint as EstimatesWizard
-                                          const response = await fetch(
+                                          // Generate PDF using axios so the auth interceptor adds the Firebase token
+                                          // IMPORTANT: fetch() bypasses the axios interceptor — no token = no credit deduction
+                                          const axiosResp = await axios.post(
                                             "/api/invoice-pdf",
-                                            {
-                                              method: "POST",
-                                              headers: {
-                                                "Content-Type":
-                                                  "application/json",
-                                              },
-                                              body: JSON.stringify(
-                                                invoicePayload,
-                                              ),
-                                            },
+                                            invoicePayload,
+                                            { responseType: "blob" },
                                           );
 
-                                          if (!response.ok) {
-                                            throw new Error(
-                                              "Error generating PDF",
-                                            );
-                                          }
-
                                           // Download the PDF
-                                          const blob = await response.blob();
+                                          const blob = new Blob([axiosResp.data], { type: "application/pdf" });
                                           const url =
                                             window.URL.createObjectURL(blob);
                                           const link =
@@ -1663,6 +1651,7 @@ const Invoices: React.FC = () => {
                                           document.body.removeChild(link);
                                           window.URL.revokeObjectURL(url);
 
+                                          notifyCreditsSpent(); // 🔄 Update wallet badge after invoice credit deduction
                                           toast({
                                             title: "Factura descargada",
                                             description: `Factura ${invoice.invoiceNumber} descargada correctamente`,

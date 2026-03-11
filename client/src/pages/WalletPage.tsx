@@ -57,7 +57,11 @@ function TransactionIcon({ type }: { type: WalletTransaction['type'] }) {
 function TransactionRow({ tx }: { tx: WalletTransaction }) {
   // Defensive: handle null/undefined amountCredits from legacy or raw SQL rows
   const amount = tx.amountCredits ?? 0;
-  const isCredit = amount > 0;
+  // Use direction field if available (DB stores amountCredits always positive).
+  // Fall back to type-based detection for legacy records without direction field.
+  const isCredit = tx.direction
+    ? tx.direction === 'credit'
+    : (tx.type === 'subscription_grant' || tx.type === 'topup_purchase' || tx.type === 'refund');
   const dateValue = tx.createdAt ? new Date(tx.createdAt) : new Date();
   const date = dateValue.toLocaleDateString('en-US', {
     month: 'short',
@@ -70,7 +74,7 @@ function TransactionRow({ tx }: { tx: WalletTransaction }) {
     <div className="flex items-center gap-3 py-3 border-b border-border/30 last:border-0">
       <div className={cn(
         'p-2 rounded-lg flex-shrink-0',
-        isCredit ? 'bg-green-950/30' : 'bg-cyan-950/20'
+        isCredit ? 'bg-green-950/30' : 'bg-red-950/20'
       )}>
         <TransactionIcon type={tx.type} />
       </div>
@@ -93,9 +97,9 @@ function TransactionRow({ tx }: { tx: WalletTransaction }) {
 
       <div className={cn(
         'text-sm font-mono font-bold flex-shrink-0',
-        isCredit ? 'text-green-400' : 'text-cyan-300'
+        isCredit ? 'text-green-400' : 'text-red-400'
       )}>
-        {isCredit ? '+' : ''}{amount.toLocaleString()}
+        {isCredit ? '+' : '-'}{amount.toLocaleString()}
       </div>
     </div>
   );

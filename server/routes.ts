@@ -3870,7 +3870,7 @@ ENHANCED LEGAL CLAUSE:`;
           // 💳 PAYG: Credit enforcement for secondary templates
           // independent-contractor is charged at /api/contracts/generate (htmlOnly step)
           // All other templates (change-order, lien-waiver, etc.) are charged HERE
-          {
+          if (templateId !== 'independent-contractor') {
             const { isWalletEnforcementEnabled } = await import("./middleware/credit-check");
             const creditCost = FEATURE_CREDIT_COSTS.contract; // 12cr — same as main contract
             const firebaseUid =

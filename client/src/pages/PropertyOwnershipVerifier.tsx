@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { notifyCreditsSpent } from '@/hooks/useWallet';
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -196,6 +197,7 @@ export default function PropertyOwnershipVerifier() {
       
       queryClient.invalidateQueries({ queryKey: ["/api/property/history"] });
 
+      notifyCreditsSpent(); // 🔄 Update wallet badge after property verification credit deduction
       toast({
         title: "✅ Verificación Completada",
         description: `Datos obtenidos exitosamente. ${remaining > 0 ? `Te quedan ${remaining - 1} verificaciones este mes.` : ''}`,

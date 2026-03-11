@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { notifyCreditsSpent } from '@/hooks/useWallet';
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
 import { usePermissions } from "@/contexts/PermissionContext";
@@ -1054,6 +1055,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           setShowMervinMessage(false);
         }, 10000);
 
+        notifyCreditsSpent(); // 🔄 Update wallet badge after DeepSearch credit deduction
         toast({
           title: "🎉 Smart Search IA Completado",
           description: `Se agregaron ${newItems.length} ${successMessage} automáticamente`,

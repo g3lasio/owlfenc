@@ -20,6 +20,7 @@ import { useAuth } from '@/hooks/use-auth';
 export interface WalletTransaction {
   id: number;
   type: 'subscription_grant' | 'topup_purchase' | 'feature_usage' | 'admin_adjustment' | 'referral_bonus' | 'refund';
+  direction?: 'credit' | 'debit'; // 'credit' = incoming, 'debit' = outgoing
   amountCredits: number;
   description: string;
   featureName?: string;
@@ -244,6 +245,18 @@ export function useWallet(): UseWalletReturn {
     }
   }, [user]);
 
+  // 🔄 Refresh balance automatically when any feature spends credits
+  // Any page/component dispatches 'wallet-credits-spent' after a successful deduction
+  // This ensures the header badge and wallet page update without a manual page refresh
+  useEffect(() => {
+    const handleCreditsSpent = () => {
+      console.log('[useWallet] 🔄 wallet-credits-spent event received — refreshing balance');
+      fetchBalance().catch(console.warn);
+    };
+    window.addEventListener('wallet-credits-spent', handleCreditsSpent);
+    return () => window.removeEventListener('wallet-credits-spent', handleCreditsSpent);
+  }, [fetchBalance]);
+
   const refreshBalance = useCallback(async () => {
     await Promise.all([fetchBalance(), fetchBillingStatus()]);
   }, [fetchBalance, fetchBillingStatus]);
@@ -334,4 +347,16 @@ export function useWallet(): UseWalletReturn {
  */
 export function openTopUpModal() {
   window.dispatchEvent(new CustomEvent('open-wallet-topup'));
+}
+
+/**
+ * Helper global para notificar que se gastaron créditos.
+ * Llamar después de cualquier operación exitosa que deduzca créditos.
+ * Esto actualiza el badge del header y la página de wallet automáticamente.
+ * 
+ * Uso: import { notifyCreditsSpent } from '@/hooks/useWallet';
+ *      notifyCreditsSpent(); // después de generar contrato, invoice, etc.
+ */
+export function notifyCreditsSpent() {
+  window.dispatchEvent(new CustomEvent('wallet-credits-spent'));
 }
