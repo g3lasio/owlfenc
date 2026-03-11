@@ -56,9 +56,9 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     price: 0,
     yearlyPrice: 0,
     features: [
-      "Access to all features via AI credits",
-      "20 AI credits included monthly",
-      "Top up anytime — credits never expire",
+      "Pay As You Go — no monthly subscription",
+      "20 AI credits included to get started",
+      "Buy more credits anytime — never expire",
       "AI Estimates, Contracts, Permits & more",
       "Community support"
     ],
@@ -72,14 +72,14 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     description: "Para contratistas profesionales",
     motto: "Most popular for growing contractors",
     price: 4999,        // $49.99/mes
-    yearlyPrice: 49990, // $499.90/año (2 meses gratis)
+    yearlyPrice: 50990, // $509.90/año (15% descuento — pago único anual)
     features: [
       "⚡ 600 AI credits included per month",
       "Access to all features — no limits",
       "No watermark on estimates & contracts",
       "AI Estimates, Contracts, Permits, Invoices",
       "Property Verifier & Dual Signature Protocol",
-      "Top up anytime — credits never expire",
+      "Buy more credits anytime — never expire",
       "Access to networking/training events",
       "30% discount on LeadPrime CRM",
       "Priority support"
@@ -94,14 +94,14 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     description: "Sin límites para profesionales",
     motto: "Unlimited everything for professionals",
     price: 9999,         // $99.99/mes
-    yearlyPrice: 99990,  // $999.90/año (2 meses gratis)
+    yearlyPrice: 101990, // $1,019.90/año (15% descuento — pago único anual)
     features: [
       "⚡ 1,500 AI credits included per month",
       "Access to all features — no limits",
       "No watermark on estimates & contracts",
       "AI Estimates, Contracts, Permits, Invoices",
       "Property Verifier & Dual Signature Protocol",
-      "Top up anytime — credits never expire",
+      "Buy more credits anytime — never expire",
       "Pro payment tracking & analytics",
       "Access to networking/training events",
       "30% discount on LeadPrime CRM",

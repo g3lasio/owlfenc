@@ -128,10 +128,10 @@ export function TopUpModal({
           </div>
           <div className="flex-1 min-w-0">
             <DialogTitle className="text-base font-bold bg-gradient-to-r from-cyan-300 via-blue-400 to-purple-400 bg-clip-text text-transparent leading-tight">
-              Mervin AI Credits
+              Comprar Créditos
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground leading-tight">
-              Power your AI tools — no subscription required
+              Recarga tus créditos AI — pago único, sin suscripción
             </DialogDescription>
           </div>
           {/* Balance pill */}
@@ -150,7 +150,7 @@ export function TopUpModal({
               <TrendingUp className="h-3.5 w-3.5 text-amber-400 flex-shrink-0 mt-0.5" />
               <p className="text-xs text-amber-300 leading-snug">
                 <strong>{requiredCredits} credits</strong> needed for {featureName || 'this feature'}.
-                {' '}Top up <strong>{deficit}+</strong> to continue.
+                {' '}Compra <strong>{deficit}+</strong> créditos para continuar.
               </p>
             </div>
           )}
@@ -226,7 +226,7 @@ export function TopUpModal({
                         <div className={cn('text-lg font-bold font-mono', style.priceColor)}>
                           {formatPrice(pkg.priceUsdCents)}
                         </div>
-                        <div className="text-[9px] text-muted-foreground">one-time</div>
+                        <div className="text-[9px] text-muted-foreground">pago único</div>
                       </div>
                     </button>
                   );
@@ -255,7 +255,7 @@ export function TopUpModal({
         <div className="flex items-center justify-between px-5 py-3 border-t border-border/30 flex-shrink-0">
           <p className="text-[10px] text-muted-foreground flex items-center gap-1">
             <Shield className="h-3 w-3" />
-            Secured by Stripe · Credits never expire
+            Pago seguro con Stripe · Créditos sin vencimiento
           </p>
           <Button
             variant="ghost"
@@ -263,7 +263,7 @@ export function TopUpModal({
             onClick={onClose}
             className="text-xs text-muted-foreground hover:text-foreground h-7 px-3"
           >
-            Cancel
+            Cerrar
           </Button>
         </div>
       </DialogContent>

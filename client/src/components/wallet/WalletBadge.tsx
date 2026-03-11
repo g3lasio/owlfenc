@@ -139,7 +139,7 @@ export function WalletBadge({ className, compact = false }: WalletBadgeProps) {
           config.pulse && 'animate-pulse',
           className
         )}
-        title="Mervin AI Credits — Click to top up"
+        title="Mervin AI Credits — Haz clic para comprar créditos"
       >
         {isLoading ? (
           <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />

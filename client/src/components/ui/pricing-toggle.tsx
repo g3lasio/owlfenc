@@ -11,36 +11,43 @@ interface PricingToggleProps {
 
 export function PricingToggle({ onToggle, isYearly, className }: PricingToggleProps) {
   return (
-    <div className={cn("flex items-center justify-center gap-4", className)}>
-      <Label
-        htmlFor="billing-toggle"
-        className={cn(
-          "text-sm font-medium transition-colors",
-          !isYearly ? "text-primary" : "text-muted-foreground"
-        )}
-      >
-        Mensual
-      </Label>
-      <Switch
-        id="billing-toggle"
-        checked={isYearly}
-        onCheckedChange={onToggle}
-        className="data-[state=checked]:bg-primary"
-      />
-      <div className="flex items-center gap-2">
+    <div className={cn("flex flex-col items-center gap-2", className)}>
+      <div className="flex items-center justify-center gap-4">
         <Label
           htmlFor="billing-toggle"
           className={cn(
             "text-sm font-medium transition-colors",
-            isYearly ? "text-primary" : "text-muted-foreground"
+            !isYearly ? "text-primary" : "text-muted-foreground"
           )}
         >
-          Anual
+          Mensual
         </Label>
-        <span className="inline-block rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
-          Ahorra 20%
-        </span>
+        <Switch
+          id="billing-toggle"
+          checked={isYearly}
+          onCheckedChange={onToggle}
+          className="data-[state=checked]:bg-primary"
+        />
+        <div className="flex items-center gap-2">
+          <Label
+            htmlFor="billing-toggle"
+            className={cn(
+              "text-sm font-medium transition-colors",
+              isYearly ? "text-primary" : "text-muted-foreground"
+            )}
+          >
+            Anual
+          </Label>
+          <span className="inline-block rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
+            Ahorra 15%
+          </span>
+        </div>
       </div>
+      {isYearly && (
+        <p className="text-xs text-muted-foreground">
+          Pago único anual — sin cobros mensuales
+        </p>
+      )}
     </div>
   );
 }

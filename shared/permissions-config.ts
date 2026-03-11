@@ -82,8 +82,8 @@ export const PLAN_PRICES = {
 
 export const PLAN_YEARLY_PRICES = {
   [PLAN_IDS.PRIMO_CHAMBEADOR]: 0,        // Gratis
-  [PLAN_IDS.MERO_PATRON]: 49990,         // $499.90 USD/año (10 meses)
-  [PLAN_IDS.MASTER_CONTRACTOR]: 99990,   // $999.90 USD/año (10 meses)
+  [PLAN_IDS.MERO_PATRON]: 50990,         // $509.90 USD/año (15% descuento sobre $599.88 — pago único anual)
+  [PLAN_IDS.MASTER_CONTRACTOR]: 101990,  // $1,019.90 USD/año (15% descuento sobre $1,199.88 — pago único anual)
   [PLAN_IDS.FREE_TRIAL]: 0,              // Gratis
 } as const;
 

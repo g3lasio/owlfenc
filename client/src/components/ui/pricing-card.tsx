@@ -43,7 +43,12 @@ export function PricingCard({
   currentUserPlanId = 1,
   onManageSubscription,
 }: PricingCardProps) {
-  const currentPrice = isYearly ? yearlyPrice / 100 : price / 100;
+  const isPrimoChambeador = code === 'PRIMO_CHAMBEADOR' || code === 'primo_chambeador';
+  const isPaidPlan = price > 0;
+
+  // For yearly: show monthly equivalent price
+  const monthlyEquivalent = isPaidPlan && isYearly ? yearlyPrice / 12 / 100 : null;
+  const displayPrice = isYearly ? yearlyPrice / 100 : price / 100;
   const period = isYearly ? "/año" : "/mes";
 
   // Determinar el tipo de acción según el plan actual del usuario
@@ -66,7 +71,7 @@ export function PricingCard({
 
   // Etiqueta del botón de upgrade — sin ninguna referencia a "trial"
   const getUpgradeLabel = () => {
-    if (code === 'PRIMO_CHAMBEADOR' || code === 'primo_chambeador') return "Get Started Free";
+    if (isPrimoChambeador) return "Comenzar Gratis";
     if (code === 'mero_patron') return "Upgrade to Mero Patrón";
     if (code === 'MASTER_CONTRACTOR' || code === 'master_contractor') return "Upgrade to Master";
     return "Upgrade Now";
@@ -110,23 +115,43 @@ export function PricingCard({
             {renderPlanIcon()}
             <CardTitle className="text-xl">{name}</CardTitle>
           </div>
+          {/* PAYG badge for Primo Chambeador */}
+          {isPrimoChambeador && (
+            <div className="flex justify-center mb-1">
+              <span className="inline-block rounded-full bg-orange-100 dark:bg-orange-950/40 px-3 py-0.5 text-xs font-semibold text-orange-700 dark:text-orange-400 border border-orange-200 dark:border-orange-800">
+                Pay As You Go
+              </span>
+            </div>
+          )}
           <CardDescription className="text-sm pt-1 text-center">{description}</CardDescription>
         </CardHeader>
         <CardContent className="pb-2">
           <div className="mb-6 text-center">
-            {currentPrice === 0 ? (
+            {displayPrice === 0 ? (
               <>
                 <span className="text-3xl font-bold text-green-500">GRATIS</span>
                 {/* Highlight the welcome credits for Primo Chambeador */}
-                {(code === 'PRIMO_CHAMBEADOR' || code === 'primo_chambeador') && (
+                {isPrimoChambeador && (
                   <div className="mt-2 text-sm font-semibold text-cyan-400">
-                    🎁 20 AI credits de bienvenida incluidos
+                    🎁 20 AI credits incluidos para empezar
+                  </div>
+                )}
+              </>
+            ) : isYearly ? (
+              <>
+                {/* Annual: show total annual price prominently */}
+                <span className="text-3xl font-bold">{formatPrice(displayPrice)}</span>
+                <span className="text-muted-foreground ml-1">{period}</span>
+                {/* Monthly equivalent in small text */}
+                {monthlyEquivalent !== null && (
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    ≈ {formatPrice(monthlyEquivalent)}/mes · pago único anual
                   </div>
                 )}
               </>
             ) : (
               <>
-                <span className="text-3xl font-bold">{formatPrice(currentPrice)}</span>
+                <span className="text-3xl font-bold">{formatPrice(displayPrice)}</span>
                 <span className="text-muted-foreground ml-1">{period}</span>
               </>
             )}

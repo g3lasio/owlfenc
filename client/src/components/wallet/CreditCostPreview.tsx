@@ -91,7 +91,7 @@ export function CreditCostPreview({
               ) : (
                 <p>
                   You need <strong>{cost} credits</strong> but only have {balance}.
-                  {showTopUpButton && ' Click to top up.'}
+                  {showTopUpButton && ' Haz clic para comprar créditos.'}
                 </p>
               )}
             </TooltipContent>
@@ -135,7 +135,7 @@ export function CreditCostPreview({
             <>
               <span className="text-muted-foreground">·</span>
               <span className="text-red-400">
-                {showTopUpButton ? 'Top up ↗' : 'Insufficient'}
+                {showTopUpButton ? 'Comprar ↗' : 'Insuficiente'}
               </span>
             </>
           )}
@@ -202,7 +202,7 @@ export function CreditCostPreview({
               )}
             >
               <Zap className="h-3 w-3" />
-              Top Up
+              Comprar Créditos
             </button>
           )}
         </div>

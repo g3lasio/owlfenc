@@ -567,7 +567,7 @@ export default function Subscription() {
             </span>
             {activePlanId === 5 && (
               <span className="text-sm text-muted-foreground block mt-1">
-                (Plan gratuito - considera hacer upgrade para obtener más funciones)
+(Pay As You Go — compra créditos cuando los necesites, o súscribete para ahorrar)
               </span>
             )}
             {expirationDate && activePlanId !== 5 && (
@@ -594,7 +594,7 @@ export default function Subscription() {
                 ⬆️ Hacer Upgrade
               </Button>
               <p className="text-xs text-muted-foreground self-center">
-                Recomendado: El Mero Patrón ($100/mes)
+                Recomendado: El Mero Patrón ($49.99/mes)
               </p>
             </div>
           ) : (
@@ -612,14 +612,14 @@ export default function Subscription() {
               <button
                 onClick={() => {
                   const freePlan = plans?.find(p => p.id === 5);
-                  if (freePlan && window.confirm('¿Estás seguro de que quieres hacer downgrade al plan gratuito?')) {
+                  if (freePlan && window.confirm('¿Estás seguro de que quieres cambiar al plan Pay As You Go? Perderás los créditos mensuales incluidos.')) {
                     createCheckoutSession(5);
                   }
                 }}
                 disabled={isLoading}
                 className="text-orange-500 hover:underline font-medium text-sm"
               >
-                ⬇️ Downgrade a Gratuito
+                ⬇️ Cambiar a Pay As You Go
               </button>
             </div>
           )}

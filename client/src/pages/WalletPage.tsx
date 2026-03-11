@@ -301,7 +301,7 @@ export function WalletPage({ embedded = false }: { embedded?: boolean }) {
               )}
             >
               <Zap className="h-4 w-4" fill="currentColor" />
-              Top Up Credits
+              Comprar Créditos
             </Button>
           </div>
         </div>
@@ -376,7 +376,7 @@ export function WalletPage({ embedded = false }: { embedded?: boolean }) {
 
       </div>
 
-      {/* Top-Up Modal */}
+      {/* Comprar Créditos Modal */}
       <TopUpModal
         isOpen={showTopUpModal}
         onClose={() => setShowTopUpModal(false)}
