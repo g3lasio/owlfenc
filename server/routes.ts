@@ -123,6 +123,7 @@ import { registerRobustFirebaseAuthRoutes } from "./routes/robust-firebase-auth"
 import userProfileRoutes from "./routes/user-profile-routes"; // Import user profile routes
 import openaiChatRoutes from "./routes/openai-chat-routes"; // Import OpenAI chat routes
 import contractorPaymentRoutes from "./routes/contractor-payment-routes"; // Import contractor payment routes
+import { contractorPaymentService } from "./services/contractorPaymentService"; // For invoice+payment-link endpoint
 import publicCheckoutRoutes from "./routes/public-checkout-routes"; // 💰 Public client-facing checkout with tip support
 import estimatesRoutes from "./routes/estimates"; // Import new estimates routes
 import estimatesFirebaseRoutes from "./routes/estimates-firebase"; // Import Firebase estimates routes
@@ -2442,6 +2443,216 @@ ENHANCED LEGAL CLAUSE:`;
       });
     }
   });
+
+  // 💳 NEW: Unified Invoice + Stripe Payment Link endpoint
+  // Creates a real Stripe Checkout session and sends the invoice email with the payment link.
+  // This replaces the fake /project-payments?invoice=... URL that was previously used.
+  app.post(
+    "/api/invoice-with-payment-link",
+    verifyFirebaseAuth,
+    async (req: Request, res: Response) => {
+      try {
+        const firebaseUid = (req as any).firebaseUser?.uid;
+        if (!firebaseUid) {
+          return res.status(401).json({ success: false, message: 'Authentication required' });
+        }
+
+        const { userMappingService } = await import('./services/userMappingService');
+        const userId = await userMappingService.getOrCreateUserIdForFirebaseUid(firebaseUid);
+        const user = await storage.getUser(userId);
+        if (!user) {
+          return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        const {
+          profile,
+          estimate,
+          invoiceConfig,
+          emailConfig,
+          paymentType,   // 'deposit' | 'final' | 'full' | 'custom'
+          customAmount,  // only used when paymentType === 'custom'
+          firebaseProjectId,
+        } = req.body;
+
+        // ——— Compute the payment amount ———
+        const total: number = estimate.total || 0;
+        const amountPaid: number = invoiceConfig?.downPaymentAmount
+          ? parseFloat(invoiceConfig.downPaymentAmount)
+          : 0;
+        const balanceDue: number = total - amountPaid;
+
+        let paymentAmountDollars: number;
+        let paymentDescription: string;
+        switch (paymentType) {
+          case 'deposit':
+            paymentAmountDollars = total * 0.5;
+            paymentDescription = `50% Deposit — ${estimate.projectType || 'Project'}`;
+            break;
+          case 'final':
+            paymentAmountDollars = total * 0.5;
+            paymentDescription = `Final Payment (50%) — ${estimate.projectType || 'Project'}`;
+            break;
+          case 'full':
+            paymentAmountDollars = balanceDue > 0 ? balanceDue : total;
+            paymentDescription = `Full Payment — ${estimate.projectType || 'Project'}`;
+            break;
+          case 'custom':
+            paymentAmountDollars = parseFloat(customAmount) || balanceDue;
+            paymentDescription = `Payment — ${estimate.projectType || 'Project'}`;
+            break;
+          default:
+            paymentAmountDollars = balanceDue > 0 ? balanceDue : total;
+            paymentDescription = `Payment — ${estimate.projectType || 'Project'}`;
+        }
+
+        const paymentAmountCents = Math.round(paymentAmountDollars * 100);
+
+        // ——— Create Stripe Checkout session (real payment link) ———
+        let stripePaymentLink: string | null = null;
+        let invoiceNumber = `INV-${Date.now()}`;
+
+        if (user.stripeConnectAccountId) {
+          try {
+            // Verify Stripe Connect account is active
+            const account = await stripe.accounts.retrieve(user.stripeConnectAccountId);
+            if (account.charges_enabled && paymentAmountCents >= 50) {
+              const { resolveAppBaseUrl } = await import('./utils/url-helpers');
+              const isLiveMode = process.env.STRIPE_SECRET_KEY?.startsWith('sk_live_');
+              const baseUrl = resolveAppBaseUrl({ isLiveMode });
+
+              // Generate invoice number via service
+              invoiceNumber = await contractorPaymentService.generateInvoiceNumber(userId);
+
+              // Create payment record
+              const paymentRecord = await storage.createProjectPayment({
+                projectId: 0,
+                firebaseProjectId: firebaseProjectId || undefined,
+                userId,
+                amount: paymentAmountCents,
+                type: paymentType === 'deposit' ? 'deposit' : paymentType === 'final' ? 'final' : 'additional',
+                status: 'pending',
+                description: paymentDescription,
+                clientEmail: estimate.clientEmail || emailConfig?.to,
+                clientName: estimate.clientName,
+                invoiceNumber,
+              });
+
+              const platformFeeCents = Math.round(paymentAmountCents * 0.005);
+              const session = await stripe.checkout.sessions.create({
+                payment_method_types: ['card'],
+                line_items: [{
+                  price_data: {
+                    currency: 'usd',
+                    product_data: {
+                      name: paymentDescription,
+                      description: `Invoice #${invoiceNumber} — ${estimate.clientName}`,
+                    },
+                    unit_amount: paymentAmountCents,
+                  },
+                  quantity: 1,
+                }],
+                mode: 'payment',
+                success_url: `${baseUrl}/payment-success?payment_id=${paymentRecord.id}&session_id={CHECKOUT_SESSION_ID}`,
+                cancel_url: `${baseUrl}/project-payments`,
+                customer_email: estimate.clientEmail || undefined,
+                metadata: {
+                  paymentId: paymentRecord.id.toString(),
+                  firebaseProjectId: firebaseProjectId || '',
+                  userId: userId.toString(),
+                  type: paymentType,
+                  invoiceNumber,
+                  source: 'invoice-with-payment-link',
+                },
+                payment_intent_data: {
+                  application_fee_amount: platformFeeCents,
+                },
+              }, { stripeAccount: user.stripeConnectAccountId });
+
+              stripePaymentLink = session.url;
+
+              // Update payment record with Stripe session
+              await storage.updateProjectPayment(paymentRecord.id, {
+                stripeCheckoutSessionId: session.id,
+                checkoutUrl: session.url || '',
+                paymentLinkUrl: session.url || '',
+              });
+
+              console.log(`✅ [INVOICE+PAYMENT] Stripe session created: ${session.id}, amount: $${paymentAmountDollars.toFixed(2)}`);
+            }
+          } catch (stripeErr: any) {
+            console.error('⚠️  [INVOICE+PAYMENT] Stripe session creation failed, sending invoice without payment link:', stripeErr.message);
+            // Graceful degradation: send invoice without payment link
+          }
+        }
+
+        // ——— Send invoice email with the real Stripe link ———
+        const subtotal: number = estimate.subtotal || 0;
+        const discountAmount: number = estimate.discountAmount || 0;
+        const tax: number = estimate.tax || 0;
+
+        const emailData = {
+          userId: firebaseUid,
+          contractor: {
+            company: profile.company || 'Your Company',
+            email: profile.email || '',
+            phone: profile.phone || '',
+            address: profile.address || '',
+            logo: profile.logo || undefined,
+          },
+          client: {
+            name: estimate.clientName || '',
+            email: estimate.clientEmail || emailConfig?.to || '',
+            phone: estimate.clientPhone || '',
+            address: estimate.clientAddress || '',
+          },
+          invoice: {
+            number: invoiceNumber,
+            date: new Date().toLocaleDateString('en-US'),
+            dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US'),
+            items: (estimate.items || []).map((item: any) => ({
+              description: item.name || item.description || '',
+              quantity: item.quantity || 1,
+              unitPrice: item.unitPrice || 0,
+              total: item.totalPrice || item.quantity * item.unitPrice || 0,
+            })),
+            subtotal,
+            tax,
+            discountAmount,
+            total,
+            amountPaid,
+            balanceDue: total - amountPaid,
+          },
+          paymentLink: stripePaymentLink || undefined,
+          ccContractor: emailConfig?.ccContractor !== false,
+          testMode: false,
+        };
+
+        const result = await sendInvoiceEmail(emailData);
+
+        if (result.success) {
+          return res.json({
+            success: true,
+            messageId: result.messageId,
+            paymentLinkUrl: stripePaymentLink,
+            invoiceNumber,
+            paymentAmountDollars,
+            message: stripePaymentLink
+              ? `Invoice sent with Stripe payment link ($${paymentAmountDollars.toFixed(2)})`
+              : 'Invoice sent (no Stripe Connect configured)',
+          });
+        } else {
+          throw new Error(result.error || 'Failed to send invoice email');
+        }
+      } catch (error) {
+        console.error('❌ [INVOICE+PAYMENT] Error:', error);
+        return res.status(500).json({
+          success: false,
+          error: 'Error sending invoice with payment link',
+          details: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    },
+  );
 
   // 🚀 NEW: Professional Puppeteer PDF Generation (replaces PDFMonkey)
   // 🔥 DEFINITIVE FIX: Always fetch contractor data from Firebase in real-time
@@ -6544,54 +6755,79 @@ ENHANCED LEGAL CLAUSE:`;
     "/api/subscription/setup-intent",
     async (req: Request, res: Response) => {
       try {
-        // En un entorno real, usaríamos req.isAuthenticated() desde passport
-        // Para desarrollo, asumiremos que estamos autenticados
-        // if (!req.isAuthenticated()) {
-        //   return res.status(401).json({ message: "No autenticado" });
-        // }
-
-        // Usar un ID de usuario fijo para desarrollo
-        const userId = 1; // En producción: req.user.id
+        // 🔐 FIX: Resolve the authenticated user instead of hardcoded userId=1
+        let firebaseUid: string | undefined;
+        const sessionCookie = (req as any).cookies?.__session;
+        if (sessionCookie) {
+          try {
+            const decoded = await admin.auth().verifySessionCookie(sessionCookie, true);
+            firebaseUid = decoded.uid;
+          } catch {}
+        }
+        if (!firebaseUid) {
+          const authHeader = req.headers.authorization;
+          if (authHeader?.startsWith('Bearer ')) {
+            try {
+              const decoded = await admin.auth().verifyIdToken(authHeader.substring(7));
+              firebaseUid = decoded.uid;
+            } catch {}
+          }
+        }
+        if (!firebaseUid && (req as any).firebaseUser?.uid) {
+          firebaseUid = (req as any).firebaseUser.uid;
+        }
+        if (!firebaseUid) {
+          return res.status(401).json({ message: 'Authentication required' });
+        }
+        const userId = await userMappingService.getOrCreateUserIdForFirebaseUid(firebaseUid);
 
         // Obtenemos la suscripción del usuario para conseguir el customerId
         let subscription = await storage.getUserSubscriptionByUserId(userId);
 
-        // Si no existe una suscripción con customerId, creamos un cliente
-        if (!subscription || !subscription.stripeCustomerId) {
-          // Primero, verificamos si existe el usuario
+        // Helper: create a fresh Stripe customer and persist it
+        const createAndPersistCustomer = async () => {
           const user = await storage.getUser(userId);
-          if (!user) {
-            return res.status(404).json({ message: "Usuario no encontrado" });
-          }
-
-          // Crear un cliente en Stripe
+          if (!user) throw new Error('Usuario no encontrado');
           const customer = await stripeService.createCustomer({
             email: user.email || undefined,
             name: user.username,
           });
+          console.log(`✅ [SETUP-INTENT] Created new Stripe customer: ${customer.id} for user ${userId}`);
+          return customer;
+        };
 
-          // Si no hay suscripción, la creamos
+        // Si no existe una suscripción con customerId, creamos un cliente
+        if (!subscription || !subscription.stripeCustomerId) {
+          const customer = await createAndPersistCustomer();
           if (!subscription) {
             subscription = await storage.createUserSubscription({
               userId,
               planId: null,
-              status: "inactive",
+              status: 'inactive',
               stripeCustomerId: customer.id,
               stripeSubscriptionId: null,
-              currentPeriodStart: new Date(), // Usamos campos correctos del schema
+              currentPeriodStart: new Date(),
               currentPeriodEnd: null,
               cancelAtPeriodEnd: false,
-              billingCycle: "monthly",
+              billingCycle: 'monthly',
               nextBillingDate: null,
             });
           } else {
-            // Actualizar la suscripción existente con el customerId
-            subscription = await storage.updateUserSubscription(
-              subscription.id,
-              {
-                stripeCustomerId: customer.id,
-              },
-            );
+            subscription = await storage.updateUserSubscription(subscription.id, {
+              stripeCustomerId: customer.id,
+            });
+          }
+        } else {
+          // 🔧 FIX: Validate stored Stripe customer still exists in current Stripe environment.
+          // Stale IDs (from test vs live env mismatch, or deleted customers) cause
+          // "No such customer" errors. Create a fresh customer and update the record.
+          const isValid = await stripeService.validateCustomer(subscription.stripeCustomerId);
+          if (!isValid) {
+            console.warn(`⚠️  [SETUP-INTENT] Stale Stripe customer ${subscription.stripeCustomerId} for user ${userId} — creating new one`);
+            const customer = await createAndPersistCustomer();
+            subscription = await storage.updateUserSubscription(subscription.id, {
+              stripeCustomerId: customer.id,
+            });
           }
         }
 
@@ -6602,8 +6838,8 @@ ENHANCED LEGAL CLAUSE:`;
 
         res.json({ clientSecret: setupIntent.client_secret });
       } catch (error) {
-        console.error("Error al crear setup intent:", error);
-        res.status(500).json({ message: "Error al procesar la solicitud" });
+        console.error('Error al crear setup intent:', error);
+        res.status(500).json({ message: 'Error al procesar la solicitud' });
       }
     },
   );

@@ -128,6 +128,8 @@ const Invoices: React.FC = () => {
     notes: "",
     sendEmail: false,
     recipientEmail: "",
+    paymentLinkType: "full" as "deposit" | "final" | "full" | "none", // type of Stripe payment link to attach
+    customPaymentAmount: "", // only used when paymentLinkType is custom
   });
 
   // Load saved estimates from Firebase
@@ -444,6 +446,109 @@ const Invoices: React.FC = () => {
       console.error("❌ [PREVIEW] Error sending email:", error);
       toast({
         title: "⚠️ Error al enviar email",
+        description: error instanceof Error ? error.message : "Error desconocido",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
+  // Handle sending invoice + real Stripe payment link via the unified backend endpoint
+  const handleSendInvoiceWithPaymentLink = async () => {
+    if (!selectedEstimate || !profile || !invoiceConfig.recipientEmail) {
+      toast({
+        title: "⚠️ Error",
+        description: "Por favor ingresa un email del destinatario",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsSendingEmail(true);
+      const amounts = calculateAmounts();
+
+      const payload = {
+        profile: {
+          company: profile.company,
+          email: profile.email || currentUser?.email || "",
+          phone: profile.phone || "",
+          address: profile.address
+            ? `${profile.address}${profile.city ? ", " + profile.city : ""}${profile.state ? ", " + profile.state : ""}${profile.zipCode ? " " + profile.zipCode : ""}`
+            : "",
+          logo: profile.logo || "",
+        },
+        estimate: {
+          clientName: selectedEstimate.clientName,
+          clientEmail: invoiceConfig.recipientEmail,
+          clientPhone: selectedEstimate.clientPhone || "",
+          clientAddress: selectedEstimate.clientAddress || "",
+          projectType: selectedEstimate.projectType || "",
+          items: selectedEstimate.items || [],
+          subtotal: selectedEstimate.subtotal || 0,
+          discountAmount: selectedEstimate.discount || 0,
+          tax: selectedEstimate.tax || 0,
+          total: selectedEstimate.total || 0,
+        },
+        invoiceConfig: {
+          projectCompleted: invoiceConfig.projectCompleted,
+          downPaymentAmount: invoiceConfig.paidAmount.toString(),
+          totalAmountPaid: invoiceConfig.paidAmount >= amounts.total,
+        },
+        emailConfig: {
+          to: invoiceConfig.recipientEmail,
+          ccContractor: true,
+        },
+        paymentType: invoiceConfig.paymentLinkType, // 'deposit' | 'final' | 'full'
+        firebaseProjectId: selectedEstimate.id || undefined,
+      };
+
+      console.log("💳 [INVOICE+PAYMENT] Sending invoice with payment link");
+      console.log("   → Payment type:", invoiceConfig.paymentLinkType);
+      console.log("   → To:", invoiceConfig.recipientEmail);
+
+      const response = await fetch("/api/invoice-with-payment-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.details || err.message || "Error al enviar");
+      }
+
+      const result = await response.json();
+      console.log("✅ [INVOICE+PAYMENT] Success:", result);
+
+      toast({
+        title: "💳 Invoice enviado con link de pago",
+        description: result.paymentLinkUrl
+          ? `Factura enviada a ${invoiceConfig.recipientEmail} con link de pago por $${result.paymentAmountDollars?.toFixed(2)}`
+          : `Factura enviada a ${invoiceConfig.recipientEmail}`,
+      });
+
+      // Reset wizard
+      setTimeout(() => {
+        setActiveTab("history");
+        setCurrentStep(1);
+        setSelectedEstimate(null);
+        setInvoiceConfig({
+          paymentTerms: 30,
+          paidAmount: 0,
+          projectCompleted: true,
+          notes: "",
+          sendEmail: false,
+          recipientEmail: "",
+          paymentLinkType: "full",
+          customPaymentAmount: "",
+        });
+      }, 2000);
+    } catch (error) {
+      console.error("❌ [INVOICE+PAYMENT] Error:", error);
+      toast({
+        title: "⚠️ Error al enviar",
         description: error instanceof Error ? error.message : "Error desconocido",
         variant: "destructive",
       });
@@ -844,6 +949,8 @@ const Invoices: React.FC = () => {
           notes: "",
           sendEmail: false,
           recipientEmail: "",
+          paymentLinkType: "full",
+          customPaymentAmount: "",
         });
       }, 2000);
     } catch (error) {
@@ -1290,65 +1397,132 @@ const Invoices: React.FC = () => {
                   </div>
 
                   {invoiceConfig.sendEmail && (
-                    <div>
-                      <Label htmlFor="recipientEmail" className="text-cyan-400">
-                        Email del destinatario
-                      </Label>
-                      <Input
-                        id="recipientEmail"
-                        type="email"
-                        value={invoiceConfig.recipientEmail}
-                        onChange={(e) =>
-                          setInvoiceConfig((prev) => ({
-                            ...prev,
-                            recipientEmail: e.target.value,
-                          }))
-                        }
-                        placeholder="cliente@ejemplo.com"
-                        className="bg-gray-800 border-gray-600 text-white placeholder-gray-400"
-                      />
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="recipientEmail" className="text-cyan-400">
+                          Email del destinatario
+                        </Label>
+                        <Input
+                          id="recipientEmail"
+                          type="email"
+                          value={invoiceConfig.recipientEmail}
+                          onChange={(e) =>
+                            setInvoiceConfig((prev) => ({
+                              ...prev,
+                              recipientEmail: e.target.value,
+                            }))
+                          }
+                          placeholder="cliente@ejemplo.com"
+                          className="bg-gray-800 border-gray-600 text-white placeholder-gray-400"
+                        />
+                      </div>
+
+                      {/* Payment Link Type Selector */}
+                      {profile?.stripeConnectAccountId && selectedEstimate && (
+                        <div className="bg-gray-800 border border-cyan-500/30 rounded-lg p-4 space-y-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-cyan-400 text-sm font-semibold">⚡ Incluir link de pago Stripe
+                            </span>
+                            <span className="text-xs bg-cyan-900/40 text-cyan-300 px-2 py-0.5 rounded-full">Recomendado</span>
+                          </div>
+                          <p className="text-xs text-gray-400">
+                            El cliente recibirá el invoice con un botón para pagar directamente con tarjeta.
+                          </p>
+                          <div className="grid grid-cols-2 gap-2">
+                            {[
+                              { value: 'deposit', label: 'Deposit 50%', amount: (selectedEstimate.total || 0) * 0.5 },
+                              { value: 'final', label: 'Final 50%', amount: (selectedEstimate.total || 0) * 0.5 },
+                              { value: 'full', label: 'Full Balance', amount: Math.max(0, (selectedEstimate.total || 0) - invoiceConfig.paidAmount) },
+                              { value: 'none', label: 'Sin link de pago', amount: null },
+                            ].map((opt) => (
+                              <button
+                                key={opt.value}
+                                type="button"
+                                onClick={() => setInvoiceConfig(prev => ({ ...prev, paymentLinkType: opt.value as any }))}
+                                className={`p-3 rounded-lg border text-left transition-all ${
+                                  invoiceConfig.paymentLinkType === opt.value
+                                    ? 'border-cyan-400 bg-cyan-900/30 text-white'
+                                    : 'border-gray-600 bg-gray-700/50 text-gray-300 hover:border-gray-500'
+                                }`}
+                              >
+                                <div className="text-xs font-semibold">{opt.label}</div>
+                                {opt.amount !== null && (
+                                  <div className="text-cyan-400 font-bold text-sm mt-1">
+                                    ${opt.amount.toFixed(2)}
+                                  </div>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
 
                 {/* Action buttons */}
-                <div className="flex gap-3">
-                  <Button 
-                    onClick={canUseInvoices ? handleGenerateInvoice : () => showUpgradeModal('invoices', 'Genera facturas profesionales ilimitadas con planes superiores')} 
-                    disabled={isGenerating || !canUseInvoices}
-                    className={`flex-1 ${canUseInvoices ? 'bg-cyan-400 text-black hover:bg-cyan-300' : 'bg-gray-600 text-gray-400 cursor-not-allowed'}`}
-                    data-testid="button-generate-invoice"
-                  >
-                    {isGenerating ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Generando...
-                      </>
-                    ) : (
-                      <>
-                        <Download className="mr-2 h-4 w-4" />
-                        {!canUseInvoices ? '🔒 Generar Factura (Premium)' : 'Generar Factura'}
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    onClick={canUseInvoices ? () => {
-                      setEmailPreviewContent(generateEmailPreview());
-                      setShowEmailPreview(true);
-                    } : () => showUpgradeModal('invoices', 'Accede a vista previa de emails profesionales con planes superiores')}
-                    disabled={isGenerating || !canUseInvoices}
-                    className={`flex-1 ${canUseInvoices ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700' : 'bg-gray-600 text-gray-400 cursor-not-allowed border-gray-600'}`}
-                    variant="outline"
-                    data-testid="button-preview-email"
-                  >
-                    <Mail className="mr-2 h-4 w-4" />
-                    {!canUseInvoices ? '🔒 Vista Previa Email (Premium)' : 'Vista Previa Email'}
-                  </Button>
+                <div className="space-y-3">
+                  {/* Primary: Send Invoice + Payment Link (when email + Stripe configured) */}
+                  {invoiceConfig.sendEmail && invoiceConfig.recipientEmail && profile?.stripeConnectAccountId && invoiceConfig.paymentLinkType !== 'none' ? (
+                    <Button
+                      onClick={canUseInvoices ? handleSendInvoiceWithPaymentLink : () => showUpgradeModal('invoices', 'Envía facturas con link de pago integrado')}
+                      disabled={isSendingEmail || !canUseInvoices}
+                      className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold"
+                    >
+                      {isSendingEmail ? (
+                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Enviando...</>
+                      ) : (
+                        <><Mail className="mr-2 h-4 w-4" />Enviar Invoice + Link de Pago</>
+                      )}
+                    </Button>
+                  ) : invoiceConfig.sendEmail && invoiceConfig.recipientEmail ? (
+                    <Button
+                      onClick={canUseInvoices ? handleSendEmailFromPreview : () => showUpgradeModal('invoices', 'Envía facturas por email')}
+                      disabled={isSendingEmail || !canUseInvoices}
+                      className="w-full bg-cyan-600 hover:bg-cyan-500 text-white"
+                    >
+                      {isSendingEmail ? (
+                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Enviando...</>
+                      ) : (
+                        <><Mail className="mr-2 h-4 w-4" />Enviar Invoice por Email</>
+                      )}
+                    </Button>
+                  ) : null}
+
+                  <div className="flex gap-3">
+                    <Button 
+                      onClick={canUseInvoices ? handleGenerateInvoice : () => showUpgradeModal('invoices', 'Genera facturas profesionales ilimitadas con planes superiores')} 
+                      disabled={isGenerating || !canUseInvoices}
+                      className={`flex-1 ${canUseInvoices ? 'bg-gray-700 border-gray-600 text-white hover:bg-gray-600' : 'bg-gray-600 text-gray-400 cursor-not-allowed'}`}
+                      variant="outline"
+                      data-testid="button-generate-invoice"
+                    >
+                      {isGenerating ? (
+                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generando...</>
+                      ) : (
+                        <><Download className="mr-2 h-4 w-4" />{!canUseInvoices ? '🔒 Descargar PDF' : 'Descargar PDF'}</>
+                      )}
+                    </Button>
+                    <Button
+                      onClick={canUseInvoices ? () => {
+                        setEmailPreviewContent(generateEmailPreview());
+                        setShowEmailPreview(true);
+                      } : () => showUpgradeModal('invoices', 'Accede a vista previa de emails profesionales con planes superiores')}
+                      disabled={isGenerating || !canUseInvoices}
+                      className={`flex-1 ${canUseInvoices ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700' : 'bg-gray-600 text-gray-400 cursor-not-allowed border-gray-600'}`}
+                      variant="outline"
+                      data-testid="button-preview-email"
+                    >
+                      <Mail className="mr-2 h-4 w-4" />
+                      {!canUseInvoices ? '🔒 Vista Previa' : 'Vista Previa'}
+                    </Button>
+                  </div>
                 </div>
 
                 <p className="text-sm text-gray-400 text-center">
-                  Puede descargar la factura como PDF o enviarla directamente
-                  por email al cliente
+                  {invoiceConfig.sendEmail && profile?.stripeConnectAccountId
+                    ? 'El cliente recibirá el invoice con un botón de pago directo con tarjeta.'
+                    : 'Puede descargar la factura como PDF o enviarla directamente por email al cliente.'}
                 </p>
               </CardContent>
             </Card>

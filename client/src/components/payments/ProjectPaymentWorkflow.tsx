@@ -678,6 +678,45 @@ export default function ProjectPaymentWorkflow({
                   )}
                 </div>
 
+                {/* Payment Type Selector — clarifies what the amount represents */}
+                {selectedProject && (
+                  <div className="bg-gray-800 p-4 rounded-lg space-y-3">
+                    <Label className="text-white text-sm font-medium">Payment Type</Label>
+                    <Select
+                      value={paymentConfig.type}
+                      onValueChange={(value: any) => {
+                        const newAmount = calculateSuggestedAmount(selectedProject, value);
+                        setPaymentConfig({
+                          ...paymentConfig,
+                          type: value,
+                          amount: newAmount.toString(),
+                          description: `${value === 'custom' ? 'Payment' : value} for ${selectedProject.projectType || 'project'}`,
+                        });
+                      }}
+                    >
+                      <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-gray-800 border-gray-600">
+                        <SelectItem value="deposit">
+                          Deposit (50%) — ${calculateSuggestedAmount(selectedProject, 'deposit').toFixed(2)}
+                        </SelectItem>
+                        <SelectItem value="final">
+                          Final Payment (50%) — ${calculateSuggestedAmount(selectedProject, 'final').toFixed(2)}
+                        </SelectItem>
+                        <SelectItem value="milestone">Milestone Payment</SelectItem>
+                        <SelectItem value="custom">Custom Amount</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-gray-400">
+                      {paymentConfig.type === 'deposit' && `50% upfront deposit of $${parseFloat(paymentConfig.amount || '0').toFixed(2)} from project total $${(selectedProject.totalPrice || 0).toFixed(2)}`}
+                      {paymentConfig.type === 'final' && `50% final payment of $${parseFloat(paymentConfig.amount || '0').toFixed(2)} from project total $${(selectedProject.totalPrice || 0).toFixed(2)}`}
+                      {paymentConfig.type === 'milestone' && `Milestone payment — edit the amount above as needed`}
+                      {paymentConfig.type === 'custom' && `Custom amount — edit the amount above as needed`}
+                    </p>
+                  </div>
+                )}
+
                 <Separator className="bg-gray-700" />
 
                 {/* Payment Method Selection - Large Visual Buttons */}

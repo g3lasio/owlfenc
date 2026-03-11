@@ -563,7 +563,7 @@ export class ContractorPaymentService {
    * RACE CONDITION FIX: Uses MAX(id) + 1 instead of count to prevent duplicates
    * when multiple payments are created simultaneously
    */
-  private async generateInvoiceNumber(userId: number): Promise<string> {
+  async generateInvoiceNumber(userId: number): Promise<string> {
     const year = new Date().getFullYear();
     
     // 🔒 ATOMIC OPERATION: Get the highest invoice sequence number for this user

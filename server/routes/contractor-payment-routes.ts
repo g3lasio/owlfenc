@@ -24,8 +24,9 @@ function getErrorStatusCode(errorMessage: string): number {
 
 // Use Firebase Authentication instead of JWT
 import { verifyFirebaseAuth } from "../middleware/firebase-auth";
+import { db } from '../firebase-admin'; // For fetching estimate items for invoice emails
 import { requireSubscriptionLevel, PermissionLevel } from "../middleware/subscription-auth";
-import { requireCredits } from "../middleware/credit-check"; // 💳 Pure PAYG: credit-based access
+import { requireCredits, deductFeatureCredits } from "../middleware/credit-check"; // 💳 Pure PAYG: credit-based access
 
 // DEPRECATED: Using Firebase Auth instead of JWT
 export const authenticateJWT = verifyFirebaseAuth;
@@ -193,32 +194,86 @@ router.post("/create",
         const amountFormatted = (validatedData.amount / 100).toFixed(2);
         const clientName = validatedData.clientName || 'Valued Customer';
         const description = validatedData.description || 'Payment';
+
+        // Fetch estimate items from Firebase if a project is linked (for detailed invoice)
+        let estimateItemsHtml = '';
+        let estimateTotalsHtml = '';
+        const linkedProjectId = validatedData.projectId ? String(validatedData.projectId) : null;
+        if (linkedProjectId) {
+          try {
+            const docRef = db.collection('estimates').doc(linkedProjectId);
+            const docSnap = await docRef.get();
+            if (docSnap.exists) {
+              const estimateData = docSnap.data();
+              const items: any[] = estimateData?.items || estimateData?.lineItems || [];
+              const projectTotal: number = estimateData?.total || estimateData?.totalAmount || 0;
+              const projectSubtotal: number = estimateData?.subtotal || 0;
+              const projectTax: number = estimateData?.tax || 0;
+              if (items.length > 0) {
+                const rowsHtml = items.map((item: any) => {
+                  const qty = item.quantity || 1;
+                  const price = item.unitPrice || item.price || 0;
+                  const total = item.totalPrice || (qty * price);
+                  return `<tr>
+                    <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; color: #374151;">${item.name || item.description || 'Item'}</td>
+                    <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: center; color: #374151;">${qty}</td>
+                    <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: right; color: #374151;">$${price.toFixed(2)}</td>
+                    <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: right; color: #374151;">$${total.toFixed(2)}</td>
+                  </tr>`;
+                }).join('');
+                estimateItemsHtml = `
+                  <h3 style="color: #374151; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; margin: 25px 0 10px;">Project Details</h3>
+                  <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
+                    <thead>
+                      <tr style="background: #f9fafb;">
+                        <th style="padding: 10px 12px; text-align: left; border-bottom: 2px solid #e5e7eb; color: #6b7280; font-size: 12px; text-transform: uppercase;">Description</th>
+                        <th style="padding: 10px 12px; text-align: center; border-bottom: 2px solid #e5e7eb; color: #6b7280; font-size: 12px; text-transform: uppercase;">Qty</th>
+                        <th style="padding: 10px 12px; text-align: right; border-bottom: 2px solid #e5e7eb; color: #6b7280; font-size: 12px; text-transform: uppercase;">Unit Price</th>
+                        <th style="padding: 10px 12px; text-align: right; border-bottom: 2px solid #e5e7eb; color: #6b7280; font-size: 12px; text-transform: uppercase;">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>${rowsHtml}</tbody>
+                  </table>`;
+                estimateTotalsHtml = `
+                  <div style="background: #f9fafb; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                    ${projectSubtotal > 0 ? `<div style="display: flex; justify-content: space-between; margin-bottom: 8px;"><span style="color: #6b7280;">Subtotal:</span><span>$${projectSubtotal.toFixed(2)}</span></div>` : ''}
+                    ${projectTax > 0 ? `<div style="display: flex; justify-content: space-between; margin-bottom: 8px;"><span style="color: #6b7280;">Tax:</span><span>$${projectTax.toFixed(2)}</span></div>` : ''}
+                    <div style="display: flex; justify-content: space-between; padding-top: 10px; border-top: 2px solid #e5e7eb;"><span style="font-weight: 600; color: #111827;">Project Total:</span><span style="font-weight: 700; color: #0891b2;">$${projectTotal.toFixed(2)}</span></div>
+                    <div style="display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e5e7eb;"><span style="font-weight: 600; color: #111827;">Amount Due Now:</span><span style="font-weight: 700; color: #dc2626;">$${amountFormatted}</span></div>
+                  </div>`;
+              }
+            }
+          } catch (fbErr) {
+            console.warn('⚠️ [AUTO-EMAIL] Could not fetch estimate items from Firebase:', fbErr);
+          }
+        }
         
         const emailHtml = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f8f9fa;">
             <div style="background: white; border-radius: 12px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
               <h2 style="color: #1a1a1a; margin-bottom: 20px; border-bottom: 3px solid #22c55e; padding-bottom: 10px;">
-                Payment Request
+                Payment Request — Invoice #${result.invoiceNumber}
               </h2>
               
-              <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6;">
-                Hello ${clientName},
-              </p>
+              <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6;">Hello ${clientName},</p>
               
               <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6;">
-                You have received a payment request for <strong>$${amountFormatted}</strong>.
+                You have a payment request for <strong>$${amountFormatted}</strong>.
               </p>
               
               <div style="background: #f0fdf4; border-left: 4px solid #22c55e; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0;">
                 <p style="margin: 0; color: #166534; font-weight: 500;">${description}</p>
               </div>
+
+              ${estimateItemsHtml}
+              ${estimateTotalsHtml}
               
               <div style="text-align: center; margin: 30px 0;">
                 <a href="${result.paymentLinkUrl}" 
                    style="display: inline-block; background: linear-gradient(135deg, #22c55e, #16a34a); color: white; 
                           padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; 
                           font-size: 16px; box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);">
-                  Pay Now - $${amountFormatted}
+                  Pay Now &#8212; $${amountFormatted}
                 </a>
               </div>
               
@@ -238,7 +293,7 @@ router.post("/create",
         const { data, error } = await resend.emails.send({
           from: 'Owl Fenc Payments <payments@owlfenc.com>',
           to: [validatedData.clientEmail],
-          subject: `Payment Request: $${amountFormatted}`,
+          subject: `Payment Request \u2014 Invoice #${result.invoiceNumber} ($${amountFormatted})`,
           html: emailHtml,
         });
         
@@ -252,6 +307,10 @@ router.post("/create",
         console.error('📧 [AUTO-EMAIL] Error sending payment link email:', emailError);
       }
     }
+
+    // 💳 FIX: Deduct credits AFTER successful payment link creation
+    // The requireCredits middleware only checks balance; actual deduction must be called here.
+    await deductFeatureCredits(req, result.paymentId?.toString(), `Payment link created — Invoice #${result.invoiceNumber}`);
 
     res.json({
       success: true,
@@ -380,6 +439,9 @@ router.post(
         }
       }
 
+      // 💳 FIX: Deduct credits AFTER successful payment link creation
+      await deductFeatureCredits(req, result.paymentId?.toString(), `Payment link created — Invoice #${result.invoiceNumber}`);
+
       res.json({
         success: true,
         data: result,
@@ -501,12 +563,15 @@ router.post(
         totalAmount,
       );
 
+      // 💳 FIX: Deduct credits AFTER successful quick payment link creation
+      await deductFeatureCredits(req, result.paymentId?.toString(), `Quick payment link created — Invoice #${result.invoiceNumber}`);
+
       res.json({
         success: true,
         data: result,
       });
     } catch (error) {
-      console.error("Error creating quick payment link:", error);
+      console.error("Error creating quick payment link:", error);;
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
       const statusCode = getErrorStatusCode(errorMessage);
       res.status(statusCode).json({

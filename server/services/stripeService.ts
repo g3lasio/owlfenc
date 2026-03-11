@@ -857,6 +857,23 @@ class StripeService {
   }
 
   /**
+   * Validates that a Stripe customer ID exists in the current Stripe environment.
+   * Returns true if valid, false if the customer was not found (stale/wrong env).
+   */
+  async validateCustomer(customerId: string): Promise<boolean> {
+    try {
+      const customer = await stripe.customers.retrieve(customerId);
+      // A deleted customer is returned as { deleted: true } — treat as invalid
+      return !(customer as any).deleted;
+    } catch (error: any) {
+      if (error.code === 'resource_missing') {
+        return false;
+      }
+      throw error;
+    }
+  }
+
+  /**
    * Crea un Setup Intent para registrar una tarjeta
    */
   async createSetupIntent(customerId: string): Promise<Stripe.SetupIntent> {
