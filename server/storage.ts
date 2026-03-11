@@ -134,6 +134,7 @@ export interface IStorage {
   // Property Search History methods
   getPropertySearchHistory(id: number): Promise<PropertySearchHistory | undefined>;
   getPropertySearchHistoryByUserId(userId: number): Promise<PropertySearchHistory[]>;
+  getLatestPropertySearchByAddress(userId: number, address: string): Promise<PropertySearchHistory | null>;
   createPropertySearchHistory(history: InsertPropertySearchHistory): Promise<PropertySearchHistory>;
   updatePropertySearchHistory(id: number, data: Partial<PropertySearchHistory>): Promise<PropertySearchHistory>;
   
@@ -1054,6 +1055,14 @@ export class StorageManager implements IStorage {
       this.SHORT_CACHE_TTL
     );
   }
+  async getLatestPropertySearchByAddress(userId: number, address: string): Promise<PropertySearchHistory | null> {
+    return this.executeWithFailover<PropertySearchHistory | null>(
+      'getLatestPropertySearchByAddress',
+      () => this.primaryStorage.getLatestPropertySearchByAddress(userId, address),
+      () => this.backupStorage!.getLatestPropertySearchByAddress(userId, address),
+    );
+  }
+
 
   async createPropertySearchHistory(history: InsertPropertySearchHistory): Promise<PropertySearchHistory> {
     return this.executeWithFailover<PropertySearchHistory>(

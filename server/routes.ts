@@ -8090,10 +8090,10 @@ ENHANCED LEGAL CLAUSE:`;
       console.log("📦 [PROPERTY-API] Loading secure ATTOM service");
       const { secureAttomService } = await import('./services/secure-attom-service-clean');
       
-      console.log("🌐 [PROPERTY-API] Calling ATTOM service");
-      const propertyData = await secureAttomService.getPropertyDetails(address, { city, state, zip });
+      console.log("🌐 [PROPERTY-API] Calling ATTOM service (with raw record for caching)");
+      const attomResult = await secureAttomService.getPropertyDetailsWithRaw(address, { city, state, zip });
 
-      if (!propertyData) {
+      if (!attomResult) {
         console.log("📭 Property not found");
         return res.status(404).json({
           message: "No se encontró información para la dirección proporcionada",
@@ -8101,6 +8101,8 @@ ENHANCED LEGAL CLAUSE:`;
         });
       }
 
+      const propertyData = attomResult.details;
+      const rawAttomRecord = attomResult.rawRecord;
       console.log(`✅ [PROPERTY-API] Property verification successful${user ? ` for user ${user.id}` : ''}`);
 
       // 🛡️ SAVE SEARCH TO HISTORY ONLY IF USER IS AUTHENTICATED
@@ -8114,7 +8116,7 @@ ENHANCED LEGAL CLAUSE:`;
             address,
             ownerName: propertyData.owner || null,
             parcelNumber: propertyData.parcelNumber || null,
-            results: propertyData,
+            results: { ...propertyData, _rawAttomRecord: rawAttomRecord },
             title,
             isFavorite: false,
             tags: [] as string[],
@@ -8152,6 +8154,8 @@ ENHANCED LEGAL CLAUSE:`;
         console.log(`ℹ️ [PROPERTY-API] Historial no guardado - usuario no autenticado`);
       }
 
+      // 💳 PAYG: Deduct 15 credits AFTER successful property verification
+      await deductFeatureCredits(req, address, 'Property verification completed');
       return res.json(propertyData);
 
     } catch (error: any) {
@@ -8186,7 +8190,7 @@ ENHANCED LEGAL CLAUSE:`;
   });
 
   // 📄 ENDPOINT: Generate comprehensive property report PDF
-  app.post("/api/property/generate-full-report-pdf", requireAuth, requireCredits({ featureName: "propertyVerification" }), async (req: Request, res: Response) => {
+  app.post("/api/property/generate-full-report-pdf", requireAuth, async (req: Request, res: Response) => { // FREE: credits charged in /api/property/details
     try {
       const { address, city, state, zip } = req.body;
       
@@ -8223,12 +8227,28 @@ ENHANCED LEGAL CLAUSE:`;
       const { mapAttomToComprehensive } = await import('./services/attomDataMapper');
       const { propertyReportPdfService } = await import('./services/propertyReportPdfService');
       
-      // Get complete property data from ATTOM
-      console.log('🌐 [PROPERTY-PDF] Fetching complete property data from ATTOM');
-      console.log('🌐 [PROPERTY-PDF] Request params:', { address, city, state, zip });
+      // 💰 COST OPTIMIZATION: Use cached ATTOM data from search history (NO extra API call = NO extra charge)
+      console.log('📦 [PROPERTY-PDF] Looking up cached ATTOM data from search history');
+      let attomRecord: any = null;
       
-      const attomRecord = await secureAttomService.getCompletePropertyData(address, { city, state, zip });
-      console.log('✅ [PROPERTY-PDF] ATTOM data received:', !!attomRecord);
+      if (authUser?.internalUserId) {
+        try {
+          const cachedSearch = await storage.getLatestPropertySearchByAddress(authUser.internalUserId, address);
+          if (cachedSearch?.results && (cachedSearch.results as any)._rawAttomRecord) {
+            attomRecord = (cachedSearch.results as any)._rawAttomRecord;
+            console.log('✅ [PROPERTY-PDF] Using cached ATTOM record from search history (no API call needed)');
+          }
+        } catch (cacheError) {
+          console.log('⚠️ [PROPERTY-PDF] Could not retrieve cached data, falling back to ATTOM API');
+        }
+      }
+      
+      // Fallback: call ATTOM API if no cache found (edge case)
+      if (!attomRecord) {
+        console.log('🌐 [PROPERTY-PDF] Cache miss - fetching from ATTOM API (fallback)');
+        attomRecord = await secureAttomService.getCompletePropertyData(address, { city, state, zip });
+        console.log('✅ [PROPERTY-PDF] ATTOM data received from API:', !!attomRecord);
+      }
       
       if (!attomRecord) {
         console.log('❌ [PROPERTY-PDF] No ATTOM data found for address:', address);
@@ -8267,9 +8287,8 @@ ENHANCED LEGAL CLAUSE:`;
         await req.trackUsage();
       }
       
-      // 💳 PAYG: Deduct credits AFTER successful PDF generation
-      await deductFeatureCredits(req, address, 'Property report PDF generated');
-      console.log('✅ [PROPERTY-PDF] PDF generated successfully:', filename);
+      // 💰 NO CREDIT DEDUCTION HERE - credits were already charged in /api/property/details (15cr total)
+      console.log('✅ [PROPERTY-PDF] PDF generated successfully (no extra charge):', filename);
       res.send(pdfBuffer);
       
     } catch (error: any) {

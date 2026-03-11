@@ -398,6 +398,81 @@ class SecureAttomService {
   }
 
   /**
+   * Get property details AND the raw ATTOM record in a SINGLE API call.
+   * Use this to avoid two separate ATTOM calls (one for details, one for PDF).
+   * Returns { details, rawRecord } or null if not found.
+   */
+  async getPropertyDetailsWithRaw(
+    address: string,
+    addressComponents?: { city?: string; state?: string; zip?: string }
+  ): Promise<{ details: PropertyDetails; rawRecord: any } | null> {
+    console.log('🔍 [ATTOM-SERVICE-RAW] Starting combined property lookup for:', address);
+
+    if (!address?.trim()) throw new Error('Address is required');
+
+    try {
+      let components;
+      if (addressComponents && (addressComponents.city || addressComponents.state || addressComponents.zip)) {
+        const parsedStreet = this.parseAddress(address);
+        components = {
+          address1: parsedStreet.address1,
+          city: addressComponents.city || '',
+          state: addressComponents.state || '',
+          zip: addressComponents.zip || ''
+        };
+      } else {
+        components = this.parseAddress(address);
+      }
+
+      const address2Parts = [components.city, components.state, components.zip].filter(p => p && p.trim());
+      const address2 = address2Parts.join(', ');
+
+      let propertyRecord: any = null;
+
+      // Try expandedprofile first (most complete data)
+      try {
+        const data = await this.makeSecureRequest('/property/expandedprofile', {
+          address1: components.address1, address2, page: 1, pagesize: 1
+        });
+        if (data?.property?.length > 0) {
+          propertyRecord = data.property[0];
+          console.log('✅ [ATTOM-SERVICE-RAW] Found in expandedprofile');
+        }
+      } catch { console.log('⚠️ [ATTOM-SERVICE-RAW] expandedprofile failed'); }
+
+      // Fallback to basicprofile
+      if (!propertyRecord) {
+        try {
+          const data = await this.makeSecureRequest('/property/basicprofile', {
+            address1: components.address1, address2, page: 1, pagesize: 1
+          });
+          if (data?.property?.length > 0) {
+            propertyRecord = data.property[0];
+            console.log('✅ [ATTOM-SERVICE-RAW] Found in basicprofile');
+          }
+        } catch { console.log('⚠️ [ATTOM-SERVICE-RAW] basicprofile failed'); }
+      }
+
+      // Final fallback to property/detail
+      if (!propertyRecord) {
+        const data = await this.makeSecureRequest('/property/detail', {
+          address1: components.address1, address2, page: 1, pagesize: 1
+        });
+        if (!data?.property?.length) return null;
+        propertyRecord = data.property[0];
+        console.log('✅ [ATTOM-SERVICE-RAW] Found in property/detail');
+      }
+
+      const details = this.processPropertyData(propertyRecord, address);
+      return { details, rawRecord: propertyRecord };
+
+    } catch (error: any) {
+      console.error('🚨 [ATTOM-SERVICE-RAW] Failed:', error.message);
+      throw error;
+    }
+  }
+
+  /**
    * Process ATTOM property data into PropertyDetails format
    */
   private processPropertyData(property: any, address: string): PropertyDetails {

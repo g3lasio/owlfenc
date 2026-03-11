@@ -650,6 +650,15 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(propertySearchHistory.searchDate));
   }
 
+  async getLatestPropertySearchByAddress(userId: number, address: string): Promise<PropertySearchHistory | null> {
+    const results = await db.select()
+      .from(propertySearchHistory)
+      .where(and(eq(propertySearchHistory.userId, userId), eq(propertySearchHistory.address, address)))
+      .orderBy(desc(propertySearchHistory.searchDate))
+      .limit(1);
+    return results[0] || null;
+  }
+
   async createPropertySearchHistory(insertHistory: InsertPropertySearchHistory): Promise<PropertySearchHistory> {
     const [history] = await db
       .insert(propertySearchHistory)
