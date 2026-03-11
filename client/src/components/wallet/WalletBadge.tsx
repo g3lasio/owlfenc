@@ -8,7 +8,7 @@
 
 import { useState, useEffect } from 'react';
 import { Zap, AlertTriangle, Loader2 } from 'lucide-react';
-import { useWallet } from '@/hooks/useWallet';
+import { useWalletContext } from '@/contexts/WalletContext';
 import { TopUpModal } from './TopUpModal';
 import { cn } from '@/lib/utils';
 
@@ -18,7 +18,7 @@ interface WalletBadgeProps {
 }
 
 export function WalletBadge({ className, compact = false }: WalletBadgeProps) {
-  const { balance, isLoading, walletData } = useWallet();
+  const { balance, isLoading, walletData } = useWalletContext();
   const [showTopUpModal, setShowTopUpModal] = useState(false);
 
   // Escuchar evento global para abrir el modal

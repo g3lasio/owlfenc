@@ -28,6 +28,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useWallet, type WalletTransaction } from '@/hooks/useWallet';
+import { useWalletContext } from '@/contexts/WalletContext';
 import { TopUpModal } from '@/components/wallet/TopUpModal';
 import { cn } from '@/lib/utils';
 
@@ -115,13 +116,12 @@ export function WalletPage({ embedded = false }: { embedded?: boolean }) {
   const [fullHistory, setFullHistory] = useState<WalletTransaction[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
+  // Use global context for balance/walletData — keeps header badge and this page in sync
+  const { balance, walletData, isLoading, refreshBalance } = useWalletContext();
+  // Use local hook only for billing-specific fields not in global context
   const {
-    balance,
-    walletData,
     billingStatus,
     packages,
-    isLoading,
-    refreshBalance,
     initiateTopUp,
     isCheckingOut,
   } = useWallet();

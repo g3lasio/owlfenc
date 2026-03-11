@@ -69,6 +69,7 @@ import { SidebarProvider } from "@/contexts/SidebarContext";
 import { PermissionProvider } from "@/contexts/PermissionContext";
 import { ChatProvider } from "@/contexts/ChatContext";
 import { PageContextProvider } from "@/contexts/PageContext";
+import { WalletProvider } from "@/contexts/WalletContext";
 
 import { Redirect, useLocation } from "wouter";
 import { useState, useEffect } from "react";
@@ -224,6 +225,7 @@ function PublicOnlyRouter() {
 function MainAppRouter() {
   return (
     <AuthSessionProvider>
+      <WalletProvider>
       <PermissionProvider>
         <SidebarProvider>
           <PageContextProvider>
@@ -419,6 +421,7 @@ function MainAppRouter() {
           </PageContextProvider>
         </SidebarProvider>
       </PermissionProvider>
+      </WalletProvider>
     </AuthSessionProvider>
   );
 }
