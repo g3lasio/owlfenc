@@ -3867,6 +3867,76 @@ ENHANCED LEGAL CLAUSE:`;
           
           console.log(`✅ [API] Found template: ${template.displayName} v${template.templateVersion}`);
           
+          // 💳 PAYG: Credit enforcement for secondary templates
+          // independent-contractor is charged at /api/contracts/generate (htmlOnly step)
+          // All other templates (change-order, lien-waiver, etc.) are charged HERE
+          {
+            const { isWalletEnforcementEnabled } = await import("./middleware/credit-check");
+            const creditCost = FEATURE_CREDIT_COSTS.contract; // 12cr — same as main contract
+            const firebaseUid =
+              (req as any).firebaseUser?.uid ||
+              (req as any).user?.uid ||
+              (req as any).user?.firebaseUid ||
+              (req as any).firebaseUid ||
+              req.headers['x-firebase-uid'] as string ||
+              req.headers['authorization']?.replace('Bearer ', '') ||
+              null;
+
+            if (firebaseUid) {
+              if (isWalletEnforcementEnabled()) {
+                // Enforcement mode: check balance and block if insufficient
+                const affordCheck = await walletService.canAfford(firebaseUid, creditCost);
+                if (!affordCheck.canAfford) {
+                  console.log(
+                    `🚫 [GENERATE-PDF] Insufficient credits for ${templateId}: ` +
+                    `user=${firebaseUid.substring(0, 8)}..., balance=${affordCheck.currentBalance}, required=${creditCost}`
+                  );
+                  return res.status(402).json({
+                    error: 'INSUFFICIENT_CREDITS',
+                    message: `You need ${creditCost} credits to generate this document. You have ${affordCheck.currentBalance}.`,
+                    currentBalance: affordCheck.currentBalance,
+                    requiredCredits: creditCost,
+                    deficit: affordCheck.deficit,
+                    featureName: 'contract',
+                    showTopUpModal: true,
+                  });
+                }
+                // Set walletInfo so deductFeatureCredits() can charge after success
+                (req as any).walletInfo = {
+                  firebaseUid,
+                  featureName: 'contract' as const,
+                  requiredCredits: creditCost,
+                  currentBalance: affordCheck.currentBalance,
+                };
+                console.log(
+                  `✅ [GENERATE-PDF] Credit check passed for ${templateId}: ` +
+                  `user=${firebaseUid.substring(0, 8)}..., balance=${affordCheck.currentBalance}, cost=${creditCost}`
+                );
+              } else {
+                // Shadow mode: log but don't block
+                try {
+                  const balance = await walletService.getBalance(firebaseUid);
+                  const canAfford = balance >= creditCost;
+                  console.log(
+                    `👻 [CREDIT-SHADOW] ${templateId}-pdf: user=${firebaseUid.substring(0, 8)}..., ` +
+                    `balance=${balance}, required=${creditCost}, canAfford=${canAfford}`
+                  );
+                  // Still set walletInfo in shadow mode so deductFeatureCredits runs (shadow deduction)
+                  (req as any).walletInfo = {
+                    firebaseUid,
+                    featureName: 'contract' as const,
+                    requiredCredits: creditCost,
+                    currentBalance: balance,
+                  };
+                } catch (shadowErr) {
+                  console.error(`⚠️  [CREDIT-SHADOW] Error checking balance (non-blocking):`, shadowErr);
+                }
+              }
+            } else {
+              console.warn(`⚠️  [GENERATE-PDF] No firebaseUid found for credit check on ${templateId}`);
+            }
+          }
+          
           // Prepare branding data from requestData (supports both legacy and new format)
           // 🔥 CRITICAL: Include state and licenseNumber for legal documents
           const branding = {
@@ -3964,6 +4034,13 @@ ENHANCED LEGAL CLAUSE:`;
           
           console.log(`✅ [API] ${template.displayName} PDF generated: ${pdfBuffer.length} bytes`);
           
+          // 💳 PAYG: Deduct credits BEFORE returning response (covers BOTH download and JSON paths)
+          // independent-contractor PDFs are already charged at /api/contracts/generate - no double charge
+          const isSecondaryTemplate = templateId && templateId !== 'independent-contractor';
+          if (isSecondaryTemplate) {
+            await deductFeatureCredits(req, `${templateId}-pdf`, `${templateId} document generated`);
+          }
+          
           // Check if download=true query param is present - return raw binary
           const isDownload = req.query.download === 'true';
           
@@ -3980,13 +4057,6 @@ ENHANCED LEGAL CLAUSE:`;
           
           // Otherwise return JSON response with base64 for state tracking
           const pdfBase64 = pdfBuffer.toString('base64');
-          
-          // 💳 PAYG: Deduct credits ONLY for template-based documents (change-order, lien-waiver, etc.)
-          // Independent-contractor PDFs are already charged at /api/contracts/generate - no double charge
-          const isSecondaryTemplate = templateId && templateId !== 'independent-contractor';
-          if (isSecondaryTemplate) {
-            await deductFeatureCredits(req, `${templateId}-pdf`, `${templateId} document generated`);
-          }
           return res.json({
             success: true,
             templateId: templateId,
