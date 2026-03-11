@@ -151,7 +151,7 @@ router.post(
  */
 router.post("/create",
   isAuthenticated,
-  requireCredits({ featureName: 'paymentLink' }), // 💳 3 créditos por Payment Link generado
+  requireCredits({ featureName: 'paymentLink' }), // 💳 5 créditos por Payment Link generado
   async (req: Request, res: Response) => {
   try {
     if (!req.firebaseUser) {
@@ -277,7 +277,7 @@ router.post("/create",
 router.post(
   "/payments",
   isAuthenticated,
-  requireCredits({ featureName: 'paymentLink' }), // 💳 3 créditos por Payment Link generado
+  requireCredits({ featureName: 'paymentLink' }), // 💳 5 créditos por Payment Link generado
   async (req: Request, res: Response) => {
     try {
       if (!req.firebaseUser) {
@@ -476,7 +476,7 @@ router.post(
 router.post(
   "/payments/quick-link",
   isAuthenticated,
-  requireCredits({ featureName: 'paymentLink' }), // 💳 3 créditos por Quick Payment Link
+  requireCredits({ featureName: 'paymentLink' }), // 💳 5 créditos por Quick Payment Link
   async (req: Request, res: Response) => {
     try {
       if (!req.firebaseUser) {

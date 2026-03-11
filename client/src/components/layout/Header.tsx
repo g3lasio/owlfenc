@@ -40,7 +40,7 @@ export default function Header() {
       </div>
 
       {/* Logo centrado */}
-      <div className="flex-1 flex flex-col items-center justify-center">
+      <div className="flex-1 flex flex-col items-center justify-center pr-16 sm:pr-0">
         <Link href="/" className="flex flex-col items-center">
           <div className="h-10 flex items-center justify-center relative">
             {/* Imagen del logo */}
@@ -74,7 +74,13 @@ export default function Header() {
       {/* Wallet Badge — PAY AS YOU GROW (solo si el usuario está autenticado) */}
       {user && (
         <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-          <WalletBadge compact={false} />
+          {/* Compact badge for mobile (< sm), full badge for desktop */}
+          <span className="block sm:hidden">
+            <WalletBadge compact={true} />
+          </span>
+          <span className="hidden sm:block">
+            <WalletBadge compact={false} />
+          </span>
         </div>
       )}
     </header>

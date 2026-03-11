@@ -184,7 +184,7 @@ export const FEATURE_CREDIT_COSTS = {
   propertyVerification: 15, // $1.50 — Margen 10x sobre costo ATTOM
   deepSearchFull: 20,      // $2.00 — Materials + Labor complete analysis
   deepSearchPartial: 10,   // $1.00 — Materials only OR Labor only
-  paymentLink: 3,          // $0.30
+  paymentLink: 5,          // $0.50
   chatWithMervin: 0,       // SIEMPRE GRATIS
   pdfExport: 0,            // SIEMPRE GRATIS
 } as const;

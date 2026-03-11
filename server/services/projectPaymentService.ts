@@ -231,7 +231,7 @@ export class ProjectPaymentService {
       // Create a price for the product
       const price = await stripe.prices.create({
         product: product.id,
-        unit_amount: Math.round(options.amount * 100), // Convert to cents
+        unit_amount: Math.round(options.amount), // amount is already in cents from the API caller
         currency: 'usd',
       });
       
@@ -261,7 +261,7 @@ export class ProjectPaymentService {
       const paymentData: InsertProjectPayment = {
         userId: options.userId,
         projectId: options.projectId,
-        amount: options.amount * 100, // Store in cents for consistency
+        amount: Math.round(options.amount), // amount is already in cents — do NOT multiply again
         type: 'custom',
         status: 'pending',
         checkoutUrl: paymentLink.url

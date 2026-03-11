@@ -865,8 +865,8 @@ export default function ProjectPaymentWorkflow({
                   </div>
                   <p className="text-green-300 text-sm">
                     {paymentMethod === "terminal" && "Your terminal is ready to accept payment"}
-                    {paymentMethod === "link" && `Payment link for ${formatCurrency(parseFloat(paymentConfig.amount))} is ready`}
-                    {paymentMethod === "manual" && `Payment of ${formatCurrency(parseFloat(paymentConfig.amount))} has been registered`}
+                    {paymentMethod === "link" && `Payment link for ${formatCurrency(parseFloat(paymentConfig.amount) * 100)} is ready`}
+                    {paymentMethod === "manual" && `Payment of ${formatCurrency(parseFloat(paymentConfig.amount) * 100)} has been registered`}
                   </p>
                 </div>
 
@@ -980,7 +980,7 @@ export default function ProjectPaymentWorkflow({
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
                         <span className="text-gray-400">Amount:</span>
-                        <span className="text-white ml-2">{formatCurrency(parseFloat(paymentConfig.amount))}</span>
+                        <span className="text-white ml-2">{formatCurrency(parseFloat(paymentConfig.amount) * 100)}</span>
                       </div>
                       <div>
                         <span className="text-gray-400">Method:</span>
