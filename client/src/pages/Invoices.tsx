@@ -743,6 +743,13 @@ const Invoices: React.FC = () => {
       const dueDate = new Date();
       dueDate.setDate(dueDate.getDate() + invoiceConfig.paymentTerms);
 
+      // Build payment link for PDF (always include if contractor has Stripe Connect)
+      const hasStripeConnectForPdf = !!profile?.stripeConnectAccountId;
+      const pdfBalance = amounts.total - (invoiceConfig.paidAmount || 0);
+      const pdfPaymentLink = hasStripeConnectForPdf && pdfBalance > 0
+        ? `${window.location.origin}/project-payments?invoice=${invoiceNumber}&amount=${pdfBalance.toFixed(2)}&client=${encodeURIComponent(selectedEstimate.clientName || '')}`
+        : null;
+
       // Build invoice payload EXACTLY like EstimatesWizard does
       const invoicePayload = {
         profile: {
@@ -779,6 +786,7 @@ const Invoices: React.FC = () => {
               ? invoiceConfig.paidAmount.toString()
               : "",
           totalAmountPaid: invoiceConfig.paidAmount >= amounts.total,
+          paymentLink: pdfPaymentLink, // include in PDF even on direct download
         },
       };
 

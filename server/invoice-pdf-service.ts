@@ -1,12 +1,8 @@
 /**
  * Professional Invoice PDF Generation Service using Puppeteer
- * 
- * This service generates high-quality PDF invoices using the professional template
- * directly with Puppeteer, specifically designed for invoices.
+ * Premium template — Inter font, logo support, payment link, clean layout
  */
 
-import fs from 'fs/promises';
-import path from 'path';
 import { launchBrowser } from './utils/chromiumResolver';
 
 interface InvoiceData {
@@ -17,20 +13,24 @@ interface InvoiceData {
     email?: string;
     website?: string;
     logo?: string;
+    license?: string;
   };
   invoice: {
     number?: string;
     date?: string;
     due_date?: string;
+    status?: string;
     items: Array<{
       code: string;
       description: string;
       qty: number | string;
+      unit?: string;
       unit_price: string;
       total: string;
     }>;
     subtotal?: string;
     discounts?: string;
+    discountAmount?: number;
     tax_rate?: number;
     tax_amount?: string;
     total?: string;
@@ -47,27 +47,14 @@ interface InvoiceData {
     downPaymentAmount?: string;
     totalAmountPaid: boolean;
   };
-  paymentLink?: string; // Optional Stripe payment link to include in PDF
+  paymentLink?: string;
 }
 
 export class InvoicePdfService {
-  private templatePath: string;
-  
-  constructor() {
-    this.templatePath = path.join(process.cwd(), 'server', 'templates', 'professional-invoice.html');
-  }
+  constructor() {}
 
-  /**
-   * Initialize the service and ensure template exists
-   */
   async initialize(): Promise<void> {
-    try {
-      await this.ensureTemplateExists();
-      console.log('✅ InvoicePdfService initialized successfully');
-    } catch (error) {
-      console.error('❌ Failed to initialize InvoicePdfService:', error);
-      throw error;
-    }
+    console.log('✅ InvoicePdfService initialized (inline template mode)');
   }
 
   /**
@@ -75,56 +62,38 @@ export class InvoicePdfService {
    */
   async generatePdf(data: InvoiceData): Promise<Buffer> {
     console.log('🔄 Starting Invoice PDF generation with Puppeteer...');
-    
+
     let browser;
     try {
-      console.log('🔍 Launching browser for Invoice PDF...');
       browser = await launchBrowser();
-
       const page = await browser.newPage();
-      
-      // Set viewport for consistent rendering
-      await page.setViewport({
-        width: 1200,
-        height: 1600,
-        deviceScaleFactor: 2
-      });
 
-      // Generate HTML content
-      const htmlContent = await this.generateHtmlContent(data);
+      await page.setViewport({ width: 1200, height: 1600, deviceScaleFactor: 2 });
+
+      const htmlContent = this.generateHtmlContent(data);
       console.log('📄 HTML content generated, length:', htmlContent.length);
 
-      // Load HTML content (use domcontentloaded to avoid external resource timeouts)
-      await page.setContent(htmlContent, {
-        waitUntil: 'domcontentloaded',
-        timeout: 30000
-      });
+      await page.setContent(htmlContent, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
-      // Wait for all images to load
+      // Wait for fonts and images
       await page.evaluate(() => {
         return Promise.all(
           Array.from(document.images, (img) => {
             if (img.complete) return Promise.resolve();
             return new Promise((resolve) => {
-              img.addEventListener("load", resolve);
-              img.addEventListener("error", resolve);
+              img.addEventListener('load', resolve);
+              img.addEventListener('error', resolve);
               setTimeout(resolve, 3000);
             });
           })
         );
       });
 
-      // Generate PDF
       const pdfBuffer = await page.pdf({
         format: 'A4',
         printBackground: true,
-        margin: {
-          top: '0.75in',
-          right: '0.75in',
-          bottom: '0.75in',
-          left: '0.75in'
-        },
-        preferCSSPageSize: true
+        margin: { top: '0px', right: '0px', bottom: '0px', left: '0px' },
+        preferCSSPageSize: true,
       });
 
       console.log('✅ Invoice PDF generated successfully, size:', pdfBuffer.length, 'bytes');
@@ -134,471 +103,272 @@ export class InvoicePdfService {
       console.error('❌ Error generating Invoice PDF:', error);
       throw error;
     } finally {
-      if (browser) {
-        await browser.close();
-      }
+      if (browser) await browser.close();
     }
   }
 
   /**
-   * Generate HTML content from template and data
+   * Generate premium HTML content directly (no external template file)
    */
-  private async generateHtmlContent(data: InvoiceData): Promise<string> {
-    console.log('🎨 Generating HTML content from template...');
-    
-    try {
-      let html = await fs.readFile(this.templatePath, 'utf-8');
-      
-      // Replace company information
-      html = html.replace(/\{\{company\.name\}\}/g, data.company.name || 'Your Company');
-      html = html.replace(/\{\{company\.address\}\}/g, data.company.address || 'Company Address');
-      html = html.replace(/\{\{company\.phone\}\}/g, data.company.phone || 'Phone Number');
-      html = html.replace(/\{\{company\.email\}\}/g, data.company.email || 'Email Address');
-      html = html.replace(/\{\{company\.website\}\}/g, data.company.website || 'Website');
-      
-      // Handle logo
-      if (data.company.logo && data.company.logo.startsWith('data:image')) {
-        html = html.replace(/\{\{company\.logo\}\}/g, data.company.logo);
-      } else {
-        // Remove logo section if no logo
-        html = html.replace(/<img src="\{\{company\.logo\}\}" alt="Company Logo">/g, '');
+  private generateHtmlContent(data: InvoiceData): string {
+    // ── Financial calculations ────────────────────────────────
+    const subtotalAmount = parseFloat((data.invoice.subtotal || '0').replace(/[$,]/g, '')) || 0;
+    const discountAmount = data.invoice.discountAmount || parseFloat((data.invoice.discounts || '0').replace(/[$,\-]/g, '')) || 0;
+    const taxRate = data.invoice.tax_rate || 0;
+    const taxAmount = parseFloat((data.invoice.tax_amount || '0').replace(/[$,]/g, '')) || 0;
+    const totalAmount = parseFloat((data.invoice.total || '0').replace(/[$,]/g, '')) || 0;
+
+    let amountPaid = 0;
+    let balance = totalAmount;
+
+    if (data.invoiceConfig) {
+      if (data.invoiceConfig.totalAmountPaid) {
+        amountPaid = totalAmount;
+        balance = 0;
+      } else if (!data.invoiceConfig.projectCompleted && data.invoiceConfig.downPaymentAmount) {
+        amountPaid = parseFloat(data.invoiceConfig.downPaymentAmount.replace(/[$,]/g, '')) || 0;
+        balance = totalAmount - amountPaid;
       }
-
-      // Replace invoice information
-      html = html.replace(/\{\{invoice\.number\}\}/g, data.invoice.number || `INV-${Date.now()}`);
-      html = html.replace(/\{\{invoice\.date\}\}/g, data.invoice.date || new Date().toLocaleDateString());
-      html = html.replace(/\{\{invoice\.due_date\}\}/g, data.invoice.due_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString());
-
-      // Replace client information
-      html = html.replace(/\{\{client\.name\}\}/g, data.client.name || 'Client Name');
-      html = html.replace(/\{\{client\.address\}\}/g, data.client.address || 'Client Address');
-      html = html.replace(/\{\{client\.contact\}\}/g, data.client.contact || `${data.client.phone || 'Phone'}\n${data.client.email || 'Email'}`);
-
-      // Generate items table rows
-      const itemsHtml = data.invoice.items.map(item => `
-        <tr>
-          <td>${item.code} – ${item.description}</td>
-          <td>${item.qty}</td>
-          <td>${item.unit_price}</td>
-          <td>${item.total}</td>
-        </tr>
-      `).join('');
-
-      // Replace items placeholder
-      html = html.replace(/\{\{#each invoice\.items\}\}[\s\S]*?\{\{\/each\}\}/g, itemsHtml);
-
-      // Calculate payment details based on invoice configuration
-      const subtotalAmount = parseFloat(data.invoice.subtotal?.replace('$', '') || '0');
-      const discountAmount = data.invoice.discountAmount || parseFloat(data.invoice.discounts?.replace(/[$-]/g, '') || '0');
-      const taxAmount = parseFloat(data.invoice.tax_amount?.replace('$', '') || '0');
-      const totalAmount = parseFloat(data.invoice.total?.replace('$', '') || '0');
-      
-      let amountPaid = 0;
-      let balance = totalAmount;
-      
-      if (data.invoiceConfig) {
-        if (data.invoiceConfig.totalAmountPaid) {
-          // Client has paid everything
-          amountPaid = totalAmount;
-          balance = 0;
-        } else if (data.invoiceConfig.projectCompleted === false && data.invoiceConfig.downPaymentAmount) {
-          // Project not completed, but down payment made
-          amountPaid = parseFloat(data.invoiceConfig.downPaymentAmount.replace(/[$,]/g, '') || '0');
-          balance = totalAmount - amountPaid;
-        }
-      }
-
-      // Generate totals summary section
-      const totalsSummaryHtml = `
-        <div class="section totals-summary">
-          <h2>Totals Summary</h2>
-          <table class="summary-table">
-            <tr>
-              <td><strong>Subtotal:</strong></td>
-              <td><strong>$${subtotalAmount.toFixed(2)}</strong></td>
-            </tr>
-            ${discountAmount > 0 ? `
-            <tr>
-              <td style="color: #10b981;"><strong>Discount:</strong></td>
-              <td style="color: #10b981;"><strong>-$${discountAmount.toFixed(2)}</strong></td>
-            </tr>
-            ` : ''}
-            <tr>
-              <td><strong>Tax (${parseFloat((data.invoice.tax_rate || 0).toFixed(4))}%):</strong></td>
-              <td><strong>$${taxAmount.toFixed(2)}</strong></td>
-            </tr>
-            <tr style="border-top: 2px solid #333; font-size: 1.2em;">
-              <td><strong>Total:</strong></td>
-              <td style="color: #2563eb;"><strong>$${totalAmount.toFixed(2)}</strong></td>
-            </tr>
-            <tr>
-              <td><strong>Amount Paid:</strong></td>
-              <td style="color: #10b981;"><strong>$${amountPaid.toFixed(2)}</strong></td>
-            </tr>
-            <tr style="border-top: 1px solid #ccc; font-size: 1.1em;">
-              <td><strong>Balance Due:</strong></td>
-              <td style="color: ${balance > 0 ? '#dc2626' : '#10b981'};"><strong>$${balance.toFixed(2)}</strong></td>
-            </tr>
-          </table>
-        </div>
-      `;
-
-      // Payment link section (if provided)
-      const paymentLinkHtml = data.paymentLink ? `
-        <div class="section" style="margin: 24px 0; padding: 20px; background: #f0fdf4; border: 2px solid #22c55e; border-radius: 12px; text-align: center;">
-          <p style="margin: 0 0 8px; color: #166534; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Secure Online Payment</p>
-          <p style="margin: 0 0 16px; color: #374151; font-size: 13px;">Click the link below or scan to pay your balance of <strong style="color: #dc2626;">$${balance.toFixed(2)}</strong> securely online:</p>
-          <a href="${data.paymentLink}" style="display: inline-block; background: linear-gradient(135deg, #22c55e, #16a34a); color: white; padding: 12px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 15px; margin-bottom: 12px;">
-            Pay Now — $${balance.toFixed(2)}
-          </a>
-          <p style="margin: 8px 0 0; color: #6b7280; font-size: 11px; word-break: break-all;">${data.paymentLink}</p>
-        </div>
-      ` : '';
-
-      // Insert totals summary and payment link before the thank you section
-      html = html.replace(
-        '<div class="thank-you">',
-        totalsSummaryHtml + '\n' + paymentLinkHtml + '\n    <div class="thank-you">'
-      );
-
-      console.log('✅ HTML content processed successfully');
-      return html;
-      
-    } catch (error) {
-      console.error('❌ Error generating HTML content:', error);
-      throw error;
     }
-  }
 
-  /**
-   * Ensure template file exists
-   */
-  private async ensureTemplateExists(): Promise<void> {
-    try {
-      const templateDir = path.dirname(this.templatePath);
-      await fs.mkdir(templateDir, { recursive: true });
-      
-      // Check if template exists
-      try {
-        await fs.access(this.templatePath);
-        console.log('✅ Invoice template file found');
-      } catch {
-        // Create template file
-        console.log('📝 Creating invoice template file...');
-        await this.createTemplateFile();
-      }
-    } catch (error) {
-      throw new Error(`Failed to ensure invoice template exists: ${error.message}`);
-    }
-  }
+    const fmt = (n: number) => `$${n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
+    const taxRateDisplay = parseFloat(taxRate.toFixed(4));
+    const statusColor = (data.invoice.status || 'pending') === 'paid' ? '#059669' : '#D97706';
+    const statusLabel = (data.invoice.status || 'Pending').charAt(0).toUpperCase() + (data.invoice.status || 'pending').slice(1);
 
-  /**
-   * Create template file with professional invoice design
-   */
-  private async createTemplateFile(): Promise<void> {
-    const templateContent = `<!DOCTYPE html>
+    // ── Logo / company header ─────────────────────────────────
+    const logoHtml = data.company.logo
+      ? `<img src="${data.company.logo}" alt="${data.company.name} Logo" style="max-width:200px;max-height:80px;object-fit:contain;display:block;">`
+      : `<div style="font-size:26px;font-weight:900;color:#111827;letter-spacing:-1px;line-height:1.1;">${data.company.name}</div>`;
+
+    // ── Items rows ────────────────────────────────────────────
+    const itemsHtml = (data.invoice.items || []).map((item, i) => `
+      <tr style="background:${i % 2 === 0 ? '#ffffff' : '#F9FAFB'}; border-bottom:1px solid #E5E7EB;">
+        <td style="padding:13px 16px; vertical-align:top;">
+          <div style="font-size:13px;font-weight:600;color:#111827;line-height:1.3;">${item.code || item.description}</div>
+          ${item.code && item.description ? `<div style="font-size:11px;color:#6B7280;margin-top:2px;line-height:1.4;">${item.description}</div>` : ''}
+        </td>
+        <td style="padding:13px 16px;text-align:center;font-size:13px;font-weight:500;color:#111827;">${item.qty}</td>
+        <td style="padding:13px 16px;text-align:center;font-size:12px;color:#9CA3AF;">${item.unit || 'unit'}</td>
+        <td style="padding:13px 16px;text-align:right;font-size:13px;font-weight:500;color:#111827;">${item.unit_price}</td>
+        <td style="padding:13px 16px;text-align:right;font-size:13px;font-weight:700;color:#0891B2;">${item.total}</td>
+      </tr>
+    `).join('');
+
+    // ── Payment link section ──────────────────────────────────
+    const paymentLinkHtml = data.paymentLink ? `
+      <div style="margin:0 48px 24px;padding:20px 24px;background:#ECFEFF;border:2px solid #0891B2;border-radius:10px;text-align:center;">
+        <div style="font-size:10px;font-weight:700;color:#0E7490;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">⚡ Secure Online Payment</div>
+        <a href="${data.paymentLink}" style="display:inline-block;background:#0891B2;color:white;padding:13px 36px;text-decoration:none;border-radius:8px;font-weight:800;font-size:15px;letter-spacing:-0.3px;margin-bottom:10px;">
+          Pay Now — ${fmt(balance)}
+        </a>
+        <div style="font-size:10px;color:#6B7280;word-break:break-all;margin-top:6px;">${data.paymentLink}</div>
+      </div>
+    ` : '';
+
+    return `<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Invoice</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Quantico&display=swap');
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 20px;
-      background-color: #f9f9f9;
-      color: #333;
-    }
-    .invoice-container {
-      position: relative;
-      max-width: 800px;
-      margin: auto;
-      background: #fff;
-      padding: 20px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      border-radius: 8px;
-    }
-    /* Watermark */
-    .watermark {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 400px;
-      height: 400px;
-      background: url('https://i.postimg.cc/G3ZFZTjy/logo-mervin.png') no-repeat center center;
-      background-size: contain;
-      opacity: 0.05;
-      transform: translate(-50%, -50%);
-      pointer-events: none;
-      z-index: 0;
-    }
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      border-bottom: 2px solid #eee;
-      padding-bottom: 10px;
-      margin-bottom: 20px;
-      z-index: 1;
-      position: relative;
-    }
-    .company-details {
-      flex: 1;
-      text-align: left;
-      line-height: 1.4;
-      z-index: 1;
-      position: relative;
-    }
-    .company-logo {
-      flex: 1;
-      text-align: center;
-      z-index: 1;
-      position: relative;
-    }
-    .company-logo img {
-      max-height: 60px;
-    }
-    .invoice-info {
-      flex: 1;
-      text-align: right;
-      line-height: 1.4;
-      z-index: 1;
-      position: relative;
-    }
-    .section { margin-bottom: 20px; position: relative; z-index: 1; }
-    .section h2 {
-      font-size: 1.2em;
-      margin-bottom: 10px;
-      border-bottom: 1px solid #eee;
-      padding-bottom: 5px;
-      color: #333;
-      font-weight: bold;
-      position: relative;
-      z-index: 1;
-    }
-    .section.center h2 { text-align: center; }
-    .bill-to pre {
-      margin: 0;
-      font-family: inherit;
-      line-height: 1.5;
-      color: #333;
-      z-index: 1;
-      position: relative;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 20px;
-      position: relative;
-      z-index: 1;
-    }
-    table th, table td {
-      border: 2px solid #bbb;
-      padding: 8px;
-      text-align: center;
-      color: #333;
-    }
-    table thead th {
-      background-color: #0ff;
-      color: #000;
-      font-weight: bold;
-    }
-    .summary-table, .summary-table th, .summary-table td {
-      border: none;
-      padding: 8px 12px;
-      text-align: right;
-      color: #333;
-      position: relative;
-      z-index: 1;
-      font-size: 1em;
-    }
-    .summary-table {
-      width: 100%;
-      max-width: 400px;
-      margin-left: auto;
-      margin-right: 0;
-      background: #f8f9fa;
-      border-radius: 8px;
-      padding: 15px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .summary-table tr:last-child td {
-      font-weight: bold;
-      font-size: 1.2em;
-    }
-    .totals-summary {
-      margin: 30px 0;
-      page-break-inside: avoid;
-    }
-    .totals-summary h2 {
-      text-align: center;
-      margin-bottom: 20px;
-      color: #2563eb;
-      font-size: 1.3em;
-    }
-    .payment-options ul, .notes ul, .terms ul {
-      padding-left: 20px;
-      color: #333;
-      position: relative;
-      z-index: 1;
-    }
-    .thank-you {
-      position: relative;
-      padding: 20px;
-      margin-bottom: 20px;
-      background-color: #111;
-      color: #0ff;
-      font-family: 'Quantico', sans-serif;
-      font-style: italic;
-      border-radius: 8px;
-      overflow: hidden;
-      border: 4px solid rgba(0,255,255,0.5);
-      text-align: center;
-      box-shadow: 0 0 15px rgba(0,255,255,0.6);
-      z-index: 1;
-    }
-    .thank-you:before, .thank-you:after {
-      content: '';
-      position: absolute;
-      width: 24px;
-      height: 24px;
-      border: 4px solid #0ff;
-      box-sizing: border-box;
-      z-index: 1;
-    }
-    .thank-you:before { top: 0; left: 0; border-right: none; border-bottom: none; }
-    .thank-you:after { bottom: 0; right: 0; border-left: none; border-top: none; }
-    @keyframes scan { 0% { opacity: 0.2; } 50% { opacity: 1; } 100% { opacity: 0.2; } }
-    .thank-you:before, .thank-you:after { animation: scan 3s infinite; }
-    .footer {
-      text-align: center;
-      margin-top: 20px;
-      position: relative;
-      z-index: 1;
-    }
-    .footer:before {
-      content: '';
-      display: block;
-      width: 100%;
-      height: 4px;
-      background: linear-gradient(90deg, transparent, #0ff, transparent);
-      margin-bottom: 8px;
-      position: relative;
-      z-index: 1;
-    }
-    .arrow-line {
-      position: relative;
-      height: 4px;
-      background: linear-gradient(to right, transparent, #0ff, transparent);
-      margin-bottom: 8px;
-      overflow: visible;
-      z-index: 1;
-    }
-    .arrow-line:after {
-      content: '';
-      position: absolute;
-      top: -6px;
-      left: 50%;
-      margin-left: -8px;
-      border-left: 8px solid transparent;
-      border-right: 8px solid transparent;
-      border-bottom: 12px solid #0ff;
-      z-index: 1;
-    }
-    a { color: #007BFF; text-decoration: none; position: relative; z-index: 1; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Invoice ${data.invoice.number || ''}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #ffffff;
+    color: #111827;
+    font-size: 13px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
 </head>
 <body>
-  <div class="invoice-container">
-    <div class="watermark"></div>
-    <div class="header">
-      <div class="company-details">
-        <strong>{{company.name}}</strong><br>
-        {{company.address}}<br>
-        Phone: {{company.phone}}<br>
-        Email: <a href="mailto:{{company.email}}">{{company.email}}</a><br>
-        Website: <a href="{{company.website}}">{{company.website}}</a>
-      </div>
-      <div class="company-logo">
-        <img src="{{company.logo}}" alt="Company Logo">
-      </div>
-      <div class="invoice-info">
-        <strong>INVOICE</strong><br>
-        Invoice #: {{invoice.number}}<br>
-        Invoice Date: {{invoice.date}}<br>
-        Due Date: {{invoice.due_date}}
-      </div>
-    </div>
 
-    <div class="section bill-to">
-      <h2>Bill To</h2>
-      <pre>
-{{client.name}}
-{{client.address}}
-{{client.contact}}
-      </pre>
-    </div>
+<!-- ═══════════════════════ PAGE 1 ═══════════════════════ -->
 
-    <div class="section items">
-      <h2>Items</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Item Description</th>
-            <th>Qty</th>
-            <th>Unit Price</th>
-            <th>Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          {{#each invoice.items}}
-          <tr>
-            <td>{{code}} – {{description}}</td>
-            <td>{{qty}}</td>
-            <td>{{unit_price}}</td>
-            <td>{{total}}</td>
-          </tr>
-          {{/each}}
-        </tbody>
-      </table>
-    </div>
-
-    <div class="thank-you">
-      We sincerely appreciate your business and the trust you have placed in us. It is our privilege to serve you, and we look forward to the opportunity to collaborate on future projects with the same dedication and excellence.
-    </div>
-
-    <div class="section notes center">
-      <h2>Notes & Legal Clauses</h2>
-      <ul>
-        <li>This invoice constitutes a binding fiscal instrument evidencing the obligation of payment for services rendered or to be rendered.</li>
-        <li>Interest at a rate of 1.5% per month shall accrue on any overdue balance until paid in full.</li>
-        <li>Any dispute or claim arising hereunder must be communicated in writing to the Contractor within five (5) days of receipt of this invoice.</li>
-        <li>This invoice and any related disputes shall be governed by and construed in accordance with the laws of the jurisdiction in which the Contractor is located.</li>
-      </ul>
-    </div>
-
-    <div class="section terms center">
-      <h2>Terms & Conditions</h2>
-      <ul>
-        <li>Payment is due no later than thirty (30) days from the Invoice Date. Failure to remit payment within this period shall entitle the Contractor to suspend services and seek recovery of the outstanding balance, including reasonable attorney's fees and collection costs.</li>
-        <li>Contractor shall retain a security interest in materials and work product provided until payment is received in full. Title and risk of loss shall transfer upon receipt of full payment.</li>
-        <li>Client shall inspect the work promptly and notify the Contractor in writing of any defects or non-conformities within ten (10) days of completion; failure to do so shall constitute irrevocable acceptance.</li>
-        <li>No modification or waiver of any provision of this invoice shall be effective unless in writing and signed by both Parties.</li>
-      </ul>
-    </div>
-
-    <div class="footer">
-      <div class="arrow-line"></div>
-      <div style="font-size:0.9em; color:#666;">Powered by Mervin AI</div>
+<!-- HEADER -->
+<div style="padding:36px 48px 28px; border-bottom:3px solid #0891B2; display:flex; justify-content:space-between; align-items:flex-start; gap:24px;">
+  <!-- Left: Company -->
+  <div style="display:flex;flex-direction:column;gap:12px;">
+    ${logoHtml}
+    <div style="display:flex;flex-direction:column;gap:3px;">
+      <div style="font-size:16px;font-weight:700;color:#111827;">${data.company.name}</div>
+      ${data.company.address ? `<div style="font-size:11px;color:#6B7280;">📍 ${data.company.address}</div>` : ''}
+      ${data.company.phone ? `<div style="font-size:11px;color:#6B7280;">📞 ${data.company.phone}</div>` : ''}
+      ${data.company.email ? `<div style="font-size:11px;color:#6B7280;">✉️ ${data.company.email}</div>` : ''}
+      ${data.company.website ? `<div style="font-size:11px;color:#6B7280;">🌐 ${data.company.website}</div>` : ''}
+      ${data.company.license ? `<div style="display:inline-flex;align-items:center;gap:4px;background:#ECFEFF;color:#0E7490;font-size:10px;font-weight:600;padding:3px 10px;border-radius:4px;border:1px solid rgba(8,145,178,0.25);width:fit-content;margin-top:4px;">🔒 License: ${data.company.license}</div>` : ''}
     </div>
   </div>
+
+  <!-- Right: Invoice meta -->
+  <div style="text-align:right;flex-shrink:0;">
+    <div style="font-size:32px;font-weight:900;color:#0891B2;letter-spacing:-1.5px;line-height:1;text-transform:uppercase;">Invoice</div>
+    <div style="font-size:15px;font-weight:700;color:#111827;margin-top:8px;letter-spacing:0.3px;">${data.invoice.number || 'INV-2026-00000'}</div>
+    <div style="margin-top:10px;display:flex;flex-direction:column;gap:4px;">
+      <div style="display:flex;justify-content:flex-end;gap:10px;font-size:11px;">
+        <span style="color:#9CA3AF;font-weight:500;">Invoice Date</span>
+        <span style="color:#111827;font-weight:600;min-width:90px;text-align:right;">${data.invoice.date || new Date().toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'})}</span>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;font-size:11px;">
+        <span style="color:#9CA3AF;font-weight:500;">Due Date</span>
+        <span style="color:#111827;font-weight:600;min-width:90px;text-align:right;">${data.invoice.due_date || new Date(Date.now() + 30*24*60*60*1000).toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'})}</span>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;font-size:11px;">
+        <span style="color:#9CA3AF;font-weight:500;">Status</span>
+        <span style="color:${statusColor};font-weight:700;min-width:90px;text-align:right;">● ${statusLabel}</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BILL TO + PROJECT -->
+<div style="padding:24px 48px; display:grid; grid-template-columns:1fr 1fr; gap:24px; border-bottom:1px solid #E5E7EB;">
+  <div>
+    <div style="font-size:10px;font-weight:700;color:#0891B2;text-transform:uppercase;letter-spacing:1.2px;padding-bottom:6px;border-bottom:2px solid #0891B2;width:fit-content;margin-bottom:10px;">Bill To</div>
+    <div style="font-size:17px;font-weight:700;color:#111827;letter-spacing:-0.3px;margin-bottom:5px;">${data.client.name}</div>
+    ${data.client.address ? `<div style="font-size:12px;color:#6B7280;margin-bottom:3px;">📍 ${data.client.address}</div>` : ''}
+    ${data.client.phone ? `<div style="font-size:12px;color:#6B7280;margin-bottom:3px;">📞 ${data.client.phone}</div>` : ''}
+    ${data.client.email ? `<div style="font-size:12px;color:#6B7280;margin-bottom:3px;">✉️ ${data.client.email}</div>` : ''}
+  </div>
+  <div>
+    <div style="font-size:10px;font-weight:700;color:#0891B2;text-transform:uppercase;letter-spacing:1.2px;padding-bottom:6px;border-bottom:2px solid #0891B2;width:fit-content;margin-bottom:10px;">Project Details</div>
+    <div style="font-size:17px;font-weight:700;color:#111827;letter-spacing:-0.3px;margin-bottom:5px;">Invoice for Services</div>
+    <div style="font-size:12px;color:#6B7280;margin-bottom:3px;">🗓️ Service Date: ${data.invoice.date || new Date().toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'})}</div>
+  </div>
+</div>
+
+<!-- ITEMS TABLE -->
+<div style="padding:24px 48px 0;">
+  <div style="font-size:10px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:12px;">Services &amp; Materials</div>
+  <table style="width:100%;border-collapse:collapse;border-radius:8px;overflow:hidden;">
+    <thead>
+      <tr style="background:#0891B2;">
+        <th style="padding:11px 16px;text-align:left;color:white;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;width:44%;">Description</th>
+        <th style="padding:11px 16px;text-align:center;color:white;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;width:8%;">Qty</th>
+        <th style="padding:11px 16px;text-align:center;color:white;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;width:10%;">Unit</th>
+        <th style="padding:11px 16px;text-align:right;color:white;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;width:18%;">Unit Price</th>
+        <th style="padding:11px 16px;text-align:right;color:white;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;width:16%;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${itemsHtml}
+    </tbody>
+  </table>
+</div>
+
+<!-- TOTALS -->
+<div style="padding:20px 48px 0; display:flex; justify-content:flex-end;">
+  <div style="width:290px;border:1px solid #E5E7EB;border-radius:8px;overflow:hidden;">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid #E5E7EB;">
+      <span style="font-size:11px;font-weight:500;color:#6B7280;">Subtotal</span>
+      <span style="font-size:12px;font-weight:600;color:#111827;">${fmt(subtotalAmount)}</span>
+    </div>
+    ${discountAmount > 0 ? `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid #E5E7EB;">
+      <span style="font-size:11px;font-weight:500;color:#059669;">Discount</span>
+      <span style="font-size:12px;font-weight:600;color:#059669;">-${fmt(discountAmount)}</span>
+    </div>` : ''}
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid #E5E7EB;">
+      <span style="font-size:11px;font-weight:500;color:#6B7280;">Tax (${taxRateDisplay}%)</span>
+      <span style="font-size:12px;font-weight:600;color:#111827;">${fmt(taxAmount)}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid #E5E7EB;">
+      <span style="font-size:12px;font-weight:700;color:#111827;">Total</span>
+      <span style="font-size:15px;font-weight:800;color:#0891B2;">${fmt(totalAmount)}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid #E5E7EB;">
+      <span style="font-size:11px;font-weight:500;color:#6B7280;">Amount Paid</span>
+      <span style="font-size:12px;font-weight:600;color:#059669;">${fmt(amountPaid)}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:13px 16px;background:#0891B2;">
+      <span style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.9);">Balance Due</span>
+      <span style="font-size:18px;font-weight:900;color:white;letter-spacing:-0.5px;">${fmt(balance)}</span>
+    </div>
+  </div>
+</div>
+
+<!-- PAYMENT LINK (always shown if available) -->
+${paymentLinkHtml}
+
+<!-- THANK YOU -->
+<div style="padding:20px 48px;">
+  <div style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;padding:16px 24px;text-align:center;">
+    <div style="font-size:12px;font-style:italic;color:#6B7280;line-height:1.6;">
+      We sincerely appreciate your business and the trust you have placed in us.<br>
+      It is our privilege to serve you, and we look forward to collaborating on future projects.
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div style="padding:16px 48px;border-top:1px solid #E5E7EB;display:flex;align-items:center;justify-content:center;gap:12px;">
+  <div style="flex:1;height:1px;background:linear-gradient(to right,transparent,#0891B2,transparent);"></div>
+  <div style="width:6px;height:6px;background:#0891B2;transform:rotate(45deg);flex-shrink:0;"></div>
+  <div style="font-size:10px;color:#9CA3AF;font-weight:500;letter-spacing:0.3px;">Powered by Mervin AI · owlfenc.com</div>
+  <div style="width:6px;height:6px;background:#0891B2;transform:rotate(45deg);flex-shrink:0;"></div>
+  <div style="flex:1;height:1px;background:linear-gradient(to right,transparent,#0891B2,transparent);"></div>
+</div>
+
+<!-- ═══════════════════════ PAGE 2: LEGAL ═══════════════════════ -->
+<div style="page-break-before:always;break-before:page;padding:48px 48px 32px;position:relative;min-height:1100px;">
+
+  <!-- Legal header -->
+  <div style="border-bottom:3px solid #0891B2;padding-bottom:12px;margin-bottom:28px;display:flex;align-items:center;justify-content:space-between;">
+    <div style="font-size:20px;font-weight:800;color:#111827;letter-spacing:-0.5px;">Legal &amp; Terms</div>
+    <div style="font-size:11px;color:#9CA3AF;font-weight:500;">${data.invoice.number || ''} · ${data.client.name} · ${data.invoice.date || ''}</div>
+  </div>
+
+  <!-- Notes & Legal Clauses -->
+  <div style="margin-bottom:28px;">
+    <div style="font-size:12px;font-weight:700;color:#111827;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #E5E7EB;">Notes &amp; Legal Clauses</div>
+    ${[
+      'This invoice constitutes a binding fiscal instrument evidencing the obligation of payment for services rendered or to be rendered.',
+      'Interest at a rate of 1.5% per month shall accrue on any overdue balance until paid in full.',
+      'Any dispute or claim arising hereunder must be communicated in writing to the Contractor within five (5) days of receipt of this invoice.',
+      'This invoice and any related disputes shall be governed by and construed in accordance with the laws of the jurisdiction in which the Contractor is located.'
+    ].map(t => `
+      <div style="display:flex;gap:10px;margin-bottom:9px;align-items:flex-start;">
+        <div style="width:5px;height:5px;background:#0891B2;border-radius:50%;flex-shrink:0;margin-top:6px;"></div>
+        <div style="font-size:12px;color:#6B7280;line-height:1.6;">${t}</div>
+      </div>`).join('')}
+  </div>
+
+  <!-- Terms & Conditions -->
+  <div style="margin-bottom:28px;">
+    <div style="font-size:12px;font-weight:700;color:#111827;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #E5E7EB;">Terms &amp; Conditions</div>
+    ${[
+      'Payment is due no later than thirty (30) days from the Invoice Date. Failure to remit payment within this period shall entitle the Contractor to suspend services and seek recovery of the outstanding balance, including reasonable attorney\'s fees and collection costs.',
+      'Contractor shall retain a security interest in materials and work product provided until payment is received in full. Title and risk of loss shall transfer upon receipt of full payment.',
+      'Client shall inspect the work promptly and notify the Contractor in writing of any defects or non-conformities within ten (10) days of completion; failure to do so shall constitute irrevocable acceptance.',
+      'No modification or waiver of any provision of this invoice shall be effective unless in writing and signed by both Parties.'
+    ].map(t => `
+      <div style="display:flex;gap:10px;margin-bottom:9px;align-items:flex-start;">
+        <div style="width:5px;height:5px;background:#0891B2;border-radius:50%;flex-shrink:0;margin-top:6px;"></div>
+        <div style="font-size:12px;color:#6B7280;line-height:1.6;">${t}</div>
+      </div>`).join('')}
+  </div>
+
+  <!-- Footer page 2 -->
+  <div style="position:absolute;bottom:0;left:0;right:0;padding:16px 48px;border-top:1px solid #E5E7EB;display:flex;align-items:center;justify-content:center;gap:12px;">
+    <div style="flex:1;height:1px;background:linear-gradient(to right,transparent,#0891B2,transparent);"></div>
+    <div style="width:6px;height:6px;background:#0891B2;transform:rotate(45deg);flex-shrink:0;"></div>
+    <div style="font-size:10px;color:#9CA3AF;font-weight:500;letter-spacing:0.3px;">Powered by Mervin AI · owlfenc.com</div>
+    <div style="width:6px;height:6px;background:#0891B2;transform:rotate(45deg);flex-shrink:0;"></div>
+    <div style="flex:1;height:1px;background:linear-gradient(to right,transparent,#0891B2,transparent);"></div>
+  </div>
+
+</div>
+
 </body>
 </html>`;
-    
-    await fs.writeFile(this.templatePath, templateContent, 'utf-8');
-    console.log('✅ Invoice template file created successfully');
   }
 }
 

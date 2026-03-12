@@ -407,304 +407,264 @@ export class PuppeteerPdfService {
             background: var(--bg-light);
         }
         
-        .items-table tbody tr:hover {
-            background: var(--primary-light);
-        }
-        
         .item-name {
             font-weight: 600;
-            font-size: 17px;
+            font-size: 13px;
             color: var(--text-dark);
+            line-height: 1.3;
         }
         
         .item-description {
-            font-size: 15px;
+            font-size: 11px;
             color: var(--text-light);
-            margin-top: 5px;
+            margin-top: 2px;
+            line-height: 1.4;
         }
         
         .items-table td:nth-child(2),
         .items-table td:nth-child(3) {
             text-align: center;
-            font-size: 16px;
+            font-size: 13px;
+            font-weight: 500;
         }
         
         .items-table td:nth-child(4),
         .items-table td:nth-child(5) {
             text-align: right;
             font-weight: 500;
-            font-size: 16px;
+            font-size: 13px;
         }
         
         .items-table td:nth-child(5) {
             font-weight: 700;
-            font-size: 17px;
-            color: var(--primary-dark);
+            color: var(--primary);
         }
         
-        /* Totals Section */
+        /* Totals */
         .totals-section {
             display: flex;
             justify-content: flex-end;
-            margin-bottom: 30px;
+            padding: 20px 48px 0;
         }
         
         .totals-box {
-            width: 360px;
-            background: var(--bg-light);
+            width: 290px;
             border: 1px solid var(--border);
             border-radius: 8px;
-            padding: 24px;
+            overflow: hidden;
         }
         
         .total-row {
             display: flex;
             justify-content: space-between;
-            padding: 12px 0;
-            font-size: 17px;
-            color: var(--text-medium);
-        }
-        
-        .total-row.subtotal {
+            align-items: center;
+            padding: 10px 16px;
             border-bottom: 1px solid var(--border);
-            padding-bottom: 16px;
-            margin-bottom: 12px;
+            font-size: 12px;
         }
         
-        .total-row.discount {
-            color: var(--success);
-        }
+        .total-row-label { font-weight: 500; color: var(--text-medium); }
+        .total-row-value { font-weight: 600; color: var(--text-dark); }
         
-        .total-row.final {
-            background: var(--primary);
-            color: var(--white);
-            font-weight: 700;
-            font-size: 22px;
-            padding: 18px 24px;
-            margin: 16px -24px -24px -24px;
-            border-radius: 0 0 8px 8px;
-        }
+        .total-row.discount .total-row-label,
+        .total-row.discount .total-row-value { color: var(--success); }
         
-        .total-row span:last-child {
-            font-weight: 600;
-        }
+        .total-row.grand { background: var(--primary); border-bottom: none; }
+        .total-row.grand .total-row-label { font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.9); }
+        .total-row.grand .total-row-value { font-size: 18px; font-weight: 900; color: white; letter-spacing: -0.5px; }
         
-        /* Terms Section */
-        .terms-section {
-            background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);
+        /* Deposit note */
+        .deposit-note {
+            margin: 16px 48px 0;
+            background: #FFFBEB;
             border: 1px solid #FCD34D;
             border-radius: 8px;
-            padding: 24px;
-            margin-bottom: 30px;
-        }
-        
-        .terms-title {
-            font-size: 18px;
-            font-weight: 700;
-            color: #92400E;
-            margin-bottom: 14px;
+            padding: 12px 16px;
             display: flex;
             align-items: center;
             gap: 10px;
         }
+        .deposit-note-text { font-size: 12px; font-weight: 600; color: #92400E; }
         
-        .terms-list {
-            font-size: 15px;
-            color: #78350F;
-            line-height: 1.9;
-        }
+        /* Terms */
+        .terms-section { margin: 20px 48px 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+        .terms-header { background: var(--bg-light); padding: 10px 16px; font-size: 10px; font-weight: 700; color: var(--text-dark); text-transform: uppercase; letter-spacing: 0.8px; border-bottom: 1px solid var(--border); }
+        .terms-body { padding: 14px 16px; }
+        .terms-item { display: flex; gap: 10px; margin-bottom: 8px; align-items: flex-start; }
+        .terms-dot { width: 5px; height: 5px; background: var(--primary); border-radius: 50%; flex-shrink: 0; margin-top: 6px; }
+        .terms-text { font-size: 11px; color: var(--text-medium); line-height: 1.6; }
         
-        .terms-list li {
-            margin-bottom: 6px;
-            list-style: none;
-            padding-left: 18px;
-            position: relative;
-        }
-        
-        .terms-list li::before {
-            content: "•";
-            position: absolute;
-            left: 0;
-            color: #D97706;
-        }
+        /* Signatures */
+        .signature-section { margin: 20px 48px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        .signature-box { border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+        .signature-label { font-size: 10px; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 32px; }
+        .signature-line { border-top: 1px solid var(--border); margin-bottom: 6px; }
+        .signature-name { font-size: 11px; color: var(--text-medium); }
         
         /* Footer */
-        .footer {
-            text-align: center;
-            padding-top: 30px;
-            border-top: 2px solid var(--border);
-        }
+        .footer { padding: 16px 48px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 20px; }
+        .footer-line { flex: 1; height: 1px; background: linear-gradient(to right, transparent, var(--primary), transparent); }
+        .footer-diamond { width: 6px; height: 6px; background: var(--primary); transform: rotate(45deg); flex-shrink: 0; }
+        .footer-text { font-size: 10px; color: var(--text-light); font-weight: 500; letter-spacing: 0.3px; }
         
-        .footer-message {
-            font-size: 18px;
-            font-weight: 600;
-            color: var(--text-dark);
-            margin-bottom: 10px;
-        }
-        
-        .footer-validity {
-            font-size: 16px;
-            color: var(--text-medium);
-            margin-bottom: 14px;
-        }
-        
-        .footer-thanks {
-            font-size: 17px;
-            color: var(--primary);
-            font-weight: 500;
-        }
-        
-        /* Print Styles */
-        @media print {
-            body {
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
-            
-            .container {
-                max-width: none;
-                margin: 0;
-                padding: 20px;
-            }
-            
-            .items-table {
-                page-break-inside: avoid;
-            }
-            
-            .totals-section, .terms-section, .footer {
-                page-break-inside: avoid;
-            }
-        }
+        @media print { body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Header - Three Column Layout: Company | Logo | Estimate Info -->
-        <div class="header">
-            <!-- Left: Company Information -->
-            <div class="company-section">
-                <div class="company-name">${data.company?.name || "Your Company"}</div>
-                <div class="company-details">
-                    ${data.company?.address ? `<div>${data.company.address}</div>` : ''}
-                    ${data.company?.phone ? `<div>${data.company.phone}</div>` : ''}
-                    ${data.company?.email ? `<div>${data.company.email}</div>` : ''}
+<div class="container">
+
+    <!-- HEADER -->
+    <div class="header">
+        <div class="company-section">
+            ${logoHtml}
+            <div class="company-details">
+                <div style="font-size:16px;font-weight:700;color:#111827;">${data.company?.name || 'Your Company'}</div>
+                ${data.company?.address ? `<div>📍 ${data.company.address}</div>` : ''}
+                ${data.company?.phone ? `<div>📞 ${data.company.phone}</div>` : ''}
+                ${data.company?.email ? `<div>✉️ ${data.company.email}</div>` : ''}
+                ${data.company?.website ? `<div>🌐 ${data.company.website}</div>` : ''}
+            </div>
+            ${data.company?.license ? `<span class="license-badge">🔒 License: ${data.company.license}</span>` : ''}
+        </div>
+        <div class="estimate-badge-section">
+            <div class="estimate-title">Estimate</div>
+            <div class="estimate-number">${estimateNumber}</div>
+            <div class="estimate-meta">
+                <div class="estimate-meta-row">
+                    <span class="estimate-meta-label">Date</span>
+                    <span class="estimate-meta-value">${estimateDate}</span>
                 </div>
-                ${data.company?.license ? `<span class="license-badge">License: ${data.company.license}</span>` : ''}
-            </div>
-            
-            <!-- Center: Logo -->
-            <div class="logo-section">
-                ${data.company?.logo ? 
-                    `<img src="${data.company.logo}" alt="Company Logo" class="company-logo" />` : 
-                    ''
-                }
-            </div>
-            
-            <!-- Right: Estimate Information -->
-            <div class="estimate-badge-section">
-                <div class="estimate-title">PROFESSIONAL ESTIMATE</div>
-                <div class="estimate-meta">
-                    <div class="estimate-number">${estimateNumber}</div>
-                    <div><strong>Date:</strong> ${estimateDate}</div>
-                    <div><strong>Valid Until:</strong> ${validUntil}</div>
+                <div class="estimate-meta-row">
+                    <span class="estimate-meta-label">Valid Until</span>
+                    <span class="estimate-meta-value" style="color:#D97706;">⚠ ${validUntil}</span>
                 </div>
             </div>
-        </div>
-        
-        <!-- Client Information -->
-        <div class="client-section">
-            <div class="section-label">Bill To</div>
-            <div class="client-name">${data.client?.name || "Valued Client"}</div>
-            <div class="client-details">
-                ${data.client?.email ? `<span>📧 ${data.client.email}</span>` : ''}
-                ${data.client?.phone ? `<span>📱 ${data.client.phone}</span>` : ''}
-                ${data.client?.address ? `<span>📍 ${data.client.address}</span>` : ''}
-            </div>
-        </div>
-        
-        <!-- Project Description -->
-        ${data.estimate?.project_description ? `
-        <div class="project-section">
-            <div class="section-label">Project Details</div>
-            <div class="project-description">
-                ${data.estimate.project_description.replace(/\n/g, "<br>")}
-            </div>
-        </div>
-        ` : ''}
-        
-        <!-- Materials & Services Table -->
-        <div class="items-section">
-            <div class="section-label">Materials & Services</div>
-            <table class="items-table">
-                <thead>
-                    <tr>
-                        <th style="width: 40%;">Description</th>
-                        <th style="width: 10%;">Qty</th>
-                        <th style="width: 15%;">Unit</th>
-                        <th style="width: 17%;">Unit Price</th>
-                        <th style="width: 18%;">Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${processedItems.map(item => `
-                        <tr>
-                            <td>
-                                <div class="item-name">${item.code || ''}</div>
-                                ${item.description ? `<div class="item-description">${item.description}</div>` : ''}
-                            </td>
-                            <td>${item.qty || ''}</td>
-                            <td>unit</td>
-                            <td>${item.unit_price}</td>
-                            <td>${item.total}</td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        </div>
-        
-        <!-- Totals -->
-        <div class="totals-section">
-            <div class="totals-box">
-                <div class="total-row subtotal">
-                    <span>Subtotal:</span>
-                    <span>${subtotal}</span>
-                </div>
-                ${hasDiscount ? `
-                <div class="total-row discount">
-                    <span>Discount:</span>
-                    <span>-${discount}</span>
-                </div>
-                ` : ''}
-                <div class="total-row">
-                    <span>Tax (${taxRate}%):</span>
-                    <span>${taxAmount}</span>
-                </div>
-                <div class="total-row final">
-                    <span>TOTAL:</span>
-                    <span>${total}</span>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Terms & Conditions -->
-        <div class="terms-section">
-            <div class="terms-title">📋 Terms & Conditions</div>
-            <ul class="terms-list">
-                <li>This estimate is valid for 30 days from the date of issue.</li>
-                <li>A 50% deposit is required to schedule the project.</li>
-                <li>Final payment is due upon project completion.</li>
-                <li>Prices are subject to change based on material availability.</li>
-                <li>Additional work not included in this estimate will be quoted separately.</li>
-            </ul>
-        </div>
-        
-        <!-- Footer -->
-        <div class="footer">
-            <div class="footer-message">We appreciate your business!</div>
-            <div class="footer-validity">This estimate expires on ${validUntil}</div>
-            <div class="footer-thanks">Thank you for choosing ${data.company?.name || "our company"} for your project.</div>
         </div>
     </div>
+
+    <!-- BILL TO + PROJECT -->
+    <div class="client-project-grid">
+        <div>
+            <div class="section-label">Bill To</div>
+            <div class="client-name">${data.client?.name || 'Valued Client'}</div>
+            <div class="client-details">
+                ${data.client?.address ? `<span>📍 ${data.client.address}</span>` : ''}
+                ${data.client?.phone ? `<span>📞 ${data.client.phone}</span>` : ''}
+                ${data.client?.email ? `<span>✉️ ${data.client.email}</span>` : ''}
+            </div>
+        </div>
+        <div>
+            <div class="section-label">Project Details</div>
+            <div class="client-name">Construction Services</div>
+            <div class="client-details">
+                <span>🗓️ Date: ${estimateDate}</span>
+                <span>📋 Valid: ${validUntil}</span>
+            </div>
+        </div>
+    </div>
+
+    ${data.estimate?.project_description ? `
+    <div class="project-section" style="padding-top:16px;">
+        <div class="section-label" style="margin:0 48px 8px;">Project Scope</div>
+        <div class="project-description">${data.estimate.project_description.replace(/\n/g, '<br>')}</div>
+    </div>` : ''}
+
+    <!-- ITEMS TABLE -->
+    <div class="items-section" style="padding-top:20px;">
+        <div class="section-label" style="margin:0 48px 10px;">Materials &amp; Services</div>
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th style="width:44%;">Description</th>
+                    <th style="width:8%;text-align:center;">Qty</th>
+                    <th style="width:10%;text-align:center;">Unit</th>
+                    <th style="width:18%;text-align:right;">Unit Price</th>
+                    <th style="width:16%;text-align:right;">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${processedItems.map((item, i) => `
+                <tr style="background:${i % 2 === 0 ? '#ffffff' : '#F9FAFB'};">
+                    <td>
+                        <div class="item-name">${item.code || item.description}</div>
+                        ${item.code && item.description ? `<div class="item-description">${item.description}</div>` : ''}
+                    </td>
+                    <td style="text-align:center;">${item.qty || ''}</td>
+                    <td style="text-align:center;font-size:11px;color:#9CA3AF;">unit</td>
+                    <td style="text-align:right;">${item.unit_price}</td>
+                    <td style="text-align:right;font-weight:700;color:#0891B2;">${item.total}</td>
+                </tr>`).join('')}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- TOTALS -->
+    <div class="totals-section">
+        <div class="totals-box">
+            <div class="total-row">
+                <span class="total-row-label">Subtotal</span>
+                <span class="total-row-value">${subtotal}</span>
+            </div>
+            ${hasDiscount ? `
+            <div class="total-row discount">
+                <span class="total-row-label">Discount</span>
+                <span class="total-row-value">-${discount}</span>
+            </div>` : ''}
+            <div class="total-row">
+                <span class="total-row-label">Tax (${taxRateDisplay}%)</span>
+                <span class="total-row-value">${taxAmount}</span>
+            </div>
+            <div class="total-row grand">
+                <span class="total-row-label">TOTAL</span>
+                <span class="total-row-value">${total}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- DEPOSIT NOTE -->
+    <div class="deposit-note">
+        <div style="font-size:16px;">💡</div>
+        <div class="deposit-note-text">50% Deposit Required to Schedule — Balance due upon project completion.</div>
+    </div>
+
+    <!-- TERMS -->
+    <div class="terms-section">
+        <div class="terms-header">Terms &amp; Conditions</div>
+        <div class="terms-body">
+            ${[
+                'This estimate is valid for 30 days from the date of issue.',
+                'A 50% deposit is required to schedule and begin the project.',
+                'Final payment is due upon project completion and client inspection.',
+                'Prices are subject to change based on material availability and market conditions.',
+                'Additional work not included in this estimate will be quoted separately before proceeding.'
+            ].map(t => `<div class="terms-item"><div class="terms-dot"></div><div class="terms-text">${t}</div></div>`).join('')}
+        </div>
+    </div>
+
+    <!-- SIGNATURES -->
+    <div class="signature-section">
+        <div class="signature-box">
+            <div class="signature-label">Client Acceptance</div>
+            <div class="signature-line"></div>
+            <div class="signature-name">${data.client?.name || 'Client Name'} &nbsp;&nbsp;&nbsp;&nbsp; Date: ___________</div>
+        </div>
+        <div class="signature-box">
+            <div class="signature-label">Contractor</div>
+            <div class="signature-line"></div>
+            <div class="signature-name">${data.company?.name || 'Contractor'} &nbsp;&nbsp;&nbsp;&nbsp; Date: ___________</div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer">
+        <div class="footer-line"></div>
+        <div class="footer-diamond"></div>
+        <div class="footer-text">Powered by Mervin AI · owlfenc.com</div>
+        <div class="footer-diamond"></div>
+        <div class="footer-line"></div>
+    </div>
+
+</div>
 </body>
 </html>`;
   }
