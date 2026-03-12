@@ -158,7 +158,7 @@ export class InvoicePdfService {
     // ── Payment link section ──────────────────────────────────
     const paymentLinkHtml = data.paymentLink ? `
       <div style="margin:0 48px 24px;padding:20px 24px;background:#ECFEFF;border:2px solid #0891B2;border-radius:10px;text-align:center;">
-        <div style="font-size:10px;font-weight:700;color:#0E7490;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">⚡ Secure Online Payment</div>
+        <div style="font-size:10px;font-weight:700;color:#0E7490;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Secure Online Payment</div>
         <a href="${data.paymentLink}" style="display:inline-block;background:#0891B2;color:white;padding:13px 36px;text-decoration:none;border-radius:8px;font-weight:800;font-size:15px;letter-spacing:-0.3px;margin-bottom:10px;">
           Pay Now — ${fmt(balance)}
         </a>
@@ -184,8 +184,12 @@ export class InvoicePdfService {
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
   }
+  @page { margin: 20mm 15mm; }
   @media print {
     body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    tr { page-break-inside: avoid; }
+    thead { display: table-header-group; }
+    tfoot { display: table-footer-group; }
   }
 </style>
 </head>
@@ -200,11 +204,11 @@ export class InvoicePdfService {
     ${logoHtml}
     <div style="display:flex;flex-direction:column;gap:3px;">
       <div style="font-size:16px;font-weight:700;color:#111827;">${data.company.name}</div>
-      ${data.company.address ? `<div style="font-size:11px;color:#6B7280;">📍 ${data.company.address}</div>` : ''}
-      ${data.company.phone ? `<div style="font-size:11px;color:#6B7280;">📞 ${data.company.phone}</div>` : ''}
-      ${data.company.email ? `<div style="font-size:11px;color:#6B7280;">✉️ ${data.company.email}</div>` : ''}
-      ${data.company.website ? `<div style="font-size:11px;color:#6B7280;">🌐 ${data.company.website}</div>` : ''}
-      ${data.company.license ? `<div style="display:inline-flex;align-items:center;gap:4px;background:#ECFEFF;color:#0E7490;font-size:10px;font-weight:600;padding:3px 10px;border-radius:4px;border:1px solid rgba(8,145,178,0.25);width:fit-content;margin-top:4px;">🔒 License: ${data.company.license}</div>` : ''}
+      ${data.company.address ? `<div style="font-size:11px;color:#6B7280;"><span style="font-size:10px;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.4px;">Addr</span> ${data.company.address}</div>` : ''}
+      ${data.company.phone ? `<div style="font-size:11px;color:#6B7280;"><span style="font-size:10px;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.4px;">Tel</span> ${data.company.phone}</div>` : ''}
+      ${data.company.email ? `<div style="font-size:11px;color:#6B7280;"><span style="font-size:10px;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.4px;">Email</span> ${data.company.email}</div>` : ''}
+      ${data.company.website ? `<div style="font-size:11px;color:#6B7280;"><span style="font-size:10px;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.4px;">Web</span> ${data.company.website}</div>` : ''}
+      ${data.company.license ? `<div style="display:inline-flex;align-items:center;gap:4px;background:#ECFEFF;color:#0E7490;font-size:10px;font-weight:600;padding:3px 10px;border-radius:4px;border:1px solid rgba(8,145,178,0.25);width:fit-content;margin-top:4px;">Lic: ${data.company.license}</div>` : ''}
     </div>
   </div>
 
@@ -234,14 +238,14 @@ export class InvoicePdfService {
   <div>
     <div style="font-size:10px;font-weight:700;color:#0891B2;text-transform:uppercase;letter-spacing:1.2px;padding-bottom:6px;border-bottom:2px solid #0891B2;width:fit-content;margin-bottom:10px;">Bill To</div>
     <div style="font-size:17px;font-weight:700;color:#111827;letter-spacing:-0.3px;margin-bottom:5px;">${data.client.name}</div>
-    ${data.client.address ? `<div style="font-size:12px;color:#6B7280;margin-bottom:3px;">📍 ${data.client.address}</div>` : ''}
-    ${data.client.phone ? `<div style="font-size:12px;color:#6B7280;margin-bottom:3px;">📞 ${data.client.phone}</div>` : ''}
-    ${data.client.email ? `<div style="font-size:12px;color:#6B7280;margin-bottom:3px;">✉️ ${data.client.email}</div>` : ''}
+    ${data.client.address ? `<div style="font-size:12px;color:#6B7280;margin-bottom:3px;">${data.client.address}</div>` : ''}
+    ${data.client.phone ? `<div style="font-size:12px;color:#6B7280;margin-bottom:3px;">Tel: ${data.client.phone}</div>` : ''}
+    ${data.client.email ? `<div style="font-size:12px;color:#6B7280;margin-bottom:3px;">${data.client.email}</div>` : ''}
   </div>
   <div>
     <div style="font-size:10px;font-weight:700;color:#0891B2;text-transform:uppercase;letter-spacing:1.2px;padding-bottom:6px;border-bottom:2px solid #0891B2;width:fit-content;margin-bottom:10px;">Project Details</div>
     <div style="font-size:17px;font-weight:700;color:#111827;letter-spacing:-0.3px;margin-bottom:5px;">Invoice for Services</div>
-    <div style="font-size:12px;color:#6B7280;margin-bottom:3px;">🗓️ Service Date: ${data.invoice.date || new Date().toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'})}</div>
+    <div style="font-size:12px;color:#6B7280;margin-bottom:3px;">Date: ${data.invoice.date || new Date().toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'})}</div>
   </div>
 </div>
 

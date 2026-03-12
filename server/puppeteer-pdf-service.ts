@@ -165,6 +165,11 @@ export class PuppeteerPdfService {
     const taxAmount = this.formatPrice(data.estimate?.tax_amount);
     const total = this.formatPrice(data.estimate?.total);
 
+    // Build logo HTML before template string
+    const logoHtml = data.company?.logo
+      ? `<img src="${data.company.logo}" alt="${data.company.name || 'Company Logo'}" style="max-width:200px;max-height:80px;object-fit:contain;display:block;margin-bottom:8px;" />`
+      : `<div style="font-size:26px;font-weight:800;color:#0891b2;letter-spacing:-0.5px;margin-bottom:8px;">${data.company?.name || 'Your Company'}</div>`;
+
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -518,13 +523,12 @@ export class PuppeteerPdfService {
         <div class="company-section">
             ${logoHtml}
             <div class="company-details">
-                <div style="font-size:16px;font-weight:700;color:#111827;">${data.company?.name || 'Your Company'}</div>
-                ${data.company?.address ? `<div>📍 ${data.company.address}</div>` : ''}
-                ${data.company?.phone ? `<div>📞 ${data.company.phone}</div>` : ''}
-                ${data.company?.email ? `<div>✉️ ${data.company.email}</div>` : ''}
-                ${data.company?.website ? `<div>🌐 ${data.company.website}</div>` : ''}
+                ${data.company?.address ? `<div><span style="font-size:10px;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.5px;">Address</span> ${data.company.address}</div>` : ''}
+                ${data.company?.phone ? `<div><span style="font-size:10px;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.5px;">Tel</span> ${data.company.phone}</div>` : ''}
+                ${data.company?.email ? `<div><span style="font-size:10px;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.5px;">Email</span> ${data.company.email}</div>` : ''}
+                ${data.company?.website ? `<div><span style="font-size:10px;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.5px;">Web</span> ${data.company.website}</div>` : ''}
             </div>
-            ${data.company?.license ? `<span class="license-badge">🔒 License: ${data.company.license}</span>` : ''}
+            ${data.company?.license ? `<span class="license-badge">Lic: ${data.company.license}</span>` : ''}
         </div>
         <div class="estimate-badge-section">
             <div class="estimate-title">Estimate</div>
@@ -536,7 +540,7 @@ export class PuppeteerPdfService {
                 </div>
                 <div class="estimate-meta-row">
                     <span class="estimate-meta-label">Valid Until</span>
-                    <span class="estimate-meta-value" style="color:#D97706;">⚠ ${validUntil}</span>
+                    <span class="estimate-meta-value" style="color:#D97706;">Exp: ${validUntil}</span>
                 </div>
             </div>
         </div>
@@ -548,17 +552,17 @@ export class PuppeteerPdfService {
             <div class="section-label">Bill To</div>
             <div class="client-name">${data.client?.name || 'Valued Client'}</div>
             <div class="client-details">
-                ${data.client?.address ? `<span>📍 ${data.client.address}</span>` : ''}
-                ${data.client?.phone ? `<span>📞 ${data.client.phone}</span>` : ''}
-                ${data.client?.email ? `<span>✉️ ${data.client.email}</span>` : ''}
+                ${data.client?.address ? `<span>${data.client.address}</span>` : ''}
+                ${data.client?.phone ? `<span>Tel: ${data.client.phone}</span>` : ''}
+                ${data.client?.email ? `<span>${data.client.email}</span>` : ''}
             </div>
         </div>
         <div>
             <div class="section-label">Project Details</div>
             <div class="client-name">Construction Services</div>
             <div class="client-details">
-                <span>🗓️ Date: ${estimateDate}</span>
-                <span>📋 Valid: ${validUntil}</span>
+                <span>Date: ${estimateDate}</span>
+                <span>Valid Until: ${validUntil}</span>
             </div>
         </div>
     </div>
@@ -623,7 +627,7 @@ export class PuppeteerPdfService {
 
     <!-- DEPOSIT NOTE -->
     <div class="deposit-note">
-        <div style="font-size:16px;">💡</div>
+        <div style="font-size:11px;font-weight:700;color:#92400E;text-transform:uppercase;letter-spacing:0.5px;">Note</div>
         <div class="deposit-note-text">50% Deposit Required to Schedule — Balance due upon project completion.</div>
     </div>
 
