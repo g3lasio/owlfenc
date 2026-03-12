@@ -152,9 +152,7 @@ export function WalletPage({ embedded = false }: { embedded?: boolean }) {
   const loadFullHistory = async () => {
     setIsLoadingHistory(true);
     try {
-      const response = await fetch('/api/wallet/history?limit=50', {
-        credentials: 'include',
-      });
+      const response = await fetchWithAuth('/api/wallet/history?limit=50');
       const data = await response.json();
       if (data.success) {
         setFullHistory(data.transactions);

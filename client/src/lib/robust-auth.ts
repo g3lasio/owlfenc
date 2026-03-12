@@ -5,6 +5,7 @@
 
 import { auth } from './firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
+import { fetchWithAuth } from '@/lib/fetch-with-auth';
 
 interface RobustUserData {
   success: boolean;

@@ -242,24 +242,36 @@ export function AuthSessionProvider({ children }: AuthSessionProviderProps) {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         console.log('✅ [AUTH-SESSION] Usuario Firebase detectado:', firebaseUser.email);
-        
-        // Verificar si ya existe una sesión válida en el servidor
+
+        // ✅ CRITICAL FIX: Set user IMMEDIATELY so WalletContext and other
+        // consumers can start fetching with the Bearer token right away.
+        // Do NOT wait for the session cookie to be established — fetchWithAuth
+        // will include the Bearer token even without the cookie.
+        setUser(firebaseUser);
+        setLoading(false);
+
+        // Establish / refresh the server session cookie in the background.
+        // This is a best-effort operation; the app is already functional via
+        // the Bearer token path.
         const hasValidSession = await checkSessionStatus();
-        
         if (!hasValidSession && !sessionEstablished) {
-          console.log('⚠️ [AUTH-SESSION] No hay sesión válida, estableciendo...');
-          await establishServerSession(firebaseUser);
+          console.log('⚠️ [AUTH-SESSION] No hay sesión válida, estableciendo en background...');
+          establishServerSession(firebaseUser).then(() => {
+            setSessionEstablished(true);
+            console.log('✅ [AUTH-SESSION] Session cookie establecida en background');
+          }).catch((err) => {
+            // Non-blocking: app works via Bearer token even if cookie fails
+            console.warn('⚠️ [AUTH-SESSION] Session cookie setup failed (non-blocking):', err);
+          });
+        } else {
           setSessionEstablished(true);
         }
-        
-        setUser(firebaseUser);
       } else {
         console.log('❌ [AUTH-SESSION] No hay usuario autenticado');
         setUser(null);
         setSessionEstablished(false);
+        setLoading(false);
       }
-      
-      setLoading(false);
     });
 
     return () => unsubscribe();

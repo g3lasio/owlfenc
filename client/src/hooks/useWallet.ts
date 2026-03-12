@@ -12,6 +12,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/hooks/use-auth';
+import { fetchWithAuth } from '@/lib/fetch-with-auth';
 
 // ================================
 // TIPOS
@@ -154,9 +155,7 @@ export function useWallet(): UseWalletReturn {
     if (!user) return;
 
     try {
-      const response = await fetch('/api/wallet/balance', {
-        credentials: 'include',
-      });
+      const response = await fetchWithAuth('/api/wallet/balance');
 
       if (!response.ok) {
         if (response.status === 401) return; // No autenticado aún
@@ -181,9 +180,7 @@ export function useWallet(): UseWalletReturn {
 
   const fetchPackages = useCallback(async () => {
     try {
-      const response = await fetch('/api/wallet/packages', {
-        credentials: 'include',
-      });
+      const response = await fetchWithAuth('/api/wallet/packages');
 
       if (!response.ok) {
         // Fallback: mostrar paquetes hardcodeados si el endpoint falla
@@ -210,9 +207,7 @@ export function useWallet(): UseWalletReturn {
     if (!user) return;
 
     try {
-      const response = await fetch('/api/wallet/billing-status', {
-        credentials: 'include',
-      });
+      const response = await fetchWithAuth('/api/wallet/billing-status');
 
       if (!response.ok) return;
 
@@ -282,10 +277,9 @@ export function useWallet(): UseWalletReturn {
     setError(null);
 
     try {
-      const response = await fetch('/api/wallet/top-up/checkout', {
+      const response = await fetchWithAuth('/api/wallet/top-up/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ packageId }),
       });
 

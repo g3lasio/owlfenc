@@ -1,18 +1,22 @@
 /**
  * WalletContext — Global wallet state shared across all components.
- * 
+ *
  * This context provides a SINGLE source of truth for the wallet balance.
  * All components (WalletBadge, WalletPage, etc.) consume this context
  * instead of creating independent hook instances.
- * 
+ *
  * Key behaviors:
  * - Balance is fetched once when the user authenticates
+ * - Uses fetchWithAuth to always include the Firebase Bearer token so the
+ *   wallet loads correctly on NEW DEVICES where the __session cookie has not
+ *   been set yet (race condition fix).
  * - The 'wallet-credits-spent' event triggers an immediate re-fetch
  * - All consumers see the updated balance simultaneously (no stale data)
  */
 
 import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { useAuth } from '@/hooks/use-auth';
+import { fetchWithAuth } from '@/lib/fetch-with-auth';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -63,9 +67,13 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     isFetching.current = true;
 
     try {
-      const response = await fetch('/api/wallet/balance', {
-        credentials: 'include',
-      });
+      // ✅ FIX: Use fetchWithAuth instead of bare fetch().
+      // On a new device the __session cookie does not exist yet.
+      // fetchWithAuth always attaches the Firebase Bearer token so the
+      // backend can authenticate the request via the Authorization header
+      // even before the session cookie is established.
+      const response = await fetchWithAuth('/api/wallet/balance');
+
       if (!response.ok) {
         if (response.status === 401) {
           setWalletData(null);
