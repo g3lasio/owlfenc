@@ -418,6 +418,24 @@ const setupTemplateServing = (app: Express) => {
 // Configuración de multer para subida de archivos
 const upload = multer({ storage: multer.memoryStorage() });
 
+// 🔇 PRODUCTION LOG SUPPRESSION
+// In production, suppress verbose debug console.logs to reduce noise and improve performance.
+// console.error and console.warn are always preserved.
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+if (IS_PRODUCTION) {
+  const _originalConsoleLog = console.log.bind(console);
+  // Only suppress logs that start with debug prefixes (🔍, 📋, 🔄, etc.)
+  // Keep important operational logs (✅, ❌, ⚠️, 🚀, 💳, 🎉)
+  const SUPPRESS_PREFIXES = ['🔍', '📋', '🔄', '📊', '🔧', '🔔', '🔗'];
+  console.log = (...args: any[]) => {
+    const firstArg = String(args[0] || '');
+    const shouldSuppress = SUPPRESS_PREFIXES.some(prefix => firstArg.startsWith(prefix));
+    if (!shouldSuppress) {
+      _originalConsoleLog(...args);
+    }
+  };
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // ================================
   // WALLET MIGRATION — MUST RUN FIRST
@@ -494,6 +512,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/data-integrity/test-user-mapping", async (req: Request, res: Response) => {
+    // 🔒 PRODUCTION PROTECTION: Only accessible in development
+    if (process.env.NODE_ENV === "production") {
+      return res.status(403).json({ error: "Test endpoint not available in production" });
+    }
     try {
       const { firebaseUid, email } = req.body;
       
@@ -2893,11 +2915,22 @@ ENHANCED LEGAL CLAUSE:`;
           processingTime: `${processingTime}ms`,
         });
 
-        // Set response headers for PDF download
+        // 💳 PAYG: Deduct credits AFTER successful PDF generation (aiEstimate=8, basicEstimate=0)
+        try {
+          const isAiEstimate = !!(estimateData as any).estimate?.isAI;
+          const featureName = isAiEstimate ? 'aiEstimate' : 'basicEstimate';
+          await deductFeatureCredits(req, (estimateData as any).estimate?.projectId || `estimate-${Date.now()}`, `Estimate PDF generated`);
+        } catch (creditErr) {
+          console.warn('⚠️ [ESTIMATE-PDF] Credit deduction failed (non-blocking):', (creditErr as Error).message);
+        }
+        // Set response headers for PDF download — use client name for readable filename
+        const safeClientName = ((estimateData as any).client?.name || 'estimate')
+          .replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 40);
+        const dateStr = new Date().toISOString().split('T')[0];
         res.setHeader("Content-Type", "application/pdf");
         res.setHeader(
           "Content-Disposition",
-          `attachment; filename="estimate-${Date.now()}.pdf"`,
+          `attachment; filename="estimate-${safeClientName}-${dateStr}.pdf"`,
         );
         res.setHeader("Content-Length", pdfBuffer.length);
         res.setHeader("Cache-Control", "no-cache");
@@ -2920,198 +2953,9 @@ ENHANCED LEGAL CLAUSE:`;
 
   // 🧾 Estimate - BASIC with proper data mapping (keeping for backward compatibility)
   // REMOVED: Duplicate PDF endpoints - keeping only /api/estimate-puppeteer-pdf
+  // NOTE: Duplicate /api/estimates-simple POST and GET handlers removed (dead code).
+  // The router registered at line 1456 (estimatesSimpleRoutes) handles these routes.
 
-  // Endpoint robusto para guardar estimados
-  app.post("/api/estimates-simple", async (req: Request, res: Response) => {
-    try {
-      console.log("💾 Recibiendo estimado para guardar:", req.body);
-
-      const estimateData = req.body;
-      const firebaseUserId = estimateData.firebaseUserId || "dev-user";
-
-      // Crear proyecto usando el sistema existente
-      // 🚀 MAPEO COMPLETO DE DATOS PARA TRANSFERENCIA AL DASHBOARD
-      const projectData = {
-        // ===== IDENTIFICACIÓN BÁSICA =====
-        userId: 1, // ID numérico para PostgreSQL
-        projectId:
-          estimateData.projectId ||
-          `proj_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-        firebaseUserId: firebaseUserId,
-
-        // ===== INFORMACIÓN DEL PROYECTO =====
-        projectName:
-          estimateData.projectName ||
-          estimateData.title ||
-          `Proyecto para ${estimateData.clientName}`,
-        description:
-          estimateData.projectDescription || estimateData.scope || "",
-        projectType: estimateData.projectType || "fence",
-        status: "estimate",
-
-        // ===== INFORMACIÓN COMPLETA DEL CLIENTE =====
-        clientName: estimateData.clientName || "",
-        clientEmail: estimateData.clientEmail || "",
-        clientPhone: estimateData.clientPhone || "",
-
-        // ===== DIRECCIÓN COMPLETA =====
-        address: estimateData.clientAddress || estimateData.address || "",
-        city: estimateData.clientCity || estimateData.city || "",
-        state: estimateData.clientState || estimateData.state || "",
-        zipCode: estimateData.clientZipCode || estimateData.zipCode || "",
-
-        // ===== INFORMACIÓN FINANCIERA =====
-        estimateAmount: estimateData.total || estimateData.estimateAmount || 0,
-        totalPrice: estimateData.total || estimateData.estimateAmount || 0,
-
-        // ===== DATOS COMPLETOS PRESERVADOS =====
-        estimateData: JSON.stringify({
-          // Información básica del estimado
-          estimateNumber: estimateData.estimateNumber,
-          createdAt: estimateData.createdAt,
-          validUntil: estimateData.validUntil,
-
-          // Información completa del cliente
-          client: {
-            id: estimateData.clientId,
-            name: estimateData.clientName,
-            email: estimateData.clientEmail,
-            phone: estimateData.clientPhone,
-            address: estimateData.clientAddress,
-            city: estimateData.clientCity,
-            state: estimateData.clientState,
-            zipCode: estimateData.clientZipCode,
-          },
-
-          // Información completa del contratista
-          contractor: {
-            companyName: estimateData.contractorCompanyName,
-            address: estimateData.contractorAddress,
-            city: estimateData.contractorCity,
-            state: estimateData.contractorState,
-            zip: estimateData.contractorZip,
-            phone: estimateData.contractorPhone,
-            email: estimateData.contractorEmail,
-            license: estimateData.contractorLicense,
-            insurance: estimateData.contractorInsurance,
-            logo: estimateData.contractorLogo,
-          },
-
-          // Detalles completos del proyecto
-          project: {
-            name: estimateData.projectName,
-            type: estimateData.projectType,
-            subtype: estimateData.projectSubtype,
-            description: estimateData.projectDescription,
-            scope: estimateData.scope,
-            timeline: estimateData.timeline,
-            address: estimateData.address,
-            city: estimateData.city,
-            state: estimateData.state,
-            zipCode: estimateData.zipCode,
-          },
-
-          // Items detallados
-          items: estimateData.items || [],
-
-          // Información financiera completa
-          financials: {
-            subtotal: estimateData.subtotal,
-            discountType: estimateData.discountType,
-            discountValue: estimateData.discountValue,
-            discountAmount: estimateData.discountAmount,
-            discountName: estimateData.discountName,
-            taxRate: estimateData.taxRate,
-            taxAmount: estimateData.taxAmount,
-            total: estimateData.total,
-            estimateAmount: estimateData.estimateAmount,
-          },
-
-          // Notas y términos
-          notes: estimateData.notes,
-          internalNotes: estimateData.internalNotes,
-          terms: estimateData.terms,
-
-          // Metadatos
-          metadata: {
-            source: "estimates-wizard",
-            timestamp: new Date().toISOString(),
-          },
-
-          // Datos raw originales para máxima compatibilidad
-          originalData: estimateData,
-        }),
-      };
-
-      // Guardar en PostgreSQL usando el storage existente
-      const project = await storage.createProject(projectData);
-
-      console.log("✅ Estimado guardado como proyecto:", project.id);
-
-      res.json({
-        success: true,
-        message: "Estimado guardado exitosamente",
-        data: {
-          projectId: project.id,
-          estimateNumber: estimateData.estimateNumber,
-        },
-      });
-    } catch (error) {
-      console.error("❌ Error guardando estimado:", error);
-      res.status(500).json({
-        success: false,
-        error: "Error interno del servidor",
-      });
-    }
-  });
-
-  // Endpoint robusto para obtener estimados guardados
-  app.get("/api/estimates-simple", async (req: Request, res: Response) => {
-    try {
-      const projects = await storage.getProjectsByUserId(1);
-      const estimates = projects
-        .filter((p) => p.status === "estimate" && p.estimateData)
-        .map((p) => {
-          try {
-            const estimateData = JSON.parse(p.estimateData || "{}");
-            return {
-              id: p.id,
-              projectId: p.id,
-              estimateNumber: estimateData.estimateNumber || `EST-${p.id}`,
-              title: p.projectName,
-              clientName: p.clientName,
-              clientEmail: p.clientEmail,
-              total: p.estimateAmount || 0,
-              status: estimateData.status || "draft",
-              createdAt: p.createdAt,
-              ...estimateData,
-            };
-          } catch {
-            return {
-              id: p.id,
-              projectId: p.id,
-              estimateNumber: `EST-${p.id}`,
-              title: p.projectName,
-              clientName: p.clientName,
-              total: p.estimateAmount || 0,
-              status: "draft",
-              createdAt: p.createdAt,
-            };
-          }
-        });
-
-      res.json({
-        success: true,
-        data: estimates,
-      });
-    } catch (error) {
-      console.error("❌ Error obteniendo estimados:", error);
-      res.status(500).json({
-        success: false,
-        error: "Error interno del servidor",
-      });
-    }
-  });
 
   // Add API routes
   app.get("/api/projects", async (req: Request, res: Response) => {
@@ -6002,6 +5846,10 @@ ENHANCED LEGAL CLAUSE:`;
 
   // Test webhook endpoint (for debugging)
   app.post("/api/subscription/webhook-test", (req: Request, res: Response) => {
+    // 🔒 PRODUCTION PROTECTION: Only accessible in development
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(403).json({ error: "Test endpoint not available in production" });
+    }
     console.log(
       `🔧 [WEBHOOK-TEST] Test webhook called at ${new Date().toISOString()}`,
     );
@@ -6013,7 +5861,9 @@ ENHANCED LEGAL CLAUSE:`;
   // REMOVED: simulate-checkout endpoint (SECURITY VULNERABILITY)
   // Subscriptions now only activated via secure Stripe webhooks
 
-  // Webhook endpoint for Stripe events
+  // LEGACY WEBHOOK: /api/subscription/webhook — kept for backward compatibility.
+  // The canonical webhook is POST /api/webhooks/stripe (stripe-webhooks.ts).
+  // This endpoint handles subscription events via stripeService.handleWebhookEvent.
   app.post(
     "/api/subscription/webhook",
     express.raw({ type: "application/json" }),
@@ -6636,31 +6486,40 @@ ENHANCED LEGAL CLAUSE:`;
     }
   });
 
+  // LEGACY WEBHOOK: /api/webhook/stripe — kept for backward compatibility.
+  // The canonical webhook is POST /api/webhooks/stripe (stripe-webhooks.ts).
+  // Added proper Stripe signature verification (security fix).
   app.post(
     "/api/webhook/stripe",
     express.raw({ type: "application/json" }),
     async (req: Request, res: Response) => {
       try {
-        const event = req.body;
-
+        const { getStripeWebhookSecret } = await import('./config/stripe');
+        const webhookSecret = getStripeWebhookSecret();
+        let event: Stripe.Event;
+        if (webhookSecret) {
+          const sig = req.headers["stripe-signature"];
+          if (!sig) {
+            return res.status(400).json({ error: "Missing stripe-signature header" });
+          }
+          event = stripe.webhooks.constructEvent(req.body, sig as string, webhookSecret);
+        } else {
+          // No webhook secret — parse raw body (dev/test only, NOT for production)
+          event = JSON.parse(req.body.toString()) as Stripe.Event;
+        }
         // Manejar los eventos de suscripciones
         await stripeService.handleWebhookEvent(event);
-
         // Manejar eventos relacionados con pagos de proyectos
-        // Para eventos de checkout.session.completed
         if (event.type === "checkout.session.completed") {
-          const session = event.data.object;
-
-          // Verificar si es un pago de proyecto (tiene metadata.projectId)
+          const session = event.data.object as Stripe.Checkout.Session;
           if (session.metadata?.projectId) {
             await projectPaymentService.handleProjectCheckoutCompleted(session);
           }
         }
-
         res.json({ received: true });
       } catch (error) {
         console.error("Error al procesar webhook de Stripe:", error);
-        res.status(400).send(`Webhook Error: ${error.message}`);
+        res.status(400).send(`Webhook Error: ${(error as Error).message}`);
       }
     },
   );
@@ -8845,6 +8704,10 @@ ENHANCED LEGAL CLAUSE:`;
 
   // Endpoint para probar la funcionalidad de búsqueda web de Mervin DeepSearch
   app.get("/api/permit/test/search", async (req: Request, res: Response) => {
+    // 🔒 PRODUCTION PROTECTION: Only accessible in development
+    if (process.env.NODE_ENV === "production") {
+      return res.status(403).json({ error: "Test endpoint not available in production" });
+    }
     try {
       console.log("===== PRUEBA DE BÚSQUEDA WEB MERVIN DEEPSEARCH =====");
 
@@ -8889,6 +8752,10 @@ ENHANCED LEGAL CLAUSE:`;
 
   // Endpoint para probar la extracción de contenido web de Mervin DeepSearch
   app.get("/api/permit/test/fetch", async (req: Request, res: Response) => {
+    // 🔒 PRODUCTION PROTECTION: Only accessible in development
+    if (process.env.NODE_ENV === "production") {
+      return res.status(403).json({ error: "Test endpoint not available in production" });
+    }
     try {
       console.log(
         "===== PRUEBA DE EXTRACCIÓN DE CONTENIDO MERVIN DEEPSEARCH =====",

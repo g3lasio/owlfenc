@@ -1525,6 +1525,10 @@ router.post("/force-complete/:contractId", async (req, res) => {
  * Health check endpoint
  */
 router.get("/test", (req, res) => {
+  // 🔒 PRODUCTION PROTECTION
+  if (process.env.NODE_ENV === "production") {
+    return res.status(403).json({ error: "Test endpoint not available in production" });
+  }
   res.json({
     success: true,
     message: "Dual Signature API is working",

@@ -19,6 +19,10 @@ const router = Router();
 // NO AUTH REQUIRED - Returns detailed error for diagnosis
 // TODO: Remove or protect after debugging is complete
 router.get('/pdf-debug', async (req, res) => {
+  // 🔒 PRODUCTION PROTECTION
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ error: 'Debug endpoint not available in production' });
+  }
   const startTime = Date.now();
   const diagnostics: any = {
     timestamp: new Date().toISOString(),

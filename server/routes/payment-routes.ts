@@ -3,7 +3,6 @@ import { z } from 'zod';
 import { projectPaymentService } from '../services/projectPaymentService';
 import { storage } from '../storage';
 import Stripe from 'stripe';
-import express from 'express';
 import { isAuthenticated } from '../middleware/auth';
 import { createStripeClient } from '../config/stripe';
 
@@ -193,55 +192,9 @@ router.get('/payment-links', isAuthenticated, async (req: Request, res: Response
   }
 });
 
-// Stripe webhook handler
-router.post('/webhooks/stripe', express.raw({ type: 'application/json' }), async (req: Request, res: Response) => {
-  const signature = req.headers['stripe-signature'];
-
-  if (!signature || typeof signature !== 'string') {
-    return res.status(400).json({ message: 'Missing Stripe signature' });
-  }
-
-  if (!process.env.STRIPE_WEBHOOK_SECRET) {
-    console.warn('STRIPE_WEBHOOK_SECRET is not set. Webhook verification will fail.');
-    return res.status(500).json({ message: 'Server configuration error' });
-  }
-
-  try {
-    const event = stripe.webhooks.constructEvent(
-      req.body,
-      signature,
-      process.env.STRIPE_WEBHOOK_SECRET
-    );
-
-    console.log(`Webhook received: ${event.type}`);
-
-    // Handle the event based on type
-    switch (event.type) {
-      case 'checkout.session.completed':
-        await projectPaymentService.handleProjectCheckoutCompleted(event.data.object);
-        break;
-      
-      case 'payment_intent.succeeded':
-        // Handle payment intent success
-        const paymentIntent = event.data.object;
-        console.log(`PaymentIntent ${paymentIntent.id} succeeded`);
-        break;
-        
-      case 'payment_intent.payment_failed':
-        // Handle payment intent failure
-        const failedPaymentIntent = event.data.object;
-        console.log(`PaymentIntent ${failedPaymentIntent.id} failed`);
-        break;
-        
-      default:
-        console.log(`Unhandled event type: ${event.type}`);
-    }
-
-    res.json({ received: true });
-  } catch (error) {
-    console.error('Error processing Stripe webhook:', error);
-    return res.status(400).json({ message: 'Webhook error' });
-  }
-});
+// NOTE: Stripe webhook handler removed from this file (duplicate).
+// The canonical webhook endpoint is POST /api/webhooks/stripe
+// registered via server/routes/stripe-webhooks.ts -> server/services/stripeWebhookService.ts
+// That endpoint handles all events: wallet top-ups, project payments, subscriptions, disputes.
 
 export default router;

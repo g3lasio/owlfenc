@@ -266,6 +266,10 @@ router.get('/service-audit', async (req: Request, res: Response) => {
  * Body: { testField: string, testValue: string }
  */
 router.post('/test-propagation', async (req: Request, res: Response) => {
+  // 🔒 PRODUCTION PROTECTION
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ error: 'Test endpoint not available in production' });
+  }
   try {
     console.log('🧪 [DATA-CONSISTENCY] Testing data propagation...');
 

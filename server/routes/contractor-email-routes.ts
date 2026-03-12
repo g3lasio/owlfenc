@@ -8,6 +8,10 @@ const router = express.Router();
  * GET /api/contractor-email/test-config
  */
 router.get('/test-config', async (req, res) => {
+  // 🔒 PRODUCTION PROTECTION: Exposes API key info
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ error: 'Test endpoint not available in production' });
+  }
   try {
     const hasApiKey = !!process.env.SENDGRID_API_KEY;
     const apiKeyLength = process.env.SENDGRID_API_KEY ? process.env.SENDGRID_API_KEY.length : 0;

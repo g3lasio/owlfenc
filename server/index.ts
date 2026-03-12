@@ -1,4 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
+import compression from "compression";
 import dotenv from "dotenv";
 import path from "path";
 
@@ -102,9 +103,11 @@ app.get('/statusz', (_req, res) => res.status(200).json({status: 'ok'}));
 app.get('/health', (_req, res) => res.status(200).json({status: 'ok', service: 'owl-fence-ai'}));
 app.get('/api/health', (_req, res) => res.status(200).json({status: 'ok', service: 'owl-fence-ai', endpoint: 'api'}));
 
-// 🔧 PDF DEBUG ENDPOINT - NO AUTH - TEMPORARY for production diagnosis
-// TODO: Remove after debugging is complete
+// 🔧 PDF DEBUG ENDPOINT - Development only (protected from production access)
 app.get('/api/pdf-debug', async (_req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ error: "Debug endpoint not available in production" });
+  }
   const startTime = Date.now();
   const diagnostics: any = {
     timestamp: new Date().toISOString(),
@@ -607,6 +610,8 @@ app.post('/api/contractor-payments/create-payment-link', async (req: any, res) =
 });
 
 // 🛡️ APPLY SECURITY MIDDLEWARE FIRST (Order is critical!)
+// 📦 RESPONSE COMPRESSION - Reduces payload size by 60-70% for JSON/HTML responses
+app.use(compression());
 app.use(securityHeaders);
 app.use(cors(corsConfig));
 app.use(securityLogger);

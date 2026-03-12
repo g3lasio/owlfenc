@@ -252,6 +252,10 @@ router.get('/list', async (req: Request, res: Response) => {
 
 // Test endpoint - mantener para verificación
 router.get('/test', async (req: Request, res: Response) => {
+  // 🔒 PRODUCTION PROTECTION
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ error: 'Test endpoint not available in production' });
+  }
   try {
     const isAuthenticated = !!req.firebaseUser;
     console.log(`🛡️ Invoice test endpoint accessed - Authenticated: ${isAuthenticated}`);

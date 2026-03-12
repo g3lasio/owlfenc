@@ -32,13 +32,23 @@ interface RobustUserData {
 class RobustAuthService {
   private currentUser: RobustUserData | null = null;
   private listeners: ((user: RobustUserData | null) => void)[] = [];
+  private unsubscribeAuth: (() => void) | null = null;
 
   constructor() {
     this.initializeAuthListener();
   }
 
+  /** Clean up Firebase listener to prevent memory leaks */
+  destroy(): void {
+    if (this.unsubscribeAuth) {
+      this.unsubscribeAuth();
+      this.unsubscribeAuth = null;
+    }
+    this.listeners = [];
+  }
+
   private initializeAuthListener() {
-    onAuthStateChanged(auth, async (firebaseUser: User | null) => {
+    this.unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser: User | null) => {
       if (firebaseUser) {
         console.log('🔐 [ROBUST-AUTH] Firebase user signed in, getting complete data...');
         try {

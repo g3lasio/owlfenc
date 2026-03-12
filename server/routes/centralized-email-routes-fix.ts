@@ -9,6 +9,10 @@ const router = express.Router();
  * GET /api/centralized-email/test
  */
 router.get('/test', (req, res) => {
+  // 🔒 PRODUCTION PROTECTION
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ error: 'Test endpoint not available in production' });
+  }
   console.log('📧 [CENTRALIZED-EMAIL] Test endpoint invoked');
   res.json({ success: true, message: 'Centralized email routes working' });
 });
