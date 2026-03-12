@@ -593,152 +593,74 @@ export default function PropertyOwnershipVerifier() {
     }
   }, [propertyDetails, toast]);
 
-  // Export history item to PDF
+  // Export history item to PDF — uses server-side PDF endpoint with full data (no extra ATTOM call)
   const handleExportHistoryItem = useCallback(async (item: PropertySearchHistoryItem, event: React.MouseEvent) => {
-    // Stop propagation to prevent selecting the history item
     event.stopPropagation();
-
     if (!item.results) {
       toast({
-        title: "❌ No se puede exportar",
-        description: "Este elemento del historial no tiene datos para exportar.",
+        title: "No data available",
+        description: "This history item does not have data to export.",
         variant: "destructive",
       });
       return;
     }
-
-    // Show processing toast
     const processingToast = toast({
-      title: "⏳ Generando PDF",
-      description: "Por favor espera mientras se genera el reporte...",
-      duration: 30000,
+      title: "Generating Professional PDF",
+      description: "Building your full property report...",
+      duration: 60000,
     });
-
     try {
-      // Create a temporary container for the report
-      const tempContainer = document.createElement('div');
-      tempContainer.style.position = 'absolute';
-      tempContainer.style.left = '-9999px';
-      tempContainer.style.width = '800px';
-      document.body.appendChild(tempContainer);
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) throw new Error('Authentication required');
 
-      // Create the report HTML
-      tempContainer.innerHTML = `
-        <div style="padding: 20px; background: #0f172a; color: white; font-family: system-ui;">
-          <div style="margin-bottom: 20px;">
-            <h2 style="font-size: 24px; font-weight: bold; color: #38bdf8; margin-bottom: 10px;">Resumen de Verificación</h2>
-            <span style="background: rgba(34, 197, 94, 0.2); color: #4ade80; padding: 4px 8px; border-radius: 4px; font-size: 12px;">✓ Verificado</span>
-          </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
-            <div style="background: rgba(30, 41, 59, 0.5); padding: 12px; border-radius: 8px; border: 1px solid rgba(71, 85, 105, 0.5);">
-              <div style="font-size: 10px; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Propietario</div>
-              <div style="font-weight: 500; color: white; font-size: 14px;">${item.ownerName || 'N/A'}</div>
-            </div>
-            <div style="background: rgba(30, 41, 59, 0.5); padding: 12px; border-radius: 8px; border: 1px solid rgba(71, 85, 105, 0.5);">
-              <div style="font-size: 10px; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Dirección</div>
-              <div style="font-weight: 500; color: white; font-size: 14px;">${item.address}</div>
-            </div>
-          </div>
-          ${item.results.yearBuilt || item.results.sqft || item.results.bedrooms || item.results.purchasePrice ? `
-          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
-            ${item.results.yearBuilt ? `
-            <div style="background: rgba(30, 41, 59, 0.3); padding: 8px; border-radius: 8px;">
-              <div style="font-size: 10px; color: #94a3b8;">Año</div>
-              <div style="color: white; font-size: 14px; font-weight: 500;">${item.results.yearBuilt}</div>
-            </div>
-            ` : ''}
-            ${item.results.sqft ? `
-            <div style="background: rgba(30, 41, 59, 0.3); padding: 8px; border-radius: 8px;">
-              <div style="font-size: 10px; color: #94a3b8;">Área</div>
-              <div style="color: white; font-size: 14px; font-weight: 500;">${item.results.sqft.toLocaleString()}</div>
-            </div>
-            ` : ''}
-            ${item.results.bedrooms ? `
-            <div style="background: rgba(30, 41, 59, 0.3); padding: 8px; border-radius: 8px;">
-              <div style="font-size: 10px; color: #94a3b8;">Cuartos</div>
-              <div style="color: white; font-size: 14px; font-weight: 500;">${item.results.bedrooms}</div>
-            </div>
-            ` : ''}
-            ${item.results.purchasePrice ? `
-            <div style="background: rgba(30, 41, 59, 0.3); padding: 8px; border-radius: 8px;">
-              <div style="font-size: 10px; color: #94a3b8;">Precio</div>
-              <div style="color: white; font-size: 14px; font-weight: 500;">$${(item.results.purchasePrice / 1000).toFixed(0)}k</div>
-            </div>
-            ` : ''}
-          </div>
-          ` : ''}
-        </div>
-      `;
+      // Parse address components from the stored address string
+      const fullAddress = item.address || '';
+      const addressParts = fullAddress.split(',').map((p: string) => p.trim());
+      const addressComponents = {
+        address: addressParts[0] || '',
+        city: addressParts[1] || '',
+        state: addressParts[2]?.split(' ')[0] || '',
+        zip: addressParts[2]?.split(' ')[1] || ''
+      };
 
-      // Capture the temporary container as an image
-      const canvas = await html2canvas(tempContainer, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#0f172a',
+      // Call the server-side PDF endpoint — uses cached data from search history (no extra ATTOM charge)
+      const response = await fetch('/api/property/generate-full-report-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(addressComponents)
       });
 
-      // Remove temporary container
-      document.body.removeChild(tempContainer);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to generate PDF');
+      }
 
-      // Create PDF
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-      });
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const addressSlug = addressComponents.address.replace(/[^a-z0-9]/gi, '-').toLowerCase().substring(0, 50);
+      const datePart = new Date(item.createdAt).toISOString().split('T')[0];
+      a.download = `property-report-${addressSlug}-${datePart}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
 
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-
-      // Add header
-      pdf.setFillColor(15, 23, 42);
-      pdf.rect(0, 0, pageWidth, 25, 'F');
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFontSize(16);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Property Verification Report', pageWidth / 2, 12, { align: 'center' });
-      pdf.setFontSize(8);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(format(new Date(item.createdAt), 'PPP'), pageWidth / 2, 18, { align: 'center' });
-
-      // Add the report image
-      const imgData = canvas.toDataURL('image/png');
-      const imgWidth = pageWidth - 20;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      pdf.addImage(imgData, 'PNG', 10, 30, imgWidth, imgHeight);
-
-      // Add footer
-      const footerY = pageHeight - 10;
-      pdf.setFontSize(7);
-      pdf.setTextColor(148, 163, 184);
-      pdf.setFont('helvetica', 'italic');
-      pdf.text('Owl Fenc AI - Property Verification System', pageWidth / 2, footerY, { align: 'center' });
-
-      // Generate safe filename
-      const addressStr = String(item.address || '');
-      const addressPart = addressStr && addressStr.trim()
-        ? addressStr.replace(/\s+/g, '-').substring(0, 50).toLowerCase()
-        : 'property';
-      const datePart = format(new Date(item.createdAt), 'yyyy-MM-dd');
-      const fileName = `property-report-${addressPart}-${datePart}.pdf`;
-
-      // Download PDF
-      pdf.save(fileName);
-
-      // Wait and then show success
-      await new Promise(resolve => setTimeout(resolve, 500));
       processingToast.dismiss();
       toast({
-        title: "✅ Reporte PDF Exportado",
-        description: "El reporte histórico ha sido descargado exitosamente.",
+        title: "PDF Downloaded",
+        description: "The full property report has been downloaded successfully.",
       });
-    } catch (error) {
-      console.error('Error generating history PDF:', error);
+    } catch (error: any) {
+      console.error('[PDF] Error generating history PDF:', error);
       processingToast.dismiss();
       toast({
-        title: "❌ Error al Exportar",
-        description: "Hubo un problema al generar el PDF. Por favor, intenta de nuevo.",
+        title: "Export Failed",
+        description: error.message || "Could not generate the PDF report. Please try again.",
         variant: "destructive",
       });
     }
