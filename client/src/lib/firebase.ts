@@ -600,8 +600,10 @@ export const getProjectById = async (id: string) => {
             0;
 
           // ✅ FIXED: Detectar si el valor está en centavos y convertir a dólares
-          // Si es un número entero grande (>10000) sin decimales, está en centavos
-          if (totalValue > 10000 && Number.isInteger(totalValue)) {
+          // IMPORTANT: threshold raised from 10000 to 100000 to avoid converting
+          // real dollar amounts like $11,815 (integer) to $118.15
+          // Only convert if > $1000 in cents (i.e., > 100000 as integer)
+          if (Number.isInteger(totalValue) && totalValue > 100000) {
             totalValue = totalValue / 100;
           }
 

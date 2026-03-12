@@ -176,13 +176,20 @@ const ProjectPayments: React.FC = () => {
                                   data.client?.email || 
                                   "";
 
+                // Read total from multiple possible fields — prioritize non-cents values
+                // EstimatesWizard saves: data.total (dollars), data.estimateAmount (dollars),
+                // data.projectTotalCosts.totalSummary.finalTotal (dollars)
                 let totalValue = data.projectTotalCosts?.totalSummary?.finalTotal ||
                                  data.projectTotalCosts?.total ||
                                  data.total ||
                                  data.estimateAmount ||
                                  0;
 
-                if (totalValue > 10000 && Number.isInteger(totalValue)) {
+                // Only convert from cents if the value is a large integer AND there's no decimal
+                // AND it's unreasonably large for a dollar amount (> $10,000 as integer means likely cents)
+                // BUT: $11,815 as integer would be wrongly converted to $118.15
+                // Fix: only convert if value is > 100000 (i.e., > $1000 in cents)
+                if (Number.isInteger(totalValue) && totalValue > 100000) {
                   totalValue = totalValue / 100;
                 }
 

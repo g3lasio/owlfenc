@@ -47,6 +47,7 @@ interface InvoiceData {
     downPaymentAmount?: string;
     totalAmountPaid: boolean;
   };
+  paymentLink?: string; // Optional Stripe payment link to include in PDF
 }
 
 export class InvoicePdfService {
@@ -223,7 +224,7 @@ export class InvoicePdfService {
             </tr>
             ` : ''}
             <tr>
-              <td><strong>Tax (${data.invoice.tax_rate || 0}%):</strong></td>
+              <td><strong>Tax (${parseFloat((data.invoice.tax_rate || 0).toFixed(4))}%):</strong></td>
               <td><strong>$${taxAmount.toFixed(2)}</strong></td>
             </tr>
             <tr style="border-top: 2px solid #333; font-size: 1.2em;">
@@ -242,10 +243,22 @@ export class InvoicePdfService {
         </div>
       `;
 
-      // Insert totals summary before the thank you section
+      // Payment link section (if provided)
+      const paymentLinkHtml = data.paymentLink ? `
+        <div class="section" style="margin: 24px 0; padding: 20px; background: #f0fdf4; border: 2px solid #22c55e; border-radius: 12px; text-align: center;">
+          <p style="margin: 0 0 8px; color: #166534; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Secure Online Payment</p>
+          <p style="margin: 0 0 16px; color: #374151; font-size: 13px;">Click the link below or scan to pay your balance of <strong style="color: #dc2626;">$${balance.toFixed(2)}</strong> securely online:</p>
+          <a href="${data.paymentLink}" style="display: inline-block; background: linear-gradient(135deg, #22c55e, #16a34a); color: white; padding: 12px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 15px; margin-bottom: 12px;">
+            Pay Now — $${balance.toFixed(2)}
+          </a>
+          <p style="margin: 8px 0 0; color: #6b7280; font-size: 11px; word-break: break-all;">${data.paymentLink}</p>
+        </div>
+      ` : '';
+
+      // Insert totals summary and payment link before the thank you section
       html = html.replace(
         '<div class="thank-you">',
-        totalsSummaryHtml + '\n    <div class="thank-you">'
+        totalsSummaryHtml + '\n' + paymentLinkHtml + '\n    <div class="thank-you">'
       );
 
       console.log('✅ HTML content processed successfully');

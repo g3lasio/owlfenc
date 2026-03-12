@@ -64,7 +64,9 @@ const ProjectToContractSelector: React.FC<ProjectToContractSelectorProps> = ({
           data.estimateAmount ||
           0;
 
-        if (totalValue > 10000 && Number.isInteger(totalValue)) {
+        // Only convert from cents if value is a very large integer (> 100000)
+        // Threshold raised from 10000 to avoid converting $11,815 to $118.15
+        if (Number.isInteger(totalValue) && totalValue > 100000) {
           totalValue = totalValue / 100;
         }
 

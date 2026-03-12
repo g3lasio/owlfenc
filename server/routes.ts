@@ -2132,10 +2132,16 @@ ENHANCED LEGAL CLAUSE:`;
         console.log("⚠️ [INVOICE-NORMALIZE] Using contractor data from frontend (fallback)");
       }
 
+      // Generate sequential invoice number using year + timestamp-based unique ID
+      const invoiceYear = new Date().getFullYear();
+      const invoiceSeq = Math.floor(Date.now() / 1000) % 100000; // 5-digit seconds-based unique
+      const invoiceNumEstimate = `INV-${invoiceYear}-${String(invoiceSeq).padStart(5, '0')}`;
+
       return {
         company: companyData,
+        paymentLink: requestData.emailConfig?.paymentLink || requestData.paymentLink || undefined,
         invoice: {
-          number: `INV-${Date.now()}`,
+          number: invoiceNumEstimate,
           date: new Date().toLocaleDateString('en-US'),
           due_date: dueDate,
           items: (estimate.items || []).map((item: any) => {
@@ -2210,7 +2216,7 @@ ENHANCED LEGAL CLAUSE:`;
           logo: companyData.logo || "",
         },
         invoice: {
-          number: `INV-${Date.now()}`,
+          number: `INV-${new Date().getFullYear()}-${String(Math.floor(Date.now() / 1000) % 100000).padStart(5, '0')}`,
           date: new Date().toLocaleDateString('en-US'),
           due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US'),
           items: [{
@@ -2373,8 +2379,10 @@ ENHANCED LEGAL CLAUSE:`;
         : 0;
       const balanceDue = total - amountPaid;
 
-      // Generate invoice number
-      const invoiceNumber = `INV-${Date.now()}`;
+      // Generate invoice number using year + seconds-based unique ID (sequential format)
+      const invoiceYear = new Date().getFullYear();
+      const invoiceSeq = String(Math.floor(Date.now() / 1000) % 100000).padStart(5, '0');
+      const invoiceNumber = `INV-${invoiceYear}-${invoiceSeq}`;
 
       // Prepare data for email service
       const emailData = {
