@@ -128,18 +128,27 @@ export class PuppeteerPdfService {
   }
 
   /**
+   * Strips markdown bold markers (**text**) and returns plain text
+   */
+  private stripMarkdown(text: string): string {
+    return text
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>');
+  }
+
+  /**
    * Generates the new futuristic, clean, and professional template
    */
   private generateFuturisticTemplate(data: EstimateData): string {
     const estimateNumber = data.estimate.number || `EST-${Date.now()}`;
     const estimateDate = data.estimate.date || new Date().toLocaleDateString('en-US', { 
       year: 'numeric', 
-      month: 'long', 
+      month: 'numeric', 
       day: 'numeric' 
     });
     const validUntil = data.estimate.valid_until || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', {
       year: 'numeric',
-      month: 'long', 
+      month: 'numeric', 
       day: 'numeric'
     });
 
@@ -172,8 +181,15 @@ export class PuppeteerPdfService {
 
     // Build logo HTML before template string
     const logoHtml = data.company?.logo
-      ? `<img src="${data.company.logo}" alt="${data.company.name || 'Company Logo'}" style="max-width:200px;max-height:80px;object-fit:contain;display:block;margin-bottom:8px;" />`
-      : `<div style="font-size:26px;font-weight:800;color:#0891b2;letter-spacing:-0.5px;margin-bottom:8px;">${data.company?.name || 'Your Company'}</div>`;
+      ? `<img src="${data.company.logo}" alt="${data.company.name || 'Company Logo'}" style="max-width:180px;max-height:70px;object-fit:contain;display:block;margin-bottom:10px;" />`
+      : `<div style="font-size:22px;font-weight:800;color:#0066FF;letter-spacing:-0.5px;margin-bottom:10px;">${data.company?.name || 'Your Company'}</div>`;
+
+    // Process project description - convert markdown to HTML
+    const rawDescription = data.estimate?.project_description || '';
+    const processedDescription = rawDescription
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/\n/g, '<br>');
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -184,11 +200,7 @@ export class PuppeteerPdfService {
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
         
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         
         :root {
             --primary: #0066FF;
@@ -210,172 +222,191 @@ export class PuppeteerPdfService {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: var(--white);
             color: var(--text-dark);
-            line-height: 1.6;
-            font-size: 16px;
+            line-height: 1.5;
+            font-size: 13px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        @media print {
+            body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            tr { page-break-inside: avoid; }
+            thead { display: table-header-group; }
         }
         
-        .container {
-            max-width: 850px;
-            margin: 0 auto;
-            padding: 40px;
-        }
-        
-        /* Header Section - Three Column Layout */
+        /* ── HEADER ─────────────────────────────────────────── */
         .header {
-            display: grid;
-            grid-template-columns: 1fr auto 1fr;
-            align-items: center;
-            padding-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 32px 40px 24px;
             border-bottom: 2px solid var(--primary);
-            margin-bottom: 35px;
-            gap: 20px;
+            margin-bottom: 0;
+            gap: 24px;
         }
         
         .company-section {
-            text-align: left;
+            flex: 1;
+            min-width: 0;
         }
-        
-        .logo-section {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        .company-logo {
-            max-width: 160px;
-            max-height: 100px;
-            object-fit: contain;
-        }
-        
-        .company-name {
-            font-size: 28px;
-            font-weight: 800;
-            color: var(--secondary);
-            letter-spacing: -0.5px;
+
+        .company-details {
+            font-size: 11px;
+            color: var(--text-medium);
+            line-height: 1.9;
             margin-bottom: 8px;
         }
         
-        .company-details {
-            font-size: 17px;
-            color: var(--text-medium);
-            line-height: 1.7;
+        .company-details .detail-row {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            flex-wrap: wrap;
         }
-        
-        .company-details div {
-            margin-bottom: 4px;
+
+        .company-details .detail-label {
+            font-size: 9px;
+            font-weight: 700;
+            color: #9CA3AF;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            flex-shrink: 0;
+            min-width: 42px;
+        }
+
+        .company-details .detail-value {
+            font-size: 11px;
+            color: var(--text-medium);
+            word-break: break-word;
         }
         
         .license-badge {
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
             background: var(--primary-light);
             color: var(--primary);
-            padding: 6px 14px;
+            padding: 4px 10px;
             border-radius: 4px;
-            font-size: 15px;
-            font-weight: 600;
-            margin-top: 10px;
+            font-size: 10px;
+            font-weight: 700;
+            margin-top: 6px;
+            border: 1px solid rgba(0,102,255,0.2);
         }
         
+        /* ── ESTIMATE BADGE (right side of header) ─────────── */
         .estimate-badge-section {
             text-align: right;
+            flex-shrink: 0;
         }
         
         .estimate-title {
-            font-size: 32px;
-            font-weight: 800;
+            font-size: 36px;
+            font-weight: 900;
             color: var(--primary);
-            letter-spacing: -0.5px;
-            margin-bottom: 12px;
+            letter-spacing: -1px;
+            line-height: 1;
+            margin-bottom: 10px;
+            text-transform: uppercase;
         }
-        
-        .estimate-meta {
-            font-size: 17px;
-            color: var(--text-medium);
-        }
-        
-        .estimate-meta div {
-            margin-bottom: 6px;
-        }
-        
-        .estimate-meta strong {
-            color: var(--text-dark);
-            font-weight: 600;
-        }
-        
+
         .estimate-number {
-            font-size: 20px;
+            font-size: 13px;
             font-weight: 700;
             color: var(--primary);
-            margin-bottom: 8px;
+            margin-bottom: 10px;
+            letter-spacing: 0.3px;
         }
         
-        /* Client Section */
-        .client-section {
-            background: linear-gradient(135deg, var(--bg-light) 0%, var(--white) 100%);
-            border: 1px solid var(--border);
-            border-left: 4px solid var(--primary);
-            border-radius: 0 8px 8px 0;
-            padding: 24px;
-            margin-bottom: 30px;
+        .estimate-meta-table {
+            font-size: 11px;
+            color: var(--text-medium);
         }
-        
+
+        .estimate-meta-table .meta-row {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-bottom: 4px;
+        }
+
+        .estimate-meta-table .meta-label {
+            color: #9CA3AF;
+            font-weight: 500;
+        }
+
+        .estimate-meta-table .meta-value {
+            font-weight: 600;
+            color: var(--text-dark);
+            min-width: 80px;
+            text-align: right;
+        }
+
+        /* ── BILL TO + PROJECT GRID ─────────────────────────── */
+        .client-project-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            padding: 20px 40px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 0;
+        }
+
         .section-label {
-            font-size: 14px;
+            font-size: 10px;
             font-weight: 700;
             color: var(--primary);
             text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 14px;
-        }
-        
-        .client-name {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--text-dark);
+            letter-spacing: 1.2px;
+            padding-bottom: 6px;
+            border-bottom: 2px solid var(--primary);
+            width: fit-content;
             margin-bottom: 10px;
         }
         
+        .client-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+            letter-spacing: -0.3px;
+        }
+        
         .client-details {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 10px;
-            font-size: 16px;
+            font-size: 11px;
             color: var(--text-medium);
+            line-height: 1.8;
         }
-        
-        .client-details span {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        /* Project Description */
+
+        /* ── PROJECT SCOPE ──────────────────────────────────── */
         .project-section {
-            margin-bottom: 30px;
+            padding: 16px 40px 0;
+            margin-bottom: 0;
         }
-        
+
         .project-description {
             background: var(--bg-light);
             border: 1px solid var(--border);
             border-radius: 8px;
-            padding: 22px;
-            font-size: 16px;
+            padding: 16px 20px;
+            font-size: 11px;
             color: var(--text-medium);
             line-height: 1.8;
+            margin-top: 8px;
         }
         
-        /* Items Table */
+        /* ── ITEMS TABLE ─────────────────────────────────────── */
         .items-section {
-            margin-bottom: 30px;
+            padding: 16px 40px 0;
+            margin-bottom: 0;
         }
         
         .items-table {
             width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
+            border-collapse: collapse;
             border: 1px solid var(--border);
             border-radius: 8px;
             overflow: hidden;
+            margin-top: 8px;
         }
         
         .items-table thead {
@@ -385,47 +416,37 @@ export class PuppeteerPdfService {
         .items-table th {
             color: var(--white);
             font-weight: 600;
-            font-size: 15px;
+            font-size: 10px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            padding: 18px 16px;
+            padding: 12px 14px;
             text-align: left;
         }
         
         .items-table th:nth-child(2),
-        .items-table th:nth-child(3) {
-            text-align: center;
-        }
-        
+        .items-table th:nth-child(3) { text-align: center; }
         .items-table th:nth-child(4),
-        .items-table th:nth-child(5) {
-            text-align: right;
-        }
+        .items-table th:nth-child(5) { text-align: right; }
         
         .items-table td {
-            padding: 16px;
+            padding: 11px 14px;
             border-bottom: 1px solid var(--border);
-            font-size: 16px;
+            font-size: 12px;
             color: var(--text-dark);
+            vertical-align: top;
         }
         
-        .items-table tbody tr:last-child td {
-            border-bottom: none;
-        }
-        
-        .items-table tbody tr:nth-child(even) {
-            background: var(--bg-light);
-        }
+        .items-table tbody tr:last-child td { border-bottom: none; }
         
         .item-name {
             font-weight: 600;
-            font-size: 13px;
+            font-size: 12px;
             color: var(--text-dark);
             line-height: 1.3;
         }
         
         .item-description {
-            font-size: 11px;
+            font-size: 10px;
             color: var(--text-light);
             margin-top: 2px;
             line-height: 1.4;
@@ -434,7 +455,7 @@ export class PuppeteerPdfService {
         .items-table td:nth-child(2),
         .items-table td:nth-child(3) {
             text-align: center;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 500;
         }
         
@@ -442,7 +463,7 @@ export class PuppeteerPdfService {
         .items-table td:nth-child(5) {
             text-align: right;
             font-weight: 500;
-            font-size: 13px;
+            font-size: 12px;
         }
         
         .items-table td:nth-child(5) {
@@ -450,15 +471,15 @@ export class PuppeteerPdfService {
             color: var(--primary);
         }
         
-        /* Totals */
+        /* ── TOTALS ──────────────────────────────────────────── */
         .totals-section {
             display: flex;
             justify-content: flex-end;
-            padding: 20px 48px 0;
+            padding: 16px 40px 0;
         }
         
         .totals-box {
-            width: 290px;
+            width: 280px;
             border: 1px solid var(--border);
             border-radius: 8px;
             overflow: hidden;
@@ -468,9 +489,9 @@ export class PuppeteerPdfService {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px 16px;
+            padding: 9px 14px;
             border-bottom: 1px solid var(--border);
-            font-size: 12px;
+            font-size: 11px;
         }
         
         .total-row-label { font-weight: 500; color: var(--text-medium); }
@@ -480,107 +501,144 @@ export class PuppeteerPdfService {
         .total-row.discount .total-row-value { color: var(--success); }
         
         .total-row.grand { background: var(--primary); border-bottom: none; }
-        .total-row.grand .total-row-label { font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.9); }
-        .total-row.grand .total-row-value { font-size: 18px; font-weight: 900; color: white; letter-spacing: -0.5px; }
+        .total-row.grand .total-row-label { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.9); }
+        .total-row.grand .total-row-value { font-size: 16px; font-weight: 900; color: white; letter-spacing: -0.5px; }
         
-        /* Deposit note */
+        /* ── DEPOSIT NOTE ────────────────────────────────────── */
         .deposit-note {
-            margin: 16px 48px 0;
+            margin: 14px 40px 0;
             background: #FFFBEB;
             border: 1px solid #FCD34D;
             border-radius: 8px;
-            padding: 12px 16px;
+            padding: 10px 14px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
-        .deposit-note-text { font-size: 12px; font-weight: 600; color: #92400E; }
+        .deposit-note-label { font-size: 9px; font-weight: 700; color: #92400E; text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0; }
+        .deposit-note-text { font-size: 11px; font-weight: 600; color: #92400E; }
         
-        /* Terms */
-        .terms-section { margin: 20px 48px 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-        .terms-header { background: var(--bg-light); padding: 10px 16px; font-size: 10px; font-weight: 700; color: var(--text-dark); text-transform: uppercase; letter-spacing: 0.8px; border-bottom: 1px solid var(--border); }
-        .terms-body { padding: 14px 16px; }
-        .terms-item { display: flex; gap: 10px; margin-bottom: 8px; align-items: flex-start; }
-        .terms-dot { width: 5px; height: 5px; background: var(--primary); border-radius: 50%; flex-shrink: 0; margin-top: 6px; }
-        .terms-text { font-size: 11px; color: var(--text-medium); line-height: 1.6; }
+        /* ── TERMS ───────────────────────────────────────────── */
+        .terms-section {
+            margin: 14px 40px 0;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .terms-header {
+            background: var(--bg-light);
+            padding: 8px 14px;
+            font-size: 9px;
+            font-weight: 700;
+            color: var(--text-dark);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            border-bottom: 1px solid var(--border);
+        }
+        .terms-body { padding: 12px 14px; }
+        .terms-item { display: flex; gap: 8px; margin-bottom: 6px; align-items: flex-start; }
+        .terms-dot { width: 4px; height: 4px; background: var(--primary); border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+        .terms-text { font-size: 10px; color: var(--text-medium); line-height: 1.6; }
         
-        /* Signatures */
-        .signature-section { margin: 20px 48px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-        .signature-box { border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
-        .signature-label { font-size: 10px; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 32px; }
-        .signature-line { border-top: 1px solid var(--border); margin-bottom: 6px; }
-        .signature-name { font-size: 11px; color: var(--text-medium); }
+        /* ── SIGNATURES ──────────────────────────────────────── */
+        .signature-section {
+            margin: 14px 40px 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .signature-box {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px;
+        }
+        .signature-label {
+            font-size: 9px;
+            font-weight: 700;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 28px;
+        }
+        .signature-line { border-top: 1px solid var(--border); margin-bottom: 5px; }
+        .signature-name { font-size: 10px; color: var(--text-medium); }
         
-        /* Footer */
-        .footer { padding: 16px 48px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 20px; }
+        /* ── FOOTER ──────────────────────────────────────────── */
+        .footer {
+            padding: 14px 40px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 16px;
+        }
         .footer-line { flex: 1; height: 1px; background: linear-gradient(to right, transparent, var(--primary), transparent); }
-        .footer-diamond { width: 6px; height: 6px; background: var(--primary); transform: rotate(45deg); flex-shrink: 0; }
-        .footer-text { font-size: 10px; color: var(--text-light); font-weight: 500; letter-spacing: 0.3px; }
-        
-        @media print { body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }
+        .footer-diamond { width: 5px; height: 5px; background: var(--primary); transform: rotate(45deg); flex-shrink: 0; }
+        .footer-text { font-size: 9px; color: var(--text-light); font-weight: 500; letter-spacing: 0.3px; }
     </style>
 </head>
 <body>
-<div class="container">
 
-    <!-- HEADER -->
+    <!-- ══════════════════ HEADER ══════════════════ -->
     <div class="header">
         <div class="company-section">
             ${logoHtml}
             <div class="company-details">
-                ${data.company?.address ? `<div><span style="font-size:10px;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.5px;">Address</span> ${data.company.address}</div>` : ''}
-                ${data.company?.phone ? `<div><span style="font-size:10px;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.5px;">Tel</span> ${data.company.phone}</div>` : ''}
-                ${data.company?.email ? `<div><span style="font-size:10px;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.5px;">Email</span> ${data.company.email}</div>` : ''}
-                ${data.company?.website ? `<div><span style="font-size:10px;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.5px;">Web</span> ${data.company.website}</div>` : ''}
+                ${data.company?.address ? `<div class="detail-row"><span class="detail-label">Address</span><span class="detail-value">${data.company.address}</span></div>` : ''}
+                ${data.company?.phone ? `<div class="detail-row"><span class="detail-label">Tel</span><span class="detail-value">${data.company.phone}</span></div>` : ''}
+                ${data.company?.email ? `<div class="detail-row"><span class="detail-label">Email</span><span class="detail-value">${data.company.email}</span></div>` : ''}
+                ${data.company?.website ? `<div class="detail-row"><span class="detail-label">Web</span><span class="detail-value">${data.company.website}</span></div>` : ''}
             </div>
             ${data.company?.license ? `<span class="license-badge">Lic: ${data.company.license}</span>` : ''}
         </div>
         <div class="estimate-badge-section">
             <div class="estimate-title">Estimate</div>
             <div class="estimate-number">${estimateNumber}</div>
-            <div class="estimate-meta">
-                <div class="estimate-meta-row">
-                    <span class="estimate-meta-label">Date</span>
-                    <span class="estimate-meta-value">${estimateDate}</span>
+            <div class="estimate-meta-table">
+                <div class="meta-row">
+                    <span class="meta-label">Date</span>
+                    <span class="meta-value">${estimateDate}</span>
                 </div>
-                <div class="estimate-meta-row">
-                    <span class="estimate-meta-label">Valid Until</span>
-                    <span class="estimate-meta-value" style="color:#D97706;">Exp: ${validUntil}</span>
+                <div class="meta-row">
+                    <span class="meta-label">Valid Until</span>
+                    <span class="meta-value" style="color:#D97706;">Exp: ${validUntil}</span>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- BILL TO + PROJECT -->
+    <!-- ══════════════════ BILL TO + PROJECT ══════════════════ -->
     <div class="client-project-grid">
         <div>
             <div class="section-label">Bill To</div>
             <div class="client-name">${data.client?.name || 'Valued Client'}</div>
             <div class="client-details">
-                ${data.client?.address ? `<span>${data.client.address}</span>` : ''}
-                ${data.client?.phone ? `<span>Tel: ${data.client.phone}</span>` : ''}
-                ${data.client?.email ? `<span>${data.client.email}</span>` : ''}
+                ${data.client?.address ? `<div>${data.client.address}</div>` : ''}
+                ${data.client?.phone ? `<div>Tel: ${data.client.phone}</div>` : ''}
+                ${data.client?.email ? `<div>${data.client.email}</div>` : ''}
             </div>
         </div>
         <div>
             <div class="section-label">Project Details</div>
-            <div class="client-name">Construction Services</div>
+            <div class="client-name" style="font-size:14px;">${data.estimate?.project_description ? data.estimate.project_description.split('\n')[0].replace(/\*\*/g,'').substring(0,60) : 'Construction Services'}</div>
             <div class="client-details">
-                <span>Date: ${estimateDate}</span>
-                <span>Valid Until: ${validUntil}</span>
+                <div>Date: ${estimateDate}</div>
+                <div>Valid Until: ${validUntil}</div>
             </div>
         </div>
     </div>
 
-    ${data.estimate?.project_description ? `
-    <div class="project-section" style="padding-top:16px;">
-        <div class="section-label" style="margin:0 48px 8px;">Project Scope</div>
-        <div class="project-description">${data.estimate.project_description.replace(/\n/g, '<br>')}</div>
+    ${processedDescription ? `
+    <!-- ══════════════════ PROJECT SCOPE ══════════════════ -->
+    <div class="project-section">
+        <div class="section-label" style="margin-bottom:8px;">Project Scope</div>
+        <div class="project-description">${processedDescription}</div>
     </div>` : ''}
 
-    <!-- ITEMS TABLE -->
-    <div class="items-section" style="padding-top:20px;">
-        <div class="section-label" style="margin:0 48px 10px;">Materials &amp; Services</div>
+    <!-- ══════════════════ ITEMS TABLE ══════════════════ -->
+    <div class="items-section">
+        <div class="section-label" style="margin-bottom:8px;">Materials &amp; Services</div>
         <table class="items-table">
             <thead>
                 <tr>
@@ -599,15 +657,15 @@ export class PuppeteerPdfService {
                         ${item.code && item.description ? `<div class="item-description">${item.description}</div>` : ''}
                     </td>
                     <td style="text-align:center;">${item.qty || ''}</td>
-                    <td style="text-align:center;font-size:11px;color:#9CA3AF;">unit</td>
+                    <td style="text-align:center;font-size:10px;color:#9CA3AF;">unit</td>
                     <td style="text-align:right;">${item.unit_price}</td>
-                    <td style="text-align:right;font-weight:700;color:#0891B2;">${item.total}</td>
+                    <td style="text-align:right;font-weight:700;color:#0066FF;">${item.total}</td>
                 </tr>`).join('')}
             </tbody>
         </table>
     </div>
 
-    <!-- TOTALS -->
+    <!-- ══════════════════ TOTALS ══════════════════ -->
     <div class="totals-section">
         <div class="totals-box">
             <div class="total-row">
@@ -630,13 +688,13 @@ export class PuppeteerPdfService {
         </div>
     </div>
 
-    <!-- DEPOSIT NOTE -->
+    <!-- ══════════════════ DEPOSIT NOTE ══════════════════ -->
     <div class="deposit-note">
-        <div style="font-size:11px;font-weight:700;color:#92400E;text-transform:uppercase;letter-spacing:0.5px;">Note</div>
-        <div class="deposit-note-text">50% Deposit Required to Schedule — Balance due upon project completion.</div>
+        <span class="deposit-note-label">Note</span>
+        <span class="deposit-note-text">50% Deposit Required to Schedule — Balance due upon project completion.</span>
     </div>
 
-    <!-- TERMS -->
+    <!-- ══════════════════ TERMS ══════════════════ -->
     <div class="terms-section">
         <div class="terms-header">Terms &amp; Conditions</div>
         <div class="terms-body">
@@ -650,7 +708,7 @@ export class PuppeteerPdfService {
         </div>
     </div>
 
-    <!-- SIGNATURES -->
+    <!-- ══════════════════ SIGNATURES ══════════════════ -->
     <div class="signature-section">
         <div class="signature-box">
             <div class="signature-label">Client Acceptance</div>
@@ -664,7 +722,7 @@ export class PuppeteerPdfService {
         </div>
     </div>
 
-    <!-- FOOTER -->
+    <!-- ══════════════════ FOOTER ══════════════════ -->
     <div class="footer">
         <div class="footer-line"></div>
         <div class="footer-diamond"></div>
@@ -673,7 +731,6 @@ export class PuppeteerPdfService {
         <div class="footer-line"></div>
     </div>
 
-</div>
 </body>
 </html>`;
   }

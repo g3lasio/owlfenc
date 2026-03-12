@@ -2374,6 +2374,160 @@ ENHANCED LEGAL CLAUSE:`;
     }
   });
 
+  // 💳 NEW: Invoice PDF with Stripe Payment Link (single-step)
+  // Creates a Stripe Checkout session and embeds the payment link directly in the PDF.
+  // The PDF is returned as a binary blob for download.
+  app.post("/api/invoice-pdf-with-payment-link", async (req: Request, res: Response) => {
+    console.log("💳 Invoice PDF + Payment Link generation started");
+    const startTime = Date.now();
+    try {
+      // Authenticate user
+      let firebaseUid: string | undefined;
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        try {
+          const token = authHeader.substring(7);
+          const decodedToken = await admin.auth().verifyIdToken(token);
+          firebaseUid = decodedToken.uid;
+        } catch (authError) {
+          return res.status(401).json({ success: false, error: 'Invalid auth token' });
+        }
+      }
+      if (!firebaseUid) {
+        return res.status(401).json({ success: false, error: 'Authentication required' });
+      }
+
+      const { userMappingService } = await import('./services/userMappingService');
+      const userId = await userMappingService.getOrCreateUserIdForFirebaseUid(firebaseUid);
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ success: false, error: 'User not found' });
+      }
+
+      // ——— Create Stripe Checkout session ———
+      let stripePaymentLink: string | null = null;
+      const { estimate, invoiceConfig: invoiceCfg } = req.body;
+      const total: number = estimate?.total || 0;
+      const amountPaid: number = invoiceCfg?.downPaymentAmount ? parseFloat(String(invoiceCfg.downPaymentAmount)) : 0;
+      const balanceDue: number = total - amountPaid;
+      const paymentAmountDollars = balanceDue > 0 ? balanceDue : total;
+      const paymentAmountCents = Math.round(paymentAmountDollars * 100);
+
+      if (user.stripeConnectAccountId && paymentAmountCents >= 50) {
+        try {
+          const { createStripeClient } = await import('./config/stripe');
+          const stripeClient = createStripeClient();
+          const account = await stripeClient.accounts.retrieve(user.stripeConnectAccountId);
+          if (account.charges_enabled) {
+            const { resolveAppBaseUrl } = await import('./utils/url-helpers');
+            const isLiveMode = process.env.STRIPE_SECRET_KEY?.startsWith('sk_live_');
+            const baseUrl = resolveAppBaseUrl({ isLiveMode });
+            const invoiceNumber = await contractorPaymentService.generateInvoiceNumber(userId);
+            const paymentRecord = await storage.createProjectPayment({
+              projectId: 0,
+              userId,
+              amount: paymentAmountCents,
+              type: 'additional',
+              status: 'pending',
+              description: `Invoice Payment — ${estimate?.client?.name || 'Client'}`,
+              clientEmail: estimate?.client?.email || '',
+              clientName: estimate?.client?.name || '',
+              invoiceNumber,
+            });
+            const platformFeeCents = Math.round(paymentAmountCents * 0.005);
+            const session = await stripeClient.checkout.sessions.create({
+              payment_method_types: ['card'],
+              line_items: [{
+                price_data: {
+                  currency: 'usd',
+                  product_data: {
+                    name: `Invoice #${invoiceNumber}`,
+                    description: `Payment for services — ${estimate?.client?.name || 'Client'}`,
+                  },
+                  unit_amount: paymentAmountCents,
+                },
+                quantity: 1,
+              }],
+              mode: 'payment',
+              success_url: `${baseUrl}/payment-success?payment_id=${paymentRecord.id}&session_id={CHECKOUT_SESSION_ID}`,
+              cancel_url: `${baseUrl}/project-payments`,
+              customer_email: estimate?.client?.email || undefined,
+              metadata: {
+                paymentId: paymentRecord.id.toString(),
+                userId: userId.toString(),
+                type: 'invoice-pdf-download',
+                invoiceNumber,
+                source: 'invoice-pdf-with-payment-link',
+              },
+              payment_intent_data: {
+                application_fee_amount: platformFeeCents,
+              },
+            }, { stripeAccount: user.stripeConnectAccountId });
+            stripePaymentLink = session.url;
+            await storage.updateProjectPayment(paymentRecord.id, {
+              stripeCheckoutSessionId: session.id,
+              checkoutUrl: session.url || '',
+              paymentLinkUrl: session.url || '',
+            });
+            console.log(`✅ [INVOICE-PDF-LINK] Stripe session created: ${session.id}`);
+          }
+        } catch (stripeErr: any) {
+          console.error('⚠️  [INVOICE-PDF-LINK] Stripe session creation failed, generating PDF without link:', stripeErr.message);
+        }
+      }
+
+      // ——— Get contractor data from Firebase ———
+      let contractorDataFromDB: any = null;
+      try {
+        const profile = await companyProfileService.getProfileByFirebaseUid(firebaseUid);
+        if (profile) {
+          contractorDataFromDB = {
+            name: profile.companyName,
+            address: profile.address || "",
+            phone: profile.phone || "",
+            email: profile.email || "",
+            website: profile.website || "",
+            logo: profile.logo || "",
+            license: profile.license || "",
+            state: profile.state || "",
+          };
+        }
+      } catch (dbError) {
+        console.error(`❌ [INVOICE-PDF-LINK] Error fetching contractor from Firebase:`, dbError);
+      }
+
+      // ——— Normalize payload and inject payment link ———
+      const bodyWithLink = { ...req.body, paymentLink: stripePaymentLink || undefined };
+      const invoiceData = normalizeInvoicePayload(bodyWithLink, contractorDataFromDB);
+      if (stripePaymentLink) {
+        invoiceData.paymentLink = stripePaymentLink;
+      }
+
+      // ——— Generate PDF ———
+      const pdfBuffer = await invoicePdfService.generatePdf(invoiceData);
+      const processingTime = Date.now() - startTime;
+
+      // ——— Deduct credits ———
+      try {
+        const { walletService } = await import('./services/walletService');
+        await walletService.deductCredits({ firebaseUid, featureName: 'invoice', resourceId: `invoice-${invoiceData.invoice?.number || Date.now()}`, description: 'Invoice PDF with payment link generated' });
+      } catch (creditError) {
+        console.error(`❌ [INVOICE-PDF-LINK] Credit deduction failed (non-blocking):`, creditError);
+      }
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="invoice-${invoiceData.invoice.number}.pdf"`);
+      res.setHeader("Content-Length", pdfBuffer.length);
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("X-Payment-Link", stripePaymentLink || "none");
+      res.end(pdfBuffer, "binary");
+      console.log(`✅ [INVOICE-PDF-LINK] PDF generated in ${processingTime}ms, payment link: ${stripePaymentLink ? "YES" : "NO"}`);
+    } catch (error) {
+      console.error("❌ [INVOICE-PDF-LINK] Error:", error);
+      res.status(500).json({ success: false, error: "Failed to generate invoice PDF with payment link", details: (error as Error).message });
+    }
+  });
+
   // 📧 NEW: Send Invoice via HTML Email
   app.post("/api/invoice-email", async (req: Request, res: Response) => {
     console.log("📧 Invoice Email Service started");

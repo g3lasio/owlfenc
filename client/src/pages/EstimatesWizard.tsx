@@ -104,6 +104,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import axios from "axios";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // Types
 interface Client {
@@ -392,6 +393,10 @@ export default function EstimatesWizardFixed() {
     downPaymentAmount: 0,  // Numeric, not string
     totalAmountPaid: null as boolean | null,
   });
+  // Stripe payment link checkbox state
+  const [generatePaymentLink, setGeneratePaymentLink] = useState(false);
+  const [stripeConnected, setStripeConnected] = useState<boolean | null>(null); // null = loading, true = connected, false = not connected
+  const [stripeStatusLoading, setStripeStatusLoading] = useState(false);
 
   // Check for edit mode on component mount
   useEffect(() => {
@@ -4083,78 +4088,30 @@ This link provides a professional view of your estimate that you can access anyt
       });
       return;
     }
-
+    // Reset invoice config and open the configuration dialog
+    setInvoiceConfig({
+      projectCompleted: null,
+      downPaymentAmount: 0,
+      totalAmountPaid: null,
+    });
+    setGeneratePaymentLink(false);
+    setShowInvoiceDialog(true);
+    // Fetch Stripe Connect status in background
+    setStripeStatusLoading(true);
+    setStripeConnected(null);
     try {
-      // Use default values for direct generation
-      const defaultInvoiceConfig = {
-        projectCompleted: true,
-        downPaymentAmount: 0,  // Always numeric
-        totalAmountPaid: true,
-      };
-
-      // Transform items to match normalizeInvoicePayload expectations
-      // Backend expects: unitPrice, totalPrice, quantity, name, description
-      const transformedItems = estimate.items.map(item => ({
-        name: item.name || "Item",
-        description: item.description || "",
-        quantity: item.quantity || 1,
-        unitPrice: item.price || 0,      // Rename price → unitPrice (as number)
-        totalPrice: item.total || 0      // Rename total → totalPrice (as number)
-      }));
-
-      const invoicePayload = {
-        profile: {
-          company: profile.company,
-          address: profile.address
-            ? `${profile.address}${profile.city ? ", " + profile.city : ""}${profile.state ? ", " + profile.state : ""}${profile.zipCode ? " " + profile.zipCode : ""}`
-            : "",
-          phone: profile.phone || "",
-          email: profile.email || currentUser?.email || "",
-          website: profile.website || "",
-          logo: profile.logo || "",
-        },
-        estimate: {
-          client: estimate.client,
-          items: transformedItems,
-          subtotal: estimate.subtotal || 0,
-          discountAmount: estimate.discountAmount || 0,
-          taxRate: estimate.taxRate || 0,
-          tax: estimate.tax || 0,
-          total: estimate.total || 0,
-        },
-        invoiceConfig: defaultInvoiceConfig,
-      };
-
-      const response = await axios.post("/api/invoice-pdf", invoicePayload, {
-        responseType: "blob",
-      });
-
-      const blob = new Blob([response.data], { type: "application/pdf" });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `invoice-${Date.now()}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
-      toast({
-        title: "Invoice Generated",
-        description:
-          "Your professional invoice has been generated and downloaded successfully.",
-      });
-    } catch (error) {
-      console.error("Error generating invoice:", error);
-      toast({
-        title: "Generation Failed",
-        description: "Could not generate invoice. Please try again.",
-        variant: "destructive",
-      });
+      const headers = await getAuthHeaders();
+      const res = await axios.get("/api/contractor-payments/stripe/account-status", { headers });
+      const data = res.data;
+      setStripeConnected(!!(data.connected && data.chargesEnabled));
+    } catch {
+      setStripeConnected(false);
+    } finally {
+      setStripeStatusLoading(false);
     }
   };
 
-  // ✅ SIMPLE PUBLIC URL SHARING (NO AUTH REQUIRED) 
+    // ✅ SIMPLE PUBLIC URL SHARING (NO AUTH REQUIRED) 
   const generateEstimateUrl = async (): Promise<string | null> => {
     try {
       setIsGeneratingUrl(true);
@@ -7796,6 +7753,55 @@ This link provides a professional view of your estimate that you can access anyt
             </div>
           </div>
 
+          {/* Payment Link Section */}
+          <div className="border border-dashed border-gray-700 rounded-lg p-4 space-y-3 bg-gray-900/30">
+            <div className="flex items-start gap-3">
+              <Checkbox
+                id="generatePaymentLink"
+                checked={generatePaymentLink}
+                onCheckedChange={(checked) => {
+                  if (stripeConnected) {
+                    setGeneratePaymentLink(checked === true);
+                  }
+                }}
+                disabled={!stripeConnected || stripeStatusLoading}
+                className="mt-0.5"
+              />
+              <div className="flex-1 min-w-0">
+                <label
+                  htmlFor="generatePaymentLink"
+                  className={`text-sm font-medium leading-none cursor-pointer flex items-center gap-2 ${
+                    !stripeConnected || stripeStatusLoading
+                      ? "text-gray-500 cursor-not-allowed"
+                      : "text-white"
+                  }`}
+                >
+                  <Link className="h-4 w-4 text-orange-400 flex-shrink-0" />
+                  Include Stripe Payment Link in PDF
+                </label>
+                {stripeStatusLoading ? (
+                  <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+                    <RefreshCw className="h-3 w-3 animate-spin" />
+                    Checking Stripe connection...
+                  </p>
+                ) : stripeConnected ? (
+                  <p className="text-xs text-gray-400 mt-1">
+                    A secure Stripe checkout link will be embedded in the invoice PDF so your client can pay online.
+                  </p>
+                ) : (
+                  <p className="text-xs text-amber-400/80 mt-1 flex items-start gap-1">
+                    <AlertCircle className="h-3 w-3 flex-shrink-0 mt-0.5" />
+                    Stripe is not connected. Go to{" "}
+                    <span className="font-medium underline cursor-pointer" onClick={() => window.location.href = "/settings"}>
+                      Settings → Payments
+                    </span>{" "}
+                    to enable payment links.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
           <DialogFooter className="flex gap-3">
             <Button
               variant="outline"
@@ -7884,17 +7890,17 @@ This link provides a professional view of your estimate that you can access anyt
                     invoiceConfig,  // Already numeric, no conversion needed
                   };
 
-                  console.log(
-                    "Generating invoice PDF with payload:",
-                    invoicePayload,
-                  );
-
-                  // Call invoice PDF service
+                  // Choose endpoint based on payment link checkbox
+                  const endpoint = generatePaymentLink
+                    ? "/api/invoice-pdf-with-payment-link"
+                    : "/api/invoice-pdf";
+                  const authHeaders = await getAuthHeaders();
                   const response = await axios.post(
-                    "/api/invoice-pdf",
+                    endpoint,
                     invoicePayload,
                     {
                       responseType: "blob",
+                      headers: authHeaders,
                     },
                   );
 
@@ -7902,10 +7908,14 @@ This link provides a professional view of your estimate that you can access anyt
                   const blob = new Blob([response.data], {
                     type: "application/pdf",
                   });
+                  const invoiceClientName = estimate.client?.name
+                    ? estimate.client.name.toLowerCase().replace(/\s+/g, "_")
+                    : "invoice";
+                  const invoiceDate = new Date().toISOString().split("T")[0];
                   const url = window.URL.createObjectURL(blob);
                   const link = document.createElement("a");
                   link.href = url;
-                  link.download = `invoice-${Date.now()}.pdf`;
+                  link.download = `invoice-${invoiceClientName}-${invoiceDate}.pdf`;
                   document.body.appendChild(link);
                   link.click();
                   document.body.removeChild(link);
@@ -7918,11 +7928,13 @@ This link provides a professional view of your estimate that you can access anyt
                     downPaymentAmount: 0,
                     totalAmountPaid: null,
                   });
+                  setGeneratePaymentLink(false);
 
                   toast({
                     title: "Invoice Generated",
-                    description:
-                      "Your professional invoice has been generated and downloaded successfully.",
+                    description: generatePaymentLink
+                      ? "Invoice downloaded with Stripe payment link embedded."
+                      : "Your professional invoice has been generated and downloaded successfully.",
                   });
                 } catch (error) {
                   console.error("Error generating invoice:", error);
