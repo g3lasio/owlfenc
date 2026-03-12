@@ -165,6 +165,11 @@ export class PuppeteerPdfService {
     const taxAmount = this.formatPrice(data.estimate?.tax_amount);
     const total = this.formatPrice(data.estimate?.total);
 
+    // Compute display values before template string
+    const taxRateDisplay = parseFloat((taxRate).toFixed(4));
+    const totalRaw = parseCurrency(data.estimate?.total || '0');
+    const depositAmount = formatCurrency(totalRaw * 0.5);
+
     // Build logo HTML before template string
     const logoHtml = data.company?.logo
       ? `<img src="${data.company.logo}" alt="${data.company.name || 'Company Logo'}" style="max-width:200px;max-height:80px;object-fit:contain;display:block;margin-bottom:8px;" />`

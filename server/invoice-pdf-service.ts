@@ -184,12 +184,26 @@ export class InvoicePdfService {
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
   }
-  @page { margin: 20mm 15mm; }
+  @page { margin: 20mm 15mm 28mm; }
   @media print {
     body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     tr { page-break-inside: avoid; }
     thead { display: table-header-group; }
     tfoot { display: table-footer-group; }
+  }
+  .page-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 10px 48px;
+    border-top: 1px solid #E5E7EB;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: #ffffff;
+    z-index: 9999;
   }
 </style>
 </head>
@@ -204,11 +218,11 @@ export class InvoicePdfService {
     ${logoHtml}
     <div style="display:flex;flex-direction:column;gap:3px;">
       <div style="font-size:16px;font-weight:700;color:#111827;">${data.company.name}</div>
-      ${data.company.address ? `<div style="font-size:11px;color:#6B7280;"><span style="font-size:10px;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.4px;">Addr</span> ${data.company.address}</div>` : ''}
-      ${data.company.phone ? `<div style="font-size:11px;color:#6B7280;"><span style="font-size:10px;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.4px;">Tel</span> ${data.company.phone}</div>` : ''}
-      ${data.company.email ? `<div style="font-size:11px;color:#6B7280;"><span style="font-size:10px;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.4px;">Email</span> ${data.company.email}</div>` : ''}
-      ${data.company.website ? `<div style="font-size:11px;color:#6B7280;"><span style="font-size:10px;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.4px;">Web</span> ${data.company.website}</div>` : ''}
-      ${data.company.license ? `<div style="display:inline-flex;align-items:center;gap:4px;background:#ECFEFF;color:#0E7490;font-size:10px;font-weight:600;padding:3px 10px;border-radius:4px;border:1px solid rgba(8,145,178,0.25);width:fit-content;margin-top:4px;">Lic: ${data.company.license}</div>` : ''}
+      ${data.company.address ? `<div style="font-size:11px;color:#6B7280;display:flex;align-items:flex-start;gap:5px;margin-bottom:2px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${data.company.address}</div>` : ''}
+      ${data.company.phone ? `<div style="font-size:11px;color:#6B7280;display:flex;align-items:center;gap:5px;margin-bottom:2px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.06 6.06l1.79-1.79a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>${data.company.phone}</div>` : ''}
+      ${data.company.email ? `<div style="font-size:11px;color:#6B7280;display:flex;align-items:center;gap:5px;margin-bottom:2px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>${data.company.email}</div>` : ''}
+      ${data.company.website ? `<div style="font-size:11px;color:#6B7280;display:flex;align-items:center;gap:5px;margin-bottom:2px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>${data.company.website}</div>` : ''}
+      ${data.company.license ? `<div style="display:inline-flex;align-items:center;gap:4px;background:#ECFEFF;color:#0E7490;font-size:10px;font-weight:600;padding:3px 10px;border-radius:4px;border:1px solid rgba(8,145,178,0.25);width:fit-content;margin-top:4px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#0E7490" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Lic: ${data.company.license}</div>` : ''}
     </div>
   </div>
 
@@ -238,9 +252,9 @@ export class InvoicePdfService {
   <div>
     <div style="font-size:10px;font-weight:700;color:#0891B2;text-transform:uppercase;letter-spacing:1.2px;padding-bottom:6px;border-bottom:2px solid #0891B2;width:fit-content;margin-bottom:10px;">Bill To</div>
     <div style="font-size:17px;font-weight:700;color:#111827;letter-spacing:-0.3px;margin-bottom:5px;">${data.client.name}</div>
-    ${data.client.address ? `<div style="font-size:12px;color:#6B7280;margin-bottom:3px;">${data.client.address}</div>` : ''}
-    ${data.client.phone ? `<div style="font-size:12px;color:#6B7280;margin-bottom:3px;">Tel: ${data.client.phone}</div>` : ''}
-    ${data.client.email ? `<div style="font-size:12px;color:#6B7280;margin-bottom:3px;">${data.client.email}</div>` : ''}
+    ${data.client.address ? `<div style="font-size:12px;color:#6B7280;margin-bottom:3px;display:flex;align-items:flex-start;gap:5px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${data.client.address}</div>` : ''}
+    ${data.client.phone ? `<div style="font-size:12px;color:#6B7280;margin-bottom:3px;display:flex;align-items:center;gap:5px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.06 6.06l1.79-1.79a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>${data.client.phone}</div>` : ''}
+    ${data.client.email ? `<div style="font-size:12px;color:#6B7280;margin-bottom:3px;display:flex;align-items:center;gap:5px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>${data.client.email}</div>` : ''}
   </div>
   <div>
     <div style="font-size:10px;font-weight:700;color:#0891B2;text-transform:uppercase;letter-spacing:1.2px;padding-bottom:6px;border-bottom:2px solid #0891B2;width:fit-content;margin-bottom:10px;">Project Details</div>
@@ -312,11 +326,11 @@ ${paymentLinkHtml}
   </div>
 </div>
 
-<!-- FOOTER -->
-<div style="padding:16px 48px;border-top:1px solid #E5E7EB;display:flex;align-items:center;justify-content:center;gap:12px;">
+<!-- FIXED FOOTER (appears on every page) -->
+<div class="page-footer">
   <div style="flex:1;height:1px;background:linear-gradient(to right,transparent,#0891B2,transparent);"></div>
   <div style="width:6px;height:6px;background:#0891B2;transform:rotate(45deg);flex-shrink:0;"></div>
-  <div style="font-size:10px;color:#9CA3AF;font-weight:500;letter-spacing:0.3px;">Powered by Mervin AI · owlfenc.com</div>
+  <div style="font-size:10px;color:#9CA3AF;font-weight:500;letter-spacing:0.3px;">Powered by Mervin AI</div>
   <div style="width:6px;height:6px;background:#0891B2;transform:rotate(45deg);flex-shrink:0;"></div>
   <div style="flex:1;height:1px;background:linear-gradient(to right,transparent,#0891B2,transparent);"></div>
 </div>
@@ -360,14 +374,7 @@ ${paymentLinkHtml}
       </div>`).join('')}
   </div>
 
-  <!-- Footer page 2 -->
-  <div style="position:absolute;bottom:0;left:0;right:0;padding:16px 48px;border-top:1px solid #E5E7EB;display:flex;align-items:center;justify-content:center;gap:12px;">
-    <div style="flex:1;height:1px;background:linear-gradient(to right,transparent,#0891B2,transparent);"></div>
-    <div style="width:6px;height:6px;background:#0891B2;transform:rotate(45deg);flex-shrink:0;"></div>
-    <div style="font-size:10px;color:#9CA3AF;font-weight:500;letter-spacing:0.3px;">Powered by Mervin AI · owlfenc.com</div>
-    <div style="width:6px;height:6px;background:#0891B2;transform:rotate(45deg);flex-shrink:0;"></div>
-    <div style="flex:1;height:1px;background:linear-gradient(to right,transparent,#0891B2,transparent);"></div>
-  </div>
+  <!-- Footer removed from page 2 body - handled by fixed .page-footer above -->
 
 </div>
 
