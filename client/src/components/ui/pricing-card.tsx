@@ -71,7 +71,7 @@ export function PricingCard({
 
   // Etiqueta del botón de upgrade — sin ninguna referencia a "trial"
   const getUpgradeLabel = () => {
-    if (isPrimoChambeador) return "Comenzar Gratis";
+    if (isPrimoChambeador) return "Empezar Ahora";
     if (code === 'mero_patron') return "Upgrade to Mero Patrón";
     if (code === 'MASTER_CONTRACTOR' || code === 'master_contractor') return "Upgrade to Master";
     return "Upgrade Now";
@@ -129,7 +129,12 @@ export function PricingCard({
           <div className="mb-6 text-center">
             {displayPrice === 0 ? (
               <>
-                <span className="text-3xl font-bold text-green-500">GRATIS</span>
+                {/* Pay As You Grow pricing display — no monthly fee */}
+                <div className="flex items-baseline justify-center gap-1">
+                  <span className="text-3xl font-bold">$0.20</span>
+                  <span className="text-muted-foreground text-sm">/crédito</span>
+                </div>
+                <div className="mt-1 text-xs text-muted-foreground">Sin suscripción mensual</div>
                 {/* Highlight the welcome credits for Primo Chambeador */}
                 {isPrimoChambeador && (
                   <div className="mt-2 text-sm font-semibold text-cyan-400">

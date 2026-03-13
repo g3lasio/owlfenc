@@ -56,11 +56,14 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     price: 0,
     yearlyPrice: 0,
     features: [
-      "Pay As You Go — no monthly subscription",
-      "20 AI credits included to get started",
-      "Buy more credits anytime — never expire",
-      "AI Estimates, Contracts, Permits & more",
-      "Community support"
+      "Pay As You Grow — sin suscripción mensual",
+      "20 AI credits de bienvenida incluidos",
+      "$0.20 por crédito — compra cuando necesites",
+      "Los créditos nunca expiran",
+      "Acceso completo a todas las features con créditos",
+      "AI Estimates, Contracts, Invoices, Permit Advisor",
+      "Property Verifier & Dual Signature Protocol",
+      "Watermark en documentos generados"
     ],
     isActive: true,
     interval: 'monthly',
