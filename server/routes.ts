@@ -2510,7 +2510,15 @@ ENHANCED LEGAL CLAUSE:`;
       // ——— Deduct credits ———
       try {
         const { walletService } = await import('./services/walletService');
-        await walletService.deductCredits({ firebaseUid, featureName: 'invoice', resourceId: `invoice-${invoiceData.invoice?.number || Date.now()}`, description: 'Invoice PDF with payment link generated' });
+        // Invoice PDF = 5 cr + Payment Link = 5 cr = 10 cr total
+        await walletService.deductCredits({ firebaseUid, featureName: 'invoice', resourceId: `invoice-${invoiceData.invoice?.number || Date.now()}`, description: 'Invoice PDF generated' });
+        if (stripePaymentLink) {
+          // Only charge paymentLink credits if a Stripe link was actually created
+          await walletService.deductCredits({ firebaseUid, featureName: 'paymentLink', resourceId: `invoice-link-${invoiceData.invoice?.number || Date.now()}`, description: 'Stripe payment link created for invoice' });
+          console.log(`💳 [INVOICE-PDF-LINK] Deducted 10 credits total (5 invoice + 5 payment link). UID: ${firebaseUid}`);
+        } else {
+          console.log(`💳 [INVOICE-PDF-LINK] Deducted 5 credits (invoice only, no Stripe link). UID: ${firebaseUid}`);
+        }
       } catch (creditError) {
         console.error(`❌ [INVOICE-PDF-LINK] Credit deduction failed (non-blocking):`, creditError);
       }
@@ -2817,13 +2825,24 @@ ENHANCED LEGAL CLAUSE:`;
           // ——— Deduct credits for invoice + payment link generation ———
           try {
             const { walletService } = await import('./services/walletService');
+            // Invoice = 5 cr + Payment Link = 5 cr = 10 cr total
             await walletService.deductCredits({
               firebaseUid,
               featureName: 'invoice',
               resourceId: `invoice-${invoiceNumber}`,
-              description: 'Invoice with payment link sent',
+              description: 'Invoice sent via email',
             });
-            console.log(`💳 [INVOICE+PAYMENT] Deducted 5 credits for UID: ${firebaseUid}`);
+            if (stripePaymentLink) {
+              await walletService.deductCredits({
+                firebaseUid,
+                featureName: 'paymentLink',
+                resourceId: `invoice-link-${invoiceNumber}`,
+                description: 'Stripe payment link created and sent with invoice',
+              });
+              console.log(`💳 [INVOICE+PAYMENT] Deducted 10 credits total (5 invoice + 5 payment link) for UID: ${firebaseUid}`);
+            } else {
+              console.log(`💳 [INVOICE+PAYMENT] Deducted 5 credits (invoice only, no Stripe link) for UID: ${firebaseUid}`);
+            }
           } catch (creditError) {
             console.error('❌ [INVOICE+PAYMENT] Credit deduction failed (non-blocking):', creditError);
           }

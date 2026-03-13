@@ -585,11 +585,11 @@ app.post('/api/contractor-payments/create-payment-link', async (req: any, res) =
     }, { stripeAccount: user.stripeConnectAccountId });
     
     console.log('✅ [PAYMENT-LINK] Link creado:', paymentLink.url);
-    // 💳 PAYG: Deduct 3 credits for payment link creation
+    // 💳 PAYG: Deduct 5 credits for standalone payment link creation
     try {
       const { walletService } = await import('./services/walletService');
       await walletService.deductCredits({ firebaseUid, featureName: 'paymentLink', resourceId: paymentLink.id, description: 'Payment link created' });
-      console.log(`💳 [PAYMENT-LINK] Deducted 3 credits. UID: ${firebaseUid}`);
+      console.log(`💳 [PAYMENT-LINK] Deducted 5 credits (paymentLink). UID: ${firebaseUid}`);
     } catch (creditError) {
       console.error('❌ [PAYMENT-LINK] Credit deduction failed (non-blocking):', creditError);
     }
