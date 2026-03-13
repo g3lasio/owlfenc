@@ -107,12 +107,12 @@ export function useProfile() {
       }
     },
     enabled: !!currentUser?.uid,
-    staleTime: 1000 * 10, // Cache for 10 seconds - shorter for better sync
-    gcTime: 1000 * 60 * 5, // Keep in cache for 5 minutes
-    retry: 3,
-    refetchOnWindowFocus: true, // 🔄 Refetch when user returns to tab (sync between devices)
-    refetchOnReconnect: true, // 🔄 Refetch when network reconnects
-    refetchInterval: 1000 * 60, // 🔄 Refetch every 60 seconds for real-time sync
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes — profile rarely changes mid-session
+    gcTime: 1000 * 60 * 30, // Keep in cache for 30 minutes
+    retry: 2,
+    refetchOnWindowFocus: false, // Avoid re-fetching Firebase on every tab switch
+    refetchOnReconnect: true, // Refetch when network reconnects
+    refetchInterval: 1000 * 60 * 10, // Refetch every 10 minutes (was 60s)
   });
 
   // 🔥 SINGLE SOURCE OF TRUTH: Save to Firebase ONLY

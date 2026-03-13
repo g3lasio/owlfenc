@@ -438,25 +438,26 @@ if (IS_PRODUCTION) {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // ================================
-  // WALLET MIGRATION — MUST RUN FIRST
-  // Ejecutar ANTES de cualquier query a la DB para garantizar que
-  // monthly_credits_grant y las tablas wallet existan cuando se usen.
+  // WALLET MIGRATION + AIRDROP — NON-BLOCKING BACKGROUND TASK
+  // Runs asynchronously after server starts to avoid blocking page loads.
+  // The wallet tables already exist in production — migration is idempotent.
   // ================================
-  try {
-    const { runWalletMigration } = await import('./migrations/runWalletMigration');
-    const { runAirdrop } = await import('./scripts/airdropCredits');
-    
-    // 1. Ejecutar migración de Wallet (crea tablas, columnas y seeds)
-    await runWalletMigration();
-    
-    // 2. Ejecutar Airdrop de 500 créditos para usuarios existentes
-    // Es seguro de correr en cada reinicio por la idempotency key
-    await runAirdrop().catch(err => {
-      console.error('⚠️  [AIRDROP-INIT] Failed to run airdrop:', err);
-    });
-  } catch (err) {
-    console.warn('⚠️  [WALLET] Migration/Airdrop skipped at startup:', err instanceof Error ? err.message : err);
-  }
+  setImmediate(async () => {
+    try {
+      const { runWalletMigration } = await import('./migrations/runWalletMigration');
+      const { runAirdrop } = await import('./scripts/airdropCredits');
+      
+      // 1. Run wallet migration (idempotent — safe to run every restart)
+      await runWalletMigration();
+      
+      // 2. Run airdrop for existing users (idempotent via idempotency key)
+      await runAirdrop().catch((err: any) => {
+        console.error('⚠️  [AIRDROP-INIT] Failed to run airdrop:', err);
+      });
+    } catch (err) {
+      console.warn('⚠️  [WALLET] Background migration/airdrop failed:', err instanceof Error ? err.message : err);
+    }
+  });
 
   // CRITICAL: Initialize secure user mapping system
   initSecureUserHelper(storage);
@@ -10554,13 +10555,15 @@ ENHANCED LEGAL CLAUSE:`;
   app.use("/api/wallet", walletRoutes);
   app.use("/api/admin/credits", walletRoutes); // Admin credit grant endpoint
 
-  // Inicializar productos de Top-Up en Stripe (idempotente)
-  try {
-    const { stripeTopUpService } = await import('./services/stripeTopUpService');
-    await stripeTopUpService.initializeTopUpProducts();
-  } catch (err) {
-    console.warn('⚠️  [WALLET] Stripe Top-Up product initialization skipped:', err instanceof Error ? err.message : err);
-  }
+  // Inicializar productos de Top-Up en Stripe (idempotente) — NON-BLOCKING
+  setImmediate(async () => {
+    try {
+      const { stripeTopUpService } = await import('./services/stripeTopUpService');
+      await stripeTopUpService.initializeTopUpProducts();
+    } catch (err) {
+      console.warn('⚠️  [WALLET] Stripe Top-Up product initialization skipped:', err instanceof Error ? err.message : err);
+    }
+  });
 
   // Crear y retornar el servidor HTTP
   const server = createServer(app);

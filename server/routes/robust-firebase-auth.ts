@@ -8,6 +8,11 @@ import { subscriptionEmailService } from '../services/subscriptionEmailService';
  * Conecta Firebase authentication con PostgreSQL subscription data
  */
 
+// ⚡ IN-MEMORY CACHE for user-data responses (5 min TTL)
+// Avoids repeated DB queries on every page navigation for existing users
+const userDataCache = new Map<string, { data: any; expiresAt: number }>();
+const USER_DATA_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
 export function registerRobustFirebaseAuthRoutes(app: any) {
 
   // Obtener datos completos del usuario autenticado
@@ -45,6 +50,14 @@ export function registerRobustFirebaseAuthRoutes(app: any) {
         }
       } else {
         console.log(`📭 [ROBUST-AUTH] No token provided - checking existing user mapping`);
+      }
+
+      // ⚡ CACHE CHECK: Return cached response for existing users (avoids DB queries)
+      const cacheKey = firebaseUid;
+      const cached = userDataCache.get(cacheKey);
+      if (cached && cached.expiresAt > Date.now()) {
+        console.log(`⚡ [ROBUST-AUTH] Cache hit for: ${email} (TTL: ${Math.round((cached.expiresAt - Date.now()) / 1000)}s remaining)`);
+        return res.json(cached.data);
       }
 
       console.log(`🔐 [ROBUST-AUTH] Getting complete user data for: ${email} (${firebaseUid})`);
@@ -167,6 +180,12 @@ export function registerRobustFirebaseAuthRoutes(app: any) {
       };
 
       console.log(`✅ [ROBUST-AUTH] User data assembled for: ${email}`);
+      
+      // ⚡ CACHE WRITE: Store response for 5 minutes (only for existing users, not new ones)
+      if (!isNewUser) {
+        userDataCache.set(cacheKey, { data: response, expiresAt: Date.now() + USER_DATA_CACHE_TTL_MS });
+      }
+      
       res.json(response);
 
     } catch (error) {

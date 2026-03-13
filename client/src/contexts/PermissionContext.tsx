@@ -205,98 +205,22 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
     }
   }, [currentUser?.uid]);
 
+  // Usage count is NO LONGER NEEDED — credit wallet is the only gate
+  // This function now just sets defaults immediately (no API call)
   const loadUserUsage = useCallback(async () => {
-    if (!currentUser?.uid) {
-      setUserUsage({
-        basicEstimates: 0,
-        aiEstimates: 0,
-        contracts: 0,
-        propertyVerifications: 0,
-        permitAdvisor: 0,
-        projects: 0,
-        deepsearch: 0,
-        month: new Date().toISOString().slice(0, 7)
-      });
-      setLoading(false);
-      setIsInitialized(true); // ✅ FIXED: Mark as initialized even with no user
-      return;
-    }
-
-    try {
-      // ✅ ULTRA ROBUST: Load ALL feature usage from persistent PostgreSQL backend
-      console.log(`📊 [PERMISSION-CONTEXT] Loading complete usage data for user: ${currentUser.uid}`);
-      
-      // 🔐 SECURITY: Get Firebase ID token for authentication
-      let idToken: string | undefined;
-      try {
-        idToken = await currentUser.getIdToken();
-      } catch (tokenError) {
-        console.error('❌ [PERMISSION-CONTEXT] Error getting ID token for usage fetch:', tokenError);
-      }
-      
-      const headers: Record<string, string> = {};
-      if (idToken) {
-        headers['Authorization'] = `Bearer ${idToken}`;
-      }
-      
-      const response = await fetch(`/api/usage-limits/current`, { headers });
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log(`📊 [PERMISSION-CONTEXT] Usage data from Firebase:`, data);
-        
-        // Map backend response to frontend usage structure
-        const usage: UserUsage = {
-          basicEstimates: data.currentUsage?.basicEstimates || 0,
-          aiEstimates: data.currentUsage?.aiEstimates || 0,
-          contracts: data.currentUsage?.contracts || 0,
-          propertyVerifications: data.currentUsage?.propertyVerification || 0,
-          permitAdvisor: data.currentUsage?.permitAdvisor || 0,
-          projects: data.currentUsage?.projects || 0,
-          deepsearch: data.currentUsage?.deepsearch || 0,
-          deepsearchFullCosts: data.currentUsage?.deepsearchFullCosts || 0,
-          month: new Date().toISOString().slice(0, 7)
-        };
-        
-        setUserUsage(usage);
-        console.log(`✅ [PERMISSION-CONTEXT] All usage loaded:`, {
-          basicEstimates: usage.basicEstimates,
-          aiEstimates: usage.aiEstimates,
-          contracts: usage.contracts,
-          propertyVerifications: usage.propertyVerifications,
-          permitAdvisor: usage.permitAdvisor,
-          projects: usage.projects,
-          deepsearch: usage.deepsearch
-        });
-      } else {
-        console.warn(`⚠️ [PERMISSION-CONTEXT] Failed to load usage from backend, using defaults`);
-        setUserUsage({
-          basicEstimates: 0,
-          aiEstimates: 0,
-          contracts: 0,
-          propertyVerifications: 0,
-          permitAdvisor: 0,
-          projects: 0,
-          deepsearch: 0,
-          month: new Date().toISOString().slice(0, 7)
-        });
-      }
-    } catch (error) {
-      console.error('❌ [PERMISSION-CONTEXT] Error loading user usage:', error);
-      setUserUsage({
-        basicEstimates: 0,
-        aiEstimates: 0,
-        contracts: 0,
-        propertyVerifications: 0,
-        permitAdvisor: 0,
-        projects: 0,
-        deepsearch: 0,
-        month: new Date().toISOString().slice(0, 7)
-      });
-    } finally {
-      setLoading(false);
-      setIsInitialized(true); // ✅ FIXED: Mark as initialized regardless of success/failure
-    }
+    const defaultUsage = {
+      basicEstimates: 0,
+      aiEstimates: 0,
+      contracts: 0,
+      propertyVerifications: 0,
+      permitAdvisor: 0,
+      projects: 0,
+      deepsearch: 0,
+      month: new Date().toISOString().slice(0, 7)
+    };
+    setUserUsage(defaultUsage);
+    setLoading(false);
+    setIsInitialized(true);
   }, [currentUser?.uid]);
 
   // Simplified useEffect to prevent dependency loops
