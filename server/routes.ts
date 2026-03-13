@@ -8532,7 +8532,7 @@ ENHANCED LEGAL CLAUSE:`;
   // 📄 ENDPOINT: Generate comprehensive property report PDF
   app.post("/api/property/generate-full-report-pdf", requireAuth, async (req: Request, res: Response) => { // FREE: credits charged in /api/property/details
     try {
-      const { address, city, state, zip } = req.body;
+      const { address, city, state, zip, cachedResults } = req.body;
       
       if (!address) {
         return res.status(400).json({
@@ -8567,23 +8567,30 @@ ENHANCED LEGAL CLAUSE:`;
       const { mapAttomToComprehensive } = await import('./services/attomDataMapper');
       const { propertyReportPdfService } = await import('./services/propertyReportPdfService');
       
-      // 💰 COST OPTIMIZATION: Use cached ATTOM data from search history (NO extra API call = NO extra charge)
-      console.log('📦 [PROPERTY-PDF] Looking up cached ATTOM data from search history');
       let attomRecord: any = null;
-      
-      if (authUser?.internalUserId) {
+
+      // ✅ PRIORITY 1: Use cachedResults sent directly from the frontend (history export)
+      // This avoids both the DB lookup and the ATTOM API call entirely
+      if (cachedResults && cachedResults._rawAttomRecord) {
+        attomRecord = cachedResults._rawAttomRecord;
+        console.log('✅ [PROPERTY-PDF] Using _rawAttomRecord from frontend cachedResults (no DB lookup, no API call)');
+      }
+
+      // ✅ PRIORITY 2: Look up cached ATTOM data from DB search history (full address match)
+      if (!attomRecord && authUser?.internalUserId) {
         try {
+          console.log('📦 [PROPERTY-PDF] Looking up cached ATTOM data from search history (full address):', address);
           const cachedSearch = await storage.getLatestPropertySearchByAddress(authUser.internalUserId, address);
           if (cachedSearch?.results && (cachedSearch.results as any)._rawAttomRecord) {
             attomRecord = (cachedSearch.results as any)._rawAttomRecord;
-            console.log('✅ [PROPERTY-PDF] Using cached ATTOM record from search history (no API call needed)');
+            console.log('✅ [PROPERTY-PDF] Using cached ATTOM record from DB search history (no API call needed)');
           }
         } catch (cacheError) {
-          console.log('⚠️ [PROPERTY-PDF] Could not retrieve cached data, falling back to ATTOM API');
+          console.log('⚠️ [PROPERTY-PDF] Could not retrieve cached data from DB, falling back to ATTOM API');
         }
       }
       
-      // Fallback: call ATTOM API if no cache found (edge case)
+      // ⚠️ FALLBACK: call ATTOM API only if no cached data found anywhere
       if (!attomRecord) {
         console.log('🌐 [PROPERTY-PDF] Cache miss - fetching from ATTOM API (fallback)');
         attomRecord = await secureAttomService.getCompletePropertyData(address, { city, state, zip });

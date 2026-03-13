@@ -617,14 +617,18 @@ export default function PropertyOwnershipVerifier() {
         zip: addressParts[2]?.split(' ')[1] || ''
       };
 
-      // Call the server-side PDF endpoint — uses cached data from search history (no extra ATTOM charge)
+      // Call the server-side PDF endpoint — pass cachedResults directly to avoid ATTOM API call
+      // item.results already contains _rawAttomRecord from when the search was originally saved
       const response = await fetch('/api/property/generate-full-report-pdf', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(addressComponents)
+        body: JSON.stringify({
+          ...addressComponents,
+          cachedResults: item.results || null  // Pass stored results to skip DB lookup + ATTOM API call
+        })
       });
 
       if (!response.ok) {
