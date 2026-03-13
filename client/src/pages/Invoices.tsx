@@ -319,14 +319,13 @@ const Invoices: React.FC = () => {
       estimate.projectType.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
-  // Calculate amounts
+  // Calculate amounts (always rounded to 2 decimal places to avoid floating point issues)
   const calculateAmounts = () => {
     if (!selectedEstimate) return { total: 0, paid: 0, balance: 0 };
 
-    // El total ya debe estar convertido a dólares en loadEstimates()
-    const total = selectedEstimate.total;
-    const paid = invoiceConfig.paidAmount;
-    const balance = total - paid;
+    const total = Math.round(selectedEstimate.total * 100) / 100;
+    const paid = Math.round(invoiceConfig.paidAmount * 100) / 100;
+    const balance = Math.round((total - paid) * 100) / 100;
 
     return { total, paid, balance };
   };
@@ -1212,7 +1211,7 @@ const Invoices: React.FC = () => {
                       onClick={canUseInvoices ? () =>
                         setInvoiceConfig((prev) => ({
                           ...prev,
-                          paidAmount: (selectedEstimate?.total || 0) * 0.5,
+                          paidAmount: Math.round((selectedEstimate?.total || 0) * 0.5 * 100) / 100,
                         })) : () => showUpgradeModal('invoices', 'Calcula pagos automáticamente con planes superiores')
                       }
                       disabled={!canUseInvoices}
@@ -1244,13 +1243,15 @@ const Invoices: React.FC = () => {
                     <Input
                       id="paidAmount"
                       type="number"
-                      value={invoiceConfig.paidAmount}
-                      onChange={(e) =>
+                      value={invoiceConfig.paidAmount === 0 ? '' : invoiceConfig.paidAmount}
+                      onChange={(e) => {
+                        const raw = parseFloat(e.target.value);
+                        const rounded = isNaN(raw) ? 0 : Math.round(raw * 100) / 100;
                         setInvoiceConfig((prev) => ({
                           ...prev,
-                          paidAmount: parseFloat(e.target.value) || 0,
-                        }))
-                      }
+                          paidAmount: rounded,
+                        }));
+                      }}
                       placeholder="0.00"
                       step="0.01"
                       min="0"
@@ -1413,56 +1414,50 @@ const Invoices: React.FC = () => {
                 <div className="space-y-4">
 
                   {/* ── Standalone Stripe Payment Link checkbox (visible always) ── */}
-                  {profile?.stripeConnectAccountId && selectedEstimate && (
-                    <div className="bg-gray-800 border border-cyan-500/30 rounded-lg p-4 space-y-3">
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          id="includePaymentLink"
-                          checked={invoiceConfig.paymentLinkType !== 'none'}
-                          onChange={(e) =>
-                            setInvoiceConfig((prev) => ({
-                              ...prev,
-                              paymentLinkType: e.target.checked ? 'full' : 'none',
-                            }))
-                          }
-                          className="h-4 w-4"
-                        />
-                        <Label htmlFor="includePaymentLink" className="cursor-pointer text-cyan-400 font-semibold text-sm">
-                          ⚡ Generar link de pago Stripe en el PDF
-                        </Label>
-                        <span className="text-xs bg-cyan-900/40 text-cyan-300 px-2 py-0.5 rounded-full">Recomendado</span>
-                      </div>
-                      <p className="text-xs text-gray-400">
-                        El PDF incluirá un botón "Pagar Ahora" para que el cliente pague directamente con tarjeta.
-                      </p>
-                      {invoiceConfig.paymentLinkType !== 'none' && (
-                        <div className="grid grid-cols-2 gap-2 pt-1">
-                          {[
-                            { value: 'deposit', label: 'Depósito 50%', amount: (selectedEstimate.total || 0) * 0.5 },
-                            { value: 'final', label: 'Final 50%', amount: (selectedEstimate.total || 0) * 0.5 },
-                            { value: 'full', label: 'Balance Total', amount: Math.max(0, (selectedEstimate.total || 0) - invoiceConfig.paidAmount) },
-                          ].map((opt) => (
-                            <button
-                              key={opt.value}
-                              type="button"
-                              onClick={() => setInvoiceConfig(prev => ({ ...prev, paymentLinkType: opt.value as any }))}
-                              className={`p-3 rounded-lg border text-left transition-all ${
-                                invoiceConfig.paymentLinkType === opt.value
-                                  ? 'border-cyan-400 bg-cyan-900/30 text-white'
-                                  : 'border-gray-600 bg-gray-700/50 text-gray-300 hover:border-gray-500'
-                              }`}
-                            >
-                              <div className="text-xs font-semibold">{opt.label}</div>
-                              <div className="text-cyan-400 font-bold text-sm mt-1">
-                                ${opt.amount.toFixed(2)}
-                              </div>
-                            </button>
-                          ))}
+                  {profile?.stripeConnectAccountId && selectedEstimate && (() => {
+                    const balanceDue = Math.max(0, Math.round(((selectedEstimate.total || 0) - invoiceConfig.paidAmount) * 100) / 100);
+                    return (
+                      <div className="bg-gray-800 border border-cyan-500/30 rounded-lg p-4 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            id="includePaymentLink"
+                            checked={invoiceConfig.paymentLinkType !== 'none'}
+                            onChange={(e) =>
+                              setInvoiceConfig((prev) => ({
+                                ...prev,
+                                paymentLinkType: e.target.checked ? 'full' : 'none',
+                              }))
+                            }
+                            className="h-4 w-4"
+                          />
+                          <Label htmlFor="includePaymentLink" className="cursor-pointer text-cyan-400 font-semibold text-sm">
+                            ⚡ Incluir link de pago Stripe en el PDF
+                          </Label>
+                          <span className="text-xs bg-cyan-900/40 text-cyan-300 px-2 py-0.5 rounded-full">Recomendado</span>
                         </div>
-                      )}
-                    </div>
-                  )}
+                        {invoiceConfig.paymentLinkType !== 'none' ? (
+                          <div className="flex items-center justify-between bg-gray-700/50 border border-gray-600 rounded-lg px-4 py-3">
+                            <div>
+                              <p className="text-xs text-gray-400">Monto a cobrar (balance pendiente)</p>
+                              <p className="text-white font-bold text-lg">${balanceDue.toFixed(2)}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-xs text-gray-400">Total proyecto</p>
+                              <p className="text-gray-300 text-sm">${(selectedEstimate.total || 0).toFixed(2)}</p>
+                              {invoiceConfig.paidAmount > 0 && (
+                                <p className="text-xs text-green-400">− ${invoiceConfig.paidAmount.toFixed(2)} pagado</p>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-gray-400">
+                            El PDF incluirá un botón "Pagar Ahora" con el balance pendiente para que el cliente pague directamente con tarjeta.
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {/* ── Send by Email checkbox ── */}
                   <div className="flex items-center space-x-2">
