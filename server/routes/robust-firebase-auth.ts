@@ -99,10 +99,11 @@ export function registerRobustFirebaseAuthRoutes(app: any) {
         // 🎁 Welcome Bonus: 120 créditos de bienvenida (idempotente)
         try {
           const { walletService } = await import('../services/walletService');
+          // CRITICAL FIX: correct param is 'amountCredits' (not 'amount'), correct type is 'bonus' (not 'grant')
           await walletService.addCredits({
             firebaseUid,
-            amount: 120,
-            type: 'grant',
+            amountCredits: 120,
+            type: 'bonus',
             description: '🎁 Welcome Bonus: 120 AI Credits — On us',
             idempotencyKey: `welcome_bonus_120:${firebaseUid}`,
           });

@@ -128,23 +128,47 @@ export class UserMappingService {
       }
       
       // Si no existe, crear nuevo usuario con campos obligatorios Y EMAIL NORMALIZADO
-      const newUserResult = await db!
-        .insert(users)
-        .values({
-          username: normalizedEmail.split('@')[0],
-          password: '', // Empty password for Firebase users
-          email: normalizedEmail, // USAR EMAIL NORMALIZADO
-          firebaseUid,
-          company: '',
-          ownerName: normalizedEmail.split('@')[0],
-          role: 'contractor',
-        })
-        .returning({ id: users.id });
+      // CRITICAL FIX: username must be unique — use email+uid suffix to avoid collisions
+      const baseUsername = normalizedEmail.split('@')[0];
+      const uniqueUsername = `${baseUsername}_${firebaseUid.slice(-6)}`;
       
-      if (newUserResult.length > 0) {
-        const newUserId = newUserResult[0].id;
-        console.log(`✅ [USER-MAPPING] Usuario NUEVO creado: ${normalizedEmail} -> user_id ${newUserId}`);
-        return { id: newUserId, wasCreated: true }; // Usuario verdaderamente nuevo, crear trial
+      try {
+        const newUserResult = await db!
+          .insert(users)
+          .values({
+            username: uniqueUsername,
+            password: '', // Empty password for Firebase users
+            email: normalizedEmail, // USAR EMAIL NORMALIZADO
+            firebaseUid,
+            company: '',
+            ownerName: baseUsername,
+            role: 'contractor',
+          })
+          .returning({ id: users.id });
+        
+        if (newUserResult.length > 0) {
+          const newUserId = newUserResult[0].id;
+          console.log(`✅ [USER-MAPPING] Usuario NUEVO creado: ${normalizedEmail} -> user_id ${newUserId}`);
+          return { id: newUserId, wasCreated: true }; // Usuario verdaderamente nuevo, crear trial
+        }
+      } catch (insertError: any) {
+        // Handle duplicate key race condition — another concurrent request may have created the user
+        if (insertError?.code === '23505') {
+          console.warn(`⚠️ [USER-MAPPING] Race condition on insert for ${normalizedEmail} — looking up existing record`);
+          // Re-query to get the user that was just created by the concurrent request
+          const raceResult = await db!
+            .select({ id: users.id })
+            .from(users)
+            .where(sql`LOWER(${users.email}) = ${normalizedEmail}`)
+            .limit(1);
+          if (raceResult.length > 0) {
+            // Update firebase_uid if not set
+            await db!.update(users).set({ firebaseUid }).where(eq(users.id, raceResult[0].id));
+            console.log(`✅ [USER-MAPPING] Race condition resolved: ${normalizedEmail} -> user_id ${raceResult[0].id}`);
+            return { id: raceResult[0].id, wasCreated: false };
+          }
+        }
+        throw insertError;
       }
       
       return null;

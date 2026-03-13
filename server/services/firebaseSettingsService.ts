@@ -222,10 +222,13 @@ class FirebaseSettingsService {
 
       const docRef = db.collection(this.collection).doc(userId).collection('settings').doc('preferences');
       
-      await docRef.update({
+      // CRITICAL FIX: Use set({ merge: true }) instead of update() to avoid
+      // NOT_FOUND error when the document doesn't exist yet for new users.
+      // set() with merge creates the document if it doesn't exist, or merges if it does.
+      await docRef.set({
         [key]: value,
         updatedAt: FieldValue.serverTimestamp()
-      });
+      }, { merge: true });
 
       console.log(`✅ [FIREBASE-SETTINGS] Setting ${key} updated for user ${userId}`);
     } catch (error) {

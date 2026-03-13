@@ -691,21 +691,7 @@ export default function PropertyOwnershipVerifier() {
           <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-blue-500/5 to-purple-500/10 rounded-2xl blur-xl"></div>
           <div className="absolute inset-0 bg-gradient-to-br from-slate-900/20 to-slate-800/20 rounded-2xl backdrop-blur-sm"></div>
           
-          {/* 📊 PERMISSIONS: Usage Counter */}
-          <div className="absolute top-4 right-4 z-10">
-            <div className={`px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm border ${
-              isLimited 
-                ? 'bg-red-500/10 border-red-500/20 text-red-400' 
-                : remaining <= 2 && remaining > 0
-                  ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400'
-                  : 'bg-cyan-500/10 border-cyan-500/20 text-cyan-400'
-            }`}>
-              {userPlan?.limits.propertyVerifications === -1 
-                ? '∞ Ilimitado'
-                : `${remaining}/${userPlan?.limits.propertyVerifications || 0} verificaciones`
-              }
-            </div>
-          </div>
+          {/* Usage counter removed — credit wallet is the only gate */}
           <div className="relative p-4 sm:p-6 border border-cyan-400/30 rounded-xl bg-gradient-to-br from-slate-900/50 to-slate-800/50 backdrop-blur-sm">
             <div className="flex items-center gap-3 mb-3">
               {/* Compact Scan Icon with Holographic Effects */}
@@ -805,52 +791,18 @@ export default function PropertyOwnershipVerifier() {
                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
                         <span className="text-sm sm:text-base">Quantum Scanning...</span>
                       </>
-                    ) : !canSearch ? (
-                      <>
-                        <AlertCircle className="w-4 h-4 mr-2" />
-                        <span className="text-sm sm:text-base">Límite Alcanzado - Upgrade Requerido</span>
-                      </>
                     ) : (
                       <>
                         <Search className="w-4 h-4 mr-2" />
                         <span className="text-sm sm:text-base">
-                          <span className="hidden sm:inline">Initiate Verification ({userPlan?.limits.propertyVerifications === -1 ? '∞ Ilimitado' : `${remaining} restantes`})</span>
-                          <span className="sm:hidden">Verificar ({userPlan?.limits.propertyVerifications === -1 ? '∞' : remaining})</span>
+                          <span className="hidden sm:inline">Initiate Verification</span>
+                          <span className="sm:hidden">Verificar</span>
                         </span>
                       </>
                     )}
                   </Button>
                   
-                  {/* 🚨 UPGRADE PROMPT cuando se alcanza el límite */}
-                  {!canSearch && (
-                    <div className="relative mt-4">
-                      <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 to-red-500/20 rounded-lg blur-sm"></div>
-                      <Alert className="relative border-orange-500/50 bg-gradient-to-br from-orange-900/20 to-red-900/20 backdrop-blur-sm">
-                        <AlertCircle className="h-4 w-4 text-orange-400" />
-                        <AlertDescription className="text-sm text-orange-200">
-                          <div className="font-medium mb-2">Límite de verificaciones alcanzado</div>
-                          <div className="text-xs text-orange-300/80 mb-3">
-                            {userPlan?.name === 'Primo Chambeador' 
-                              ? 'Has usado tus 5 verificaciones gratuitas mensuales. Upgrade a Mero Patrón para obtener 50 verificaciones.'
-                              : userPlan?.name === 'Mero Patrón'
-                                ? 'Has usado tus 50 verificaciones mensuales. Upgrade a Master Contractor para verificaciones ilimitadas.'
-                                : 'Has alcanzado tu límite mensual de verificaciones.'
-                            }
-                          </div>
-                          <Button 
-                            onClick={() => showUpgradeModal('propertyVerifications', 
-                              `Upgrade tu plan para obtener ${userPlan?.name === 'Primo Chambeador' ? '50' : 'ilimitadas'} verificaciones mensuales`
-                            )}
-                            variant="outline"
-                            size="sm" 
-                            className="border-orange-500/30 hover:bg-orange-500/10 text-orange-300 hover:text-orange-200"
-                          >
-                            Ver Planes de Upgrade
-                          </Button>
-                        </AlertDescription>
-                      </Alert>
-                    </div>
-                  )}
+                  {/* Usage limit prompt removed — credit wallet is the only gate */}
 
                   {error && (
                     <div className="relative">

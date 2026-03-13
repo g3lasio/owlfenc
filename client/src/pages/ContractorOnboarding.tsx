@@ -361,6 +361,7 @@ interface OnboardingData {
 const ContractorOnboarding = () => {
   const [, navigate] = useLocation();
   const { currentUser } = useAuth();
+  const [showWelcome, setShowWelcome] = useState(true); // Show warm welcome screen first
   const [step, setStep] = useState(1);
   const [isSaving, setIsSaving] = useState(false);
   const [specialtySearch, setSpecialtySearch] = useState("");
@@ -513,6 +514,88 @@ const ContractorOnboarding = () => {
   // ─────────────────────────────────────────────
   // RENDER
   // ─────────────────────────────────────────────
+
+  // ── Welcome Screen ──
+  if (showWelcome) {
+    const firstName = currentUser?.displayName?.split(' ')[0] || 'Contractor';
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex flex-col items-center justify-center px-4 py-8">
+        {/* Ambient glow */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-cyan-500/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-1/4 left-1/4 w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-3xl" />
+        </div>
+
+        <div className="relative w-full max-w-2xl">
+          {/* Logo & Brand */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 mb-4">
+              <Zap className="h-8 w-8 text-cyan-400" />
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">
+              Welcome to{' '}
+              <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+                Owl Fenc
+              </span>
+            </h1>
+            <p className="text-slate-400 text-base">
+              Hey <span className="text-cyan-400 font-semibold">{firstName}</span> — your AI-powered construction command center is ready.
+            </p>
+          </div>
+
+          {/* Credits Banner */}
+          <div className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/30 rounded-xl p-4 mb-6 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center flex-shrink-0">
+              <Star className="h-5 w-5 text-cyan-400" />
+            </div>
+            <div>
+              <p className="text-white font-semibold text-sm">120 Welcome Credits Added to Your Wallet</p>
+              <p className="text-slate-400 text-xs">Use them to generate estimates, contracts, permits, and more — no credit card needed.</p>
+            </div>
+          </div>
+
+          {/* Feature Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
+            {[
+              { icon: '📋', title: 'AI Estimates', desc: 'Generate professional project estimates in minutes with Mervin AI — materials, labor, and total cost included.' },
+              { icon: '📜', title: 'Legal Contracts', desc: 'Create legally-sound contracts customized for your trade. Protect yourself on every job.' },
+              { icon: '🏠', title: 'Permit Advisor', desc: 'Know exactly what permits you need for any project in any city. Powered by real building codes.' },
+              { icon: '🔍', title: 'Property Verifier', desc: 'Instantly verify property ownership and details before starting any job.' },
+              { icon: '💰', title: 'Invoices & Payments', desc: 'Send professional invoices and get paid faster. Track every dollar in one place.' },
+              { icon: '🎯', title: 'Lead Hunter', desc: 'Find high-value construction leads in your area. Target the projects that pay best.' },
+            ].map(({ icon, title, desc }) => (
+              <div key={title} className="bg-slate-900/60 border border-slate-700/50 rounded-xl p-4 hover:border-cyan-500/30 transition-colors">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl flex-shrink-0">{icon}</span>
+                  <div>
+                    <p className="text-white font-semibold text-sm mb-1">{title}</p>
+                    <p className="text-slate-400 text-xs leading-relaxed">{desc}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* CTA */}
+          <div className="text-center">
+            <Button
+              onClick={() => setShowWelcome(false)}
+              className="w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold text-base rounded-xl shadow-lg shadow-cyan-500/25 transition-all duration-200"
+            >
+              Set Up My Profile <ChevronRight className="ml-2 h-5 w-5" />
+            </Button>
+            <p className="text-slate-500 text-xs mt-3">
+              Takes less than 2 minutes •{' '}
+              <button onClick={handleSkip} className="text-slate-400 hover:text-slate-300 underline transition-colors">
+                Skip for now
+              </button>
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex flex-col items-center justify-start py-6 px-4">
       {/* Header */}

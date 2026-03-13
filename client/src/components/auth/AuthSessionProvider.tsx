@@ -56,6 +56,11 @@ export function AuthSessionProvider({ children }: AuthSessionProviderProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sessionEstablished, setSessionEstablished] = useState(false);
+  
+  // PERF FIX: Prevent multiple simultaneous sessionLogin calls
+  // onIdTokenChanged fires multiple times on startup; debounce prevents redundant calls
+  let sessionRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+  let sessionRefreshInProgress = false;
 
   /**
    * Convierte el token de Firebase en una cookie de sesión del servidor
@@ -285,8 +290,22 @@ export function AuthSessionProvider({ children }: AuthSessionProviderProps) {
 
     const unsubscribe = onIdTokenChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        console.log('🔄 [AUTH-SESSION] Token de Firebase actualizado, refrescando sesión...');
-        await establishServerSession(firebaseUser);
+        // PERF FIX: Debounce session refresh to prevent multiple simultaneous calls.
+        // onIdTokenChanged fires multiple times at startup (once per listener registration).
+        // We debounce with 2s delay so only the last call within a burst actually runs.
+        if (sessionRefreshTimer) clearTimeout(sessionRefreshTimer);
+        if (sessionRefreshInProgress) return; // Skip if already in progress
+        
+        sessionRefreshTimer = setTimeout(async () => {
+          if (sessionRefreshInProgress) return;
+          sessionRefreshInProgress = true;
+          try {
+            console.log('🔄 [AUTH-SESSION] Token de Firebase actualizado, refrescando sesión...');
+            await establishServerSession(firebaseUser);
+          } finally {
+            sessionRefreshInProgress = false;
+          }
+        }, 2000); // 2s debounce
       }
     });
 
@@ -299,6 +318,7 @@ export function AuthSessionProvider({ children }: AuthSessionProviderProps) {
     return () => {
       unsubscribe();
       clearInterval(refreshInterval);
+      if (sessionRefreshTimer) clearTimeout(sessionRefreshTimer);
     };
   }, [user]);
 
