@@ -6717,19 +6717,42 @@ This link provides a professional view of your estimate that you can access anyt
                         <span className="sm:hidden">PDF</span>
                       </Button>
 
-                      {/* Share Estimate */}
+                      {/* Share Estimate - uses native share sheet on mobile, holographic dialog on desktop */}
                       <Button
-                        onClick={handleUrlShare}
+                        onClick={async () => {
+                          if (!estimate.client || estimate.items.length === 0) return;
+                          if (navigator.share) {
+                            try {
+                              setIsGeneratingShareUrl(true);
+                              const shareUrl = await generateEstimateUrl();
+                              if (shareUrl) {
+                                await navigator.share({
+                                  title: `Estimado - ${estimate.client?.name || 'Cliente'}`,
+                                  text: `Estimado profesional para ${estimate.client?.name || 'Cliente'}`,
+                                  url: shareUrl,
+                                });
+                              }
+                            } catch (err: any) {
+                              if (err.name !== 'AbortError') handleUrlShare();
+                            } finally {
+                              setIsGeneratingShareUrl(false);
+                            }
+                          } else {
+                            handleUrlShare();
+                          }
+                        }}
                         disabled={
-                          !estimate.client || estimate.items.length === 0
+                          !estimate.client || estimate.items.length === 0 || isGeneratingShareUrl
                         }
                         size="sm"
                         className="bg-green-600 hover:bg-green-700 text-white text-xs"
                         data-testid="button-share-estimate"
                       >
-                        <Share2 className="h-3 w-3 mr-1" />
-                        <span className="hidden sm:inline">Share</span>
-                        <span className="sm:hidden">Share</span>
+                        {isGeneratingShareUrl ? (
+                          <><RefreshCw className="h-3 w-3 mr-1 animate-spin" /><span className="hidden sm:inline">Sharing...</span><span className="sm:hidden">...</span></>
+                        ) : (
+                          <><Share2 className="h-3 w-3 mr-1" /><span className="hidden sm:inline">Share</span><span className="sm:hidden">Share</span></>
+                        )}
                       </Button>
 
                       {/* Send Email */}
@@ -6754,9 +6777,11 @@ This link provides a professional view of your estimate that you can access anyt
                         <span className="sm:hidden">Email</span>
                       </Button>
 
-                      {/* Generate Invoice */}
+                      {/* Generate Invoice - redirects to /invoices page */}
                       <Button
-                        onClick={handleDirectInvoiceGeneration}
+                        onClick={() => {
+                          window.location.href = '/invoices';
+                        }}
                         disabled={
                           !estimate.client || estimate.items.length === 0
                         }

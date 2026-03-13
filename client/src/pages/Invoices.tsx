@@ -745,11 +745,22 @@ const Invoices: React.FC = () => {
       const dueDate = new Date();
       dueDate.setDate(dueDate.getDate() + invoiceConfig.paymentTerms);
 
-      // Build payment link for PDF (always include if contractor has Stripe Connect)
+      // Build payment link for PDF based on user's paymentLinkType selection
       const hasStripeConnectForPdf = !!profile?.stripeConnectAccountId;
       const pdfBalance = amounts.total - (invoiceConfig.paidAmount || 0);
-      const pdfPaymentLink = hasStripeConnectForPdf && pdfBalance > 0
-        ? `${window.location.origin}/project-payments?invoice=${invoiceNumber}&amount=${pdfBalance.toFixed(2)}&client=${encodeURIComponent(selectedEstimate.clientName || '')}`
+      let pdfPaymentLinkAmount: number | null = null;
+      if (hasStripeConnectForPdf && invoiceConfig.paymentLinkType !== 'none' && pdfBalance > 0) {
+        if (invoiceConfig.paymentLinkType === 'deposit') {
+          pdfPaymentLinkAmount = (selectedEstimate.total || 0) * 0.5;
+        } else if (invoiceConfig.paymentLinkType === 'final') {
+          pdfPaymentLinkAmount = (selectedEstimate.total || 0) * 0.5;
+        } else {
+          // 'full' or any other value
+          pdfPaymentLinkAmount = pdfBalance;
+        }
+      }
+      const pdfPaymentLink = pdfPaymentLinkAmount !== null && pdfPaymentLinkAmount > 0
+        ? `${window.location.origin}/project-payments?invoice=${invoiceNumber}&amount=${pdfPaymentLinkAmount.toFixed(2)}&client=${encodeURIComponent(selectedEstimate.clientName || '')}`
         : null;
 
       // Build invoice payload EXACTLY like EstimatesWizard does
@@ -1380,6 +1391,60 @@ const Invoices: React.FC = () => {
 
                 {/* Delivery options */}
                 <div className="space-y-4">
+
+                  {/* ── Standalone Stripe Payment Link checkbox (visible always) ── */}
+                  {profile?.stripeConnectAccountId && selectedEstimate && (
+                    <div className="bg-gray-800 border border-cyan-500/30 rounded-lg p-4 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="includePaymentLink"
+                          checked={invoiceConfig.paymentLinkType !== 'none'}
+                          onChange={(e) =>
+                            setInvoiceConfig((prev) => ({
+                              ...prev,
+                              paymentLinkType: e.target.checked ? 'full' : 'none',
+                            }))
+                          }
+                          className="h-4 w-4"
+                        />
+                        <Label htmlFor="includePaymentLink" className="cursor-pointer text-cyan-400 font-semibold text-sm">
+                          ⚡ Generar link de pago Stripe en el PDF
+                        </Label>
+                        <span className="text-xs bg-cyan-900/40 text-cyan-300 px-2 py-0.5 rounded-full">Recomendado</span>
+                      </div>
+                      <p className="text-xs text-gray-400">
+                        El PDF incluirá un botón "Pagar Ahora" para que el cliente pague directamente con tarjeta.
+                      </p>
+                      {invoiceConfig.paymentLinkType !== 'none' && (
+                        <div className="grid grid-cols-2 gap-2 pt-1">
+                          {[
+                            { value: 'deposit', label: 'Depósito 50%', amount: (selectedEstimate.total || 0) * 0.5 },
+                            { value: 'final', label: 'Final 50%', amount: (selectedEstimate.total || 0) * 0.5 },
+                            { value: 'full', label: 'Balance Total', amount: Math.max(0, (selectedEstimate.total || 0) - invoiceConfig.paidAmount) },
+                          ].map((opt) => (
+                            <button
+                              key={opt.value}
+                              type="button"
+                              onClick={() => setInvoiceConfig(prev => ({ ...prev, paymentLinkType: opt.value as any }))}
+                              className={`p-3 rounded-lg border text-left transition-all ${
+                                invoiceConfig.paymentLinkType === opt.value
+                                  ? 'border-cyan-400 bg-cyan-900/30 text-white'
+                                  : 'border-gray-600 bg-gray-700/50 text-gray-300 hover:border-gray-500'
+                              }`}
+                            >
+                              <div className="text-xs font-semibold">{opt.label}</div>
+                              <div className="text-cyan-400 font-bold text-sm mt-1">
+                                ${opt.amount.toFixed(2)}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ── Send by Email checkbox ── */}
                   <div className="flex items-center space-x-2">
                     <input
                       type="checkbox"
@@ -1418,46 +1483,6 @@ const Invoices: React.FC = () => {
                           className="bg-gray-800 border-gray-600 text-white placeholder-gray-400"
                         />
                       </div>
-
-                      {/* Payment Link Type Selector */}
-                      {profile?.stripeConnectAccountId && selectedEstimate && (
-                        <div className="bg-gray-800 border border-cyan-500/30 rounded-lg p-4 space-y-3">
-                          <div className="flex items-center gap-2">
-                            <span className="text-cyan-400 text-sm font-semibold">⚡ Incluir link de pago Stripe
-                            </span>
-                            <span className="text-xs bg-cyan-900/40 text-cyan-300 px-2 py-0.5 rounded-full">Recomendado</span>
-                          </div>
-                          <p className="text-xs text-gray-400">
-                            El cliente recibirá el invoice con un botón para pagar directamente con tarjeta.
-                          </p>
-                          <div className="grid grid-cols-2 gap-2">
-                            {[
-                              { value: 'deposit', label: 'Deposit 50%', amount: (selectedEstimate.total || 0) * 0.5 },
-                              { value: 'final', label: 'Final 50%', amount: (selectedEstimate.total || 0) * 0.5 },
-                              { value: 'full', label: 'Full Balance', amount: Math.max(0, (selectedEstimate.total || 0) - invoiceConfig.paidAmount) },
-                              { value: 'none', label: 'Sin link de pago', amount: null },
-                            ].map((opt) => (
-                              <button
-                                key={opt.value}
-                                type="button"
-                                onClick={() => setInvoiceConfig(prev => ({ ...prev, paymentLinkType: opt.value as any }))}
-                                className={`p-3 rounded-lg border text-left transition-all ${
-                                  invoiceConfig.paymentLinkType === opt.value
-                                    ? 'border-cyan-400 bg-cyan-900/30 text-white'
-                                    : 'border-gray-600 bg-gray-700/50 text-gray-300 hover:border-gray-500'
-                                }`}
-                              >
-                                <div className="text-xs font-semibold">{opt.label}</div>
-                                {opt.amount !== null && (
-                                  <div className="text-cyan-400 font-bold text-sm mt-1">
-                                    ${opt.amount.toFixed(2)}
-                                  </div>
-                                )}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>

@@ -105,7 +105,7 @@ function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
   const [showSuspensionModal, setShowSuspensionModal] = useState(false);
 
   // Verificar estado de suspensión por pago fallido
-  const { data: suspensionStatus, isLoading: isSuspensionLoading } = useQuery<{
+  const { data: suspensionStatus, isLoading: isSuspensionLoadingRaw } = useQuery<{
     success: boolean;
     isSuspended: boolean;
     reason?: 'payment_failed' | 'subscription_inactive' | 'subscription_canceled';
@@ -114,8 +114,20 @@ function ProtectedRoute({ component: Component }: ProtectedRouteProps) {
     queryKey: ['/api/subscription/suspension-status'],
     enabled: !!user && authStable,
     staleTime: 30000, // 30 segundos de cache
-    retry: 1
+    retry: 1,
+    gcTime: 60000,
   });
+  // FIX: Cap suspension check to 3s max — prevents infinite spinner when API is slow or fails
+  const [suspensionCheckTimedOut, setSuspensionCheckTimedOut] = useState(false);
+  useEffect(() => {
+    if (isSuspensionLoadingRaw) {
+      const timer = setTimeout(() => setSuspensionCheckTimedOut(true), 3000);
+      return () => clearTimeout(timer);
+    } else {
+      setSuspensionCheckTimedOut(false);
+    }
+  }, [isSuspensionLoadingRaw]);
+  const isSuspensionLoading = isSuspensionLoadingRaw && !suspensionCheckTimedOut;
 
   // Mostrar modal de suspensión si el usuario está suspendido
   useEffect(() => {
