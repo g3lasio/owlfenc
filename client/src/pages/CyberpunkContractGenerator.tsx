@@ -1,3 +1,4 @@
+import { downloadPdfFromResponse } from "@/lib/download-pdf";
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
@@ -129,12 +130,7 @@ const CyberpunkContractGenerator = () => {
       const response = await fetch(`/api/contracts/${id}/download`);
       if (!response.ok) throw new Error('Download failed');
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `contract-${id}.pdf`;
-      a.click();
-      window.URL.revokeObjectURL(url);
+      await downloadPdfFromResponse(blob, `contract-${id}.pdf`);
     },
     onSuccess: () => {
       toast({

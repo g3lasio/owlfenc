@@ -1,3 +1,4 @@
+import { downloadPdfFromResponse } from "@/lib/download-pdf";
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -389,14 +390,8 @@ export default function ProjectDetails({ project, onUpdate }: ProjectDetailsProp
       console.log("✅ [PROJECT-INVOICE] PDF received, size:", response.data.size);
 
       const blob = new Blob([response.data], { type: "application/pdf" });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `factura-${project.id || project.projectId}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      await downloadPdfFromResponse(blob, `factura-${project.id || project.projectId}.pdf`);
+
 
       console.log("💾 [PROJECT-INVOICE] PDF downloaded successfully");
 

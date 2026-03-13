@@ -2814,6 +2814,19 @@ ENHANCED LEGAL CLAUSE:`;
         const result = await sendInvoiceEmail(emailData);
 
         if (result.success) {
+          // ——— Deduct credits for invoice + payment link generation ———
+          try {
+            const { walletService } = await import('./services/walletService');
+            await walletService.deductCredits({
+              firebaseUid,
+              featureName: 'invoice',
+              resourceId: `invoice-${invoiceNumber}`,
+              description: 'Invoice with payment link sent',
+            });
+            console.log(`💳 [INVOICE+PAYMENT] Deducted 5 credits for UID: ${firebaseUid}`);
+          } catch (creditError) {
+            console.error('❌ [INVOICE+PAYMENT] Credit deduction failed (non-blocking):', creditError);
+          }
           return res.json({
             success: true,
             messageId: result.messageId,

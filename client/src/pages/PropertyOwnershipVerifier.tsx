@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { downloadPdfFromResponse } from "@/lib/download-pdf";
 import { notifyCreditsSpent } from '@/hooks/useWallet';
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -296,14 +297,7 @@ export default function PropertyOwnershipVerifier() {
       
       // Download the PDF
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `property-report-${addressComponents.address.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      await downloadPdfFromResponse(blob, `property-report-${addressComponents.address.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.pdf`);
       
       toast({
         title: "✅ PDF Generado",
@@ -641,14 +635,7 @@ export default function PropertyOwnershipVerifier() {
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url;
-      const addressSlug = addressComponents.address.replace(/[^a-z0-9]/gi, '-').toLowerCase().substring(0, 50);
-      const datePart = new Date(item.createdAt).toISOString().split('T')[0];
-      a.download = `property-report-${addressSlug}-${datePart}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      await downloadPdfFromResponse(blob, `property-report-${addressSlug}-${datePart}.pdf`);
 
       processingToast.dismiss();
       toast({

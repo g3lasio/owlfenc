@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { downloadPdfFromResponse } from "@/lib/download-pdf";
 import { notifyCreditsSpent } from '@/hooks/useWallet';
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
@@ -4052,15 +4053,11 @@ This link provides a professional view of your estimate that you can access anyt
       }
 
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.style.display = "none";
-      a.href = url;
-      a.download = `estimate-${estimate.client?.name || "client"}-${Date.now()}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+      const estimateClientName = estimate.client?.name
+        ? estimate.client.name.toLowerCase().replace(/\s+/g, "_")
+        : "client";
+      const estimateDate = new Date().toISOString().split("T")[0];
+      await downloadPdfFromResponse(blob, `estimate-${estimateClientName}-${estimateDate}.pdf`);
 
       toast({
         title: "✅ PDF Descargado",
@@ -7904,22 +7901,15 @@ This link provides a professional view of your estimate that you can access anyt
                     },
                   );
 
-                  // Create download link
-                  const blob = new Blob([response.data], {
-                    type: "application/pdf",
-                  });
+                  // Create download link (mobile-safe)
                   const invoiceClientName = estimate.client?.name
                     ? estimate.client.name.toLowerCase().replace(/\s+/g, "_")
                     : "invoice";
                   const invoiceDate = new Date().toISOString().split("T")[0];
-                  const url = window.URL.createObjectURL(blob);
-                  const link = document.createElement("a");
-                  link.href = url;
-                  link.download = `invoice-${invoiceClientName}-${invoiceDate}.pdf`;
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
-                  window.URL.revokeObjectURL(url);
+                  await downloadPdfFromResponse(
+                    response.data,
+                    `invoice-${invoiceClientName}-${invoiceDate}.pdf`
+                  );
 
                   // Close dialog and show success message
                   setShowInvoiceDialog(false);

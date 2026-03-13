@@ -3,6 +3,7 @@
  * Garantiza generación exitosa de PDFs usando el mejor método disponible
  */
 
+import { downloadPdfFromResponse } from "@/lib/download-pdf";
 import { pdfMonkeyService, EstimateData, PDFMonkeyResponse } from './pdfMonkeyService';
 import { claudePdfFallbackService, ClaudePDFResponse } from './claudePdfFallbackService';
 
@@ -93,19 +94,28 @@ class UnifiedPdfService {
    */
   async downloadPDF(downloadUrl: string, filename?: string): Promise<void> {
     try {
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = downloadUrl;
-      a.download = filename || `estimado-${Date.now()}.pdf`;
-      document.body.appendChild(a);
-      a.click();
+      const safeFilename = filename || `estimado-${Date.now()}.pdf`;
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
       
-      // Cleanup para URLs blob locales
-      if (downloadUrl.startsWith('blob:')) {
-        window.URL.revokeObjectURL(downloadUrl);
+      if (isMobile) {
+        // Mobile/tablet: open in new tab so user can save/share via browser
+        const newTab = window.open(downloadUrl, '_blank');
+        if (!newTab) window.location.href = downloadUrl;
+      } else {
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = downloadUrl;
+        a.download = safeFilename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
       }
       
-      document.body.removeChild(a);
+      // Cleanup blob URLs after delay
+      if (downloadUrl.startsWith('blob:')) {
+        setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 60000);
+      }
       console.log('📥 [Unified PDF] Descarga completada');
       
     } catch (error) {

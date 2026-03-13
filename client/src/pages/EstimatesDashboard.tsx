@@ -1,3 +1,4 @@
+import { downloadPdfFromResponse } from "@/lib/download-pdf";
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
@@ -249,15 +250,7 @@ export default function EstimatesDashboard() {
           // Descargar desde PDFMonkey
           const downloadResponse = await fetch(result.downloadUrl);
           const blob = await downloadResponse.blob();
-          const url = window.URL.createObjectURL(blob);
-          
-          const a = document.createElement('a');
-          a.style.display = 'none';
-          a.href = url;
-          a.download = `estimado-${pdfMonkeyData.estimateNumber}.pdf`;
-          document.body.appendChild(a);
-          a.click();
-          window.URL.revokeObjectURL(url);
+          await downloadPdfFromResponse(blob, `estimado-${pdfMonkeyData.estimateNumber}.pdf`);
           document.body.removeChild(a);
           
           toast({

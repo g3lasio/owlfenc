@@ -1,3 +1,4 @@
+import { downloadPdfFromResponse } from "@/lib/download-pdf";
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
@@ -131,14 +132,8 @@ const Contracts = () => {
     },
     onSuccess: (data, id) => {
       // Crear URL y descargar
-      const url = window.URL.createObjectURL(data);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `contrato-${id}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      await downloadPdfFromResponse(data, `contrato-${id}.pdf`);
+
       
       toast({
         title: "Contrato descargado",

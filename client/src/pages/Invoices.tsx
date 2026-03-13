@@ -10,6 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useProfile } from "@/hooks/use-profile";
 import { usePermissions } from "@/contexts/PermissionContext";
 import axios from "axios";
+import { fetchWithAuth } from "@/lib/fetch-with-auth";
+import { downloadPdfFromResponse } from "@/lib/download-pdf";
 import {
   Card,
   CardContent,
@@ -508,7 +510,7 @@ const Invoices: React.FC = () => {
       console.log("   → Payment type:", invoiceConfig.paymentLinkType);
       console.log("   → To:", invoiceConfig.recipientEmail);
 
-      const response = await fetch("/api/invoice-with-payment-link", {
+      const response = await fetchWithAuth("/api/invoice-with-payment-link", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -800,15 +802,7 @@ const Invoices: React.FC = () => {
 
       console.log("✅ [INVOICES] PDF received, size:", response.data.size);
 
-      const blob = new Blob([response.data], { type: "application/pdf" });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `invoice-${invoiceNumber}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      await downloadPdfFromResponse(response.data, `invoice-${invoiceNumber}.pdf`);
 
       console.log("💾 [INVOICES] PDF downloaded successfully");
 

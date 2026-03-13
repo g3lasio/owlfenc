@@ -1,3 +1,4 @@
+import { downloadPdfFromResponse } from "@/lib/download-pdf";
 /**
  * Contract Preview Display Component
  * Shows the generated contract content with defensive clauses highlighted
@@ -594,14 +595,8 @@ const ContractPreviewDisplay: React.FC<ContractPreviewDisplayProps> = ({
                       
                       if (response.ok) {
                         const blob = await response.blob();
-                        const url = window.URL.createObjectURL(blob);
-                        const link = document.createElement('a');
-                        link.href = url;
-                        link.download = `Contract_${contract.contractData.clientName?.replace(/\s+/g, '_') || 'Client'}_${new Date().toISOString().split('T')[0]}.pdf`;
-                        link.click();
-                        window.URL.revokeObjectURL(url);
-                        
-                        alert('PDF downloaded successfully');
+                        await downloadPdfFromResponse(blob, `Contract_${contract.contractData.clientName?.replace(/\s+/g, '_') || 'Client'}_${new Date().toISOString().split('T')[0]}.pdf`);
+
                       } else {
                         throw new Error('Failed to generate PDF');
                       }
