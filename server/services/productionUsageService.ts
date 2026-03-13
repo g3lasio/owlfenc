@@ -194,7 +194,7 @@ export class ProductionUsageService {
       const monthKey = new Date().toISOString().slice(0, 7);
       const usageDoc = await db.collection('usage').doc(`${uid}_${monthKey}`).get();
       
-      if (!usageDoc.exists()) {
+      if (!usageDoc.exists) {
         return null;
       }
       
@@ -310,7 +310,7 @@ export class ProductionUsageService {
         // Check if user already has current month usage
         const currentUsageDoc = await db.collection('usage').doc(`${uid}_${currentMonth}`).get();
         
-        if (!currentUsageDoc.exists()) {
+        if (!currentUsageDoc.exists) {
           // Create new month usage document
           const newUsage = await this.initializeMonthlyUsage(
             uid, 

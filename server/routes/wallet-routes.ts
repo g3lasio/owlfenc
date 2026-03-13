@@ -22,6 +22,16 @@ import { pool } from '../db';
 
 const router = Router();
 
+// ⚡ SERVER-SIDE WALLET BALANCE CACHE (30s TTL)
+// Eliminates redundant DB queries when multiple components call /api/wallet/balance
+// simultaneously on page load. Cache is invalidated when credits are spent.
+const WALLET_BALANCE_CACHE = new Map<string, { data: any; expiresAt: number }>();
+const WALLET_CACHE_TTL_MS = 30 * 1000; // 30 seconds
+
+export function invalidateWalletCache(firebaseUid: string): void {
+  WALLET_BALANCE_CACHE.delete(firebaseUid);
+}
+
 // ================================
 // HELPER: Extraer Firebase UID del request
 // ================================
@@ -47,6 +57,12 @@ router.get('/balance', requireAuth, async (req: Request, res: Response) => {
 
     if (!firebaseUid) {
       return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    // ⚡ CACHE HIT: Return cached balance without DB query (30s TTL)
+    const cached = WALLET_BALANCE_CACHE.get(firebaseUid);
+    if (cached && cached.expiresAt > Date.now()) {
+      return res.json(cached.data);
     }
 
     // PRIMARY: Use raw pool.query for reliability during cold start.
@@ -125,14 +141,17 @@ router.get('/balance', requireAuth, async (req: Request, res: Response) => {
     }
 
     console.log(`💰 [WALLET-BALANCE] uid=${firebaseUid} balance=${balance} earned=${totalEarned}`);
-    return res.json({
+    const responseData = {
       success: true,
       balance,
       totalEarned,
       totalSpent,
       isLocked,
       recentTransactions,
-    });
+    };
+    // ⚡ CACHE: Store for 30 seconds to prevent redundant DB queries
+    WALLET_BALANCE_CACHE.set(firebaseUid, { data: responseData, expiresAt: Date.now() + WALLET_CACHE_TTL_MS });
+    return res.json(responseData);
 
   } catch (error) {
     console.error('❌ [WALLET-ROUTES] Error getting balance:', error);

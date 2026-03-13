@@ -17,6 +17,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { walletService } from '../services/walletService';
+import { invalidateWalletCache } from '../routes/wallet-routes';
 import { FEATURE_CREDIT_COSTS, type FeatureName } from '@shared/schema';
 
 // ================================
@@ -262,6 +263,8 @@ export async function deductFeatureCredits(
       console.error(`⚠️  [CREDIT-DEDUCT] Failed to deduct credits for ${featureName}: ${result.error}`);
     } else {
       console.log(`💳 [CREDIT-DEDUCT] Deducted ${result.creditsDeducted} credits for ${featureName}. Balance: ${result.balanceAfter}`);
+      // ⚡ Invalidate wallet cache so next /balance call reflects the new balance
+      invalidateWalletCache(firebaseUid);
     }
   } catch (error) {
     console.error(`❌ [CREDIT-DEDUCT] Error deducting credits:`, error);

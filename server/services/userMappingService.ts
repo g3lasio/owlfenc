@@ -14,6 +14,39 @@ interface UserMapping {
   isActive: boolean;
 }
 
+// ⚡ IN-MEMORY CACHE — Eliminates redundant DB queries for Firebase UID → user_id mapping
+// Each entry cached for 5 minutes (TTL). Invalidated on user updates.
+const UID_TO_USERID_CACHE = new Map<string, { userId: number; expiresAt: number }>();
+const UID_TO_SUBSCRIPTION_CACHE = new Map<string, { data: any; expiresAt: number }>();
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+function getCachedUserId(firebaseUid: string): number | null {
+  const entry = UID_TO_USERID_CACHE.get(firebaseUid);
+  if (entry && entry.expiresAt > Date.now()) return entry.userId;
+  UID_TO_USERID_CACHE.delete(firebaseUid);
+  return null;
+}
+
+function setCachedUserId(firebaseUid: string, userId: number): void {
+  UID_TO_USERID_CACHE.set(firebaseUid, { userId, expiresAt: Date.now() + CACHE_TTL_MS });
+}
+
+function getCachedSubscription(firebaseUid: string): any | null {
+  const entry = UID_TO_SUBSCRIPTION_CACHE.get(firebaseUid);
+  if (entry && entry.expiresAt > Date.now()) return entry.data;
+  UID_TO_SUBSCRIPTION_CACHE.delete(firebaseUid);
+  return null;
+}
+
+function setCachedSubscription(firebaseUid: string, data: any): void {
+  UID_TO_SUBSCRIPTION_CACHE.set(firebaseUid, { data, expiresAt: Date.now() + CACHE_TTL_MS });
+}
+
+export function invalidateUserCache(firebaseUid: string): void {
+  UID_TO_USERID_CACHE.delete(firebaseUid);
+  UID_TO_SUBSCRIPTION_CACHE.delete(firebaseUid);
+}
+
 export class UserMappingService {
   
   /**
@@ -21,6 +54,12 @@ export class UserMappingService {
    */
   async getInternalUserId(firebaseUid: string): Promise<number | null> {
     try {
+      // ⚡ CACHE HIT: Return immediately without DB query
+      const cached = getCachedUserId(firebaseUid);
+      if (cached !== null) {
+        return cached;
+      }
+
       console.log(`🔍 [USER-MAPPING] Buscando user_id para Firebase UID: ${firebaseUid}`);
       
       // Buscar en tabla users usando firebase_uid
@@ -33,6 +72,7 @@ export class UserMappingService {
       if (userResult.length > 0) {
         const userId = userResult[0].id;
         console.log(`✅ [USER-MAPPING] Firebase UID ${firebaseUid} -> user_id ${userId}`);
+        setCachedUserId(firebaseUid, userId); // ⚡ Cache for 5 min
         return userId;
       }
       
@@ -120,6 +160,12 @@ export class UserMappingService {
    */
   async getUserSubscriptionByFirebaseUid(firebaseUid: string) {
     try {
+      // ⚡ CACHE HIT: Return subscription without DB query
+      const cachedSub = getCachedSubscription(firebaseUid);
+      if (cachedSub !== null) {
+        return cachedSub;
+      }
+
       console.log(`🔍 [USER-MAPPING] Obteniendo suscripción para Firebase UID: ${firebaseUid}`);
       
       // Primero obtener el user_id interno
@@ -151,11 +197,9 @@ export class UserMappingService {
       
       console.log(`✅ [USER-MAPPING] Suscripción encontrada: ${plan?.name} para user_id ${internalUserId}`);
       
-      return {
-        subscription,
-        plan,
-        internalUserId
-      };
+      const subResult = { subscription, plan, internalUserId };
+      setCachedSubscription(firebaseUid, subResult); // ⚡ Cache for 5 min
+      return subResult;
       
     } catch (error) {
       console.error('❌ [USER-MAPPING] Error getting subscription:', error);
