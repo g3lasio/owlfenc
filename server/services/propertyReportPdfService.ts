@@ -172,8 +172,13 @@ export class PropertyReportPdfService {
     const iGrid    = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>`;
     const iHistory = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg>`;
 
-    const logoLg = `<svg width="180" height="40" viewBox="0 0 180 40" xmlns="http://www.w3.org/2000/svg"><text x="0" y="32" font-family="Georgia,serif" font-size="30" font-weight="700" fill="#ffffff" letter-spacing="3">OWL</text><line x1="60" y1="20" x2="72" y2="20" stroke="#7c3aed" stroke-width="3.5"/><polygon points="72,13 84,20 72,27" fill="#7c3aed"/><line x1="84" y1="20" x2="96" y2="20" stroke="#7c3aed" stroke-width="3.5"/><text x="100" y="32" font-family="Georgia,serif" font-size="30" font-weight="700" fill="#ffffff" letter-spacing="3">FENC</text></svg>`;
-    const logoSm = `<svg width="110" height="26" viewBox="0 0 110 26" xmlns="http://www.w3.org/2000/svg"><text x="0" y="20" font-family="Georgia,serif" font-size="18" font-weight="700" fill="#ffffff" letter-spacing="2">OWL</text><line x1="36" y1="13" x2="45" y2="13" stroke="#7c3aed" stroke-width="2.5"/><polygon points="45,8 54,13 45,18" fill="#7c3aed"/><line x1="54" y1="13" x2="63" y2="13" stroke="#7c3aed" stroke-width="2.5"/><text x="66" y="20" font-family="Georgia,serif" font-size="18" font-weight="700" fill="#ffffff" letter-spacing="2">FENC</text></svg>`;
+    // Use contractor company name in the logo/header, fallback to "Owl Fenc" only if no contractor info
+    const displayName = contractor?.companyName || contractor?.contractorName || 'Owl Fenc';
+    // Dynamically size the company name text in the SVG logo
+    const nameFontSizeLg = displayName.length > 20 ? 18 : displayName.length > 14 ? 22 : 28;
+    const nameFontSizeSm = displayName.length > 20 ? 11 : displayName.length > 14 ? 13 : 16;
+    const logoLg = `<svg width="220" height="40" viewBox="0 0 220 40" xmlns="http://www.w3.org/2000/svg"><text x="0" y="32" font-family="Georgia,serif" font-size="${nameFontSizeLg}" font-weight="700" fill="#ffffff" letter-spacing="2">${displayName}</text></svg>`;
+    const logoSm = `<svg width="160" height="26" viewBox="0 0 160 26" xmlns="http://www.w3.org/2000/svg"><text x="0" y="20" font-family="Georgia,serif" font-size="${nameFontSizeSm}" font-weight="700" fill="#ffffff" letter-spacing="1">${displayName}</text></svg>`;
 
     const hdr = (n: number) => `<div class="ph"><div class="ph-logo">${logoSm}</div><div class="ph-right"><span class="ph-id">${reportId}</span><br>${currentDate} &bull; Page ${n}</div></div>`;
     const ftr = (n: number, r: string = '') => `<div class="pf"><span>Page ${n} of 7</span><span class="pf-c">&#9670; Powered by Mervin AI &#9670;</span><span>${r || currentDate}</span></div>`;
@@ -301,7 +306,7 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 1
     <div class="cb-br">
       <div>
         <div class="cb-cl">Prepared For</div>
-        <div class="cb-cn">${contractor?.companyName || contractor?.contractorName || 'Owl Fenc Contractor'}</div>
+        <div class="cb-cn">${displayName}</div>
         ${contractor?.email ? `<div class="cb-cc">${contractor.email}</div>` : ''}
         ${contractor?.phone ? `<div class="cb-cc">${contractor.phone}</div>` : ''}
       </div>
@@ -555,8 +560,8 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 1
       <div class="dbtx">
         <p><strong>IMPORTANT NOTICE:</strong> This Property Verification Report is provided for informational purposes only and should not be considered as legal, financial, or professional advice. The information contained in this report is obtained from public records and third-party data sources, including ATTOM Data Solutions.</p>
         <p><strong>Accuracy and Completeness:</strong> While we strive to provide accurate and up-to-date information, we cannot guarantee the accuracy, completeness, or timeliness of the data. Property records may contain errors, omissions, or outdated information. Users should independently verify all information before making any decisions.</p>
-        <p><strong>No Warranty:</strong> This report is provided "as is" without any warranty of any kind, either express or implied. Owl Fenc and MERVIN AI disclaim all warranties, including but not limited to warranties of merchantability, fitness for a particular purpose, and non-infringement.</p>
-        <p><strong>Limitation of Liability:</strong> In no event shall Owl Fenc, MERVIN AI, or their affiliates be liable for any direct, indirect, incidental, special, or consequential damages arising out of or in connection with the use of this report or reliance on the information contained herein.</p>
+        <p><strong>No Warranty:</strong> This report is provided "as is" without any warranty of any kind, either express or implied. ${displayName} and MERVIN AI disclaim all warranties, including but not limited to warranties of merchantability, fitness for a particular purpose, and non-infringement.</p>
+        <p><strong>Limitation of Liability:</strong> In no event shall ${displayName}, MERVIN AI, or their affiliates be liable for any direct, indirect, incidental, special, or consequential damages arising out of or in connection with the use of this report or reliance on the information contained herein.</p>
         <p><strong>Professional Advice:</strong> Users are strongly advised to consult with qualified legal, financial, and real estate professionals before entering into any contracts, agreements, or business transactions based on the information in this report.</p>
         <p><strong>Data Source:</strong> Property data provided by ATTOM Data Solutions. For more information, visit www.attomdata.com.</p>
       </div>
@@ -571,14 +576,14 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 1
         </div>
         <div>
           <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#64748b;margin-bottom:4px;">Prepared By</div>
-          <div><strong>Platform:</strong> Owl Fenc</div>
-          <div><strong>Contractor:</strong> ${contractor?.companyName || contractor?.contractorName || 'Owl Fenc User'}</div>
+          <div><strong>Platform:</strong> ${displayName}</div>
+          <div><strong>Contractor:</strong> ${contractor?.contractorName || contractor?.companyName || displayName}</div>
           <div><strong>Powered by:</strong> Mervin AI</div>
         </div>
       </div>
     </div>
   </div>
-  ${ftr(7, '&copy; ' + new Date().getFullYear() + ' Owl Fenc')}
+  ${ftr(7, '&copy; ' + new Date().getFullYear() + ' ' + displayName)}
 </div>
 
 </body>
