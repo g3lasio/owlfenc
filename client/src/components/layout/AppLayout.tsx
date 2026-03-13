@@ -28,13 +28,14 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const [sidebarWidth, setSidebarWidth] = useState(64);
   const { layoutMode, chatWidth, setChatWidth, isMinimized, toggleMinimize, isChatOpen, openChat, closeChat } = useChat();
 
-  // Verificar si la ruta actual es una página de autenticación
+  // Verificar si la ruta actual es una página de autenticación o onboarding
   const isAuthPage =
     location === "/login" ||
     location === "/signup" ||
     location === "/recuperar-password" ||
     location === "/reset-password" ||
-    location === "/login/email-link-callback";
+    location === "/login/email-link-callback" ||
+    location === "/onboarding"; // Post-signup onboarding - no sidebar/header needed
 
   // Si es una página de autenticación, mostrar solo el contenido sin sidebar ni header
   if (isAuthPage) {

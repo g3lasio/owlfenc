@@ -126,9 +126,9 @@ export default function Signup() {
         
         toast({
           title: "Registro exitoso",
-          description: "Ahora elige tu plan para empezar.",
+          description: "Configura tu perfil para empezar.",
         });
-        navigate("/subscription");
+        navigate("/onboarding");
       } else {
         // Enviar OTP para registro
         const response = await fetch('/api/otp/send-registration', {
@@ -211,10 +211,10 @@ export default function Signup() {
         
         toast({
           title: "Registro exitoso",
-          description: "Ahora elige tu plan para empezar.",
+          description: "Configura tu perfil para empezar.",
         });
         
-        navigate("/subscription");
+        navigate("/onboarding");
       } else {
         toast({
           variant: "destructive",
