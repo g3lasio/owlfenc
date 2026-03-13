@@ -5,6 +5,7 @@ import { downloadPdfFromResponse } from "@/lib/download-pdf";
  */
 
 import React, { useState } from 'react';
+import { auth } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -583,9 +584,13 @@ const ContractPreviewDisplay: React.FC<ContractPreviewDisplayProps> = ({
                   onClick={async () => {
                     try {
                       // Generate and download PDF
+                      const token = await auth.currentUser?.getIdToken(false).catch(() => null);
                       const response = await fetch('/api/contracts/generate-pdf', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: {
+                          'Content-Type': 'application/json',
+                          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                        },
                         body: JSON.stringify({
                           contractHtml: contract.html,
                           contractData: contract.contractData,

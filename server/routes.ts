@@ -3085,8 +3085,40 @@ ENHANCED LEGAL CLAUSE:`;
         // 💳 PAYG: Deduct credits AFTER successful PDF generation (aiEstimate=8, basicEstimate=0)
         try {
           const isAiEstimate = !!(estimateData as any).estimate?.isAI;
-          const featureName = isAiEstimate ? 'aiEstimate' : 'basicEstimate';
-          await deductFeatureCredits(req, (estimateData as any).estimate?.projectId || `estimate-${Date.now()}`, `Estimate PDF generated`);
+          const featureName: 'aiEstimate' | 'basicEstimate' = isAiEstimate ? 'aiEstimate' : 'basicEstimate';
+          const creditCost = FEATURE_CREDIT_COSTS[featureName];
+          // 🔥 FIX: Set walletInfo so deductFeatureCredits() can actually deduct credits
+          // Without this setup, deductFeatureCredits() returns immediately (walletInfo=undefined)
+          if (creditCost > 0 && firebaseUid) {
+            const { isWalletEnforcementEnabled } = await import('./middleware/credit-check');
+            if (isWalletEnforcementEnabled()) {
+              const affordCheck = await walletService.canAfford(firebaseUid, creditCost);
+              if (!affordCheck.canAfford) {
+                console.log(`🚫 [ESTIMATE-PDF] Insufficient credits: has ${affordCheck.currentBalance}, needs ${creditCost}`);
+                return res.status(402).json({
+                  error: 'INSUFFICIENT_CREDITS',
+                  message: `You need ${creditCost} credits to generate this estimate PDF. You have ${affordCheck.currentBalance}.`,
+                  currentBalance: affordCheck.currentBalance,
+                  requiredCredits: creditCost,
+                  deficit: affordCheck.deficit,
+                  featureName,
+                  showTopUpModal: true,
+                });
+              }
+              (req as any).walletInfo = { firebaseUid, featureName, requiredCredits: creditCost, currentBalance: affordCheck.currentBalance };
+              console.log(`✅ [ESTIMATE-PDF] walletInfo set for ${featureName}: ${creditCost} credits`);
+            } else {
+              // Shadow mode: log but don't block
+              try {
+                const balance = await walletService.getBalance(firebaseUid);
+                (req as any).walletInfo = { firebaseUid, featureName, requiredCredits: creditCost, currentBalance: balance };
+                console.log(`👻 [CREDIT-SHADOW] estimate-pdf: user=${firebaseUid.substring(0,8)}..., balance=${balance}, required=${creditCost}`);
+              } catch (shadowErr) {
+                console.error('⚠️ [CREDIT-SHADOW] Error checking balance:', shadowErr);
+              }
+            }
+          }
+          await deductFeatureCredits(req, (estimateData as any).estimate?.projectId || `estimate-${Date.now()}`, `${featureName} PDF generated`);
         } catch (creditErr) {
           console.warn('⚠️ [ESTIMATE-PDF] Credit deduction failed (non-blocking):', (creditErr as Error).message);
         }
@@ -9784,8 +9816,8 @@ ENHANCED LEGAL CLAUSE:`;
 
   // Legacy endpoint - redirects to unified (for backward compatibility during transition)
   // Premium Contract PDF Generation
-  // 🔥 FIX: Try to get firebaseUid from auth, but don't require it (backward compatibility)
-  app.post("/api/contracts/generate-pdf", async (req, res) => {
+  // 🔥 FIX: Auth required for contract PDF re-download (no credit charge - already charged at generation)
+  app.post("/api/contracts/generate-pdf", verifyFirebaseAuth, async (req, res) => {
     try {
       console.log("🎨 [API] Starting premium contract generation...");
       
