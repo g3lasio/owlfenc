@@ -20,6 +20,9 @@ export class EnhancedPdfService {
       bottom?: string;
       left?: string;
     };
+    displayHeaderFooter?: boolean;
+    headerTemplate?: string;
+    footerTemplate?: string;
   } = {}): Promise<Buffer> {
     console.log("🔄 [ENHANCED-PDF] Starting enhanced PDF generation...");
 
@@ -87,7 +90,9 @@ export class EnhancedPdfService {
         },
         printBackground: true,
         preferCSSPageSize: false,
-        displayHeaderFooter: false,
+        displayHeaderFooter: options.displayHeaderFooter || false,
+        headerTemplate: options.headerTemplate || '<span></span>',
+        footerTemplate: options.footerTemplate || '<span></span>',
         scale: 1.0,
         timeout: 30000,
       });

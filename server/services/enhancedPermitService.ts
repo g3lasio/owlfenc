@@ -1075,6 +1075,21 @@ CRITICAL: Mention any California-specific requirements if the address is in Cali
 
       const result = codeAnalysis;
 
+      // Normalize buildingCodes field names: AI returns codeSection/requirement/specification
+      // but the PDF template expects section/description/specifications
+      if (result.buildingCodes && Array.isArray(result.buildingCodes)) {
+        result.buildingCodes = result.buildingCodes.map((code: any) => ({
+          ...code,
+          // Map AI field names to template field names
+          section: code.section || code.codeSection || code.title || `Code Section`,
+          title: code.title || code.codeSection || code.section || `Code Section`,
+          description: code.description || code.requirement || code.summary || 'See details below',
+          specifications: code.specifications || code.specification || code.details || null,
+          details: code.details || code.requirement || null,
+          requirements: code.requirements || (code.requirement ? [code.requirement] : null),
+        }));
+      }
+
       result.contactInformation = [municipalContact];
 
       const hasNoContactData = !municipalContact.phone && !municipalContact.website && !municipalContact.physicalAddress;

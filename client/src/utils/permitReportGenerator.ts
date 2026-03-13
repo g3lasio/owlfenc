@@ -221,12 +221,15 @@ export function generatePermitReportHTML(
         }
 
         .company-logo {
-            width: 56px;
-            height: 56px;
-            border-radius: 6px;
+            width: 90px;
+            height: 90px;
+            border-radius: 10px;
             margin-bottom: 24px;
-            object-fit: cover;
-            border: 2px solid rgba(201,162,39,0.5);
+            object-fit: contain;
+            border: 3px solid rgba(201,162,39,0.8);
+            background: rgba(255,255,255,0.12);
+            padding: 6px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
         }
 
         .report-title {
@@ -1024,7 +1027,18 @@ export function generatePermitReportHTML(
         <!-- Header -->
         <div class="header">
             <div class="header-content">
-                ${companyInfo.logo ? `<img src="${companyInfo.logo}" alt="Company Logo" class="company-logo">` : ""}
+                ${companyInfo.logo ? `
+                <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 24px;">
+                    <img src="${companyInfo.logo}" alt="Company Logo" class="company-logo" style="margin-bottom: 0;">
+                    <div>
+                        <div style="font-family: Arial, Helvetica, sans-serif; font-size: 11px; font-weight: 700; color: #c9a227; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 4px;">Prepared by</div>
+                        <div style="font-family: Georgia, serif; font-size: 18px; font-weight: 700; color: #ffffff;">${companyInfo.company || companyInfo.ownerName || ''}</div>
+                    </div>
+                </div>` : `
+                <div style="margin-bottom: 24px;">
+                    <div style="font-family: Arial, Helvetica, sans-serif; font-size: 11px; font-weight: 700; color: #c9a227; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 4px;">Prepared by</div>
+                    <div style="font-family: Georgia, serif; font-size: 18px; font-weight: 700; color: #ffffff;">${companyInfo.company || companyInfo.ownerName || 'Contractor'}</div>
+                </div>`}
                 <h1 class="report-title">Permit Analysis Report</h1>
                 <p class="report-subtitle">Comprehensive Construction Permit Assessment</p>
                 <div class="report-meta">

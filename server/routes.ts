@@ -9338,15 +9338,31 @@ ENHANCED LEGAL CLAUSE:`;
         console.warn("⚠️ [PERMIT-REPORT] HTML validation issues:", validation.issues);
       }
       
+      // Build footer template with company info for all pages
+      const footerCompany = finalCompanyInfo.name || 'Owl Fenc';
+      const footerDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+      const footerTemplate = `
+        <div style="width: 100%; font-family: Arial, Helvetica, sans-serif; font-size: 9px; color: #6b7280;
+          display: flex; justify-content: space-between; align-items: center;
+          padding: 0 40px; border-top: 1px solid #e5e7eb; margin-top: 4px;">
+          <span style="color: #1a1a2e; font-weight: 600;">${footerCompany}</span>
+          <span style="color: #9ca3af;">Permit Analysis Report &mdash; ${footerDate}</span>
+          <span style="color: #6b7280;">Page <span class="pageNumber"></span> of <span class="totalPages"></span></span>
+        </div>
+      `;
+
       const pdfBuffer = await enhancedPdfService.generatePdfFromHtml(htmlContent, {
         format: 'A4',
         landscape: false,
         margin: {
           top: "0.5in",
           right: "0.5in", 
-          bottom: "0.5in",
+          bottom: "0.65in",
           left: "0.5in",
-        }
+        },
+        displayHeaderFooter: true,
+        headerTemplate: '<span></span>',
+        footerTemplate,
       });
       
       // Convert Uint8Array to Buffer if needed

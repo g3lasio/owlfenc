@@ -393,10 +393,20 @@ export default function PermitAdvisor() {
         const history = await response.json();
         console.log(`📋 [PERMIT-HISTORY] ${history.length} búsquedas cargadas`);
         // Normalize the results field (stored as JSON string in DB)
-        return history.map((item: any) => ({
-          ...item,
-          results: typeof item.results === "string" ? JSON.parse(item.results) : item.results,
-        }));
+        // Extract address/projectType from results.meta since DB only stores query+results
+        return history.map((item: any) => {
+          const results = typeof item.results === "string" ? JSON.parse(item.results) : item.results;
+          const address = results?.meta?.fullAddress || results?.meta?.location || item.query?.replace(/^\w+ en /, '') || item.query || 'Unknown address';
+          const projectType = results?.meta?.projectType || item.query?.split(' en ')?.[0] || 'general';
+          return {
+            ...item,
+            results,
+            address,
+            projectType,
+            title: `${projectType} - ${address}`,
+            createdAt: item.searchDate || item.createdAt,
+          };
+        });
       } catch (error) {
         console.error("❌ [PERMIT-HISTORY] Error cargando historial:", error);
         return [];
@@ -423,7 +433,8 @@ export default function PermitAdvisor() {
     return (
       item.address?.toLowerCase().includes(searchTerm) ||
       item.projectType?.toLowerCase().includes(searchTerm) ||
-      item.title?.toLowerCase().includes(searchTerm)
+      item.title?.toLowerCase().includes(searchTerm) ||
+      item.query?.toLowerCase().includes(searchTerm)
     );
   });
 
