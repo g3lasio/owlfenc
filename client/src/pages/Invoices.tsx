@@ -43,6 +43,9 @@ import {
   Check,
   ArrowRight,
   Loader2,
+  Share2,
+  Link,
+  ExternalLink,
 } from "lucide-react";
 import {
   collection,
@@ -141,6 +144,11 @@ const Invoices: React.FC = () => {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [showEmailPreview, setShowEmailPreview] = useState(false);
   const [emailPreviewContent, setEmailPreviewContent] = useState("");
+  // State for generated invoice (for share functionality)
+  const [generatedPdfBlob, setGeneratedPdfBlob] = useState<Blob | null>(null);
+  const [generatedInvoiceNumber, setGeneratedInvoiceNumber] = useState<string | null>(null);
+  const [generatedPaymentLink, setGeneratedPaymentLink] = useState<string | null>(null);
+  const [isSharing, setIsSharing] = useState(false);
 
   // Verificar permisos de invoices
   const hasInvoiceAccess = true; // 💳 Pure PAYG: always accessible, backend enforces credits
@@ -536,6 +544,9 @@ const Invoices: React.FC = () => {
         setActiveTab("history");
         setCurrentStep(1);
         setSelectedEstimate(null);
+        setGeneratedPdfBlob(null);
+        setGeneratedInvoiceNumber(null);
+        setGeneratedPaymentLink(null);
         setInvoiceConfig({
           paymentTerms: 30,
           paidAmount: 0,
@@ -745,23 +756,9 @@ const Invoices: React.FC = () => {
       const dueDate = new Date();
       dueDate.setDate(dueDate.getDate() + invoiceConfig.paymentTerms);
 
-      // Build payment link for PDF based on user's paymentLinkType selection
+      // Determine if we should use the Stripe payment link endpoint
       const hasStripeConnectForPdf = !!profile?.stripeConnectAccountId;
-      const pdfBalance = amounts.total - (invoiceConfig.paidAmount || 0);
-      let pdfPaymentLinkAmount: number | null = null;
-      if (hasStripeConnectForPdf && invoiceConfig.paymentLinkType !== 'none' && pdfBalance > 0) {
-        if (invoiceConfig.paymentLinkType === 'deposit') {
-          pdfPaymentLinkAmount = (selectedEstimate.total || 0) * 0.5;
-        } else if (invoiceConfig.paymentLinkType === 'final') {
-          pdfPaymentLinkAmount = (selectedEstimate.total || 0) * 0.5;
-        } else {
-          // 'full' or any other value
-          pdfPaymentLinkAmount = pdfBalance;
-        }
-      }
-      const pdfPaymentLink = pdfPaymentLinkAmount !== null && pdfPaymentLinkAmount > 0
-        ? `${window.location.origin}/project-payments?invoice=${invoiceNumber}&amount=${pdfPaymentLinkAmount.toFixed(2)}&client=${encodeURIComponent(selectedEstimate.clientName || '')}`
-        : null;
+      const useStripeEndpoint = hasStripeConnectForPdf && invoiceConfig.paymentLinkType !== 'none';
 
       // Build invoice payload EXACTLY like EstimatesWizard does
       const invoicePayload = {
@@ -799,23 +796,43 @@ const Invoices: React.FC = () => {
               ? invoiceConfig.paidAmount.toString()
               : "",
           totalAmountPaid: invoiceConfig.paidAmount >= amounts.total,
-          paymentLink: pdfPaymentLink, // include in PDF even on direct download
         },
+        // Pass payment type for Stripe endpoint
+        paymentType: invoiceConfig.paymentLinkType,
       };
 
-      console.log("📤 [INVOICES] Sending request to /api/invoice-pdf");
+      // Use the Stripe endpoint when available — it creates a real Checkout session
+      // and saves it to the Payment Tracker automatically
+      const endpoint = useStripeEndpoint
+        ? "/api/invoice-pdf-with-payment-link"
+        : "/api/invoice-pdf";
+
+      console.log(`📤 [INVOICES] Sending request to ${endpoint} (Stripe: ${useStripeEndpoint})`);
       
-      // Use axios EXACTLY like EstimatesWizard does
-      const response = await axios.post("/api/invoice-pdf", invoicePayload, {
+      // Use fetchWithAuth to include Firebase auth token (required by Stripe endpoint)
+      const authToken = await currentUser.getIdToken();
+      const response = await axios.post(endpoint, invoicePayload, {
         responseType: "blob",
-        timeout: 60000, // 60 second timeout
+        timeout: 60000,
+        headers: { Authorization: `Bearer ${authToken}` },
       });
 
       console.log("✅ [INVOICES] PDF received, size:", response.data.size);
 
+      // Extract payment link from response header if available
+      const paymentLinkFromHeader = response.headers['x-payment-link'];
+      const resolvedPaymentLink = paymentLinkFromHeader && paymentLinkFromHeader !== 'none'
+        ? paymentLinkFromHeader
+        : null;
+
+      // Save PDF blob and metadata for share functionality
+      setGeneratedPdfBlob(response.data);
+      setGeneratedInvoiceNumber(invoiceNumber);
+      setGeneratedPaymentLink(resolvedPaymentLink);
+
       await downloadPdfFromResponse(response.data, `invoice-${invoiceNumber}.pdf`);
 
-      console.log("💾 [INVOICES] PDF downloaded successfully");
+      console.log("💾 [INVOICES] PDF downloaded successfully", resolvedPaymentLink ? `with payment link: ${resolvedPaymentLink}` : '(no payment link)');
 
       // Determine payment status
       let paymentStatus: "pending" | "partial" | "paid" = "pending";
@@ -955,6 +972,9 @@ const Invoices: React.FC = () => {
         setActiveTab("history");
         setCurrentStep(1);
         setSelectedEstimate(null);
+        setGeneratedPdfBlob(null);
+        setGeneratedInvoiceNumber(null);
+        setGeneratedPaymentLink(null);
         setInvoiceConfig({
           paymentTerms: 30,
           paidAmount: 0,
@@ -1544,6 +1564,127 @@ const Invoices: React.FC = () => {
                       {!canUseInvoices ? '🔒 Vista Previa' : 'Vista Previa'}
                     </Button>
                   </div>
+
+                  {/* ── Native Share Panel (appears after PDF is generated) ── */}
+                  {generatedPdfBlob && generatedInvoiceNumber && (
+                    <div className="mt-4 p-4 bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border border-cyan-500/40 rounded-xl space-y-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Share2 className="h-4 w-4 text-cyan-400" />
+                        <span className="text-sm font-semibold text-cyan-400">Compartir Factura</span>
+                        <span className="text-xs bg-green-900/40 text-green-300 px-2 py-0.5 rounded-full ml-auto">✓ Lista</span>
+                      </div>
+                      <p className="text-xs text-gray-400">
+                        Factura <span className="text-white font-medium">{generatedInvoiceNumber}</span> generada.
+                        {generatedPaymentLink ? ' Incluye link de pago Stripe.' : ''}
+                      </p>
+
+                      {/* Payment link copy box */}
+                      {generatedPaymentLink && (
+                        <div className="flex items-center gap-2 bg-gray-800/60 border border-gray-600 rounded-lg p-2">
+                          <Link className="h-3.5 w-3.5 text-cyan-400 flex-shrink-0" />
+                          <span className="text-xs text-gray-300 truncate flex-1">{generatedPaymentLink}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(generatedPaymentLink);
+                              toast({ title: '✓ Link copiado', description: 'Link de pago copiado al portapapeles' });
+                            }}
+                            className="text-xs text-cyan-400 hover:text-cyan-300 font-semibold flex-shrink-0 px-2 py-1 rounded hover:bg-cyan-900/30"
+                          >
+                            Copiar
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Share buttons row */}
+                      <div className="grid grid-cols-2 gap-2">
+                        {/* Native Share API (mobile + desktop) */}
+                        {'share' in navigator && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={isSharing}
+                            onClick={async () => {
+                              try {
+                                setIsSharing(true);
+                                const shareData: ShareData = {
+                                  title: `Invoice ${generatedInvoiceNumber}`,
+                                  text: generatedPaymentLink
+                                    ? `Here is your invoice ${generatedInvoiceNumber}. Pay online: ${generatedPaymentLink}`
+                                    : `Here is your invoice ${generatedInvoiceNumber} from ${profile?.company || 'your contractor'}.`,
+                                  url: generatedPaymentLink || window.location.href,
+                                };
+                                // Try to share with file if supported
+                                if (navigator.canShare && navigator.canShare({ files: [new File([generatedPdfBlob], `invoice-${generatedInvoiceNumber}.pdf`, { type: 'application/pdf' })] })) {
+                                  shareData.files = [new File([generatedPdfBlob], `invoice-${generatedInvoiceNumber}.pdf`, { type: 'application/pdf' })];
+                                }
+                                await navigator.share(shareData);
+                              } catch (err: any) {
+                                if (err?.name !== 'AbortError') {
+                                  toast({ title: 'Share no disponible', description: 'Usa las otras opciones para compartir', variant: 'destructive' });
+                                }
+                              } finally {
+                                setIsSharing(false);
+                              }
+                            }}
+                            className="bg-cyan-700/30 border-cyan-500/50 text-cyan-300 hover:bg-cyan-700/50"
+                          >
+                            {isSharing ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Share2 className="mr-1.5 h-3.5 w-3.5" />}
+                            Compartir
+                          </Button>
+                        )}
+
+                        {/* WhatsApp share */}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const msg = generatedPaymentLink
+                              ? `Hola, aquí está su factura ${generatedInvoiceNumber}. Puede pagar en línea: ${generatedPaymentLink}`
+                              : `Hola, aquí está su factura ${generatedInvoiceNumber} de ${profile?.company || 'su contratista'}.`;
+                            window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+                          }}
+                          className="bg-green-900/30 border-green-500/50 text-green-300 hover:bg-green-700/30"
+                        >
+                          <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
+                          WhatsApp
+                        </Button>
+
+                        {/* SMS / Messages */}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const msg = generatedPaymentLink
+                              ? `Invoice ${generatedInvoiceNumber} - Pay online: ${generatedPaymentLink}`
+                              : `Invoice ${generatedInvoiceNumber} from ${profile?.company || 'your contractor'}.`;
+                            window.open(`sms:?body=${encodeURIComponent(msg)}`, '_blank');
+                          }}
+                          className="bg-blue-900/30 border-blue-500/50 text-blue-300 hover:bg-blue-700/30"
+                        >
+                          <Send className="mr-1.5 h-3.5 w-3.5" />
+                          SMS / iMessage
+                        </Button>
+
+                        {/* Copy payment link or invoice info */}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const msg = generatedPaymentLink
+                              ? `Invoice ${generatedInvoiceNumber} — Pay online: ${generatedPaymentLink}`
+                              : `Invoice ${generatedInvoiceNumber} from ${profile?.company || 'your contractor'}.`;
+                            navigator.clipboard.writeText(msg);
+                            toast({ title: '✓ Copiado', description: 'Mensaje copiado al portapapeles' });
+                          }}
+                          className="bg-gray-700/50 border-gray-500/50 text-gray-300 hover:bg-gray-600/50"
+                        >
+                          <Link className="mr-1.5 h-3.5 w-3.5" />
+                          Copiar Mensaje
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <p className="text-sm text-gray-400 text-center">
