@@ -16,8 +16,8 @@ import { Pool } from '@neondatabase/serverless';
 const PLAN_CREDITS: Record<number, number> = {
   4: 20,    // Free Trial        → 20 créditos/mes
   5: 20,    // Primo Chambeador  → 20 créditos/mes (free)
-  9: 600,   // Mero Patrón       → 600 créditos/mes ($49.99/mes)
-  6: 1500,  // Master Contractor → 1500 créditos/mes ($99.99/mes)
+  9: 500,   // Mero Patrón       → 500 créditos/mes ($49.99/mes)
+  6: 1200,  // Master Contractor → 1200 créditos/mes ($99.99/mes)
 };
 
 async function runStatement(pool: Pool, label: string, sql: string, params?: any[]): Promise<void> {
@@ -176,8 +176,7 @@ export async function runWalletMigration(): Promise<void> {
     }
 
     // ================================================================
-    // PASO 6: Actualizar monthly_credits_grant por plan (idempotente)
-    // Solo actualiza si el valor actual es 0 para no sobreescribir valores manuales
+    // PASO 6: Actualizar monthly_credits_grant por plan (siempre actualiza para mantener sync con código)
     // ================================================================
     console.log('🔄 [WALLET-MIGRATION] Updating monthly_credits_grant for subscription plans...');
     
@@ -185,7 +184,7 @@ export async function runWalletMigration(): Promise<void> {
       const result = await pool.query(
         `UPDATE subscription_plans 
          SET monthly_credits_grant = $1 
-         WHERE id = $2 AND monthly_credits_grant = 0
+         WHERE id = $2
          RETURNING id, name, monthly_credits_grant`,
         [credits, parseInt(planId)]
       );

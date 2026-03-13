@@ -194,8 +194,8 @@ export type FeatureName = keyof typeof FEATURE_CREDIT_COSTS;
 // Créditos mensuales por plan (IDs del brief)
 export const PLAN_MONTHLY_CREDITS = {
   5: 20,    // Primo Chambeador (Free)
-  9: 600,   // Mero Patrón
-  6: 1500,  // Master Contractor
+  9: 500,   // Mero Patrón
+  6: 1200,  // Master Contractor
 } as const;
 
 // Paquetes de top-up (datos canónicos)

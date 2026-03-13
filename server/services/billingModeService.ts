@@ -5,7 +5,7 @@
  * Modos:
  * - 'free'        → Primo Chambeador, 20 créditos/mes del grant
  * - 'payg'        → Sin suscripción, compra créditos on-demand
- * - 'subscriber'  → Mero Patrón (600/mes) o Master Contractor (1500/mes)
+ * - 'subscriber'  → Mero Patrón (500/mes) o Master Contractor (1200/mes)
  * 
  * Regla de Stripe Connect:
  * - Requiere suscripción activa O $20+ en top-ups históricos

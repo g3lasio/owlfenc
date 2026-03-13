@@ -74,7 +74,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     price: 4999,        // $49.99/mes
     yearlyPrice: 50990, // $509.90/año (15% descuento — pago único anual)
     features: [
-      "⚡ 600 AI credits included per month",
+      "⚡ 500 AI credits included per month",
       "Access to all features — no limits",
       "No watermark on estimates & contracts",
       "AI Estimates, Contracts, Permits, Invoices",
@@ -96,7 +96,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     price: 9999,         // $99.99/mes
     yearlyPrice: 101990, // $1,019.90/año (15% descuento — pago único anual)
     features: [
-      "⚡ 1,500 AI credits included per month",
+      "⚡ 1,200 AI credits included per month",
       "Access to all features — no limits",
       "No watermark on estimates & contracts",
       "AI Estimates, Contracts, Permits, Invoices",
