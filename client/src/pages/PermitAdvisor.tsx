@@ -378,7 +378,7 @@ export default function PermitAdvisor() {
     },
   ];
 
-  // Query para obtener historial real de Firebase
+  // Query para obtener historial desde el backend (PostgreSQL) - fuente única de verdad
   const {
     data: historyData = [],
     isLoading: historyLoading,
@@ -387,85 +387,19 @@ export default function PermitAdvisor() {
     queryKey: ["permitHistory", currentUser?.uid],
     queryFn: async () => {
       if (!currentUser?.uid) return [];
-
       try {
-        // Intentar diferentes estrategias para cargar el historial
-        let q;
-        try {
-          // Primero intentar con orderBy
-          q = query(
-            collection(db, "permit_search_history"),
-            where("userId", "==", currentUser.uid),
-            orderBy("createdAt", "desc"),
-            limit(50),
-          );
-        } catch (error) {
-          // Si falla orderBy, intentar sin él
-          console.log("⚠️ OrderBy failed, trying without...");
-          q = query(
-            collection(db, "permit_search_history"),
-            where("userId", "==", currentUser.uid),
-            limit(50),
-          );
-        }
-
-        const querySnapshot = await getDocs(q);
-        const history: any[] = [];
-
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          history.push({
-            id: doc.id,
-            ...data,
-            // Asegurar compatibilidad con timestamps
-            createdAt: data.createdAt || data.timestamp || new Date(),
-          });
-        });
-
-        // Ordenar manualmente por fecha si no se pudo hacer en la query
-        history.sort((a, b) => {
-          const dateA = a.createdAt?.toDate
-            ? a.createdAt.toDate()
-            : new Date(a.createdAt);
-          const dateB = b.createdAt?.toDate
-            ? b.createdAt.toDate()
-            : new Date(b.createdAt);
-          return dateB.getTime() - dateA.getTime();
-        });
-
-        console.log(
-          `📋 Historial cargado: ${history.length} búsquedas encontradas`,
-        );
-        return history;
+        console.log("📋 [PERMIT-HISTORY] Cargando historial desde backend...");
+        const response = await apiRequest("GET", "/api/permit/history");
+        const history = await response.json();
+        console.log(`📋 [PERMIT-HISTORY] ${history.length} búsquedas cargadas`);
+        // Normalize the results field (stored as JSON string in DB)
+        return history.map((item: any) => ({
+          ...item,
+          results: typeof item.results === "string" ? JSON.parse(item.results) : item.results,
+        }));
       } catch (error) {
-        console.error("❌ Error obteniendo historial:", error);
-
-        // Fallback: intentar obtener todas las búsquedas sin filtros complejos
-        try {
-          console.log("🔄 Intentando fallback simple...");
-          const simpleQuery = collection(db, "permit_search_history");
-          const snapshot = await getDocs(simpleQuery);
-          const fallbackHistory: any[] = [];
-
-          snapshot.forEach((doc) => {
-            const data = doc.data();
-            if (data.userId === currentUser.uid) {
-              fallbackHistory.push({
-                id: doc.id,
-                ...data,
-                createdAt: data.createdAt || data.timestamp || new Date(),
-              });
-            }
-          });
-
-          console.log(
-            `📋 Fallback cargado: ${fallbackHistory.length} búsquedas`,
-          );
-          return fallbackHistory.slice(0, 50); // Limitar a 50
-        } catch (fallbackError) {
-          console.error("❌ Fallback también falló:", fallbackError);
-          return [];
-        }
+        console.error("❌ [PERMIT-HISTORY] Error cargando historial:", error);
+        return [];
       }
     },
     enabled: !!currentUser?.uid,
@@ -473,66 +407,15 @@ export default function PermitAdvisor() {
     staleTime: 1000 * 60 * 5, // 5 minutos
   });
 
-  // Funciones para el historial de Firebase con retry automático
-  const saveToHistory = async (results: any, retryCount = 3) => {
-    if (!currentUser?.uid || !selectedAddress || !projectType) {
-      console.log(
-        "⚠️ No se puede guardar: faltan datos del usuario o búsqueda",
-      );
-      return;
-    }
-
-    for (let attempt = 1; attempt <= retryCount; attempt++) {
-      try {
-        const title = `${projectType.charAt(0).toUpperCase() + projectType.slice(1)} en ${selectedAddress}`;
-
-        const historyItem = {
-          userId: currentUser.uid,
-          address: selectedAddress,
-          projectType,
-          projectDescription: projectDescription || "",
-          results,
-          title,
-          createdAt: Timestamp.now(),
-          timestamp: new Date().toISOString(), // Backup timestamp
-        };
-
-        const docRef = await addDoc(
-          collection(db, "permit_search_history"),
-          historyItem,
-        );
-        console.log(
-          `✅ Búsqueda guardada en historial de Firebase (ID: ${docRef.id})`,
-        );
-
-        // Actualizar la lista inmediatamente
-        setTimeout(() => {
-          refetchHistory();
-        }, 500);
-
-        return docRef.id; // Éxito, salir del loop
-      } catch (error) {
-        console.error(
-          `❌ Error al guardar en historial (intento ${attempt}/${retryCount}):`,
-          error,
-        );
-
-        if (attempt === retryCount) {
-          // En el último intento, mostrar el error al usuario
-          toast({
-            title: "⚠️ History Save Warning",
-            description:
-              "Search completed but couldn't save to history. Your results are still available.",
-            variant: "default",
-          });
-        } else {
-          // Esperar antes del siguiente intento
-          await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
-        }
-      }
-    }
+  // El historial se guarda automáticamente en el backend (PostgreSQL) durante /api/permit/check
+  // Esta función solo refresca la lista de historial después de una búsqueda exitosa
+  const saveToHistory = async (results: any) => {
+    // Backend already saved to Postgres during the permit check - just refetch
+    console.log("📋 [PERMIT-HISTORY] Refrescando historial tras búsqueda exitosa...");
+    setTimeout(() => {
+      refetchHistory();
+    }, 800);
   };
-
   // Filtrar historial según búsqueda
   const filteredHistory = historyData.filter((item: any) => {
     if (!searchFilter) return true;
@@ -2794,6 +2677,45 @@ You can also drag & drop documents here (permits, plans, estimates)"
                       )}
                     </TabsContent>
                   </Tabs>
+
+                  {/* Sources & Verification Disclaimer */}
+                  {permitData?.meta?.sources && permitData.meta.sources.length > 0 && (
+                    <div className="mt-6 p-4 bg-amber-900/20 border border-amber-500/30 rounded-lg">
+                      <div className="flex items-start gap-3">
+                        <span className="text-amber-400 text-lg flex-shrink-0">⚠️</span>
+                        <div className="space-y-2 flex-1">
+                          <h4 className="text-amber-300 font-semibold text-sm">
+                            Data Sources & Verification Notice
+                          </h4>
+                          <p className="text-amber-200/80 text-xs leading-relaxed">
+                            This report is generated using AI analysis based on known building codes, regulations, and permit requirements.{" "}
+                            <strong className="text-amber-300">Always verify permit requirements directly with your local building department</strong>{" "}
+                            before starting any project. Requirements may have changed since this analysis was generated.
+                          </p>
+                          <div className="mt-2 space-y-1">
+                            <p className="text-amber-400/70 text-xs font-medium uppercase tracking-wide">Reference Sources:</p>
+                            <ul className="space-y-1">
+                              {permitData.meta.sources.map((source: string, idx: number) => (
+                                <li key={idx} className="flex items-center gap-2 text-xs text-amber-200/70">
+                                  <span className="text-amber-500">📖</span>
+                                  <span>{source}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                          {(permitData as any)?.verificationNote && (
+                            <div className="mt-2 p-2 bg-red-900/30 border border-red-500/30 rounded text-xs text-red-300">
+                              🔴 <strong>Verification Required:</strong> {(permitData as any).verificationNote}
+                            </div>
+                          )}
+                          <p className="text-amber-200/50 text-xs mt-2">
+                            Generated: {permitData.meta.generated ? new Date(permitData.meta.generated).toLocaleString() : 'N/A'} |{" "}
+                            Location: {permitData.meta.location || selectedAddress}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

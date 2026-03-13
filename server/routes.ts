@@ -8674,11 +8674,20 @@ ENHANCED LEGAL CLAUSE:`;
         });
       }
 
-      const userId = decodedToken.uid;
-      console.log(`📋 [PERMIT-HISTORY] Obteniendo historial para usuario: ${userId}`);
+      const firebaseUid = decodedToken.uid;
+      console.log(`📋 [PERMIT-HISTORY] Obteniendo historial para Firebase UID: ${firebaseUid}`);
+
+      // Resolve Firebase UID to internal integer userId
+      const userRecord = await storage.getUserByFirebaseUid(firebaseUid);
+      if (!userRecord) {
+        console.log(`⚠️ [PERMIT-HISTORY] User not found in DB for Firebase UID: ${firebaseUid}`);
+        return res.json([]); // Return empty history, not an error
+      }
+      const internalUserId = userRecord.id;
+      console.log(`📋 [PERMIT-HISTORY] Internal userId: ${internalUserId}`);
 
       // Solo obtener historial del usuario autenticado
-      const history = await storage.getPermitSearchHistoryByUserId(userId);
+      const history = await storage.getPermitSearchHistoryByUserId(internalUserId);
       res.json(history);
     } catch (error) {
       console.error(
