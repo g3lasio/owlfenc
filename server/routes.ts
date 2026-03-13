@@ -6744,16 +6744,11 @@ ENHANCED LEGAL CLAUSE:`;
 
   app.get(
     "/api/subscription/payment-history",
+    requireAuth,
     async (req: Request, res: Response) => {
       try {
-        if (!req.isAuthenticated()) {
-          return res.status(401).json({ message: "No autenticado" });
-        }
-
-        const userId = req.user.id;
-
-        // For now, return empty payment history
-        // In a real app, we would get subscription from Firebase and fetch invoices
+        // requireAuth middleware already validates Firebase session
+        // Return empty array for now — Stripe invoice history can be added later
         res.json([]);
       } catch (error) {
         console.error("Error al obtener historial de pagos:", error);
@@ -6766,16 +6761,22 @@ ENHANCED LEGAL CLAUSE:`;
 
   app.get(
     "/api/subscription/payment-methods",
+    requireAuth,
     async (req: Request, res: Response) => {
       try {
-        if (!req.isAuthenticated()) {
+        // requireAuth middleware already validates Firebase session
+        const firebaseUid = req.authUser?.uid;
+        if (!firebaseUid) {
           return res.status(401).json({ message: "No autenticado" });
         }
 
-        const userId = req.user.id;
+        const internalUserId = req.authUser?.internalUserId;
+        if (!internalUserId) {
+          return res.json([]); // New user, no payment methods yet
+        }
 
         // Obtenemos la suscripción del usuario para conseguir el customerId
-        const subscription = await storage.getUserSubscriptionByUserId(userId);
+        const subscription = await storage.getUserSubscriptionByUserId(internalUserId);
 
         if (!subscription || !subscription.stripeCustomerId) {
           return res.json([]);
@@ -6796,19 +6797,21 @@ ENHANCED LEGAL CLAUSE:`;
 
   app.post(
     "/api/subscription/update-payment-method",
+    requireAuth,
     async (req: Request, res: Response) => {
       try {
-        if (!req.isAuthenticated()) {
+        // requireAuth middleware already validates Firebase session
+        const internalUserId = req.authUser?.internalUserId;
+        if (!internalUserId) {
           return res.status(401).json({ message: "No autenticado" });
         }
 
-        const userId = req.user.id;
         const returnUrl =
           req.body.returnUrl ||
           `${req.protocol}://${req.get("host")}/billing?success=true`;
 
         // Obtenemos la suscripción del usuario para conseguir el customerId
-        const subscription = await storage.getUserSubscriptionByUserId(userId);
+        const subscription = await storage.getUserSubscriptionByUserId(internalUserId);
 
         if (!subscription || !subscription.stripeCustomerId) {
           return res
