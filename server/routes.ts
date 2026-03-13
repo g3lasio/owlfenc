@@ -8821,29 +8821,29 @@ ENHANCED LEGAL CLAUSE:`;
       try {
         console.log(`💾 [PERMIT-SAVE] Guardando historial para usuario: ${authenticatedUserId}`);
 
-        // Crear un título basado en los parámetros de búsqueda
-        const title = `${projectType} en ${address}`;
+        // Resolver el internal userId (integer) desde el Firebase UID (string)
+        const dbUser = await storage.getUserByFirebaseUid(authenticatedUserId);
+        if (!dbUser) {
+          console.warn(`⚠️ [PERMIT-SAVE] No DB user found for Firebase UID ${authenticatedUserId}, skipping history save`);
+        } else {
+          // Crear un título/query basado en los parámetros de búsqueda
+          const query = `${projectType} en ${address}`;
 
-        // Obtener la descripción del proyecto si está disponible
-        const projectDescription = req.body.projectDescription || "";
+          // Guardar en el historial con el userId interno (integer) y el campo query requerido
+          const historyData = {
+            userId: dbUser.id,            // integer — internal DB user ID
+            query,                         // string notNull — required field
+            results: permitData,           // jsonb — all permit results
+          };
 
-        // Guardar en el historial con el userId real del usuario autenticado
-        const historyData = {
-          userId: authenticatedUserId, // ¡CRÍTICO! Usar el usuario autenticado real
-          address,
-          projectType,
-          projectDescription,
-          results: permitData, // Guardar todos los resultados
-          title,
-        };
+          // Validar los datos antes de guardar
+          const validHistoryData = insertPermitSearchHistorySchema.parse(historyData);
 
-        // Validar los datos antes de guardar
-        const validHistoryData =
-          insertPermitSearchHistorySchema.parse(historyData);
-
-        // Guardar en la base de datos con aislamiento por usuario
-        await storage.createPermitSearchHistory(validHistoryData);
-        console.log(`✅ [PERMIT-SAVED] Búsqueda guardada en historial para usuario: ${authenticatedUserId}`);
+          // Generar un ID único para el registro
+          const historyId = `permit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          await storage.createPermitSearchHistory({ ...validHistoryData, id: historyId });
+          console.log(`✅ [PERMIT-SAVED] Búsqueda guardada en historial para usuario: ${authenticatedUserId} (DB id: ${dbUser.id})`);
+        }
       } catch (historyError) {
         // En caso de error al guardar el historial, solo lo registramos pero no interrumpimos la respuesta
         console.error("Error al guardar historial de búsqueda:", historyError);

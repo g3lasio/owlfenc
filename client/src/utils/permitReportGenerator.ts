@@ -1999,11 +1999,24 @@ export async function generatePDFReport(
     console.log("🔄 [PDF-FRONTEND] Starting PDF generation request...");
     const htmlContent = generatePermitReportHTML(permitData, companyInfo);
 
+    // Get Firebase UID for authentication header
+    let firebaseUid = "";
+    try {
+      const { getAuth } = await import("firebase/auth");
+      const auth = getAuth();
+      if (auth.currentUser) {
+        firebaseUid = auth.currentUser.uid;
+      }
+    } catch (authErr) {
+      console.warn("[PDF-FRONTEND] Could not get Firebase UID:", authErr);
+    }
+
     // Call backend PDF generation service
     const response = await fetch("/api/generate-permit-report-pdf", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...(firebaseUid ? { "x-firebase-uid": firebaseUid } : {}),
       },
       body: JSON.stringify({
         htmlContent,
