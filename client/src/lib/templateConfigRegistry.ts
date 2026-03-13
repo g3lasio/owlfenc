@@ -30,6 +30,8 @@ export interface FieldDescriptor {
   helpText?: string;
   required: boolean;
   defaultValue?: any;
+  /** Dynamic default: function that receives baseData and returns the default value */
+  defaultFromBase?: (baseData: any) => any;
   options?: { value: string; label: string }[];
   validation?: {
     min?: number;
@@ -37,6 +39,8 @@ export interface FieldDescriptor {
     minLength?: number;
     maxLength?: number;
   };
+  /** Dynamic max: function that receives baseData and returns the max value */
+  maxFromBase?: (baseData: any) => number | undefined;
   showIf?: {
     field: string;
     value: any;
@@ -245,8 +249,16 @@ templateConfigRegistry.register({
             label: 'Payment Amount',
             type: 'currency',
             placeholder: '0.00',
-            helpText: 'The payment amount for which lien rights are being waived',
+            helpText: 'The payment amount for which lien rights are being waived (cannot exceed contract total)',
             required: true,
+            defaultFromBase: (baseData: any) => {
+              const total = baseData?.financials?.total || 0;
+              return Math.round(total * 100) / 100;
+            },
+            maxFromBase: (baseData: any) => {
+              const total = baseData?.financials?.total || 0;
+              return Math.round(total * 100) / 100;
+            },
             validation: {
               min: 0.01,
             },

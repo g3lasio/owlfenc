@@ -4915,7 +4915,7 @@ export default function SimpleContractGenerator() {
                               <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
                                 <span className="flex items-center gap-1">
                                   <DollarSign className="h-3 w-3" />
-                                  ${(normalizeCurrency(contract.totalAmount) || 0).toLocaleString()}
+                                  ${(Math.round((normalizeCurrency(contract.totalAmount) || 0) * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </span>
                                 <span className="flex items-center gap-1">
                                   <Calendar className="h-3 w-3" />
@@ -5105,7 +5105,7 @@ export default function SimpleContractGenerator() {
                               <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
                                 <span className="flex items-center gap-1">
                                   <DollarSign className="h-3 w-3" />
-                                  ${(normalizeCurrency(contract.totalAmount) || 0).toLocaleString()}
+                                  ${(Math.round((normalizeCurrency(contract.totalAmount) || 0) * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </span>
                                 <span className="flex items-center gap-1">
                                   <Calendar className="h-3 w-3" />
@@ -5297,7 +5297,7 @@ export default function SimpleContractGenerator() {
                               <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
                                 <span className="flex items-center gap-1">
                                   <DollarSign className="h-3 w-3" />
-                                  ${(normalizeCurrency(contract.totalAmount) || 0).toLocaleString()}
+                                  ${(Math.round((normalizeCurrency(contract.totalAmount) || 0) * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </span>
                                 <span className="flex items-center gap-1">
                                   <Calendar className="h-3 w-3" />

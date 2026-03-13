@@ -142,7 +142,10 @@ export default function DynamicTemplateConfigurator({
   
   const defaultValues = config.groups.reduce((acc, group) => {
     group.fields.forEach((field) => {
-      if (field.defaultValue !== undefined) {
+      if (field.defaultFromBase !== undefined) {
+        // Dynamic default from baseData (e.g., paymentAmount from contract total)
+        acc[field.id] = field.defaultFromBase(baseData);
+      } else if (field.defaultValue !== undefined) {
         acc[field.id] = field.defaultValue;
       } else if (field.type === 'checkbox') {
         acc[field.id] = false;
@@ -432,7 +435,8 @@ export default function DynamicTemplateConfigurator({
           />
         );
 
-      case 'currency':
+      case 'currency': {
+        const maxVal = field.maxFromBase ? field.maxFromBase(baseData) : field.validation?.max;
         return (
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
@@ -450,16 +454,38 @@ export default function DynamicTemplateConfigurator({
                 } else {
                   const num = parseFloat(val);
                   if (!isNaN(num)) {
-                    formField.onChange(num);
+                    // Enforce max from baseData
+                    if (maxVal !== undefined && num > maxVal) {
+                      formField.onChange(maxVal);
+                    } else {
+                      formField.onChange(num);
+                    }
                   }
                 }
               }}
+              onBlur={(e) => {
+                // Round to 2 decimal places on blur to prevent floating point display issues
+                const current = formField.value;
+                if (current && current !== 0) {
+                  const rounded = Math.round(current * 100) / 100;
+                  if (rounded !== current) {
+                    formField.onChange(rounded);
+                  }
+                }
+                formField.onBlur();
+              }}
               placeholder={field.placeholder || '0.00'}
-              className="pl-7"
+              className={`pl-7 ${maxVal !== undefined && formField.value > maxVal ? 'border-red-500' : ''}`}
               data-testid={`input-${field.id}`}
             />
+            {maxVal !== undefined && maxVal > 0 && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Máximo: ${(maxVal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+            )}
           </div>
         );
+      }
 
       case 'date':
         return (
