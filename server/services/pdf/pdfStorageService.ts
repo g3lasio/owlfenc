@@ -7,6 +7,10 @@
 
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+// ESM __dirname polyfill (__dirname is undefined in ESM production builds)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 interface StorageResult {
   url: string;

@@ -17,6 +17,10 @@ import { simplePdfFallback } from './services/simplePdfFallback';
 import { premiumPdfService } from './services/premiumPdfService';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+// ESM __dirname polyfill
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // HTML de prueba (estimado simple)
 const TEST_HTML = `

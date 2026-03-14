@@ -3,6 +3,10 @@ import { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
+// ESM __dirname polyfill
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import pdf from 'pdf-parse';
 import { LegalDefenseEngine } from '../../client/src/services/legalDefenseEngine';
 import { verifyFirebaseAuth } from '../middleware/firebase-auth';

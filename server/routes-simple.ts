@@ -2,6 +2,10 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { MailService } from '@sendgrid/mail';
 import path from 'path';
+import { fileURLToPath } from 'url';
+// ESM __dirname polyfill
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export function registerRoutes(app: Express): { app: Express; server: Server } {
   const server = createServer(app);
