@@ -254,8 +254,8 @@ async function runTest() {
   info(`Firestore document deleted: userProfiles/${firebaseUid}`);
 
   // Delete PostgreSQL records (wallet first due to FK)
-  await db.execute(`DELETE FROM credit_transactions WHERE firebase_uid = '${firebaseUid}'`);
-  await db.execute(`DELETE FROM credit_wallets WHERE firebase_uid = '${firebaseUid}'`);
+  await db.execute(`DELETE FROM wallet_transactions WHERE firebase_uid = '${firebaseUid}'`);
+  await db.execute(`DELETE FROM wallet_accounts WHERE firebase_uid = '${firebaseUid}'`);
   await db.delete(users).where(eq(users.id, userId));
   info(`PostgreSQL records deleted for user_id: ${userId}`);
 
