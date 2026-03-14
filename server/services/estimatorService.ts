@@ -1,5 +1,7 @@
 import { storage } from "../storage";
 import { promptGeneratorService } from "./promptGeneratorService";
+import path from 'path';
+import fs from 'fs';
 
 // Tipo para los datos de entrada de un proyecto
 export interface ProjectInput {
@@ -882,8 +884,7 @@ export class EstimatorService {
    */
   async generateEstimateHtml(estimateData: any): Promise<string> {
     try {
-      const path = require('path');
-      const fs = require('fs');
+      // path and fs imported at top of file as ESM imports
 
       console.log('Generando HTML del estimado usando plantilla universal...');
 

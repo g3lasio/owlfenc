@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import compression from "compression";
 import dotenv from "dotenv";
 import path from "path";
+import http from "http"; // ESM import — required for keep-alive self-ping (require() not available in ESM)
 
 // 🔥 CRITICAL: Initialize Firebase Admin FIRST with storageBucket
 // This must happen before any other Firebase-dependent imports
@@ -1529,7 +1530,6 @@ console.log('🔧 [UNIFIED-ANALYSIS] Sistema híbrido registrado en /api/analysi
   // This internal ping keeps the Node.js process warm without external dependencies.
   const KEEP_ALIVE_INTERVAL_MS = 4 * 60 * 1000; // 4 minutes
   setInterval(() => {
-    const http = require('http');
     const options = {
       hostname: 'localhost',
       port: port,

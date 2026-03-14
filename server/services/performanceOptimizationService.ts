@@ -14,6 +14,7 @@
 
 import { resilientDb } from '../db';
 import { sql } from 'drizzle-orm';
+import crypto from 'crypto';
 
 interface PerformanceConfig {
   functions: {
@@ -378,7 +379,8 @@ export class PerformanceOptimizationService {
    * Genera ETag para datos
    */
   private generateETag(data: any): string {
-    const hash = require('crypto')
+    // crypto imported at top of file as ESM import
+    const hash = crypto
       .createHash('md5')
       .update(JSON.stringify(data))
       .digest('hex');

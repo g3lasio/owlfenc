@@ -959,8 +959,8 @@ router.post("/stripe/connect", isAuthenticated, async (req: Request, res: Respon
       });
     }
 
-    // Get Stripe instance
-    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    // Get Stripe instance (Stripe imported as ESM at top of file)
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', { apiVersion: '2024-06-20' as any });
     
     // Convert Firebase UID to database user ID
     let dbUserId: number;
@@ -1226,8 +1226,8 @@ router.post("/stripe/dashboard", isAuthenticated, async (req: Request, res: Resp
       });
     }
 
-    // Get Stripe instance
-    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    // Get Stripe instance (Stripe imported as ESM at top of file)
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', { apiVersion: '2024-06-20' as any });
     
     // Create Express Dashboard login link
     const loginLink = await stripe.accounts.createLoginLink(user.stripeConnectAccountId);

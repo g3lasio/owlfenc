@@ -35,6 +35,8 @@ import { stripeService } from "./services/stripeService";
 import { permitService } from "./services/permitService";
 import { userMappingService } from "./services/userMappingService";
 import { admin, db as firebaseDb } from "./lib/firebase-admin";
+import sgMail from "@sendgrid/mail";
+import * as openaiService from "./services/openaiService";
 import { buildDynamicUrl, getEstimateSharableDomain } from './utils/url-builder';
 import { searchService } from "./services/searchService";
 import { sendEmail } from "./services/emailService";
@@ -3746,7 +3748,7 @@ ENHANCED LEGAL CLAUSE:`;
 
       try {
         // Verify Firebase token and get user ID
-        const admin = require("firebase-admin");
+        // admin is already imported at top of file as ESM import
         const decodedToken = await admin.auth().verifyIdToken(firebaseToken);
         const userId = decodedToken.uid;
 
@@ -3890,8 +3892,7 @@ ENHANCED LEGAL CLAUSE:`;
         sendCopy,
       } = schema.parse(req.body);
 
-      // Import SendGrid
-      const sgMail = require("@sendgrid/mail");
+      // sgMail imported at top of file as ESM import
 
       if (!process.env.SENDGRID_API_KEY) {
         return res
@@ -3975,7 +3976,7 @@ ENHANCED LEGAL CLAUSE:`;
 
       try {
         // Primero, intentar generar el contrato con el servicio de OpenAI
-        const openaiService = require("./services/openaiService");
+        // openaiService imported at top of file as ESM import
         console.log("Generando contrato con OpenAI...");
 
         // Formatear los datos del contrato para OpenAI

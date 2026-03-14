@@ -24,6 +24,7 @@
  */
 
 import crypto from 'crypto';
+import { getTimezoneForState } from '../utils/timezoneMapper';
 
 export interface DigitalCertificate {
   certificateId: string;
@@ -194,8 +195,7 @@ export function createDigitalSealHTML(
   audit: SignatureAuditMetadata,
   contractorState?: string // 🌍 TIMEZONE FIX: Optional state for timezone detection
 ): string {
-  // Import timezone mapper
-  const { getTimezoneForState } = require('../utils/timezoneMapper');
+  // getTimezoneForState imported at top of file as ESM import
   const timezone = getTimezoneForState(contractorState);
   
   const formattedDate = new Date(certificate.timestamp).toLocaleString('en-US', {
