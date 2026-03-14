@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -361,6 +362,7 @@ interface OnboardingData {
 const ContractorOnboarding = () => {
   const [, navigate] = useLocation();
   const { currentUser } = useAuth();
+  const queryClient = useQueryClient();
   const [showWelcome, setShowWelcome] = useState(true); // Show warm welcome screen first
   const [step, setStep] = useState(1);
   const [isSaving, setIsSaving] = useState(false);
@@ -475,12 +477,40 @@ const ContractorOnboarding = () => {
       }
 
       // STEP 2: Sync to Firestore (used by Profile/Settings page to display data)
-      // This is the critical fix: Profile page reads from Firestore, onboarding was
-      // only writing to PostgreSQL — causing the profile to appear empty after onboarding.
+      // Profile page reads from Firestore via useProfile hook — must write here too.
       if (firebaseUid) {
         try {
-          await saveUserProfile(firebaseUid, payload);
-          console.log("✅ [ONBOARDING] Profile synced to Firestore");
+          // Build the complete Firestore payload with ALL fields the Profile page expects
+          const firestorePayload = {
+            company: data.company,           // Profile page reads as 'company'
+            companyName: data.company,       // Firestore canonical field
+            ownerName: data.ownerName,
+            phone: data.phone,
+            mobilePhone: "",
+            address: "",
+            city: data.city,
+            state: data.state,
+            zipCode: data.zipCode,
+            website: data.website,
+            specialties: data.specialties,
+            license: data.hasLicense ? data.license : "",
+            insurancePolicy: data.hasInsurance ? data.insurancePolicy : "",
+            yearEstablished: data.yearsInBusiness,
+            businessType: data.businessType,
+            ein: "",
+            description: "",
+            socialMedia: {},
+            documents: {},
+            logo: data.logo || "",
+            profilePhoto: data.profilePhoto || "",
+            role: "Owner",
+            email: auth.currentUser?.email || "",
+          };
+          await saveUserProfile(firebaseUid, firestorePayload);
+          console.log("✅ [ONBOARDING] Profile synced to Firestore with all fields");
+          // Invalidate React Query cache so Profile page loads fresh data immediately
+          queryClient.invalidateQueries({ queryKey: ["userProfile", firebaseUid] });
+          console.log("✅ [ONBOARDING] React Query profile cache invalidated");
         } catch (firestoreErr) {
           console.error("⚠️ [ONBOARDING] Firestore sync failed (non-blocking):", firestoreErr);
           // Non-blocking: PostgreSQL save already succeeded

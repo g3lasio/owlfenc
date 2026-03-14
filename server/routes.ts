@@ -7927,13 +7927,22 @@ ENHANCED LEGAL CLAUSE:`;
         return res.status(401).json({ success: false, error: "Unauthorized" });
       }
 
-      // Get user_id using UserMappingService
+      // Get user_id using UserMappingService — create mapping if it doesn't exist yet
+      // (new users may hit /api/profile before /api/auth/user-data completes)
       const { userMappingService } = await import('./services/userMappingService');
-      const userId = await userMappingService.getInternalUserId(firebaseUserId);
+      let userId = await userMappingService.getInternalUserId(firebaseUserId);
 
       if (!userId) {
-        console.error("❌ [PROFILE-POST] No se encontró user_id para Firebase UID:", firebaseUserId);
-        return res.status(404).json({ success: false, error: "User not found" });
+        console.warn("⚠️ [PROFILE-POST] No mapping found for Firebase UID:", firebaseUserId, "— creating now");
+        try {
+          // Get email from Firebase token
+          const firebaseUser = await admin.auth().getUser(firebaseUserId);
+          userId = await userMappingService.getOrCreateUserIdForFirebaseUid(firebaseUserId, firebaseUser.email || `${firebaseUserId}@unknown.com`);
+          console.log("✅ [PROFILE-POST] Created new mapping for Firebase UID:", firebaseUserId, "-> userId:", userId);
+        } catch (mappingErr) {
+          console.error("❌ [PROFILE-POST] Failed to create mapping:", mappingErr);
+          return res.status(500).json({ success: false, error: "Failed to create user mapping" });
+        }
       }
 
       console.log("🔍 [PROFILE-POST] Actualizando perfil para user_id:", userId);

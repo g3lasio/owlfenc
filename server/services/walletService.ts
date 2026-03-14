@@ -78,7 +78,7 @@ class WalletService {
   async getOrCreateWallet(firebaseUid: string, userId?: number): Promise<WalletAccount> {
     if (!pgDb) throw new Error('Database not available');
 
-    // Intentar obtener wallet existente
+    // STEP 1: Fast path — try to get existing wallet first
     const existing = await pgDb
       .select()
       .from(walletAccounts)
@@ -89,7 +89,7 @@ class WalletService {
       return existing[0];
     }
 
-    // Si no existe, necesitamos el userId de PostgreSQL
+    // STEP 2: Resolve userId from PostgreSQL
     let resolvedUserId = userId;
     if (!resolvedUserId) {
       const userRecord = await pgDb
@@ -104,22 +104,36 @@ class WalletService {
       resolvedUserId = userRecord[0].id;
     }
 
-    // Crear nueva wallet
-    const newWallet = await pgDb
-      .insert(walletAccounts)
-      .values({
-        userId: resolvedUserId,
-        firebaseUid,
-        balanceCredits: 0,
-        totalCreditsEarned: 0,
-        totalCreditsSpent: 0,
-        totalTopUpAmountCents: 0,
-        isLocked: false,
-      })
-      .returning();
+    // STEP 3: Atomic INSERT ON CONFLICT DO NOTHING — race-condition safe
+    // If two concurrent calls reach here simultaneously, only one INSERT succeeds.
+    // The other gets a no-op (ON CONFLICT DO NOTHING) and we re-SELECT below.
+    try {
+      await pgDb.execute(sql`
+        INSERT INTO wallet_accounts (user_id, firebase_uid, balance_credits, total_credits_earned, total_credits_spent, total_top_up_amount_cents, is_locked, created_at, updated_at)
+        VALUES (${resolvedUserId}, ${firebaseUid}, 0, 0, 0, 0, false, NOW(), NOW())
+        ON CONFLICT (firebase_uid) DO NOTHING
+      `);
+    } catch (insertErr: any) {
+      // Ignore unique constraint violations — wallet was created by a concurrent request
+      if (insertErr.code !== '23505') throw insertErr;
+    }
 
-    console.log(`✅ [WALLET] Created new wallet for user ${firebaseUid} (userId: ${resolvedUserId})`);
-    return newWallet[0];
+    // STEP 4: Always re-SELECT after insert to get the canonical row
+    const afterInsert = await pgDb
+      .select()
+      .from(walletAccounts)
+      .where(eq(walletAccounts.firebaseUid, firebaseUid))
+      .limit(1);
+
+    if (afterInsert.length === 0) {
+      throw new Error(`Wallet not found after insert for firebaseUid ${firebaseUid}`);
+    }
+
+    const isNew = afterInsert[0].balanceCredits === 0 && afterInsert[0].totalCreditsEarned === 0;
+    if (isNew) {
+      console.log(`✅ [WALLET] Created new wallet for user ${firebaseUid} (userId: ${resolvedUserId})`);
+    }
+    return afterInsert[0];
   }
 
   /**

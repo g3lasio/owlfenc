@@ -153,7 +153,40 @@ router.get('/balance', requireAuth, async (req: Request, res: Response) => {
     WALLET_BALANCE_CACHE.set(firebaseUid, { data: responseData, expiresAt: Date.now() + WALLET_CACHE_TTL_MS });
     return res.json(responseData);
 
-  } catch (error) {
+  } catch (error: any) {
+    // RACE CONDITION RECOVERY: If getOrCreateWallet fails with duplicate key (23505),
+    // it means a concurrent request already created the wallet. Just SELECT the balance directly.
+    if (error?.code === '23505' || (error?.message && error.message.includes('duplicate key'))) {
+      console.warn(`⚠️ [WALLET-ROUTES] Duplicate key on wallet create — recovering with direct SELECT for ${(error as any)?.firebaseUid || 'unknown'}`);
+      try {
+        if (pool) {
+          const firebaseUid = (error as any)?.firebaseUid ||
+            (error as any)?.req?.firebaseUser?.uid ||
+            null;
+          if (firebaseUid) {
+            const recovery = await pool.query(
+              'SELECT balance_credits, total_credits_earned, total_credits_spent, is_locked FROM wallet_accounts WHERE firebase_uid = $1 LIMIT 1',
+              [firebaseUid]
+            );
+            if (recovery.rows.length > 0) {
+              const row = recovery.rows[0];
+              return res.json({
+                success: true,
+                balance: row.balance_credits ?? 0,
+                totalEarned: row.total_credits_earned ?? 0,
+                totalSpent: row.total_credits_spent ?? 0,
+                isLocked: row.is_locked ?? false,
+                recentTransactions: [],
+              });
+            }
+          }
+        }
+      } catch (recoveryErr) {
+        console.error('❌ [WALLET-ROUTES] Recovery SELECT also failed:', recoveryErr);
+      }
+      // Last resort: return 0 balance instead of 500 to avoid breaking the UI
+      return res.json({ success: true, balance: 0, totalEarned: 0, totalSpent: 0, isLocked: false, recentTransactions: [] });
+    }
     console.error('❌ [WALLET-ROUTES] Error getting balance:', error);
     return res.status(500).json({ error: 'Failed to get wallet balance' });
   }
