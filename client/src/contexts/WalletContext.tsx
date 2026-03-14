@@ -10,6 +10,8 @@
  * - Uses fetchWithAuth to always include the Firebase Bearer token so the
  *   wallet loads correctly on NEW DEVICES where the __session cookie has not
  *   been set yet (race condition fix).
+ * - RETRY: If the first fetch fails (cold start / 500 error), retries up to
+ *   3 times with exponential backoff (2s, 4s, 8s) before giving up.
  * - The 'wallet-credits-spent' event triggers an immediate re-fetch
  * - All consumers see the updated balance simultaneously (no stale data)
  */
@@ -50,6 +52,45 @@ interface WalletContextValue {
 
 const WalletContext = createContext<WalletContextValue | null>(null);
 
+// ─── Retry helper ─────────────────────────────────────────────────────────────
+
+const MAX_RETRIES = 3;
+const RETRY_BASE_DELAY_MS = 2000; // 2s, 4s, 8s
+
+async function fetchBalanceWithRetry(
+  attempt: number = 0
+): Promise<{ balance: number; totalEarned: number; totalSpent: number; isLocked: boolean; recentTransactions: any[] } | null> {
+  try {
+    const response = await fetchWithAuth('/api/wallet/balance');
+
+    if (!response.ok) {
+      if (response.status === 401) return null; // Not authenticated — don't retry
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    if (data.success) {
+      return {
+        balance: data.balance ?? 0,
+        totalEarned: data.totalEarned ?? 0,
+        totalSpent: data.totalSpent ?? 0,
+        isLocked: data.isLocked ?? false,
+        recentTransactions: data.recentTransactions ?? [],
+      };
+    }
+    throw new Error('Response success=false');
+  } catch (err) {
+    if (attempt < MAX_RETRIES) {
+      const delay = RETRY_BASE_DELAY_MS * Math.pow(2, attempt); // 2s, 4s, 8s
+      console.warn(`[WalletContext] Fetch failed (attempt ${attempt + 1}/${MAX_RETRIES + 1}), retrying in ${delay}ms...`, err);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return fetchBalanceWithRetry(attempt + 1);
+    }
+    console.error('[WalletContext] All retry attempts exhausted:', err);
+    throw err;
+  }
+}
+
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 export function WalletProvider({ children }: { children: ReactNode }) {
@@ -67,34 +108,17 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     isFetching.current = true;
 
     try {
-      // ✅ FIX: Use fetchWithAuth instead of bare fetch().
-      // On a new device the __session cookie does not exist yet.
-      // fetchWithAuth always attaches the Firebase Bearer token so the
-      // backend can authenticate the request via the Authorization header
-      // even before the session cookie is established.
-      const response = await fetchWithAuth('/api/wallet/balance');
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          setWalletData(null);
-          return;
-        }
-        throw new Error(`HTTP ${response.status}`);
-      }
-      const data = await response.json();
-      if (data.success) {
-        setWalletData({
-          balance: data.balance ?? 0,
-          totalEarned: data.totalEarned ?? 0,
-          totalSpent: data.totalSpent ?? 0,
-          isLocked: data.isLocked ?? false,
-          recentTransactions: data.recentTransactions ?? [],
-        });
+      const data = await fetchBalanceWithRetry(0);
+      if (data) {
+        setWalletData(data);
         setError(null);
+        console.log(`[WalletContext] ✅ Balance loaded: ${data.balance} credits`);
       }
     } catch (err) {
-      console.warn('[WalletContext] Error fetching balance:', err);
+      console.warn('[WalletContext] Error fetching balance (all retries failed):', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch balance');
+      // Reset hasFetched so next user interaction can trigger a fresh attempt
+      hasFetched.current = false;
     } finally {
       isFetching.current = false;
     }
@@ -126,7 +150,19 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('wallet-credits-spent', handleCreditsSpent);
   }, [fetchBalance]);
 
+  // Listen for manual refresh requests (e.g., after onboarding welcome bonus)
+  useEffect(() => {
+    const handleRefresh = () => {
+      console.log('[WalletContext] 🔄 wallet-refresh-requested — refreshing balance');
+      hasFetched.current = false;
+      fetchBalance();
+    };
+    window.addEventListener('wallet-refresh-requested', handleRefresh);
+    return () => window.removeEventListener('wallet-refresh-requested', handleRefresh);
+  }, [fetchBalance]);
+
   const refreshBalance = useCallback(async () => {
+    hasFetched.current = false;
     await fetchBalance();
   }, [fetchBalance]);
 

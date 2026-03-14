@@ -528,6 +528,9 @@ const ContractorOnboarding = () => {
         localStorage.setItem(`onboarding_completed_${currentUser.uid}`, "true");
       }
 
+      // 🔄 Trigger wallet refresh so the header badge shows 120 credits immediately
+      window.dispatchEvent(new Event("wallet-refresh-requested"));
+
       navigate("/subscription");
     } catch (err) {
       console.error("Error saving onboarding:", err);
