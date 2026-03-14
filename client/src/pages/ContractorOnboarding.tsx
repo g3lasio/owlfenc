@@ -10,7 +10,7 @@ import {
   Shield, Award, Calendar, Camera, Upload, CheckCircle,
   ChevronRight, ChevronLeft, Info, Zap, Star, Lock
 } from "lucide-react";
-import { auth } from "@/lib/firebase";
+import { auth, saveUserProfile } from "@/lib/firebase";
 
 // ─────────────────────────────────────────────
 // COMPLETE CONSTRUCTION SPECIALTY TAXONOMY
@@ -439,6 +439,8 @@ const ContractorOnboarding = () => {
     setIsSaving(true);
     try {
       const token = await auth.currentUser?.getIdToken();
+      const firebaseUid = auth.currentUser?.uid;
+
       const payload: any = {
         company: data.company,
         ownerName: data.ownerName,
@@ -456,7 +458,8 @@ const ContractorOnboarding = () => {
       if (data.logo) payload.logo = data.logo;
       if (data.profilePhoto) payload.profilePhoto = data.profilePhoto;
 
-      await fetch("/api/profile", {
+      // STEP 1: Save to PostgreSQL (used by estimates, contracts, invoices)
+      const pgResponse = await fetch("/api/profile", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -465,7 +468,26 @@ const ContractorOnboarding = () => {
         body: JSON.stringify(payload),
       });
 
-      // Mark onboarding complete
+      if (!pgResponse.ok) {
+        console.error("[ONBOARDING] PostgreSQL save failed:", pgResponse.status);
+      } else {
+        console.log("✅ [ONBOARDING] Profile saved to PostgreSQL");
+      }
+
+      // STEP 2: Sync to Firestore (used by Profile/Settings page to display data)
+      // This is the critical fix: Profile page reads from Firestore, onboarding was
+      // only writing to PostgreSQL — causing the profile to appear empty after onboarding.
+      if (firebaseUid) {
+        try {
+          await saveUserProfile(firebaseUid, payload);
+          console.log("✅ [ONBOARDING] Profile synced to Firestore");
+        } catch (firestoreErr) {
+          console.error("⚠️ [ONBOARDING] Firestore sync failed (non-blocking):", firestoreErr);
+          // Non-blocking: PostgreSQL save already succeeded
+        }
+      }
+
+      // STEP 3: Mark onboarding complete
       await fetch("/api/settings/onboarding/complete", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },

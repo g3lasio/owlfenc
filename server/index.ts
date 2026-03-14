@@ -1524,6 +1524,29 @@ console.log('🔧 [UNIFIED-ANALYSIS] Sistema híbrido registrado en /api/analysi
     });
   });
 
+  // 📳 KEEP-ALIVE PING: Prevent Replit cold starts by self-pinging every 4 minutes
+  // Replit hibernates servers after ~5 minutes of inactivity, causing 3-8s cold starts.
+  // This internal ping keeps the Node.js process warm without external dependencies.
+  const KEEP_ALIVE_INTERVAL_MS = 4 * 60 * 1000; // 4 minutes
+  setInterval(() => {
+    const http = require('http');
+    const options = {
+      hostname: 'localhost',
+      port: port,
+      path: '/healthz',
+      method: 'GET',
+      timeout: 5000,
+    };
+    const req = http.request(options, (res: any) => {
+      console.log(`📳 [KEEP-ALIVE] Self-ping OK (status: ${res.statusCode})`);
+    });
+    req.on('error', (err: any) => {
+      console.warn(`⚠️ [KEEP-ALIVE] Self-ping failed: ${err.message}`);
+    });
+    req.end();
+  }, KEEP_ALIVE_INTERVAL_MS);
+  console.log(`📳 [KEEP-ALIVE] Self-ping active every ${KEEP_ALIVE_INTERVAL_MS / 60000} minutes`);
+
   // Add error handler after all routes and Vite setup
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

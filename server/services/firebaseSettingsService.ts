@@ -106,6 +106,9 @@ export interface UserSettings {
 class FirebaseSettingsService {
   private collection = 'users';
   private settingsDoc = 'settings';
+  // In-memory cache: uid → { data, expiresAt }
+  private settingsCache = new Map<string, { data: UserSettings; expiresAt: number }>();
+  private CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
   /**
    * Obtener configuración del usuario
@@ -117,30 +120,48 @@ class FirebaseSettingsService {
         throw new Error('userId is required');
       }
 
+      // ⚡ Cache hit: return cached settings if still fresh
+      const cached = this.settingsCache.get(userId);
+      if (cached && Date.now() < cached.expiresAt) {
+        console.log(`⚡ [FIREBASE-SETTINGS] Cache hit for user: ${userId}`);
+        return cached.data;
+      }
+
       console.log(`⚙️ [FIREBASE-SETTINGS] Getting settings for user: ${userId}`);
 
       // Las configuraciones se guardan en users/{userId}/settings
       const docRef = db.collection(this.collection).doc(userId).collection('settings').doc('preferences');
       const docSnap = await docRef.get();
 
+      let result: UserSettings;
       if (!docSnap.exists) {
         console.log(`📝 [FIREBASE-SETTINGS] No settings found for user ${userId}, will use defaults`);
-        return this.getDefaultSettings(userId);
+        result = this.getDefaultSettings(userId);
+      } else {
+        const data = docSnap.data();
+        result = {
+          userId,
+          ...data,
+          createdAt: data?.createdAt?.toDate() || new Date(),
+          updatedAt: data?.updatedAt?.toDate() || new Date(),
+          lastLoginAt: data?.lastLoginAt?.toDate()
+        } as UserSettings;
       }
 
-      const data = docSnap.data();
-      
-      return {
-        userId,
-        ...data,
-        createdAt: data?.createdAt?.toDate() || new Date(),
-        updatedAt: data?.updatedAt?.toDate() || new Date(),
-        lastLoginAt: data?.lastLoginAt?.toDate()
-      } as UserSettings;
+      // Store in cache
+      this.settingsCache.set(userId, { data: result, expiresAt: Date.now() + this.CACHE_TTL_MS });
+      return result;
     } catch (error) {
       console.error('❌ [FIREBASE-SETTINGS] Error getting user settings:', error);
       throw error;
     }
+  }
+
+  /**
+   * Invalidate cache for a user (call after saving settings)
+   */
+  invalidateCache(userId: string): void {
+    this.settingsCache.delete(userId);
   }
 
   /**
