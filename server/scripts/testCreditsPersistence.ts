@@ -15,7 +15,7 @@
 
 import '../firebase-admin'; // Initialize Firebase Admin
 import { walletService } from '../services/walletService';
-import { getOrCreateUserIdForFirebaseUid } from '../services/userMappingService';
+import { userMappingService } from '../services/userMappingService';
 import { getAuth } from 'firebase-admin/auth';
 import { pool } from '../db';
 
@@ -61,10 +61,9 @@ async function runTests() {
     testUid = userRecord.uid;
     console.log(`  Created: ${testEmail} (${testUid})`);
 
-    const mappingResult = await getOrCreateUserIdForFirebaseUid(testUid, testEmail);
-    testInternalId = mappingResult.id;
-    console.log(`  DB mapping: userId=${testInternalId}, wasCreated=${mappingResult.wasCreated}`);
-    assert(mappingResult.wasCreated === true, 'New user mapping created');
+    testInternalId = await userMappingService.getOrCreateUserIdForFirebaseUid(testUid, testEmail);
+    console.log(`  DB mapping: userId=${testInternalId}`);
+    assert(testInternalId > 0, 'New user mapping created');
 
     // ── TEST 1: Initial wallet creation ──────────────────────────────────────
     section('TEST 1: Initial wallet creation');
