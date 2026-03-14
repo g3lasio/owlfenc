@@ -104,29 +104,58 @@ class WalletService {
       resolvedUserId = userRecord[0].id;
     }
 
-    // STEP 3: Atomic INSERT ON CONFLICT DO NOTHING — race-condition safe
-    // If two concurrent calls reach here simultaneously, only one INSERT succeeds.
-    // The other gets a no-op (ON CONFLICT DO NOTHING) and we re-SELECT below.
+    // STEP 3: Atomic UPSERT — handles both unique constraints (firebase_uid AND user_id)
+    // Case A: No wallet exists → INSERT creates it
+    // Case B: Wallet exists with same firebase_uid → DO UPDATE sets updated_at (no-op effectively)
+    // Case C: Wallet exists with same user_id but different firebase_uid → DO UPDATE fixes the firebase_uid
+    // This covers the scenario where airdrop created a wallet row with a stale/empty firebase_uid
     try {
       await pgDb.execute(sql`
         INSERT INTO wallet_accounts (user_id, firebase_uid, balance_credits, total_credits_earned, total_credits_spent, total_top_up_amount_cents, is_locked, created_at, updated_at)
         VALUES (${resolvedUserId}, ${firebaseUid}, 0, 0, 0, 0, false, NOW(), NOW())
-        ON CONFLICT (firebase_uid) DO NOTHING
+        ON CONFLICT (user_id) DO UPDATE SET
+          firebase_uid = CASE
+            WHEN wallet_accounts.firebase_uid = '' OR wallet_accounts.firebase_uid IS NULL
+            THEN EXCLUDED.firebase_uid
+            ELSE wallet_accounts.firebase_uid
+          END,
+          updated_at = NOW()
       `);
     } catch (insertErr: any) {
       // Ignore unique constraint violations — wallet was created by a concurrent request
       if (insertErr.code !== '23505') throw insertErr;
+      console.warn(`[WALLET] Unique constraint on insert for ${firebaseUid} (userId: ${resolvedUserId}), will re-SELECT`);
     }
 
-    // STEP 4: Always re-SELECT after insert to get the canonical row
-    const afterInsert = await pgDb
+    // STEP 4: Re-SELECT by firebase_uid first, then fallback to user_id
+    let afterInsert = await pgDb
       .select()
       .from(walletAccounts)
       .where(eq(walletAccounts.firebaseUid, firebaseUid))
       .limit(1);
 
+    // Fallback: if not found by firebase_uid, try by user_id (covers edge case where firebase_uid mismatch)
+    if (afterInsert.length === 0 && resolvedUserId) {
+      console.warn(`[WALLET] Not found by firebase_uid, trying user_id=${resolvedUserId}`);
+      afterInsert = await pgDb
+        .select()
+        .from(walletAccounts)
+        .where(eq(walletAccounts.userId, resolvedUserId))
+        .limit(1);
+
+      // If found by user_id, update the firebase_uid to fix the mismatch
+      if (afterInsert.length > 0 && afterInsert[0].firebaseUid !== firebaseUid) {
+        console.warn(`[WALLET] Fixing firebase_uid mismatch for userId=${resolvedUserId}: '${afterInsert[0].firebaseUid}' → '${firebaseUid}'`);
+        await pgDb.execute(sql`
+          UPDATE wallet_accounts SET firebase_uid = ${firebaseUid}, updated_at = NOW()
+          WHERE user_id = ${resolvedUserId}
+        `);
+        afterInsert[0].firebaseUid = firebaseUid;
+      }
+    }
+
     if (afterInsert.length === 0) {
-      throw new Error(`Wallet not found after insert for firebaseUid ${firebaseUid}`);
+      throw new Error(`Wallet not found after insert for firebaseUid ${firebaseUid} (userId: ${resolvedUserId})`);
     }
 
     const isNew = afterInsert[0].balanceCredits === 0 && afterInsert[0].totalCreditsEarned === 0;

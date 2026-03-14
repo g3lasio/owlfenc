@@ -623,7 +623,7 @@ export class DatabaseStorage implements IStorage {
     return db.select()
       .from(permitSearchHistory)
       .where(eq(permitSearchHistory.userId, userId))
-      .orderBy(desc(permitSearchHistory.createdAt));
+      .orderBy(desc(permitSearchHistory.searchDate)); // Fixed: column is 'searchDate', not 'createdAt'
   }
 
   async createPermitSearchHistory(insertHistory: InsertPermitSearchHistory): Promise<PermitSearchHistory> {
