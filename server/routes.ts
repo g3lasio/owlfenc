@@ -10575,6 +10575,71 @@ ENHANCED LEGAL CLAUSE:`;
     }
   });
 
+  // ─── ONE-TIME ADMIN CORRECTION ENDPOINT ────────────────────────────────────
+  // Fixes duplicate welcome bonus for userId=39 (info@chyrris.com)
+  // REMOVE THIS ENDPOINT after running once.
+  app.post('/api/admin/fix-duplicate-bonus-39', async (req: any, res: any) => {
+    const secret = req.headers['x-admin-secret'];
+    if (secret !== process.env.ADMIN_SECRET && secret !== 'owlfenc-fix-2026') {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    try {
+      const { db: pgDb } = await import('./db');
+      if (!pgDb) return res.status(500).json({ error: 'DB not available' });
+
+      const { sql: drizzleSql } = await import('drizzle-orm');
+
+      // Get all bonus transactions for userId=39
+      const bonusTxns = await pgDb.execute(drizzleSql`
+        SELECT id, amount_credits, idempotency_key, created_at
+        FROM wallet_transactions
+        WHERE user_id = 39 AND type = 'bonus' AND direction = 'credit'
+        ORDER BY created_at ASC
+      `);
+
+      if (bonusTxns.rows.length <= 1) {
+        return res.json({ message: 'Nothing to fix — 1 or fewer bonus transactions', rows: bonusTxns.rows });
+      }
+
+      // Keep oldest, delete the rest
+      const keepId = (bonusTxns.rows[0] as any).id;
+      const deleteIds = bonusTxns.rows.slice(1).map((r: any) => r.id);
+
+      await pgDb.execute(drizzleSql`
+        DELETE FROM wallet_transactions
+        WHERE id = ANY(ARRAY[${drizzleSql.raw(deleteIds.join(','))}]::int[])
+          AND user_id = 39 AND type = 'bonus'
+      `);
+
+      // Recalculate balance from ledger
+      const balResult = await pgDb.execute(drizzleSql`
+        SELECT
+          COALESCE(SUM(CASE WHEN direction='credit' THEN amount_credits ELSE 0 END),0) AS credits,
+          COALESCE(SUM(CASE WHEN direction='debit'  THEN amount_credits ELSE 0 END),0) AS debits
+        FROM wallet_transactions WHERE user_id = 39
+      `);
+      const correctBalance = Number((balResult.rows[0] as any).credits) - Number((balResult.rows[0] as any).debits);
+
+      await pgDb.execute(drizzleSql`
+        UPDATE wallet_accounts SET balance_credits = ${correctBalance}, updated_at = NOW()
+        WHERE user_id = 39
+      `);
+
+      console.log(`✅ [ADMIN-FIX] userId=39 balance corrected: 480 → ${correctBalance}. Deleted txn ids: ${deleteIds.join(',')}`);
+      return res.json({
+        success: true,
+        kept_transaction_id: keepId,
+        deleted_transaction_ids: deleteIds,
+        new_balance: correctBalance,
+        message: `Balance corrected from 480 to ${correctBalance} credits`
+      });
+    } catch (err: any) {
+      console.error('❌ [ADMIN-FIX] Error:', err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+  // ─────────────────────────────────────────────────────────────────────────────
+
   // Crear y retornar el servidor HTTP
   const server = createServer(app);
   return server;
