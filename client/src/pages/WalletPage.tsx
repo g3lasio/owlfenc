@@ -267,24 +267,17 @@ export function WalletPage({ embedded = false }: { embedded?: boolean }) {
             </div>
 
             {/* Stripe Connect status */}
-            {billingStatus && (
-              <div className={cn(
-                'flex items-center gap-2 px-3 py-2 rounded-lg text-xs',
-                billingStatus.canUseStripeConnect
-                  ? 'bg-green-950/20 border border-green-800/30 text-green-400'
-                  : 'bg-muted/10 border border-border/30 text-muted-foreground'
-              )}>
-                {billingStatus.canUseStripeConnect ? (
-                  <>
-                    <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0" />
-                    <span>Stripe Connect enabled — collect payments from clients</span>
-                  </>
-                ) : (
-                  <>
-                    <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
-                    <span>Subscribe or spend $20+ to unlock Stripe Connect</span>
-                  </>
-                )}
+            {/* Only show to payg users (no subscription) — subscribers already have access or are on a plan */}
+            {billingStatus && billingStatus.canUseStripeConnect && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs bg-green-950/20 border border-green-800/30 text-green-400">
+                <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0" />
+                <span>Stripe Connect enabled — collect payments from clients</span>
+              </div>
+            )}
+            {billingStatus && !billingStatus.canUseStripeConnect && billingStatus.mode === 'payg' && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs bg-muted/10 border border-border/30 text-muted-foreground">
+                <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+                <span>Spend $20+ to unlock Stripe Connect payment collection</span>
               </div>
             )}
 

@@ -1,7 +1,4 @@
-import { MailService } from '@sendgrid/mail';
-
-const mailService = new MailService();
-mailService.setApiKey(process.env.SENDGRID_API_KEY || '');
+import { resend } from '../lib/resendClient';
 
 type EmailTemplate = 'password-reset' | 'verification' | 'welcome';
 
@@ -14,20 +11,19 @@ interface EmailParams {
 
 export async function sendEmail(params: EmailParams): Promise<boolean> {
   try {
-    if (!process.env.SENDGRID_API_KEY) {
-      throw new Error('No se ha configurado la API key de SendGrid');
-    }
-
-    const defaultSender = 'info@mervin.app'; // Cambia esto por tu correo verificado en SendGrid
-    
-    await mailService.send({
+    const defaultSender = 'noreply@owlfenc.com';
+    const { error } = await resend.emails.send({
       to: params.to,
       from: defaultSender,
       subject: params.subject,
       text: params.text || '',
       html: params.html || '',
     });
-    
+    if (error) {
+      console.error('❌ [EMAIL] Resend error:', error);
+      return false;
+    }
+    console.log(`✅ [EMAIL] Sent via Resend to: ${params.to}`);
     return true;
   } catch (error) {
     console.error('Error al enviar correo:', error);
@@ -229,7 +225,7 @@ export function generatePasswordResetEmail(email: string, resetLink: string): Em
 
 // Función para generar el HTML del correo de bienvenida
 export function generateWelcomeEmail(email: string, name: string): EmailParams {
-  const subject = '¡Bienvenido a Mervin!';
+  const subject = '¡Bienvenido a Owl Fenc!';
   
   const html = `
     <!DOCTYPE html>
@@ -280,17 +276,17 @@ export function generateWelcomeEmail(email: string, name: string): EmailParams {
     <body>
       <div class="container">
         <div class="header">
-          <h1>¡Bienvenido a Mervin!</h1>
+          <h1>¡Bienvenido a Owl Fenc!</h1>
         </div>
         <div class="content">
           <p>Hola ${name || ''},</p>
-          <p>¡Gracias por unirte a Mervin, el asistente virtual para estimados de cercas!</p>
-          <p>Con Mervin, podrás:</p>
+          <p>¡Gracias por unirte a <strong>Owl Fenc</strong> — la plataforma de IA para contratistas de construcción!</p>
+          <p>Con Owl Fenc, podrás:</p>
           <ul>
-            <li>Generar estimados precisos para tus proyectos de cercas</li>
-            <li>Crear contratos profesionales con un solo clic</li>
-            <li>Gestionar tus clientes y proyectos en un solo lugar</li>
-            <li>Verificar la propiedad de terrenos antes de comenzar un proyecto</li>
+            <li>Generar estimados precisos con IA en segundos</li>
+            <li>Crear contratos legales profesionales con un solo clic</li>
+            <li>Generar invoices y cobrar a tus clientes fácilmente</li>
+            <li>Consultar permisos de construcción por estado</li>
           </ul>
           <p>Si necesitas ayuda o tienes alguna pregunta, no dudes en contactarnos.</p>
           <p style="text-align: center;">
@@ -298,7 +294,7 @@ export function generateWelcomeEmail(email: string, name: string): EmailParams {
           </p>
         </div>
         <div class="footer">
-          <p>&copy; ${new Date().getFullYear()} Mervin. Todos los derechos reservados.</p>
+          <p>&copy; ${new Date().getFullYear()} Owl Fenc. Todos los derechos reservados.</p>
         </div>
       </div>
     </body>
@@ -306,23 +302,23 @@ export function generateWelcomeEmail(email: string, name: string): EmailParams {
   `;
   
   const text = `
-    ¡Bienvenido a Mervin!
+    ¡Bienvenido a Owl Fenc!
 
     Hola ${name || ''},
 
-    ¡Gracias por unirte a Mervin, el asistente virtual para estimados de cercas!
+    ¡Gracias por unirte a Owl Fenc — la plataforma de IA para contratistas de construcción!
 
-    Con Mervin, podrás:
-    - Generar estimados precisos para tus proyectos de cercas
-    - Crear contratos profesionales con un solo clic
-    - Gestionar tus clientes y proyectos en un solo lugar
-    - Verificar la propiedad de terrenos antes de comenzar un proyecto
+    Con Owl Fenc, podrás:
+    - Generar estimados precisos con IA en segundos
+    - Crear contratos legales profesionales con un solo clic
+    - Generar invoices y cobrar a tus clientes fácilmente
+    - Consultar permisos de construcción por estado
 
     Si necesitas ayuda o tienes alguna pregunta, no dudes en contactarnos.
 
-    Ir a Mi Cuenta: ${process.env.FRONTEND_URL || 'http://localhost:5000'}
+    Ir a Mi Cuenta: ${process.env.FRONTEND_URL || 'https://owlfenc.replit.app'}
     
-    © ${new Date().getFullYear()} Mervin. Todos los derechos reservados.
+    © ${new Date().getFullYear()} Owl Fenc. Todos los derechos reservados.
   `;
   
   return {

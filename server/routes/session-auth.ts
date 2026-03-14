@@ -90,18 +90,21 @@ router.post("/sessionLogin", loginRateLimit, async (req: Request, res: Response)
         await firebaseSubscriptionService.assignDefaultFreePlan(decodedToken.uid);
 
         // 🎁 Welcome Bonus: 120 créditos de bienvenida para todos los usuarios nuevos
-        // Idempotente: si el servidor se reinicia, no se duplica gracias a la idempotencyKey
+        // DOUBLE-BONUS GUARD: Use userId (not firebaseUid) as idempotency key base.
+        // This prevents re-granting when Firebase UID changes (account deleted & recreated
+        // with same email — different UID but same internal userId).
         try {
           const { walletService } = await import('../services/walletService');
-          // CRITICAL FIX: correct param is 'amountCredits' (not 'amount'), correct type is 'bonus' (not 'grant')
+          // Key is tied to internalUserId so it's stable across Firebase UID changes
+          const bonusIdempotencyKey = `welcome_bonus_120:user:${internalUserId}`;
           await walletService.addCredits({
             firebaseUid: decodedToken.uid,
             amountCredits: 120,
             type: 'bonus',
             description: '🎁 Welcome Bonus: 120 AI Credits — On us',
-            idempotencyKey: `welcome_bonus_120:${decodedToken.uid}`,
+            idempotencyKey: bonusIdempotencyKey,
           });
-          console.log(`✅ [WELCOME-BONUS] 120 credits granted to new user: ${decodedToken.email}`);
+          console.log(`✅ [WELCOME-BONUS] 120 credits granted to new user: ${decodedToken.email} (key: ${bonusIdempotencyKey})`);
         } catch (walletError) {
           // Non-blocking: si falla el wallet, el usuario igual puede entrar
           console.error('⚠️  [WELCOME-BONUS] Failed to grant welcome credits (non-blocking):', walletError);
