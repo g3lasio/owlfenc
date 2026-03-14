@@ -549,31 +549,26 @@ export default function ProjectPaymentWorkflow({
               <Label className="text-white text-base font-medium">Método de Cobro</Label>
               <div className="grid grid-cols-3 gap-3">
 
-                {/* Terminal — disabled */}
-                <div className="relative">
-                  <Button
-                    onClick={() =>
-                      toast({
-                        title: deviceInfo.isMobile ? "Próximamente" : "Dispositivo no compatible",
-                        description: "Terminal/Tap-to-Pay requiere dispositivo móvil con NFC o Apple Pay",
-                        variant: deviceInfo.isMobile ? "default" : "destructive",
-                      })
-                    }
-                    disabled
-                    variant="outline"
-                    className="h-24 w-full flex flex-col items-center justify-center gap-2 bg-gray-900 border-2 border-gray-700 text-gray-500 opacity-50 cursor-not-allowed"
-                    data-testid="button-method-terminal"
-                  >
-                    <Smartphone className="h-8 w-8" />
-                    <div className="text-center">
-                      <div className="font-semibold text-sm">Terminal</div>
-                      <Badge className="mt-1 bg-gray-700 text-gray-400 text-[9px]">Próximamente</Badge>
-                    </div>
-                  </Button>
-                  {deviceInfo.isDesktop && (
-                    <AlertCircle className="absolute top-2 right-2 h-4 w-4 text-amber-500" />
-                  )}
-                </div>
+                {/* Terminal — disabled, same structure as other cards */}
+                <Button
+                  onClick={() =>
+                    toast({
+                      title: "Próximamente",
+                      description: "Terminal/Tap-to-Pay requiere dispositivo móvil con NFC o Apple Pay",
+                      variant: "default",
+                    })
+                  }
+                  disabled
+                  variant="outline"
+                  className="h-24 w-full flex flex-col items-center justify-center gap-2 bg-gray-900 border-2 border-gray-700 text-gray-500 opacity-50 cursor-not-allowed"
+                  data-testid="button-method-terminal"
+                >
+                  <Smartphone className="h-7 w-7" />
+                  <div className="text-center leading-tight">
+                    <div className="font-semibold text-sm">Terminal</div>
+                    <div className="text-[10px] text-gray-500 mt-0.5">Próximamente</div>
+                  </div>
+                </Button>
 
                 {/* Payment Link */}
                 <Button
@@ -586,10 +581,10 @@ export default function ProjectPaymentWorkflow({
                   }`}
                   data-testid="button-method-link"
                 >
-                  <LinkIcon className="h-8 w-8" />
-                  <div className="text-center">
+                  <LinkIcon className="h-7 w-7" />
+                  <div className="text-center leading-tight">
                     <div className="font-semibold text-sm">Payment Link</div>
-                    <div className="text-xs text-gray-400">Email / SMS</div>
+                    <div className="text-[10px] text-gray-400 mt-0.5">Email / SMS</div>
                   </div>
                 </Button>
 
@@ -604,10 +599,10 @@ export default function ProjectPaymentWorkflow({
                   }`}
                   data-testid="button-method-manual"
                 >
-                  <Banknote className="h-8 w-8" />
-                  <div className="text-center">
+                  <Banknote className="h-7 w-7" />
+                  <div className="text-center leading-tight">
                     <div className="font-semibold text-sm">Cash / Check</div>
-                    <div className="text-xs text-gray-400">Registro manual</div>
+                    <div className="text-[10px] text-gray-400 mt-0.5">Registro manual</div>
                   </div>
                 </Button>
               </div>

@@ -368,19 +368,21 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
       <div 
         className="fixed flex items-center justify-center pointer-events-auto"
         style={{
-          top: isPhone ? '16px' : '0px', // Más espacio desde arriba en mobile
-          left: isPhone ? '16px' : '0px', // Más margen para no cubrir logo
-          height: isPhone ? '40px' : '64px', // Más pequeño en mobile
-          width: isPhone ? '40px' : '64px', // Más pequeño en mobile
+          // Desktop/tablet: ocupa toda la altura del header (64px) en la columna izquierda
+          // Mobile: centrado verticalmente en el header de 80px, con margen izquierdo
+          top: isPhone ? '20px' : '0px',
+          left: isPhone ? '12px' : '0px',
+          height: isPhone ? '40px' : '64px',
+          width: isPhone ? '40px' : '64px',
           minHeight: isPhone ? '40px' : '64px',
-          zIndex: 100, // Reducido para no interferir con header
+          zIndex: 100,
           display: 'flex',
           visibility: 'visible',
-          opacity: isPhone ? 0.9 : 1, // Ligeramente transparente en mobile
+          opacity: 1,
           backgroundColor: 'transparent',
-          borderRadius: isPhone ? '50%' : '0px', // Circular en mobile
-          border: isPhone ? '2px solid rgba(0, 255, 255, 0.5)' : 'none',
-          backdropFilter: isPhone ? 'blur(4px)' : 'none' // Efecto glassmorphism en mobile
+          borderRadius: isPhone ? '50%' : '0px',
+          border: 'none', // Sin borde circular — limpio
+          backdropFilter: 'none',
         }}
       >
         <HexagonalMenuIcon onClick={toggleSidebar} />

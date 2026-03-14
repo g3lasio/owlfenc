@@ -34,28 +34,30 @@ export default function Header() {
         zIndex: 'var(--z-header)'
       }}
     >
-      {/* Espacio izquierdo para balance visual */}
-      <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
-        {/* Reservado para futuras acciones izquierda */}
-      </div>
+      {/* 
+        Spacer izquierdo: en mobile reserva 64px para el ícono hexagonal del sidebar
+        En desktop el sidebar ocupa 64px fijos, el header empieza después del sidebar
+        así que no necesita padding extra en desktop.
+      */}
+      <div className="w-16 flex-shrink-0 sm:w-0" />
 
-      {/* Logo centrado */}
-      <div className="flex-1 flex flex-col items-center justify-center pr-16 sm:pr-0">
+      {/* Logo centrado — usa flex-1 para ocupar el espacio disponible */}
+      <div className="flex-1 flex flex-col items-center justify-center">
         <Link href="/" className="flex flex-col items-center">
           <div className="h-10 flex items-center justify-center relative">
             {/* Imagen del logo */}
             <img
               src="https://i.postimg.cc/yYSwtxhq/White-logo-no-background.png" 
-              alt="Logo"
+              alt="OWL FENC"
               className="h-10 w-auto object-contain"
               style={{ filter: 'brightness(1.1) contrast(1.1)' }}
               onError={(e) => {
-                console.log("Error cargando logo en Header, usando fallback");
                 const imgElement = e.currentTarget;
                 imgElement.src = "/White-logo-no-background-new.png";
                 imgElement.onerror = () => {
                   imgElement.classList.add('hidden');
-                  imgElement.nextElementSibling?.classList.remove('hidden');
+                  const sibling = imgElement.nextElementSibling as HTMLElement | null;
+                  sibling?.classList.remove('hidden');
                 };
               }}
             />
@@ -71,18 +73,20 @@ export default function Header() {
         </Link>
       </div>
 
-      {/* Wallet Badge — PAY AS YOU GROW (solo si el usuario está autenticado) */}
-      {user && (
-        <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-          {/* Compact badge for mobile (< sm), full badge for desktop */}
-          <span className="block sm:hidden">
-            <WalletBadge compact={true} />
-          </span>
-          <span className="hidden sm:block">
-            <WalletBadge compact={false} />
-          </span>
-        </div>
-      )}
+      {/* Wallet Badge — derecha, mismo ancho que el spacer izquierdo para balance visual */}
+      <div className="w-16 flex-shrink-0 flex items-center justify-end pr-3 sm:w-auto sm:pr-4">
+        {user && (
+          <>
+            {/* Compact badge for mobile (< sm), full badge for desktop */}
+            <span className="block sm:hidden">
+              <WalletBadge compact={true} />
+            </span>
+            <span className="hidden sm:block">
+              <WalletBadge compact={false} />
+            </span>
+          </>
+        )}
+      </div>
     </header>
   );
 }
