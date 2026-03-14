@@ -11,7 +11,7 @@ import {
   Shield, Award, Calendar, Camera, Upload, CheckCircle,
   ChevronRight, ChevronLeft, Info, Zap, Star, Lock
 } from "lucide-react";
-import { auth, saveUserProfile } from "@/lib/firebase";
+import { auth, saveUserProfile, uploadFile } from "@/lib/firebase";
 
 // ─────────────────────────────────────────────
 // COMPLETE CONSTRUCTION SPECIALTY TAXONOMY
@@ -354,9 +354,9 @@ interface OnboardingData {
   insurancePolicy: string;
   yearsInBusiness: string;
   businessType: string;
-  // Step 3 — Logo & Photo
-  logo: string;
-  profilePhoto: string;
+  // Step 3 — Logo & Photo (base64 preview only — actual File objects stored separately)
+  logo: string;        // base64 preview for UI display
+  profilePhoto: string; // base64 preview for UI display
 }
 
 const ContractorOnboarding = () => {
@@ -366,9 +366,13 @@ const ContractorOnboarding = () => {
   const [showWelcome, setShowWelcome] = useState(true); // Show warm welcome screen first
   const [step, setStep] = useState(1);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<string>(""); // Live status for user feedback
   const [specialtySearch, setSpecialtySearch] = useState("");
   const logoInputRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  // Store actual File objects for Firebase Storage upload (not base64)
+  const logoFileRef = useRef<File | null>(null);
+  const photoFileRef = useRef<File | null>(null);
 
   const [data, setData] = useState<OnboardingData>({
     company: "",
@@ -428,7 +432,13 @@ const ContractorOnboarding = () => {
   };
 
   // ── Image Upload ──
+  // Stores File object for Firebase Storage upload + base64 for preview
   const handleImageUpload = (field: "logo" | "profilePhoto", file: File) => {
+    // Store the actual File object for Firebase Storage upload later
+    if (field === "logo") logoFileRef.current = file;
+    if (field === "profilePhoto") photoFileRef.current = file;
+
+    // Generate base64 preview for immediate UI display
     const reader = new FileReader();
     reader.onload = (e) => {
       update(field, e.target?.result as string);
@@ -436,19 +446,61 @@ const ContractorOnboarding = () => {
     reader.readAsDataURL(file);
   };
 
-  // ── Save to backend ──
+  // ── Save directly to Firebase (Firestore + Storage) ──
+  // OPTION 1 IMPLEMENTATION: Goes DIRECTLY to Firebase, no PostgreSQL dependency for profile display
   const saveProfile = async () => {
     setIsSaving(true);
+    setSaveStatus("Saving your profile...");
     try {
-      const token = await auth.currentUser?.getIdToken();
       const firebaseUid = auth.currentUser?.uid;
+      const token = await auth.currentUser?.getIdToken();
 
-      const payload: any = {
+      if (!firebaseUid) {
+        console.error("[ONBOARDING] No Firebase user found");
+        setSaveStatus("Error: Not authenticated. Please refresh and try again.");
+        return;
+      }
+
+      // ── STEP 1: Upload images to Firebase Storage (NOT base64 in Firestore) ──
+      let logoUrl = "";
+      let profilePhotoUrl = "";
+
+      if (logoFileRef.current) {
+        setSaveStatus("Uploading logo to Firebase Storage...");
+        console.log("📤 [ONBOARDING] Uploading logo to Firebase Storage...");
+        try {
+          logoUrl = await uploadFile(logoFileRef.current, `company-logos/${firebaseUid}`);
+          console.log("✅ [ONBOARDING] Logo uploaded:", logoUrl);
+        } catch (uploadErr) {
+          console.error("⚠️ [ONBOARDING] Logo upload failed, will use empty string:", uploadErr);
+          // Non-blocking: continue without logo
+        }
+      }
+
+      if (photoFileRef.current) {
+        setSaveStatus("Uploading profile photo to Firebase Storage...");
+        console.log("📤 [ONBOARDING] Uploading profile photo to Firebase Storage...");
+        try {
+          profilePhotoUrl = await uploadFile(photoFileRef.current, `profile-photos/${firebaseUid}`);
+          console.log("✅ [ONBOARDING] Profile photo uploaded:", profilePhotoUrl);
+        } catch (uploadErr) {
+          console.error("⚠️ [ONBOARDING] Photo upload failed, will use empty string:", uploadErr);
+          // Non-blocking: continue without photo
+        }
+      }
+
+      // ── STEP 2: Write ALL profile data DIRECTLY to Firestore ──
+      // This is the PRIMARY write — Profile page reads from here via useProfile hook
+      setSaveStatus("Saving profile to Firebase...");
+      const firestorePayload = {
         company: data.company,
+        companyName: data.company,        // Firestore canonical field
         ownerName: data.ownerName,
         phone: data.phone,
-        state: data.state,
+        mobilePhone: "",
+        address: "",
         city: data.city,
+        state: data.state,
         zipCode: data.zipCode,
         website: data.website,
         specialties: data.specialties,
@@ -456,84 +508,85 @@ const ContractorOnboarding = () => {
         insurancePolicy: data.hasInsurance ? data.insurancePolicy : "",
         yearEstablished: data.yearsInBusiness,
         businessType: data.businessType,
+        ein: "",
+        description: "",
+        socialMedia: {},
+        documents: {},
+        logo: logoUrl,                    // Firebase Storage URL (not base64)
+        profilePhoto: profilePhotoUrl,    // Firebase Storage URL (not base64)
+        role: "Owner",
+        email: auth.currentUser?.email || "",
+        onboardingCompleted: true,
       };
-      if (data.logo) payload.logo = data.logo;
-      if (data.profilePhoto) payload.profilePhoto = data.profilePhoto;
 
-      // STEP 1: Save to PostgreSQL (used by estimates, contracts, invoices)
-      const pgResponse = await fetch("/api/profile", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
+      await saveUserProfile(firebaseUid, firestorePayload);
+      console.log("✅ [ONBOARDING] Profile saved DIRECTLY to Firestore with all fields");
 
-      if (!pgResponse.ok) {
-        console.error("[ONBOARDING] PostgreSQL save failed:", pgResponse.status);
-      } else {
-        console.log("✅ [ONBOARDING] Profile saved to PostgreSQL");
-      }
-
-      // STEP 2: Sync to Firestore (used by Profile/Settings page to display data)
-      // Profile page reads from Firestore via useProfile hook — must write here too.
-      if (firebaseUid) {
-        try {
-          // Build the complete Firestore payload with ALL fields the Profile page expects
-          const firestorePayload = {
-            company: data.company,           // Profile page reads as 'company'
-            companyName: data.company,       // Firestore canonical field
-            ownerName: data.ownerName,
-            phone: data.phone,
-            mobilePhone: "",
-            address: "",
-            city: data.city,
-            state: data.state,
-            zipCode: data.zipCode,
-            website: data.website,
-            specialties: data.specialties,
-            license: data.hasLicense ? data.license : "",
-            insurancePolicy: data.hasInsurance ? data.insurancePolicy : "",
-            yearEstablished: data.yearsInBusiness,
-            businessType: data.businessType,
-            ein: "",
-            description: "",
-            socialMedia: {},
-            documents: {},
-            logo: data.logo || "",
-            profilePhoto: data.profilePhoto || "",
-            role: "Owner",
-            email: auth.currentUser?.email || "",
-          };
-          await saveUserProfile(firebaseUid, firestorePayload);
-          console.log("✅ [ONBOARDING] Profile synced to Firestore with all fields");
-          // Invalidate React Query cache so Profile page loads fresh data immediately
-          queryClient.invalidateQueries({ queryKey: ["userProfile", firebaseUid] });
-          console.log("✅ [ONBOARDING] React Query profile cache invalidated");
-        } catch (firestoreErr) {
-          console.error("⚠️ [ONBOARDING] Firestore sync failed (non-blocking):", firestoreErr);
-          // Non-blocking: PostgreSQL save already succeeded
+      // ── STEP 3: Sync to PostgreSQL as backup (for estimates/contracts/invoices) ──
+      // Non-blocking: even if this fails, profile is already in Firestore
+      setSaveStatus("Syncing to database...");
+      try {
+        const pgPayload: any = {
+          company: data.company,
+          ownerName: data.ownerName,
+          phone: data.phone,
+          state: data.state,
+          city: data.city,
+          zipCode: data.zipCode,
+          website: data.website,
+          specialties: data.specialties,
+          license: data.hasLicense ? data.license : "",
+          insurancePolicy: data.hasInsurance ? data.insurancePolicy : "",
+          yearEstablished: data.yearsInBusiness,
+          businessType: data.businessType,
+          logo: logoUrl,
+          profilePhoto: profilePhotoUrl,
+        };
+        const pgResponse = await fetch("/api/profile", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(pgPayload),
+        });
+        if (!pgResponse.ok) {
+          console.warn("⚠️ [ONBOARDING] PostgreSQL sync failed (non-blocking):", pgResponse.status);
+        } else {
+          console.log("✅ [ONBOARDING] Profile also synced to PostgreSQL");
         }
+      } catch (pgErr) {
+        console.warn("⚠️ [ONBOARDING] PostgreSQL sync failed (non-blocking):", pgErr);
+        // Non-blocking: Firestore is the source of truth for profile display
       }
 
-      // STEP 3: Mark onboarding complete
-      await fetch("/api/settings/onboarding/complete", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      // ── STEP 4: Mark onboarding complete ──
+      try {
+        await fetch("/api/settings/onboarding/complete", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } catch (e) {
+        console.warn("⚠️ [ONBOARDING] Could not mark onboarding complete (non-blocking):", e);
+      }
 
       // Set localStorage flag
       if (currentUser) {
         localStorage.setItem(`onboarding_completed_${currentUser.uid}`, "true");
       }
 
+      // Invalidate React Query cache so Profile page loads fresh data immediately
+      queryClient.invalidateQueries({ queryKey: ["userProfile", firebaseUid] });
+      console.log("✅ [ONBOARDING] React Query profile cache invalidated");
+
       // 🔄 Trigger wallet refresh so the header badge shows 120 credits immediately
       window.dispatchEvent(new Event("wallet-refresh-requested"));
 
+      setSaveStatus("Done!");
       navigate("/subscription");
     } catch (err) {
-      console.error("Error saving onboarding:", err);
+      console.error("❌ [ONBOARDING] Error saving profile:", err);
+      setSaveStatus("Error saving profile. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -1131,7 +1184,7 @@ const ContractorOnboarding = () => {
           className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold px-8 flex-1 sm:flex-none"
         >
           {isSaving ? (
-            "Saving..."
+            saveStatus || "Saving..."
           ) : step === 3 ? (
             <>
               <Star className="h-4 w-4 mr-2" />
@@ -1145,6 +1198,13 @@ const ContractorOnboarding = () => {
           )}
         </Button>
       </div>
+
+      {/* Save status / error message */}
+      {saveStatus && saveStatus.startsWith("Error") && (
+        <div className="w-full max-w-2xl mt-3 bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-2">
+          <p className="text-red-400 text-xs text-center">{saveStatus}</p>
+        </div>
+      )}
 
       {/* Footer note */}
       <p className="text-slate-600 text-xs mt-4 text-center max-w-md">

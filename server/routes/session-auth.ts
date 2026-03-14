@@ -93,10 +93,11 @@ router.post("/sessionLogin", loginRateLimit, async (req: Request, res: Response)
         // Idempotente: si el servidor se reinicia, no se duplica gracias a la idempotencyKey
         try {
           const { walletService } = await import('../services/walletService');
+          // CRITICAL FIX: correct param is 'amountCredits' (not 'amount'), correct type is 'bonus' (not 'grant')
           await walletService.addCredits({
             firebaseUid: decodedToken.uid,
-            amount: 120,
-            type: 'grant',
+            amountCredits: 120,
+            type: 'bonus',
             description: '🎁 Welcome Bonus: 120 AI Credits — On us',
             idempotencyKey: `welcome_bonus_120:${decodedToken.uid}`,
           });
