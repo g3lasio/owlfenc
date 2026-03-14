@@ -156,7 +156,7 @@ export function requireCredits(options: CreditCheckOptions) {
       return;
     }
 
-    // Shadow mode: solo loggear, no bloquear
+    // Shadow mode: loggear Y deducir (enforcement desactivado = no bloquear, pero sí deducir)
     if (!isWalletEnforcementEnabled()) {
       try {
         const balance = await walletService.getBalance(firebaseUid);
@@ -167,12 +167,22 @@ export function requireCredits(options: CreditCheckOptions) {
           `balance=${balance}, required=${requiredCredits}, canAfford=${canAfford}`
         );
 
-        // Adjuntar info al request para que el handler pueda loggear
+        // Adjuntar walletShadow para logging
         (req as any).walletShadow = {
           featureName,
           requiredCredits,
           currentBalance: balance,
           canAfford,
+        };
+
+        // ✅ FIX: También adjuntar walletInfo para que deductFeatureCredits funcione
+        // en Shadow Mode. Sin esto, los créditos nunca se deducen aunque la operación
+        // sea exitosa, porque deductFeatureCredits verifica walletInfo antes de deducir.
+        (req as any).walletInfo = {
+          firebaseUid,
+          featureName,
+          requiredCredits,
+          currentBalance: balance,
         };
       } catch (error) {
         console.error(`⚠️  [CREDIT-SHADOW] Error checking balance (non-blocking):`, error);
