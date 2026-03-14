@@ -418,10 +418,29 @@ export default function PermitAdvisor() {
   });
 
   // El historial se guarda automáticamente en el backend (PostgreSQL) durante /api/permit/check
-  // Esta función solo refresca la lista de historial después de una búsqueda exitosa
+  // Guarda la búsqueda en Firebase Firestore (para PermitSearchHistory component)
+  // y refresca el historial inline (que lee de PostgreSQL via /api/permit/history)
   const saveToHistory = async (results: any) => {
-    // Backend already saved to Postgres during the permit check - just refetch
-    console.log("📋 [PERMIT-HISTORY] Refrescando historial tras búsqueda exitosa...");
+    console.log("📋 [PERMIT-HISTORY] Guardando historial en Firebase y refrescando...");
+    // 1. Save to Firebase Firestore so PermitSearchHistory component can read it
+    if (currentUser?.uid) {
+      try {
+        const title = `${projectType.charAt(0).toUpperCase() + projectType.slice(1)} en ${selectedAddress}`;
+        await addDoc(collection(db, 'permit_search_history'), {
+          userId: currentUser.uid,
+          address: selectedAddress,
+          projectType,
+          projectDescription: projectDescription || '',
+          results,
+          title,
+          createdAt: Timestamp.now(),
+        });
+        console.log('✅ [PERMIT-HISTORY] Guardado en Firebase exitosamente');
+      } catch (firebaseError) {
+        console.error('❌ [PERMIT-HISTORY] Error guardando en Firebase (non-blocking):', firebaseError);
+      }
+    }
+    // 2. Refetch the inline history list (reads from PostgreSQL via /api/permit/history)
     setTimeout(() => {
       refetchHistory();
     }, 800);
