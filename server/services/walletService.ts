@@ -429,6 +429,55 @@ class WalletService {
       }
     }
 
+    // ─── BONUS CAP GUARD ─────────────────────────────────────────────────────────
+    // Hard limit: a user can NEVER receive more than 120 bonus credits total.
+    // Keyed on userId (not firebaseUid) so it survives Firebase UID changes.
+    // This blocks duplicate grants from: airdrop (keyed on old UID), session-auth
+    // (keyed on userId), robust-firebase-auth (keyed on new UID), or any future path.
+    if (params.type === 'bonus') {
+      const MAX_LIFETIME_BONUS_CREDITS = 120;
+      try {
+        // Look up userId via wallet (faster than users table join)
+        const walletForCap = await pgDb
+          .select({ userId: walletAccounts.userId })
+          .from(walletAccounts)
+          .where(eq(walletAccounts.firebaseUid, params.firebaseUid))
+          .limit(1);
+
+        if (walletForCap.length > 0) {
+          const userIdForCap = walletForCap[0].userId;
+          const bonusSumResult = await pgDb.execute(sql`
+            SELECT COALESCE(SUM(amount_credits), 0) AS total_bonus
+            FROM wallet_transactions
+            WHERE user_id = ${userIdForCap}
+              AND type = 'bonus'
+              AND direction = 'credit'
+          `);
+          const totalBonusAlreadyGranted = Number((bonusSumResult.rows[0] as any)?.total_bonus ?? 0);
+
+          if (totalBonusAlreadyGranted >= MAX_LIFETIME_BONUS_CREDITS) {
+            console.warn(`🚫 [WALLET-CAP] Bonus cap reached for userId=${userIdForCap}: already granted ${totalBonusAlreadyGranted} bonus credits (max ${MAX_LIFETIME_BONUS_CREDITS}). Blocking duplicate grant from key: ${params.idempotencyKey ?? 'no-key'}`);
+            const currentWalletBalance = await pgDb
+              .select({ balanceCredits: walletAccounts.balanceCredits })
+              .from(walletAccounts)
+              .where(eq(walletAccounts.userId, userIdForCap))
+              .limit(1);
+            return {
+              success: true,  // Return true so callers don't retry
+              creditsAdded: 0,
+              balanceAfter: currentWalletBalance[0]?.balanceCredits ?? 0,
+              transactionId: 0,
+              error: 'BONUS_CAP_REACHED',
+            };
+          }
+        }
+      } catch (capCheckError) {
+        // Non-blocking: log and continue so legitimate first-time grants still work
+        console.error('⚠️  [WALLET-CAP] Bonus cap check failed (non-blocking):', capCheckError);
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────────
+
     // Obtener o crear wallet (fuera de la transacción para evitar deadlocks)
     const wallet = await this.getOrCreateWallet(params.firebaseUid);
 

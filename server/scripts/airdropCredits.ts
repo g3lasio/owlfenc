@@ -5,8 +5,10 @@
  * Otorga 120 créditos de cortesía a los usuarios actuales.
  * Este script es seguro de ejecutar múltiples veces gracias a la idempotencia.
  * 
- * IDEMPOTENCY KEY: 'airdrop_launch_120_credits:{firebaseUid}'
- * Si el script se corre dos veces, el segundo intento es ignorado silenciosamente.
+ * IDEMPOTENCY KEY: 'airdrop_launch_120_credits:user:{userId}'
+ * Keyed on userId (not firebaseUid) so it's stable across Firebase UID changes.
+ * Additionally, walletService.addCredits() enforces a hard 120-credit bonus cap
+ * per userId, so even if this script runs multiple times, no user gets > 120 bonus credits.
  */
 
 import { db as pgDb } from '../db';
@@ -15,7 +17,7 @@ import { walletService } from '../services/walletService';
 import { sql } from 'drizzle-orm';
 
 const AIRDROP_CREDITS = 120;
-const AIRDROP_KEY_PREFIX = 'airdrop_launch_120_credits';
+const AIRDROP_KEY_PREFIX = 'airdrop_launch_120_credits:user';
 const AIRDROP_DESCRIPTION = '🎁 Welcome Bonus: 120 AI Credits — On us';
 
 async function runAirdrop() {
@@ -41,40 +43,41 @@ async function runAirdrop() {
     console.log(`👥 [AIRDROP] Found ${allUsers.length} users in the database.`);
 
     let successCount = 0;
-    let alreadyGrantedCount = 0;
+    let alreadyGrantedCount = 0;  // Blocked by idempotency key
+    let capReachedCount = 0;       // Blocked by bonus cap (userId already has 120 bonus credits)
     let errorCount = 0;
 
     for (const user of allUsers) {
-      if (!user.firebaseUid) continue;
+      if (!user.firebaseUid || !user.id) continue;
 
       try {
         // 2. Asegurar que el usuario tenga una wallet
-        // getOrCreateWallet ya maneja la creación si no existe
         await walletService.getOrCreateWallet(user.firebaseUid);
         
-        // 3. Otorgar los 120 créditos con idempotencyKey única
-        // Si el script se corre dos veces, el segundo intento es ignorado
-        const idempotencyKey = `${AIRDROP_KEY_PREFIX}:${user.firebaseUid}`;
+        // 3. Otorgar los 120 créditos con idempotencyKey única keyed on userId
+        // This is stable across Firebase UID changes (unlike the old firebaseUid-based key)
+        const idempotencyKey = `${AIRDROP_KEY_PREFIX}:${user.id}`;
         
         const result = await walletService.addCredits({
           firebaseUid: user.firebaseUid,
-          amountCredits: AIRDROP_CREDITS,   // FIX: was 'amount', correct param is 'amountCredits'
-          type: 'bonus',                     // FIX: was 'grant' (not in union type), correct is 'bonus'
+          amountCredits: AIRDROP_CREDITS,
+          type: 'bonus',
           description: AIRDROP_DESCRIPTION,
           idempotencyKey,
         });
 
-        if (result.success) {
+        if (result.error === 'BONUS_CAP_REACHED') {
+          // User already has 120 bonus credits from a previous grant (different key or path)
+          capReachedCount++;
+        } else if (result.creditsAdded === 0 && result.success) {
+          // Idempotency key already processed — same key, same run
+          alreadyGrantedCount++;
+        } else if (result.success && result.creditsAdded > 0) {
           console.log(`✅ [AIRDROP] ${AIRDROP_CREDITS} credits granted to ${user.email || user.firebaseUid} (Balance: ${result.balanceAfter})`);
           successCount++;
         } else {
-          if (result.error?.includes('already') || result.error?.includes('Idempotency')) {
-            // Silencioso — ya recibió el airdrop en un arranque anterior
-            alreadyGrantedCount++;
-          } else {
-            console.error(`❌ [AIRDROP] Failed to grant credits to ${user.email}: ${result.error}`);
-            errorCount++;
-          }
+          console.error(`❌ [AIRDROP] Failed to grant credits to ${user.email}: ${result.error}`);
+          errorCount++;
         }
       } catch (err) {
         console.error(`❌ [AIRDROP] Error processing user ${user.email}:`, err);
@@ -84,7 +87,8 @@ async function runAirdrop() {
 
     console.log('\n--- AIRDROP SUMMARY ---');
     console.log(`✅ Newly Granted: ${successCount}`);
-    console.log(`ℹ️  Already Received: ${alreadyGrantedCount}`);
+    console.log(`ℹ️  Already Received (idempotent): ${alreadyGrantedCount}`);
+    console.log(`🚫 Bonus Cap Reached (already has 120): ${capReachedCount}`);
     console.log(`❌ Errors: ${errorCount}`);
     console.log('-----------------------\n');
 

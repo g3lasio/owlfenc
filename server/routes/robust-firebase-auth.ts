@@ -110,17 +110,21 @@ export function registerRobustFirebaseAuthRoutes(app: any) {
         }
 
         // 🎁 Welcome Bonus: 120 créditos de bienvenida (idempotente)
+        // KEY: userId (not firebaseUid) so it's stable across Firebase UID changes
         try {
           const { walletService } = await import('../services/walletService');
-          // CRITICAL FIX: correct param is 'amountCredits' (not 'amount'), correct type is 'bonus' (not 'grant')
-          await walletService.addCredits({
+          const bonusResult = await walletService.addCredits({
             firebaseUid,
             amountCredits: 120,
             type: 'bonus',
             description: '🎁 Welcome Bonus: 120 AI Credits — On us',
-            idempotencyKey: `welcome_bonus_120:${firebaseUid}`,
+            idempotencyKey: `welcome_bonus_120:user:${internalUserId}`,
           });
-          console.log(`✅ [WELCOME-BONUS] 120 credits granted to new user: ${email}`);
+          if (bonusResult.error === 'BONUS_CAP_REACHED') {
+            console.log(`🚫 [WELCOME-BONUS] Bonus cap already reached for userId=${internalUserId} — skipping duplicate grant`);
+          } else {
+            console.log(`✅ [WELCOME-BONUS] 120 credits granted to new user: ${email} (userId=${internalUserId})`);
+          }
         } catch (walletError) {
           console.error('⚠️  [WELCOME-BONUS] Failed to grant welcome credits (non-blocking):', walletError);
         }
