@@ -1247,9 +1247,63 @@ export default function Profile() {
     };
   }, []);
 
+  // Detect if this is a new/incomplete profile to show the welcome banner
+  const isProfileIncomplete = !isLoadingProfile && (
+    !companyInfo.company ||
+    !companyInfo.phone ||
+    !companyInfo.state ||
+    !companyInfo.city ||
+    (companyInfo.specialties?.length ?? 0) === 0
+  );
+  const [welcomeBannerDismissed, setWelcomeBannerDismissed] = useState(
+    () => !!localStorage.getItem(`profile_banner_dismissed_${currentUser?.uid}`)
+  );
+  const dismissWelcomeBanner = () => {
+    if (currentUser?.uid) {
+      localStorage.setItem(`profile_banner_dismissed_${currentUser.uid}`, "true");
+    }
+    setWelcomeBannerDismissed(true);
+  };
+
   return (
     <div className="min-h-screen bg-black text-white font-mono">
       <div className="container mx-auto px-4 py-6">
+
+        {/* ── Welcome Banner for new / incomplete profiles ── */}
+        {isProfileIncomplete && !welcomeBannerDismissed && (
+          <div className="mb-6 border border-cyan-500/40 rounded-xl bg-gradient-to-r from-cyan-950/60 to-gray-900/80 p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-cyan-500/15 flex items-center justify-center">
+              <Info className="w-6 h-6 text-cyan-400" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-white font-semibold text-base mb-1">
+                Complete your profile to unlock the full power of Owl Fenc
+              </h3>
+              <p className="text-gray-400 text-sm leading-relaxed">
+                Your company name, license, specialties, and location are used to auto-fill every estimate,
+                contract, invoice, and permit report you generate. A complete profile means{" "}
+                <span className="text-cyan-300 font-medium">professional documents in seconds</span> —
+                we also use this data to tailor AI recommendations specifically for your market and trade.
+              </p>
+              <div className="flex flex-wrap gap-2 mt-3">
+                {["Company name", "Phone", "City & State", "Specialties", "License #"].map((f) => (
+                  <span key={f} className="inline-flex items-center gap-1 bg-gray-800 border border-gray-700 rounded-full px-2.5 py-0.5 text-xs text-gray-300">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 inline-block" />
+                    {f}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <button
+              onClick={dismissWelcomeBanner}
+              className="flex-shrink-0 text-gray-500 hover:text-gray-300 transition-colors self-start sm:self-center"
+              aria-label="Dismiss banner"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        )}
+
         {/* User Profile Banner */}
         <div className="border border-cyan-900/30 rounded-lg bg-gray-900/50 backdrop-blur-sm p-6 mb-8">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">

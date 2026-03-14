@@ -1195,14 +1195,14 @@ export const saveUserProfile = async (userId: string, profileData: any) => {
     };
     
     if (!docSnap.exists()) {
-      // No existe, crear nuevo perfil
+      // No existe, crear nuevo perfil — usar merge:true para no sobrescribir con vacíos
       profileWithMeta.createdAt = Timestamp.now();
-      await setDoc(docRef, profileWithMeta);
-      console.log(`✅ [FIREBASE] Nuevo perfil creado`);
+      await setDoc(docRef, profileWithMeta, { merge: true });
+      console.log(`✅ [FIREBASE] Nuevo perfil creado (merge:true)`);
     } else {
       // Ya existe, actualizar (merge para no sobrescribir campos no enviados)
       await setDoc(docRef, profileWithMeta, { merge: true });
-      console.log(`✅ [FIREBASE] Perfil actualizado`);
+      console.log(`✅ [FIREBASE] Perfil actualizado (merge:true)`);
     }
     
     // Retornar el perfil guardado y verificar campos críticos

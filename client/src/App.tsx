@@ -60,7 +60,7 @@ const HelpArticle = lazy(() => import('./pages/help/HelpArticle'));
 const GetSupport = lazy(() => import('./pages/help/GetSupport'));
 // 💰 Public Checkout — Client-facing payment page with tip support (no auth required)
 const PublicCheckout = lazy(() => import('./pages/PublicCheckout'));
-const ContractorOnboarding = lazy(() => import('./pages/ContractorOnboarding'));
+const OnboardingRedirect = lazy(() => import('./pages/OnboardingRedirect'));
 
 // Context providers - load statically as they're needed early
 import { AuthSessionProvider } from "@/components/auth/AuthSessionProvider";
@@ -277,7 +277,7 @@ function MainAppRouter() {
               <Route path="/auth-diagnostic" component={() => <Suspense fallback={<PageLoadingSpinner />}><AuthDiagnostic /></Suspense>} />
               
               {/* 🚀 POST-SIGNUP ONBOARDING - Collects contractor business data */}
-              <Route path="/onboarding" component={() => <ProtectedRoute component={ContractorOnboarding} />} />
+              <Route path="/onboarding" component={() => <ProtectedRoute component={OnboardingRedirect} />} />
               
               {/* About & Legal - Public Routes */}
               <Route path="/about-owlfenc" component={() => <Suspense fallback={<PageLoadingSpinner />}><AboutOwlFence /></Suspense>} />

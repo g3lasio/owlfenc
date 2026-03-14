@@ -535,33 +535,30 @@ const ContractorOnboarding = () => {
 
       // ── STEP 2: Write ALL profile data DIRECTLY to Firestore ──
       // This is the PRIMARY write — Profile page reads from here via useProfile hook
+      // IMPORTANT: Only include fields with real data — empty strings would overwrite
+      // existing Profile data if the user re-runs onboarding. Use merge:true in firebase.ts.
       setSaveStatus("Saving profile to Firebase...");
-      const firestorePayload = {
+      const firestorePayload: Record<string, any> = {
         company: data.company,
         companyName: data.company,        // Firestore canonical field
         ownerName: data.ownerName,
         phone: data.phone,
-        mobilePhone: "",
-        address: "",
         city: data.city,
         state: data.state,
-        zipCode: data.zipCode,
-        website: data.website,
+        zipCode: data.zipCode || "",
         specialties: data.specialties,
-        license: data.hasLicense ? data.license : "",
-        insurancePolicy: data.hasInsurance ? data.insurancePolicy : "",
         yearEstablished: data.yearsInBusiness,
-        businessType: data.businessType,
-        ein: "",
-        description: "",
-        socialMedia: {},
-        documents: {},
-        logo: logoUrl,                    // Firebase Storage URL (not base64)
-        profilePhoto: profilePhotoUrl,    // Firebase Storage URL (not base64)
-        role: "Owner",
+        businessType: data.businessType || "",
         email: auth.currentUser?.email || "",
         onboardingCompleted: true,
       };
+
+      // Only include optional fields if they have real values (avoid overwriting with empty)
+      if (data.website) firestorePayload.website = data.website;
+      if (data.hasLicense && data.license) firestorePayload.license = data.license;
+      if (data.hasInsurance && data.insurancePolicy) firestorePayload.insurancePolicy = data.insurancePolicy;
+      if (logoUrl) firestorePayload.logo = logoUrl;
+      if (profilePhotoUrl) firestorePayload.profilePhoto = profilePhotoUrl;
 
       await saveUserProfile(firebaseUid, firestorePayload);
       console.log("✅ [ONBOARDING] Profile saved DIRECTLY to Firestore with all fields");
