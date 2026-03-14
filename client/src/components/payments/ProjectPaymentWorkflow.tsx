@@ -11,38 +11,37 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import {
   AlertCircle,
-  ArrowLeft,
   ArrowRight,
   CheckCircle,
+  ChevronDown,
+  ChevronUp,
   Clock,
-  CreditCard,
+  Copy,
   DollarSign,
-  FileText,
+  Download,
+  ExternalLink,
   LinkIcon,
   Mail,
-  Zap,
-  BookOpen,
+  MessageSquare,
+  QrCode,
   Smartphone,
   Banknote,
-  Calculator,
-  Send,
-  Copy,
-  ExternalLink,
-  Eye,
-  QrCode,
-  MessageSquare,
-  Download,
-  Save,
-  Home,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-// Types
+// ─── Types ────────────────────────────────────────────────────────────────────
+
 type Project = {
   id: string | number;
   userId: string;
@@ -97,13 +96,7 @@ type ProjectPayment = {
 };
 
 type PaymentMethodType = "terminal" | "link" | "manual" | null;
-type WorkflowMode = "express" | "guided";
-
-// Express mode steps
-type ExpressStep = "quick-payment" | "confirm-share";
-
-// Guided mode steps
-type GuidedStep = "method" | "project-amount" | "details" | "execute";
+type WorkflowStep = "configure" | "success";
 
 interface ProjectPaymentWorkflowProps {
   projects: Project[] | undefined;
@@ -113,37 +106,25 @@ interface ProjectPaymentWorkflowProps {
   isCreatingPayment: boolean;
 }
 
-// Device detection utility - SSR/Jest safe
+// ─── Device detection (SSR/Jest safe) ─────────────────────────────────────────
+
 const detectMobileDevice = () => {
-  // SSR/Jest safety: Check if window and navigator exist
-  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
-    return {
-      isMobile: false,
-      isTablet: false,
-      hasNFC: false,
-      hasApplePay: false,
-      canUseTapToPay: false,
-      isDesktop: true, // Default to desktop in SSR
-    };
+  if (typeof window === "undefined" || typeof navigator === "undefined") {
+    return { isMobile: false, isDesktop: true, canUseTapToPay: false };
   }
-  
-  const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(userAgent);
-  const isTablet = /iPad|Android/i.test(userAgent) && !/Mobile/i.test(userAgent);
-  
-  // Check for NFC/Tap-to-Pay capabilities
-  const hasNFC = typeof window !== 'undefined' && 'NDEFReader' in window; // Android Web NFC
-  const hasApplePay = typeof window !== 'undefined' && typeof (window as any).ApplePaySession !== 'undefined';
-  
+  const ua = navigator.userAgent || navigator.vendor || (window as any).opera;
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(ua);
+  const isTablet = /iPad|Android/i.test(ua) && !/Mobile/i.test(ua);
+  const hasNFC = "NDEFReader" in window;
+  const hasApplePay = typeof (window as any).ApplePaySession !== "undefined";
   return {
     isMobile,
-    isTablet,
-    hasNFC,
-    hasApplePay,
-    canUseTapToPay: isMobile && (hasNFC || hasApplePay),
     isDesktop: !isMobile && !isTablet,
+    canUseTapToPay: isMobile && (hasNFC || hasApplePay),
   };
 };
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ProjectPaymentWorkflow({
   projects,
@@ -153,305 +134,221 @@ export default function ProjectPaymentWorkflow({
   isCreatingPayment,
 }: ProjectPaymentWorkflowProps) {
   const { toast } = useToast();
-  
-  // Device detection
   const deviceInfo = detectMobileDevice();
-  
-  // Mode state
-  const [workflowMode, setWorkflowMode] = useState<WorkflowMode>("express");
-  
-  // Step states
-  const [expressStep, setExpressStep] = useState<ExpressStep>("quick-payment");
-  const [guidedStep, setGuidedStep] = useState<GuidedStep>("method");
-  
-  // Payment data state
+
+  // ── Step state ──────────────────────────────────────────────────────────────
+  const [step, setStep] = useState<WorkflowStep>("configure");
+
+  // ── Payment state ───────────────────────────────────────────────────────────
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>(null);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [useExistingProject, setUseExistingProject] = useState<boolean>(true);
-  
-  const [paymentConfig, setPaymentConfig] = useState({
+  const [generatedLink, setGeneratedLink] = useState<string>("");
+
+  // ── Form config ─────────────────────────────────────────────────────────────
+  const [config, setConfig] = useState({
     amount: "",
     type: "deposit" as "deposit" | "final" | "milestone" | "custom",
     description: "",
     clientEmail: "",
     clientName: "",
     clientPhone: "",
+    // Advanced options
     dueDate: "",
-    // Manual payment specific
+    autoSendEmail: true,
+    feePassThrough: false,
+    // Manual payment fields
     manualMethod: "cash" as "cash" | "check" | "zelle" | "venmo" | "other",
     referenceNumber: "",
-    paymentDate: new Date().toISOString().split('T')[0],
+    paymentDate: new Date().toISOString().split("T")[0],
     notes: "",
-    // Email settings
-    autoSendEmail: true,
-    // 💰 Fee Pass-Through Toggle (Decisión 2 — PAYG Strategy)
-    // false = contractor absorbs 0.5% fee (default)
-    // true  = client pays the 0.5% fee (amount is grossed up)
-    feePassThrough: false,
   });
-  
-  const [generatedLink, setGeneratedLink] = useState<string>("");
-  const [isDraft, setIsDraft] = useState<boolean>(false);
-  
-  // Smart defaults - remember last used method
+
+  // ── Advanced options panel ──────────────────────────────────────────────────
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // ── Remember last used method ───────────────────────────────────────────────
   useEffect(() => {
-    const lastMethod = localStorage.getItem("lastPaymentMethod");
-    if (lastMethod && (lastMethod === "terminal" || lastMethod === "link" || lastMethod === "manual")) {
-      setPaymentMethod(lastMethod as PaymentMethodType);
+    const last = localStorage.getItem("lastPaymentMethod");
+    if (last === "terminal" || last === "link" || last === "manual") {
+      setPaymentMethod(last as PaymentMethodType);
     }
   }, []);
 
-  // Helper functions
-  // Format currency from cents to dollars for display
-  // IMPORTANT: All amounts in the system are stored in CENTS (integers)
-  // Only divide by 100 for display purposes
-  // formatCurrency: expects amount in CENTS (e.g. from Stripe API)
-  const formatCurrency = (amountInCents: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amountInCents / 100);
+  // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+  /** Formats a value already in dollars (from Firebase / user input). */
+  const formatDollars = (amount: number) =>
+    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
+
+  /** Formats a value in cents (from Stripe API). */
+  const formatCurrency = (cents: number) =>
+    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
+
+  /** Calculates suggested payment amount in dollars based on project total and type. */
+  const suggestedAmount = (project: Project, type: string): number => {
+    const total = project.totalPrice || 0;
+    const amount = type === "deposit" || type === "final" ? total * 0.5 : total;
+    return Math.round(amount * 100) / 100;
   };
 
-  // formatDollars: expects amount already in DOLLARS (e.g. from Firebase/user input)
-  const formatDollars = (amountInDollars: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amountInDollars);
-  };
-
-  // Calculate suggested payment amount in DOLLARS for display
-  // IMPORTANT: project.totalPrice is stored in DOLLARS in Firebase
-  // We work in dollars here for user input, then convert to cents before API call
-  const calculateSuggestedAmount = (project: Project, type: string) => {
-    const totalInDollars = project.totalPrice || 0;
-    let amountInDollars = totalInDollars;
-    if (type === "deposit") amountInDollars = totalInDollars * 0.5;
-    if (type === "final") amountInDollars = totalInDollars * 0.5;
-    // Round to 2 decimal places to avoid floating point issues
-    return Math.round(amountInDollars * 100) / 100;
-  };
+  // ─── Event handlers ───────────────────────────────────────────────────────────
 
   const handleProjectSelect = (project: Project) => {
     setSelectedProject(project);
-    setPaymentConfig({
-      ...paymentConfig,
+    setConfig((prev) => ({
+      ...prev,
       clientEmail: project.clientEmail || "",
       clientName: project.clientName || "",
       clientPhone: project.clientPhone || "",
-      amount: calculateSuggestedAmount(project, paymentConfig.type).toString(),
-      description: `${paymentConfig.type === "custom" ? "Payment" : paymentConfig.type} for ${project.projectType || "project"}`,
-    });
+      amount: suggestedAmount(project, prev.type).toString(),
+      description: `${prev.type === "custom" ? "Payment" : prev.type} for ${project.projectType || "project"}`,
+    }));
   };
 
   const handleMethodSelect = (method: PaymentMethodType) => {
     setPaymentMethod(method);
-    if (method) {
-      localStorage.setItem("lastPaymentMethod", method);
+    if (method) localStorage.setItem("lastPaymentMethod", method);
+  };
+
+  const handleTypeChange = (type: "deposit" | "final" | "milestone" | "custom") => {
+    const newAmount = selectedProject ? suggestedAmount(selectedProject, type).toString() : config.amount;
+    const newDesc = selectedProject
+      ? `${type === "custom" ? "Payment" : type} for ${selectedProject.projectType || "project"}`
+      : config.description;
+    setConfig((prev) => ({ ...prev, type, amount: newAmount, description: newDesc }));
+  };
+
+  const handleCreatePayment = async () => {
+    // ── Validation ──────────────────────────────────────────────────────────
+    if (!config.amount || parseFloat(config.amount) <= 0) {
+      toast({ title: "Monto inválido", description: "Ingresa un monto válido", variant: "destructive" });
+      return;
     }
-    
-    // In express mode, auto-advance
-    if (workflowMode === "express") {
-      // Quick validation for express mode
-      if (!paymentConfig.amount) {
+    if (!paymentMethod) {
+      toast({ title: "Método requerido", description: "Selecciona un método de pago", variant: "destructive" });
+      return;
+    }
+    if (paymentMethod === "link" && !config.clientEmail) {
+      toast({ title: "Email requerido", description: "El email del cliente es requerido para payment links", variant: "destructive" });
+      return;
+    }
+
+    // ── Build payload ───────────────────────────────────────────────────────
+    const paymentType = config.type === "custom" ? "additional" : config.type;
+    const payload: any = {
+      projectId: selectedProject?.id || null,
+      amount: parseFloat(config.amount) * 100, // → cents for Stripe
+      type: paymentType,
+      description: config.description || `${paymentType} payment`,
+      clientEmail: config.clientEmail,
+      clientName: config.clientName,
+      clientPhone: config.clientPhone,
+      paymentMethod,
+    };
+
+    if (paymentMethod === "link") {
+      payload.dueDate = config.dueDate || undefined;
+      payload.autoSendEmail = config.autoSendEmail;
+      payload.feePassThrough = config.feePassThrough;
+    }
+
+    if (paymentMethod === "manual") {
+      payload.manualMethod = config.manualMethod;
+      payload.referenceNumber = config.referenceNumber;
+      payload.paymentDate = config.paymentDate;
+      payload.notes = config.notes;
+    }
+
+    try {
+      const result = await onCreatePayment(payload);
+      console.log("💳 [PAYMENT-WORKFLOW] Result:", result);
+
+      // ── Extract link URL ─────────────────────────────────────────────────
+      const link =
+        result?.data?.paymentLinkUrl ||
+        result?.paymentLinkUrl ||
+        result?.data?.checkoutUrl ||
+        result?.checkoutUrl ||
+        "";
+
+      if (paymentMethod === "link" && !link) {
+        console.error("❌ [PAYMENT-WORKFLOW] No payment link URL in response");
         toast({
-          title: "Amount required",
-          description: "Please enter a payment amount",
+          title: "Error al generar link",
+          description: "No se pudo generar el link de pago. Intenta de nuevo.",
           variant: "destructive",
         });
         return;
       }
-    } else {
-      // In guided mode, move to next step
-      setGuidedStep("project-amount");
-    }
-  };
 
-  const handleCreatePayment = async () => {
-    // Validation
-    if (!paymentConfig.amount || parseFloat(paymentConfig.amount) <= 0) {
-      toast({
-        title: "Invalid amount",
-        description: "Please enter a valid payment amount",
-        variant: "destructive",
-      });
-      return;
-    }
+      if (link) setGeneratedLink(link);
+      setStep("success");
 
-    if (paymentMethod === "link" && !paymentConfig.clientEmail) {
-      toast({
-        title: "Email required",
-        description: "Client email is required for payment links",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Map "custom" type to "additional" for backend compatibility
-    const paymentType = paymentConfig.type === "custom" ? "additional" : paymentConfig.type;
-    
-    const paymentData = {
-      projectId: selectedProject?.id || null,
-      amount: parseFloat(paymentConfig.amount) * 100, // Convert to cents
-      type: paymentType,
-      description: paymentConfig.description,
-      clientEmail: paymentConfig.clientEmail,
-      clientName: paymentConfig.clientName,
-      clientPhone: paymentConfig.clientPhone,
-      dueDate: paymentConfig.dueDate || undefined,
-      paymentMethod: paymentMethod,
-      // Auto-send email flag for payment links
-      ...(paymentMethod === "link" && {
-        autoSendEmail: paymentConfig.autoSendEmail,
-        feePassThrough: paymentConfig.feePassThrough, // 💰 Fee pass-through toggle
-      }),
-      // Manual payment specific
-      ...(paymentMethod === "manual" && {
-        manualMethod: paymentConfig.manualMethod,
-        referenceNumber: paymentConfig.referenceNumber,
-        paymentDate: paymentConfig.paymentDate,
-        notes: paymentConfig.notes,
-      }),
-    };
-
-    try {
-      // Await the backend response to capture the generated link
-      const result = await onCreatePayment(paymentData);
-      
-      console.log("💳 [PAYMENT-WORKFLOW] Payment created:", result);
-      
-      // Extract the payment link URL from the correct response structure
-      let extractedLink = "";
-      
-      if (result?.data?.paymentLinkUrl) {
-        extractedLink = result.data.paymentLinkUrl;
-        console.log("✅ [PAYMENT-WORKFLOW] Link from data.paymentLinkUrl:", extractedLink);
-      } else if (result?.paymentLinkUrl) {
-        extractedLink = result.paymentLinkUrl;
-        console.log("✅ [PAYMENT-WORKFLOW] Link from paymentLinkUrl:", extractedLink);
-      } else if (result?.data?.checkoutUrl) {
-        extractedLink = result.data.checkoutUrl;
-        console.log("✅ [PAYMENT-WORKFLOW] Link from data.checkoutUrl:", extractedLink);
-      } else if (result?.checkoutUrl) {
-        extractedLink = result.checkoutUrl;
-        console.log("✅ [PAYMENT-WORKFLOW] Link from checkoutUrl:", extractedLink);
-      }
-      
-      // For payment link method, MUST have a link - block progression if missing
-      if (paymentMethod === "link" && !extractedLink) {
-        console.error("❌ [PAYMENT-WORKFLOW] Payment link method but no URL received");
-        toast({
-          title: "Link generation failed",
-          description: "Payment link could not be generated. Please try again.",
-          variant: "destructive",
-        });
-        return; // Block advancement - stay on current step
-      }
-      
-      // Update the generated link state
-      if (extractedLink) {
-        setGeneratedLink(extractedLink);
-      }
-      
-      // Move to confirmation/execute step only after successful creation
-      if (workflowMode === "express") {
-        setExpressStep("confirm-share");
-      } else {
-        setGuidedStep("execute");
-      }
-      
-      // Check if email was sent (for auto-send feature)
+      // ── Success toast ────────────────────────────────────────────────────
       const emailSent = result?.emailSent;
-      const autoSendRequested = paymentConfig.autoSendEmail && paymentMethod === "link";
-      
-      // Success toast with email status
-      if (autoSendRequested && emailSent === false) {
-        // Email failed to send
+      if (paymentMethod === "link" && config.autoSendEmail) {
         toast({
-          title: "Payment link created",
-          description: "Link created successfully, but email failed to send. Please share the link manually.",
-          variant: "default",
-        });
-      } else if (autoSendRequested && emailSent === true) {
-        // Email sent successfully
-        toast({
-          title: "Success!",
-          description: `Payment link created and email sent to ${paymentConfig.clientEmail}`,
+          title: emailSent ? "¡Link creado y enviado!" : "Link creado",
+          description: emailSent
+            ? `Email enviado a ${config.clientEmail}`
+            : "Link creado. El email no pudo enviarse — compártelo manualmente.",
         });
       } else {
-        // Standard success message
         toast({
-          title: "Success!",
-          description: paymentMethod === "terminal" 
-            ? "Terminal payment ready" 
-            : paymentMethod === "link"
-            ? "Payment link created successfully"
-            : "Payment registered successfully",
+          title: "¡Éxito!",
+          description:
+            paymentMethod === "link"
+              ? "Payment link creado correctamente"
+              : paymentMethod === "manual"
+              ? "Pago registrado correctamente"
+              : "Terminal listo para cobrar",
         });
       }
-      
     } catch (error: any) {
-      console.error("❌ [PAYMENT-WORKFLOW] Error creating payment:", error);
+      console.error("❌ [PAYMENT-WORKFLOW] Error:", error);
       toast({
-        title: "Payment creation failed",
-        description: error?.message || "Please try again or contact support",
+        title: "Error al crear pago",
+        description: error?.message || "Intenta de nuevo o contacta soporte",
         variant: "destructive",
       });
-      // Don't advance to next step on error
     }
   };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast({
-      title: "Copied!",
-      description: "Link copied to clipboard",
-    });
+    toast({ title: "¡Copiado!", description: "Link copiado al portapapeles" });
   };
 
   const sendPaymentEmail = () => {
-    const emailData = {
+    onSendInvoice({
       projectName: selectedProject?.projectType || "Project",
-      clientName: paymentConfig.clientName,
-      clientEmail: paymentConfig.clientEmail,
-      totalAmount: parseFloat(paymentConfig.amount),
+      clientName: config.clientName,
+      clientEmail: config.clientEmail,
+      totalAmount: parseFloat(config.amount),
       paymentLink: generatedLink,
-    };
-
-    onSendInvoice(emailData);
-    toast({
-      title: "Email sent!",
-      description: `Payment link sent to ${paymentConfig.clientEmail}`,
     });
+    toast({ title: "Email enviado", description: `Link enviado a ${config.clientEmail}` });
   };
 
   const shareViaWhatsApp = () => {
-    const message = `Hi ${paymentConfig.clientName}, here's your payment link: ${generatedLink}`;
-    const url = `https://wa.me/${paymentConfig.clientPhone?.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
-    window.open(url, "_blank");
+    const msg = `Hola ${config.clientName}, aquí está tu link de pago: ${generatedLink}`;
+    window.open(`https://wa.me/${config.clientPhone?.replace(/\D/g, "")}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
   const shareViaSMS = () => {
-    const message = `Hi ${paymentConfig.clientName}, here's your payment link: ${generatedLink}`;
-    const url = `sms:${paymentConfig.clientPhone}?body=${encodeURIComponent(message)}`;
-    window.open(url, "_blank");
-  };
-
-  const saveDraft = () => {
-    setIsDraft(true);
-    toast({
-      title: "Draft saved",
-      description: "Your payment draft has been saved",
-    });
+    const msg = `Hola ${config.clientName}, aquí está tu link de pago: ${generatedLink}`;
+    window.open(`sms:${config.clientPhone}?body=${encodeURIComponent(msg)}`, "_blank");
   };
 
   const resetWorkflow = () => {
-    setExpressStep("quick-payment");
-    setGuidedStep("method");
-    setSelectedProject(null);
+    setStep("configure");
     setPaymentMethod(null);
-    setPaymentConfig({
+    setSelectedProject(null);
+    setUseExistingProject(true);
+    setGeneratedLink("");
+    setShowAdvanced(false);
+    setConfig({
       amount: "",
       type: "deposit",
       description: "",
@@ -459,1405 +356,674 @@ export default function ProjectPaymentWorkflow({
       clientName: "",
       clientPhone: "",
       dueDate: "",
+      autoSendEmail: true,
+      feePassThrough: false,
       manualMethod: "cash",
       referenceNumber: "",
-      paymentDate: new Date().toISOString().split('T')[0],
+      paymentDate: new Date().toISOString().split("T")[0],
       notes: "",
-      autoSendEmail: true,
     });
-    setGeneratedLink("");
-    setIsDraft(false);
-    setUseExistingProject(true);
   };
 
-  // Breadcrumb navigation
-  const getBreadcrumbs = () => {
-    if (workflowMode === "express") {
-      return [
-        { label: "Quick Payment", step: "quick-payment", active: expressStep === "quick-payment" },
-        { label: "Confirm & Share", step: "confirm-share", active: expressStep === "confirm-share" },
-      ];
-    } else {
-      return [
-        { label: "Method", step: "method", active: guidedStep === "method" },
-        { label: "Project & Amount", step: "project-amount", active: guidedStep === "project-amount" },
-        { label: "Details", step: "details", active: guidedStep === "details" },
-        { label: "Execute", step: "execute", active: guidedStep === "execute" },
-      ];
-    }
-  };
-
-  const handleBreadcrumbClick = (step: string) => {
-    if (workflowMode === "express") {
-      setExpressStep(step as ExpressStep);
-    } else {
-      setGuidedStep(step as GuidedStep);
-    }
-  };
+  // ─── Render ───────────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-6">
-      {/* Mode Toggle */}
-      <Card className="bg-gray-900 border-gray-700">
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-center gap-8">
-            <Button
-              onClick={() => {
-                setWorkflowMode("express");
-                resetWorkflow();
-              }}
-              variant={workflowMode === "express" ? "default" : "outline"}
-              className={workflowMode === "express" 
-                ? "bg-cyan-400 text-black hover:bg-cyan-300" 
-                : "bg-gray-800 border-gray-600 text-white hover:bg-gray-700"}
-              data-testid="button-express-mode"
-            >
-              <Zap className="h-4 w-4 mr-2" />
-              ⚡ Express Mode
-            </Button>
-            <Button
-              onClick={() => {
-                setWorkflowMode("guided");
-                resetWorkflow();
-              }}
-              variant={workflowMode === "guided" ? "default" : "outline"}
-              className={workflowMode === "guided" 
-                ? "bg-cyan-400 text-black hover:bg-cyan-300" 
-                : "bg-gray-800 border-gray-600 text-white hover:bg-gray-700"}
-              data-testid="button-guided-mode"
-            >
-              <BookOpen className="h-4 w-4 mr-2" />
-              📋 Guided Mode
-            </Button>
-          </div>
-          <p className="text-center text-gray-400 text-sm mt-3">
-            {workflowMode === "express" 
-              ? "Fast track for quick payments (2 steps)" 
-              : "Complete workflow with full documentation (4 steps)"}
-          </p>
-        </CardContent>
-      </Card>
+    <div className="space-y-6 max-w-2xl mx-auto">
 
-      {/* Breadcrumbs */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={resetWorkflow}
-          className="text-gray-400 hover:text-white"
-          data-testid="button-home"
-        >
-          <Home className="h-4 w-4" />
-        </Button>
-        {getBreadcrumbs().map((crumb, index) => (
-          <div key={crumb.step} className="flex items-center gap-2">
-            {index > 0 && <span className="text-gray-600">/</span>}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleBreadcrumbClick(crumb.step)}
-              className={crumb.active ? "text-cyan-400" : "text-gray-400 hover:text-white"}
-              data-testid={`breadcrumb-${crumb.step}`}
-            >
-              {crumb.label}
-            </Button>
-          </div>
-        ))}
-        {isDraft && (
-          <Badge variant="secondary" className="ml-auto">
-            Draft
-          </Badge>
-        )}
-        {!isDraft && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={saveDraft}
-            className="ml-auto text-gray-400 hover:text-white"
-            data-testid="button-save-draft"
-          >
-            <Save className="h-4 w-4 mr-2" />
-            Save Draft
-          </Button>
-        )}
-      </div>
+      {/* ═══════════════════════════════════════════════════════════════════════
+          STEP 1 — CONFIGURE PAYMENT
+      ═══════════════════════════════════════════════════════════════════════ */}
+      {step === "configure" && (
+        <Card className="bg-gray-900 border-gray-700">
+          <CardHeader>
+            <CardTitle className="text-cyan-400 flex items-center gap-2">
+              <DollarSign className="h-5 w-5" />
+              Crear Pago
+            </CardTitle>
+            <CardDescription className="text-gray-400">
+              Ingresa el monto, método y datos del cliente
+            </CardDescription>
+          </CardHeader>
 
-      {/* EXPRESS MODE */}
-      {workflowMode === "express" && (
-        <>
-          {/* Step 1: Quick Payment */}
-          {expressStep === "quick-payment" && (
-            <Card className="bg-gray-900 border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-cyan-400 flex items-center gap-2">
-                  <Zap className="h-5 w-5" />
-                  Quick Payment
-                </CardTitle>
-                <CardDescription className="text-gray-400">
-                  Enter amount and choose payment method
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Amount Input - Large and prominent */}
-                <div className="text-center space-y-2">
-                  <Label className="text-white text-lg">Payment Amount</Label>
-                  <div className="relative">
-                    <DollarSign className="absolute left-4 top-1/2 transform -translate-y-1/2 h-8 w-8 text-cyan-400" />
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={paymentConfig.amount}
-                      onChange={(e) => {
-                        // Limit to 2 decimal places
-                        const value = e.target.value;
-                        const parts = value.split('.');
-                        if (parts[1] && parts[1].length > 2) {
-                          return; // Don't update if more than 2 decimal places
-                        }
-                        setPaymentConfig({ ...paymentConfig, amount: value });
-                      }}
-                      className="bg-gray-800 border-gray-600 text-white text-4xl font-bold pl-16 py-8 text-center"
-                      placeholder="0.00"
-                      autoFocus
-                      data-testid="input-quick-amount"
-                    />
-                  </div>
+          <CardContent className="space-y-6">
+
+            {/* ── Amount ──────────────────────────────────────────────────── */}
+            <div className="space-y-2">
+              <Label className="text-white text-base font-medium">Monto del Pago</Label>
+              <div className="relative">
+                <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-6 w-6 text-cyan-400" />
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={config.amount}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    const parts = v.split(".");
+                    if (parts[1] && parts[1].length > 2) return;
+                    setConfig((prev) => ({ ...prev, amount: v }));
+                  }}
+                  className="bg-gray-800 border-gray-600 text-white text-3xl font-bold pl-14 py-6 text-center"
+                  placeholder="0.00"
+                  data-testid="input-amount"
+                />
+              </div>
+            </div>
+
+            <Separator className="bg-gray-700" />
+
+            {/* ── Link to project ──────────────────────────────────────────── */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-white text-base font-medium">Proyecto (opcional)</Label>
+                <div className="flex items-center gap-2">
+                  <span className={`text-sm ${useExistingProject ? "text-cyan-400" : "text-gray-400"}`}>
+                    Vincular proyecto
+                  </span>
+                  <Switch
+                    checked={useExistingProject}
+                    onCheckedChange={(v) => {
+                      setUseExistingProject(v);
+                      if (!v) setSelectedProject(null);
+                    }}
+                    data-testid="switch-use-project"
+                  />
                 </div>
+              </div>
 
-                {/* Optional: Link to existing project */}
-                <div className="bg-gray-800 p-4 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <Label className="text-white text-sm">Link to estimate (optional)</Label>
-                    {projects && projects.length > 0 && (
-                      <Badge variant="secondary" className="text-xs bg-gray-700 text-gray-300">
-                        {projects.length} estimates
-                      </Badge>
-                    )}
-                  </div>
+              {useExistingProject && (
+                <div className="space-y-2">
                   <Select
-                    value={selectedProject?.id?.toString() || ""}
-                    onValueChange={(value) => {
-                      const project = projects?.find(p => p.id.toString() === value);
+                    onValueChange={(val) => {
+                      const project = projects?.find((p) => p.id.toString() === val);
                       if (project) handleProjectSelect(project);
                     }}
+                    value={selectedProject?.id?.toString() || ""}
                   >
-                    <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                      <SelectValue placeholder="Select an estimate..." />
+                    <SelectTrigger className="bg-gray-800 border-gray-600 text-white" data-testid="select-project">
+                      <SelectValue placeholder="Selecciona un proyecto..." />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-800 border-gray-600 max-h-[280px]">
+                    <SelectContent className="bg-gray-800 border-gray-600">
                       {projects && projects.length > 0 ? (
-                        projects.map((project) => (
-                          <SelectItem 
-                            key={project.id} 
-                            value={project.id.toString()}
-                            className="text-white hover:bg-gray-700 cursor-pointer"
-                          >
-                            {project.clientName} - {project.projectType} ({formatDollars(project.totalPrice || 0)})
+                        projects.map((p) => (
+                          <SelectItem key={p.id} value={p.id.toString()} className="text-white hover:bg-gray-700">
+                            {p.clientName} — {p.projectType} ({formatDollars(p.totalPrice || 0)})
                           </SelectItem>
                         ))
                       ) : (
-                        <SelectItem value="no-estimates" disabled>
-                          No estimates found
+                        <SelectItem value="none" disabled>
+                          No hay proyectos disponibles
                         </SelectItem>
                       )}
                     </SelectContent>
                   </Select>
+
                   {selectedProject && (
-                    <div className="mt-2 p-2 bg-cyan-900/30 border border-cyan-700 rounded text-xs text-gray-300">
-                      <div className="flex items-center justify-between">
+                    <div className="p-3 bg-cyan-900/20 border border-cyan-700 rounded-lg text-sm">
+                      <div className="flex justify-between items-start">
                         <div>
-                          <span className="font-medium text-cyan-400">{selectedProject.clientName}</span>
-                          <span className="text-gray-400 ml-2">| {selectedProject.projectType}</span>
+                          <p className="font-medium text-cyan-400">{selectedProject.clientName}</p>
+                          <p className="text-gray-400">{selectedProject.projectType}</p>
+                          <p className="text-gray-500 text-xs">{selectedProject.address}</p>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 px-2 text-gray-400 hover:text-white"
-                          onClick={() => setSelectedProject(null)}
-                        >
-                          Clear
-                        </Button>
-                      </div>
-                      <div className="text-gray-500 mt-1">{selectedProject.address}</div>
-                      <div className="text-cyan-400 font-semibold mt-1">
-                        {formatDollars(selectedProject.totalPrice || 0)}
+                        <div className="text-right">
+                          <p className="font-semibold text-cyan-400">{formatDollars(selectedProject.totalPrice || 0)}</p>
+                          <Badge variant="secondary" className="text-xs mt-1">
+                            {selectedProject.paymentStatus || "pending"}
+                          </Badge>
+                        </div>
                       </div>
                     </div>
                   )}
-                </div>
 
-                {/* Payment Type Selector — clarifies what the amount represents */}
-                {selectedProject && (
-                  <div className="bg-gray-800 p-4 rounded-lg space-y-3">
-                    <Label className="text-white text-sm font-medium">Payment Type</Label>
+                  {/* Payment type selector — only shown when project is selected */}
+                  {selectedProject && (
                     <Select
-                      value={paymentConfig.type}
-                      onValueChange={(value: any) => {
-                        const newAmount = calculateSuggestedAmount(selectedProject, value);
-                        setPaymentConfig({
-                          ...paymentConfig,
-                          type: value,
-                          amount: newAmount.toString(),
-                          description: `${value === 'custom' ? 'Payment' : value} for ${selectedProject.projectType || 'project'}`,
-                        });
-                      }}
+                      value={config.type}
+                      onValueChange={(v: any) => handleTypeChange(v)}
                     >
-                      <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                      <SelectTrigger className="bg-gray-800 border-gray-600 text-white" data-testid="select-payment-type">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-gray-800 border-gray-600">
                         <SelectItem value="deposit">
-                          Deposit (50%) — ${calculateSuggestedAmount(selectedProject, 'deposit').toFixed(2)}
+                          Depósito 50% — {formatDollars(suggestedAmount(selectedProject, "deposit"))}
                         </SelectItem>
                         <SelectItem value="final">
-                          Final Payment (50%) — ${calculateSuggestedAmount(selectedProject, 'final').toFixed(2)}
+                          Pago Final 50% — {formatDollars(suggestedAmount(selectedProject, "final"))}
                         </SelectItem>
-                        <SelectItem value="milestone">Milestone Payment</SelectItem>
-                        <SelectItem value="custom">Custom Amount</SelectItem>
+                        <SelectItem value="milestone">Pago por Etapa</SelectItem>
+                        <SelectItem value="custom">Monto Personalizado</SelectItem>
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-gray-400">
-                      {paymentConfig.type === 'deposit' && `50% upfront deposit of $${parseFloat(paymentConfig.amount || '0').toFixed(2)} from project total $${(selectedProject.totalPrice || 0).toFixed(2)}`}
-                      {paymentConfig.type === 'final' && `50% final payment of $${parseFloat(paymentConfig.amount || '0').toFixed(2)} from project total $${(selectedProject.totalPrice || 0).toFixed(2)}`}
-                      {paymentConfig.type === 'milestone' && `Milestone payment — edit the amount above as needed`}
-                      {paymentConfig.type === 'custom' && `Custom amount — edit the amount above as needed`}
-                    </p>
-                  </div>
-                )}
-
-                <Separator className="bg-gray-700" />
-
-                {/* Payment Method Selection - Large Visual Buttons */}
-                <div className="space-y-3">
-                  <Label className="text-white text-lg">How do you want to collect payment?</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* Terminal / Tap-to-Pay - DISABLED: Not implemented */}
-                    <div className="relative">
-                      <Button
-                        onClick={() => {
-                          if (!deviceInfo.isMobile) {
-                            toast({
-                              title: "Dispositivo no compatible",
-                              description: "Terminal/Tap-to-Pay requiere dispositivo móvil con NFC o Apple Pay",
-                              variant: "destructive",
-                            });
-                          } else {
-                            toast({
-                              title: "Próximamente",
-                              description: "Terminal/Tap-to-Pay estará disponible pronto",
-                            });
-                          }
-                        }}
-                        disabled={true}
-                        variant="outline"
-                        className="h-32 w-full flex flex-col items-center justify-center gap-3 bg-gray-900 border-2 border-gray-700 text-gray-500 opacity-50 cursor-not-allowed"
-                        data-testid="button-method-terminal"
-                      >
-                        <Smartphone className="h-12 w-12 text-gray-500" />
-                        <div className="text-center">
-                          <div className="font-semibold text-lg">💳 Terminal</div>
-                          <div className="text-xs text-gray-500">Tap-to-Pay</div>
-                          <Badge className="mt-2 bg-gray-700 text-gray-400 text-[10px]">Próximamente</Badge>
-                        </div>
-                      </Button>
-                      {deviceInfo.isDesktop && (
-                        <div className="absolute top-2 right-2">
-                          <AlertCircle className="h-4 w-4 text-amber-500" />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Payment Link */}
-                    <Button
-                      onClick={() => handleMethodSelect("link")}
-                      variant="outline"
-                      className="h-32 flex flex-col items-center justify-center gap-3 bg-gray-800 border-2 border-gray-600 hover:border-cyan-400 hover:bg-gray-700 text-white transition-all"
-                      data-testid="button-method-link"
-                    >
-                      <LinkIcon className="h-12 w-12 text-cyan-400" />
-                      <div className="text-center">
-                        <div className="font-semibold text-lg">🔗 Payment Link</div>
-                        <div className="text-xs text-gray-400">Share via email/SMS</div>
-                      </div>
-                    </Button>
-
-                    {/* Manual Payment */}
-                    <Button
-                      onClick={() => handleMethodSelect("manual")}
-                      variant="outline"
-                      className="h-32 flex flex-col items-center justify-center gap-3 bg-gray-800 border-2 border-gray-600 hover:border-cyan-400 hover:bg-gray-700 text-white transition-all"
-                      data-testid="button-method-manual"
-                    >
-                      <Banknote className="h-12 w-12 text-cyan-400" />
-                      <div className="text-center">
-                        <div className="font-semibold text-lg">📝 Cash/Check</div>
-                        <div className="text-xs text-gray-400">Register manual payment</div>
-                      </div>
-                    </Button>
-                  </div>
+                  )}
                 </div>
+              )}
+            </div>
 
-                {/* Conditional fields based on selected method */}
-                {paymentMethod === "link" && (
-                  <div className="bg-gray-800 p-4 rounded-lg space-y-3">
-                    <Label className="text-white">Client Email (Required)</Label>
-                    <Input
-                      type="email"
-                      value={paymentConfig.clientEmail}
-                      onChange={(e) => setPaymentConfig({ ...paymentConfig, clientEmail: e.target.value })}
-                      className="bg-gray-700 border-gray-600 text-white"
-                      placeholder="client@example.com"
-                      data-testid="input-client-email"
-                    />
+            <Separator className="bg-gray-700" />
 
-                    {/* 💰 Fee Pass-Through Toggle */}
-                    <div className="bg-gray-700/50 border border-gray-600 rounded-lg p-3 mt-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1 mr-3">
-                          <div className="text-white text-sm font-medium flex items-center gap-2">
-                            <span>💰</span>
-                            <span>¿Quién absorbe la tarifa de plataforma (0.5%)?</span>
-                          </div>
-                          <div className="text-gray-400 text-xs mt-1">
-                            {paymentConfig.feePassThrough
-                              ? `✅ Cliente paga la tarifa — Tú recibes exactamente $${parseFloat(paymentConfig.amount || '0').toFixed(2)}`
-                              : `⚠️ Tú absorbes la tarifa — Recibes $${(parseFloat(paymentConfig.amount || '0') * 0.995).toFixed(2)} de $${parseFloat(paymentConfig.amount || '0').toFixed(2)}`
-                            }
-                          </div>
-                        </div>
-                        <div className="flex flex-col items-center gap-1">
-                          <Switch
-                            checked={paymentConfig.feePassThrough}
-                            onCheckedChange={(checked) => setPaymentConfig({ ...paymentConfig, feePassThrough: checked })}
-                            data-testid="toggle-fee-pass-through"
-                          />
-                          <span className="text-xs text-gray-400">
-                            {paymentConfig.feePassThrough ? 'Cliente' : 'Yo'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {paymentMethod === "manual" && (
-                  <div className="bg-gray-800 p-4 rounded-lg space-y-3">
-                    <Label className="text-white">Payment Method</Label>
-                    <Select
-                      value={paymentConfig.manualMethod}
-                      onValueChange={(value: any) => setPaymentConfig({ ...paymentConfig, manualMethod: value })}
-                    >
-                      <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-gray-800 border-gray-600">
-                        <SelectItem value="cash">Cash</SelectItem>
-                        <SelectItem value="check">Check</SelectItem>
-                        <SelectItem value="zelle">Zelle</SelectItem>
-                        <SelectItem value="venmo">Venmo</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                {paymentMethod && (
-                  <Button
-                    onClick={handleCreatePayment}
-                    className="w-full bg-cyan-400 text-black hover:bg-cyan-300 py-6 text-lg font-semibold"
-                    disabled={isCreatingPayment}
-                    data-testid="button-create-payment-express"
-                  >
-                    {isCreatingPayment ? (
-                      <>
-                        <Clock className="h-5 w-5 mr-2 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        {paymentMethod === "terminal" && "Open Terminal"}
-                        {paymentMethod === "link" && "Generate Payment Link"}
-                        {paymentMethod === "manual" && "Register Payment"}
-                        <ArrowRight className="h-5 w-5 ml-2" />
-                      </>
-                    )}
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Step 2: Confirm & Share */}
-          {expressStep === "confirm-share" && (
-            <Card className="bg-gray-900 border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-cyan-400 flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5" />
-                  {paymentMethod === "terminal" && "Terminal Ready"}
-                  {paymentMethod === "link" && "Payment Link Created"}
-                  {paymentMethod === "manual" && "Payment Registered"}
-                </CardTitle>
-                <CardDescription className="text-gray-400">
-                  {paymentMethod === "terminal" && "Process payment with Tap-to-Pay"}
-                  {paymentMethod === "link" && "Share this link with your client"}
-                  {paymentMethod === "manual" && "Payment has been recorded"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Success message */}
-                <div className="bg-green-900/20 border border-green-700 p-4 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <CheckCircle className="h-5 w-5 text-green-400" />
-                    <h4 className="font-medium text-green-400">Success!</h4>
-                  </div>
-                  <p className="text-green-300 text-sm">
-                    {paymentMethod === "terminal" && "Your terminal is ready to accept payment"}
-                    {paymentMethod === "link" && `Payment link for ${formatCurrency(parseFloat(paymentConfig.amount) * 100)} is ready`}
-                    {paymentMethod === "manual" && `Payment of ${formatCurrency(parseFloat(paymentConfig.amount) * 100)} has been registered`}
-                  </p>
+            {/* ── Client info ──────────────────────────────────────────────── */}
+            <div className="space-y-3">
+              <Label className="text-white text-base font-medium">Datos del Cliente</Label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-gray-400 text-sm">Email{paymentMethod === "link" ? " *" : ""}</Label>
+                  <Input
+                    type="email"
+                    value={config.clientEmail}
+                    onChange={(e) => setConfig((prev) => ({ ...prev, clientEmail: e.target.value }))}
+                    className="bg-gray-800 border-gray-600 text-white mt-1"
+                    placeholder="cliente@email.com"
+                    data-testid="input-client-email"
+                  />
                 </div>
+                <div>
+                  <Label className="text-gray-400 text-sm">Nombre</Label>
+                  <Input
+                    value={config.clientName}
+                    onChange={(e) => setConfig((prev) => ({ ...prev, clientName: e.target.value }))}
+                    className="bg-gray-800 border-gray-600 text-white mt-1"
+                    placeholder="Nombre del cliente"
+                    data-testid="input-client-name"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <Label className="text-gray-400 text-sm">Teléfono (para SMS/WhatsApp)</Label>
+                  <Input
+                    type="tel"
+                    value={config.clientPhone}
+                    onChange={(e) => setConfig((prev) => ({ ...prev, clientPhone: e.target.value }))}
+                    className="bg-gray-800 border-gray-600 text-white mt-1"
+                    placeholder="+1 (555) 000-0000"
+                    data-testid="input-client-phone"
+                  />
+                </div>
+              </div>
+            </div>
 
-                {/* Payment Link Actions */}
-                {paymentMethod === "link" && generatedLink && (
-                  <>
-                    <div className="bg-gray-800 p-4 rounded-lg">
-                      <Label className="text-white mb-2 block">Payment Link</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          value={generatedLink}
-                          readOnly
-                          className="bg-gray-700 border-gray-600 text-white"
-                          data-testid="input-generated-link"
-                        />
-                        <Button
-                          onClick={() => copyToClipboard(generatedLink)}
-                          variant="outline"
-                          className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
-                          data-testid="button-copy-link"
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
+            <Separator className="bg-gray-700" />
 
-                    {/* Share Options */}
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      <Button
-                        onClick={sendPaymentEmail}
-                        className="bg-gray-800 border border-gray-600 text-white hover:bg-gray-700"
-                        data-testid="button-send-email"
-                      >
-                        <Mail className="h-4 w-4 mr-2" />
-                        Email
-                      </Button>
-                      
-                      {paymentConfig.clientPhone && (
-                        <>
-                          <Button
-                            onClick={shareViaSMS}
-                            className="bg-gray-800 border border-gray-600 text-white hover:bg-gray-700"
-                            data-testid="button-send-sms"
-                          >
-                            <MessageSquare className="h-4 w-4 mr-2" />
-                            SMS
-                          </Button>
-                          
-                          <Button
-                            onClick={shareViaWhatsApp}
-                            className="bg-gray-800 border border-gray-600 text-white hover:bg-gray-700"
-                            data-testid="button-send-whatsapp"
-                          >
-                            <MessageSquare className="h-4 w-4 mr-2" />
-                            WhatsApp
-                          </Button>
-                        </>
-                      )}
-                      
-                      <Button
-                        onClick={() => {/* QR code logic */}}
-                        className="bg-gray-800 border border-gray-600 text-white hover:bg-gray-700"
-                        data-testid="button-show-qr"
-                      >
-                        <QrCode className="h-4 w-4 mr-2" />
-                        QR Code
-                      </Button>
-                      
-                      <Button
-                        onClick={() => window.open(generatedLink, "_blank")}
-                        className="bg-gray-800 border border-gray-600 text-white hover:bg-gray-700"
-                        data-testid="button-open-link"
-                      >
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        Preview
-                      </Button>
-                      
-                      <Button
-                        onClick={() => {/* Download PDF logic */}}
-                        className="bg-gray-800 border border-gray-600 text-white hover:bg-gray-700"
-                        data-testid="button-download-pdf"
-                      >
-                        <Download className="h-4 w-4 mr-2" />
-                        PDF
-                      </Button>
-                    </div>
-                  </>
-                )}
+            {/* ── Payment method ───────────────────────────────────────────── */}
+            <div className="space-y-3">
+              <Label className="text-white text-base font-medium">Método de Cobro</Label>
+              <div className="grid grid-cols-3 gap-3">
 
-                {/* Terminal Action */}
-                {paymentMethod === "terminal" && (
+                {/* Terminal — disabled */}
+                <div className="relative">
                   <Button
-                    onClick={() => {
+                    onClick={() =>
                       toast({
-                        title: "Terminal Opening",
-                        description: "Stripe Terminal integration would open here",
-                      });
-                    }}
-                    className="w-full bg-cyan-400 text-black hover:bg-cyan-300 py-6 text-lg"
-                    data-testid="button-open-terminal"
-                  >
-                    <Smartphone className="h-5 w-5 mr-2" />
-                    Open Terminal Now
-                  </Button>
-                )}
-
-                {/* Manual Payment Details */}
-                {paymentMethod === "manual" && (
-                  <div className="bg-gray-800 p-4 rounded-lg space-y-2">
-                    <h4 className="font-medium text-white mb-2">Payment Details</h4>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-gray-400">Amount:</span>
-                        <span className="text-white ml-2">{formatCurrency(parseFloat(paymentConfig.amount) * 100)}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-400">Method:</span>
-                        <span className="text-white ml-2 capitalize">{paymentConfig.manualMethod}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-400">Date:</span>
-                        <span className="text-white ml-2">{paymentConfig.paymentDate}</span>
-                      </div>
-                      {paymentConfig.referenceNumber && (
-                        <div>
-                          <span className="text-gray-400">Reference:</span>
-                          <span className="text-white ml-2">{paymentConfig.referenceNumber}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Actions */}
-                <div className="flex gap-3">
-                  <Button
-                    onClick={resetWorkflow}
-                    className="flex-1 bg-cyan-400 text-black hover:bg-cyan-300"
-                    data-testid="button-create-another"
-                  >
-                    Create Another Payment
-                  </Button>
-                  <Button
-                    onClick={() => {/* View history */}}
+                        title: deviceInfo.isMobile ? "Próximamente" : "Dispositivo no compatible",
+                        description: "Terminal/Tap-to-Pay requiere dispositivo móvil con NFC o Apple Pay",
+                        variant: deviceInfo.isMobile ? "default" : "destructive",
+                      })
+                    }
+                    disabled
                     variant="outline"
-                    className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
-                    data-testid="button-view-history"
+                    className="h-24 w-full flex flex-col items-center justify-center gap-2 bg-gray-900 border-2 border-gray-700 text-gray-500 opacity-50 cursor-not-allowed"
+                    data-testid="button-method-terminal"
                   >
-                    View History
+                    <Smartphone className="h-8 w-8" />
+                    <div className="text-center">
+                      <div className="font-semibold text-sm">Terminal</div>
+                      <Badge className="mt-1 bg-gray-700 text-gray-400 text-[9px]">Próximamente</Badge>
+                    </div>
                   </Button>
+                  {deviceInfo.isDesktop && (
+                    <AlertCircle className="absolute top-2 right-2 h-4 w-4 text-amber-500" />
+                  )}
                 </div>
-              </CardContent>
-            </Card>
-          )}
-        </>
+
+                {/* Payment Link */}
+                <Button
+                  onClick={() => handleMethodSelect("link")}
+                  variant="outline"
+                  className={`h-24 flex flex-col items-center justify-center gap-2 border-2 transition-all ${
+                    paymentMethod === "link"
+                      ? "bg-cyan-900/30 border-cyan-400 text-cyan-400"
+                      : "bg-gray-800 border-gray-600 text-white hover:border-cyan-400 hover:bg-gray-700"
+                  }`}
+                  data-testid="button-method-link"
+                >
+                  <LinkIcon className="h-8 w-8" />
+                  <div className="text-center">
+                    <div className="font-semibold text-sm">Payment Link</div>
+                    <div className="text-xs text-gray-400">Email / SMS</div>
+                  </div>
+                </Button>
+
+                {/* Cash / Check */}
+                <Button
+                  onClick={() => handleMethodSelect("manual")}
+                  variant="outline"
+                  className={`h-24 flex flex-col items-center justify-center gap-2 border-2 transition-all ${
+                    paymentMethod === "manual"
+                      ? "bg-cyan-900/30 border-cyan-400 text-cyan-400"
+                      : "bg-gray-800 border-gray-600 text-white hover:border-cyan-400 hover:bg-gray-700"
+                  }`}
+                  data-testid="button-method-manual"
+                >
+                  <Banknote className="h-8 w-8" />
+                  <div className="text-center">
+                    <div className="font-semibold text-sm">Cash / Check</div>
+                    <div className="text-xs text-gray-400">Registro manual</div>
+                  </div>
+                </Button>
+              </div>
+            </div>
+
+            {/* ── Advanced Options (collapsible) ───────────────────────────── */}
+            <div className="border border-gray-700 rounded-lg overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setShowAdvanced((v) => !v)}
+                className="w-full flex items-center justify-between px-4 py-3 bg-gray-800 hover:bg-gray-750 text-gray-300 hover:text-white transition-colors"
+                data-testid="button-toggle-advanced"
+              >
+                <span className="text-sm font-medium">Opciones Avanzadas</span>
+                {showAdvanced ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+              </button>
+
+              {showAdvanced && (
+                <div className="p-4 space-y-4 bg-gray-850 border-t border-gray-700">
+
+                  {/* Description */}
+                  <div>
+                    <Label className="text-gray-300 text-sm">Descripción del Pago</Label>
+                    <Textarea
+                      value={config.description}
+                      onChange={(e) => setConfig((prev) => ({ ...prev, description: e.target.value }))}
+                      className="bg-gray-800 border-gray-600 text-white mt-1"
+                      placeholder="Ej: Depósito para instalación de cerca de madera..."
+                      rows={2}
+                      data-testid="textarea-description"
+                    />
+                  </div>
+
+                  {/* Payment Link specific advanced options */}
+                  {paymentMethod === "link" && (
+                    <>
+                      {/* Due Date */}
+                      <div>
+                        <Label className="text-gray-300 text-sm">Fecha de Vencimiento (opcional)</Label>
+                        <Input
+                          type="date"
+                          value={config.dueDate}
+                          onChange={(e) => setConfig((prev) => ({ ...prev, dueDate: e.target.value }))}
+                          className="bg-gray-800 border-gray-600 text-white mt-1"
+                          data-testid="input-due-date"
+                        />
+                      </div>
+
+                      {/* Auto-send email */}
+                      <div className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                        <div>
+                          <p className="text-white text-sm font-medium">Enviar email automáticamente</p>
+                          <p className="text-gray-400 text-xs">Envía el link al cliente por email al crearlo</p>
+                        </div>
+                        <Switch
+                          checked={config.autoSendEmail}
+                          onCheckedChange={(v) => setConfig((prev) => ({ ...prev, autoSendEmail: v }))}
+                          data-testid="switch-auto-send-email"
+                        />
+                      </div>
+
+                      {/* Fee absorption */}
+                      <div className="p-3 bg-gray-800 rounded-lg border border-gray-600">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1 mr-4">
+                            <p className="text-white text-sm font-medium">💰 ¿Quién absorbe la tarifa (0.5%)?</p>
+                            <p className="text-gray-400 text-xs mt-1">
+                              {config.feePassThrough
+                                ? `✅ Cliente paga — Tú recibes exactamente $${parseFloat(config.amount || "0").toFixed(2)}`
+                                : `⚠️ Tú absorbes — Recibes $${(parseFloat(config.amount || "0") * 0.995).toFixed(2)} de $${parseFloat(config.amount || "0").toFixed(2)}`}
+                            </p>
+                          </div>
+                          <div className="flex flex-col items-center gap-1">
+                            <Switch
+                              checked={config.feePassThrough}
+                              onCheckedChange={(v) => setConfig((prev) => ({ ...prev, feePassThrough: v }))}
+                              data-testid="toggle-fee-pass-through"
+                            />
+                            <span className="text-xs text-gray-400">
+                              {config.feePassThrough ? "Cliente" : "Yo"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Manual payment specific advanced options */}
+                  {paymentMethod === "manual" && (
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-gray-300 text-sm">Método Recibido</Label>
+                          <Select
+                            value={config.manualMethod}
+                            onValueChange={(v: any) => setConfig((prev) => ({ ...prev, manualMethod: v }))}
+                          >
+                            <SelectTrigger className="bg-gray-800 border-gray-600 text-white mt-1" data-testid="select-manual-method">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-gray-800 border-gray-600">
+                              <SelectItem value="cash">Efectivo</SelectItem>
+                              <SelectItem value="check">Cheque</SelectItem>
+                              <SelectItem value="zelle">Zelle</SelectItem>
+                              <SelectItem value="venmo">Venmo</SelectItem>
+                              <SelectItem value="other">Otro</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="text-gray-300 text-sm">Fecha de Pago</Label>
+                          <Input
+                            type="date"
+                            value={config.paymentDate}
+                            onChange={(e) => setConfig((prev) => ({ ...prev, paymentDate: e.target.value }))}
+                            className="bg-gray-800 border-gray-600 text-white mt-1"
+                            data-testid="input-payment-date"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-gray-300 text-sm">Número de Referencia / Cheque (opcional)</Label>
+                        <Input
+                          value={config.referenceNumber}
+                          onChange={(e) => setConfig((prev) => ({ ...prev, referenceNumber: e.target.value }))}
+                          className="bg-gray-800 border-gray-600 text-white mt-1"
+                          placeholder="Cheque #1234 o ID de transacción"
+                          data-testid="input-reference-number"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-gray-300 text-sm">Notas (opcional)</Label>
+                        <Textarea
+                          value={config.notes}
+                          onChange={(e) => setConfig((prev) => ({ ...prev, notes: e.target.value }))}
+                          className="bg-gray-800 border-gray-600 text-white mt-1"
+                          placeholder="Notas adicionales sobre este pago..."
+                          rows={2}
+                          data-testid="textarea-notes"
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* ── Submit button ────────────────────────────────────────────── */}
+            <Button
+              onClick={handleCreatePayment}
+              disabled={isCreatingPayment || !paymentMethod || !config.amount}
+              className="w-full bg-cyan-400 text-black hover:bg-cyan-300 py-6 text-lg font-semibold disabled:opacity-50"
+              data-testid="button-create-payment"
+            >
+              {isCreatingPayment ? (
+                <>
+                  <Clock className="h-5 w-5 mr-2 animate-spin" />
+                  Procesando...
+                </>
+              ) : (
+                <>
+                  {paymentMethod === "link" && "Generar Payment Link"}
+                  {paymentMethod === "manual" && "Registrar Pago"}
+                  {paymentMethod === "terminal" && "Abrir Terminal"}
+                  {!paymentMethod && "Selecciona un método de pago"}
+                  {paymentMethod && <ArrowRight className="h-5 w-5 ml-2" />}
+                </>
+              )}
+            </Button>
+
+          </CardContent>
+        </Card>
       )}
 
-      {/* GUIDED MODE */}
-      {workflowMode === "guided" && (
-        <>
-          {/* Step 1: Payment Method First */}
-          {guidedStep === "method" && (
-            <Card className="bg-gray-900 border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-cyan-400 flex items-center gap-2">
-                  <CreditCard className="h-5 w-5" />
-                  Choose Payment Method
-                </CardTitle>
-                <CardDescription className="text-gray-400">
-                  How do you want to collect this payment?
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Terminal - DISABLED: Not implemented */}
-                  <div className="relative">
-                    <Card 
-                      className="bg-gray-900 border-gray-700 opacity-50 cursor-not-allowed"
-                      data-testid="card-method-terminal"
+      {/* ═══════════════════════════════════════════════════════════════════════
+          STEP 2 — SUCCESS & SHARE
+      ═══════════════════════════════════════════════════════════════════════ */}
+      {step === "success" && (
+        <Card className="bg-gray-900 border-gray-700">
+          <CardHeader>
+            <CardTitle className="text-cyan-400 flex items-center gap-2">
+              <CheckCircle className="h-5 w-5" />
+              {paymentMethod === "link" && "Payment Link Listo"}
+              {paymentMethod === "manual" && "Pago Registrado"}
+              {paymentMethod === "terminal" && "Terminal Activo"}
+            </CardTitle>
+            <CardDescription className="text-gray-400">
+              {paymentMethod === "link" && "Comparte el link con tu cliente"}
+              {paymentMethod === "manual" && "El pago ha sido registrado en tu historial"}
+              {paymentMethod === "terminal" && "Procesa el pago con Tap-to-Pay"}
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="space-y-6">
+
+            {/* ── Success banner ───────────────────────────────────────────── */}
+            <div className="bg-green-900/20 border border-green-700 p-4 rounded-lg flex items-start gap-3">
+              <CheckCircle className="h-5 w-5 text-green-400 mt-0.5 shrink-0" />
+              <div>
+                <p className="font-semibold text-green-400">¡Éxito!</p>
+                <p className="text-green-300 text-sm mt-0.5">
+                  {paymentMethod === "link" &&
+                    `Payment link por ${formatDollars(parseFloat(config.amount))} creado correctamente`}
+                  {paymentMethod === "manual" &&
+                    `Pago de ${formatDollars(parseFloat(config.amount))} registrado`}
+                  {paymentMethod === "terminal" && "Terminal listo para cobrar"}
+                </p>
+              </div>
+            </div>
+
+            {/* ── Payment link display + share ─────────────────────────────── */}
+            {paymentMethod === "link" && generatedLink && (
+              <>
+                <div className="bg-gray-800 p-4 rounded-lg space-y-2">
+                  <Label className="text-white text-sm">Tu Payment Link</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={generatedLink}
+                      readOnly
+                      className="bg-gray-700 border-gray-600 text-white font-mono text-sm"
+                      data-testid="input-generated-link"
+                    />
+                    <Button
+                      onClick={() => copyToClipboard(generatedLink)}
+                      variant="outline"
+                      className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600 shrink-0"
+                      data-testid="button-copy-link"
                     >
-                      <CardContent className="pt-6 text-center space-y-3">
-                        <Smartphone className="h-16 w-16 text-gray-500 mx-auto" />
-                        <h3 className="font-semibold text-gray-500 text-lg">💳 Terminal</h3>
-                        <p className="text-gray-600 text-sm">
-                          Tap-to-Pay requiere dispositivo móvil
-                        </p>
-                        <Badge className="bg-gray-700 text-gray-400 text-[10px]">Próximamente</Badge>
-                      </CardContent>
-                    </Card>
-                    {deviceInfo.isDesktop && (
-                      <div className="absolute top-2 right-2">
-                        <AlertCircle className="h-4 w-4 text-amber-500" />
-                      </div>
-                    )}
+                      <Copy className="h-4 w-4" />
+                    </Button>
                   </div>
-
-                  {/* Payment Link */}
-                  <Card 
-                    className={`cursor-pointer transition-all ${
-                      paymentMethod === "link" 
-                        ? "bg-cyan-900/30 border-cyan-400 border-2" 
-                        : "bg-gray-800 border-gray-600 hover:border-cyan-400"
-                    }`}
-                    onClick={() => setPaymentMethod("link")}
-                    data-testid="card-method-link"
-                  >
-                    <CardContent className="pt-6 text-center space-y-3">
-                      <LinkIcon className="h-16 w-16 text-cyan-400 mx-auto" />
-                      <h3 className="font-semibold text-white text-lg">🔗 Payment Link</h3>
-                      <p className="text-gray-400 text-sm">
-                        Generate a secure link to share via email, SMS or messaging
-                      </p>
-                      {paymentMethod === "link" && (
-                        <CheckCircle className="h-6 w-6 text-cyan-400 mx-auto" />
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  {/* Manual */}
-                  <Card 
-                    className={`cursor-pointer transition-all ${
-                      paymentMethod === "manual" 
-                        ? "bg-cyan-900/30 border-cyan-400 border-2" 
-                        : "bg-gray-800 border-gray-600 hover:border-cyan-400"
-                    }`}
-                    onClick={() => setPaymentMethod("manual")}
-                    data-testid="card-method-manual"
-                  >
-                    <CardContent className="pt-6 text-center space-y-3">
-                      <Banknote className="h-16 w-16 text-cyan-400 mx-auto" />
-                      <h3 className="font-semibold text-white text-lg">📝 Cash/Check</h3>
-                      <p className="text-gray-400 text-sm">
-                        Register a payment received via cash, check, or other methods
-                      </p>
-                      {paymentMethod === "manual" && (
-                        <CheckCircle className="h-6 w-6 text-cyan-400 mx-auto" />
-                      )}
-                    </CardContent>
-                  </Card>
                 </div>
 
-                {paymentMethod && (
-                  <Button
-                    onClick={() => setGuidedStep("project-amount")}
-                    className="w-full bg-cyan-400 text-black hover:bg-cyan-300"
-                    data-testid="button-next-to-project"
-                  >
-                    Continue
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          )}
+                <div className="space-y-2">
+                  <Label className="text-white text-sm">Compartir</Label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    <Button
+                      onClick={sendPaymentEmail}
+                      variant="outline"
+                      className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
+                      data-testid="button-send-email"
+                    >
+                      <Mail className="h-4 w-4 mr-2" />
+                      Email
+                    </Button>
 
-          {/* Step 2: Project & Amount */}
-          {guidedStep === "project-amount" && (
-            <Card className="bg-gray-900 border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-cyan-400 flex items-center gap-2">
-                  <Calculator className="h-5 w-5" />
-                  Project & Amount
-                </CardTitle>
-                <CardDescription className="text-gray-400">
-                  Link to a project or create a quick invoice
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Toggle: Existing Project vs Quick Invoice */}
-                <div className="flex items-center justify-center gap-4 p-4 bg-gray-800 rounded-lg">
-                  <span className={`text-sm ${useExistingProject ? "text-cyan-400 font-medium" : "text-gray-400"}`}>
-                    Select Project
-                  </span>
-                  <Switch
-                    checked={!useExistingProject}
-                    onCheckedChange={(checked) => {
-                      setUseExistingProject(!checked);
-                      if (checked) setSelectedProject(null);
-                    }}
-                    data-testid="switch-project-type"
-                  />
-                  <span className={`text-sm ${!useExistingProject ? "text-cyan-400 font-medium" : "text-gray-400"}`}>
-                    Quick Invoice
-                  </span>
-                </div>
-
-                {/* Option A: Select Existing Project */}
-                {useExistingProject && (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-white">Select an Estimate</Label>
-                      {projects && projects.length > 0 && (
-                        <Badge variant="secondary" className="text-xs bg-gray-700 text-gray-300">
-                          {projects.length} available
-                        </Badge>
-                      )}
-                    </div>
-                    {projects && projects.length > 0 ? (
-                      <div className="space-y-4">
-                        <Select
-                          value={selectedProject?.id?.toString() || ""}
-                          onValueChange={(value) => {
-                            const project = projects.find(p => p.id.toString() === value);
-                            if (project) handleProjectSelect(project);
-                          }}
-                        >
-                          <SelectTrigger className="bg-gray-700 border-gray-600 text-white h-12">
-                            <SelectValue placeholder="Select an estimate from your history..." />
-                          </SelectTrigger>
-                          <SelectContent className="bg-gray-800 border-gray-600 max-h-[320px]">
-                            {projects.map((project) => (
-                              <SelectItem 
-                                key={project.id} 
-                                value={project.id.toString()}
-                                className="text-white hover:bg-gray-700 cursor-pointer py-2"
-                              >
-                                {project.clientName} - {project.projectType} ({formatDollars(project.totalPrice || 0)})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        
-                        {/* Selected project details card */}
-                        {selectedProject && (
-                          <div className="p-4 border border-cyan-400 bg-cyan-900/20 rounded-lg">
-                            <div className="flex justify-between items-start">
-                              <div className="space-y-1">
-                                <h4 className="font-medium text-white">{selectedProject.clientName}</h4>
-                                <p className="text-sm text-gray-400">{selectedProject.projectType}</p>
-                                <p className="text-xs text-gray-500">{selectedProject.address}</p>
-                              </div>
-                              <div className="text-right">
-                                <p className="font-semibold text-cyan-400 text-lg">
-                                  {formatDollars(selectedProject.totalPrice || 0)}
-                                </p>
-                                <Badge
-                                  variant={selectedProject.paymentStatus === "paid" ? "default" : "secondary"}
-                                  className="text-xs mt-1"
-                                >
-                                  {selectedProject.paymentStatus || "pending"}
-                                </Badge>
-                              </div>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="mt-2 h-7 px-2 text-gray-400 hover:text-white text-xs"
-                              onClick={() => setSelectedProject(null)}
-                            >
-                              Change selection
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8 bg-gray-800 rounded-lg">
-                        <FileText className="h-12 w-12 text-gray-500 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-gray-400 mb-2">No Estimates Found</h3>
-                        <p className="text-gray-500 mb-4">
-                          Create a quick invoice instead
-                        </p>
+                    {config.clientPhone && (
+                      <>
                         <Button
-                          onClick={() => setUseExistingProject(false)}
+                          onClick={shareViaSMS}
                           variant="outline"
-                          className="bg-gray-700 border-gray-600 text-white"
+                          className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
+                          data-testid="button-send-sms"
                         >
-                          Create Quick Invoice
+                          <MessageSquare className="h-4 w-4 mr-2" />
+                          SMS
                         </Button>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Option B: Quick Invoice (From Scratch) */}
-                {!useExistingProject && (
-                  <div className="space-y-4">
-                    <Label className="text-white">Client Information</Label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="clientName" className="text-gray-300 text-sm">Client Name</Label>
-                        <Input
-                          id="clientName"
-                          value={paymentConfig.clientName}
-                          onChange={(e) => setPaymentConfig({ ...paymentConfig, clientName: e.target.value })}
-                          className="bg-gray-800 border-gray-600 text-white"
-                          placeholder="John Doe"
-                          data-testid="input-client-name"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="clientEmail" className="text-gray-300 text-sm">Client Email</Label>
-                        <Input
-                          id="clientEmail"
-                          type="email"
-                          value={paymentConfig.clientEmail}
-                          onChange={(e) => setPaymentConfig({ ...paymentConfig, clientEmail: e.target.value })}
-                          className="bg-gray-800 border-gray-600 text-white"
-                          placeholder="client@example.com"
-                          data-testid="input-client-email-quick"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="clientPhone" className="text-gray-300 text-sm">Client Phone (optional)</Label>
-                        <Input
-                          id="clientPhone"
-                          type="tel"
-                          value={paymentConfig.clientPhone}
-                          onChange={(e) => setPaymentConfig({ ...paymentConfig, clientPhone: e.target.value })}
-                          className="bg-gray-800 border-gray-600 text-white"
-                          placeholder="+1 (555) 123-4567"
-                          data-testid="input-client-phone"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <Separator className="bg-gray-700" />
-
-                {/* Payment Type & Amount */}
-                <div className="space-y-4">
-                  <Label className="text-white">Payment Details</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="paymentType" className="text-gray-300 text-sm">Payment Type</Label>
-                      <Select
-                        value={paymentConfig.type}
-                        onValueChange={(value: any) => {
-                          setPaymentConfig({
-                            ...paymentConfig,
-                            type: value,
-                            amount: selectedProject 
-                              ? calculateSuggestedAmount(selectedProject, value).toString()
-                              : paymentConfig.amount,
-                          });
-                        }}
-                      >
-                        <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-gray-800 border-gray-600">
-                          <SelectItem value="deposit">Deposit (50%)</SelectItem>
-                          <SelectItem value="final">Final Payment (50%)</SelectItem>
-                          <SelectItem value="milestone">Milestone Payment</SelectItem>
-                          <SelectItem value="custom">Custom Amount</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="amount" className="text-gray-300 text-sm">Amount ($)</Label>
-                      <Input
-                        id="amount"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={paymentConfig.amount}
-                        onChange={(e) => {
-                          // Limit to 2 decimal places
-                          const value = e.target.value;
-                          const parts = value.split('.');
-                          if (parts[1] && parts[1].length > 2) {
-                            return; // Don't update if more than 2 decimal places
-                          }
-                          setPaymentConfig({ ...paymentConfig, amount: value });
-                        }}
-                        className="bg-gray-800 border-gray-600 text-white"
-                        placeholder="0.00"
-                        data-testid="input-amount-guided"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Navigation */}
-                <div className="flex justify-between">
-                  <Button
-                    onClick={() => setGuidedStep("method")}
-                    variant="outline"
-                    className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
-                    data-testid="button-back-to-method"
-                  >
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Back
-                  </Button>
-                  <Button
-                    onClick={() => setGuidedStep("details")}
-                    className="bg-cyan-400 text-black hover:bg-cyan-300"
-                    disabled={!paymentConfig.amount || (useExistingProject && !selectedProject)}
-                    data-testid="button-next-to-details"
-                  >
-                    Continue
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Step 3: Payment Details (Conditional based on method) */}
-          {guidedStep === "details" && (
-            <Card className="bg-gray-900 border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-cyan-400 flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Payment Details
-                </CardTitle>
-                <CardDescription className="text-gray-400">
-                  {paymentMethod === "terminal" && "Configure terminal payment settings"}
-                  {paymentMethod === "link" && "Set up payment link details"}
-                  {paymentMethod === "manual" && "Record manual payment information"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Common Description Field */}
-                <div>
-                  <Label htmlFor="description" className="text-white">Description</Label>
-                  <Textarea
-                    id="description"
-                    value={paymentConfig.description}
-                    onChange={(e) => setPaymentConfig({ ...paymentConfig, description: e.target.value })}
-                    className="bg-gray-800 border-gray-600 text-white"
-                    placeholder="Payment for fence installation project..."
-                    rows={3}
-                    data-testid="textarea-description"
-                  />
-                </div>
-
-                {/* Terminal Specific Fields */}
-                {paymentMethod === "terminal" && (
-                  <div className="bg-gray-800 p-4 rounded-lg">
-                    <div className="flex items-start gap-3">
-                      <Smartphone className="h-5 w-5 text-cyan-400 mt-1" />
-                      <div>
-                        <h4 className="font-medium text-white mb-1">Terminal Payment</h4>
-                        <p className="text-gray-400 text-sm">
-                          After confirming, you'll be directed to the Stripe Terminal interface to collect payment directly from the client's card.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Payment Link Specific Fields */}
-                {paymentMethod === "link" && (
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="dueDate" className="text-white">Due Date (Optional)</Label>
-                      <Input
-                        id="dueDate"
-                        type="date"
-                        value={paymentConfig.dueDate}
-                        onChange={(e) => setPaymentConfig({ ...paymentConfig, dueDate: e.target.value })}
-                        className="bg-gray-800 border-gray-600 text-white"
-                        data-testid="input-due-date"
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between p-4 bg-gray-800 rounded-lg">
-                      <div>
-                        <Label className="text-white">Auto-send email to client</Label>
-                        <p className="text-gray-400 text-sm">Automatically send payment link via email</p>
-                      </div>
-                      <Switch
-                        checked={paymentConfig.autoSendEmail}
-                        onCheckedChange={(checked) => setPaymentConfig({ ...paymentConfig, autoSendEmail: checked })}
-                        data-testid="switch-auto-send-email"
-                      />
-                    </div>
-
-                    {/* 💰 Fee Pass-Through Toggle - Guided Mode */}
-                    <div className="bg-gray-700/50 border border-gray-600 rounded-lg p-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1 mr-3">
-                          <div className="text-white text-sm font-medium flex items-center gap-2">
-                            <span>💰</span>
-                            <span>¿Quién absorbe la tarifa de plataforma (0.5%)?</span>
-                          </div>
-                          <div className="text-gray-400 text-xs mt-1">
-                            {paymentConfig.feePassThrough
-                              ? `✅ Cliente paga la tarifa — Tú recibes exactamente $${parseFloat(paymentConfig.amount || '0').toFixed(2)}`
-                              : `⚠️ Tú absorbes la tarifa — Recibes $${(parseFloat(paymentConfig.amount || '0') * 0.995).toFixed(2)} de $${parseFloat(paymentConfig.amount || '0').toFixed(2)}`
-                            }
-                          </div>
-                        </div>
-                        <div className="flex flex-col items-center gap-1">
-                          <Switch
-                            checked={paymentConfig.feePassThrough}
-                            onCheckedChange={(checked) => setPaymentConfig({ ...paymentConfig, feePassThrough: checked })}
-                            data-testid="toggle-fee-pass-through-guided"
-                          />
-                          <span className="text-xs text-gray-400">
-                            {paymentConfig.feePassThrough ? 'Cliente' : 'Yo'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Manual Payment Specific Fields */}
-                {paymentMethod === "manual" && (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="manualMethod" className="text-white">Payment Method Received</Label>
-                        <Select
-                          value={paymentConfig.manualMethod}
-                          onValueChange={(value: any) => setPaymentConfig({ ...paymentConfig, manualMethod: value })}
+                        <Button
+                          onClick={shareViaWhatsApp}
+                          variant="outline"
+                          className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
+                          data-testid="button-send-whatsapp"
                         >
-                          <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="bg-gray-800 border-gray-600">
-                            <SelectItem value="cash">Cash</SelectItem>
-                            <SelectItem value="check">Check</SelectItem>
-                            <SelectItem value="zelle">Zelle</SelectItem>
-                            <SelectItem value="venmo">Venmo</SelectItem>
-                            <SelectItem value="other">Other</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor="paymentDate" className="text-white">Payment Date</Label>
-                        <Input
-                          id="paymentDate"
-                          type="date"
-                          value={paymentConfig.paymentDate}
-                          onChange={(e) => setPaymentConfig({ ...paymentConfig, paymentDate: e.target.value })}
-                          className="bg-gray-800 border-gray-600 text-white"
-                          data-testid="input-payment-date"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="referenceNumber" className="text-white">
-                        Reference/Check Number (Optional)
-                      </Label>
-                      <Input
-                        id="referenceNumber"
-                        value={paymentConfig.referenceNumber}
-                        onChange={(e) => setPaymentConfig({ ...paymentConfig, referenceNumber: e.target.value })}
-                        className="bg-gray-800 border-gray-600 text-white"
-                        placeholder="Check #1234 or Transaction ID"
-                        data-testid="input-reference-number"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="notes" className="text-white">Notes (Optional)</Label>
-                      <Textarea
-                        id="notes"
-                        value={paymentConfig.notes}
-                        onChange={(e) => setPaymentConfig({ ...paymentConfig, notes: e.target.value })}
-                        className="bg-gray-800 border-gray-600 text-white"
-                        placeholder="Additional notes about this payment..."
-                        rows={2}
-                        data-testid="textarea-notes"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Navigation */}
-                <div className="flex justify-between">
-                  <Button
-                    onClick={() => setGuidedStep("project-amount")}
-                    variant="outline"
-                    className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
-                    data-testid="button-back-to-project"
-                  >
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Back
-                  </Button>
-                  <Button
-                    onClick={handleCreatePayment}
-                    className="bg-cyan-400 text-black hover:bg-cyan-300"
-                    disabled={isCreatingPayment || !paymentConfig.description}
-                    data-testid="button-create-payment-guided"
-                  >
-                    {isCreatingPayment ? (
-                      <>
-                        <Clock className="h-4 w-4 mr-2 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        {paymentMethod === "terminal" && "Open Terminal"}
-                        {paymentMethod === "link" && "Generate Link"}
-                        {paymentMethod === "manual" && "Register Payment"}
-                        <ArrowRight className="h-4 w-4 ml-2" />
+                          <MessageSquare className="h-4 w-4 mr-2" />
+                          WhatsApp
+                        </Button>
                       </>
                     )}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
 
-          {/* Step 4: Execute & Track */}
-          {guidedStep === "execute" && (
-            <Card className="bg-gray-900 border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-cyan-400 flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5" />
-                  {paymentMethod === "terminal" && "Terminal Active"}
-                  {paymentMethod === "link" && "Payment Link Ready"}
-                  {paymentMethod === "manual" && "Payment Recorded"}
-                </CardTitle>
-                <CardDescription className="text-gray-400">
-                  {paymentMethod === "terminal" && "Process the payment with your terminal"}
-                  {paymentMethod === "link" && "Your payment link is ready to share"}
-                  {paymentMethod === "manual" && "Manual payment has been successfully recorded"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Success Banner */}
-                <div className="bg-green-900/20 border border-green-700 p-6 rounded-lg">
-                  <div className="flex items-center gap-3 mb-3">
-                    <CheckCircle className="h-6 w-6 text-green-400" />
-                    <h4 className="font-semibold text-green-400 text-lg">Success!</h4>
-                  </div>
-                  <p className="text-green-300">
-                    {paymentMethod === "terminal" && "Terminal is ready to accept payment"}
-                    {paymentMethod === "link" && `Payment link for ${formatDollars(parseFloat(paymentConfig.amount))} created successfully`}
-                    {paymentMethod === "manual" && `Payment of ${formatDollars(parseFloat(paymentConfig.amount))} recorded`}
-                  </p>
-                </div>
+                    <Button
+                      onClick={() =>
+                        toast({ title: "QR Code", description: "Generador de QR próximamente" })
+                      }
+                      variant="outline"
+                      className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
+                      data-testid="button-show-qr"
+                    >
+                      <QrCode className="h-4 w-4 mr-2" />
+                      QR Code
+                    </Button>
 
-                {/* Payment Summary */}
-                <div className="bg-gray-800 p-4 rounded-lg">
-                  <h4 className="font-medium text-white mb-3">Payment Summary</h4>
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div>
-                      <span className="text-gray-400">Amount:</span>
-                      <span className="text-white ml-2 font-semibold">{formatDollars(parseFloat(paymentConfig.amount))}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-400">Type:</span>
-                      <span className="text-white ml-2 capitalize">{paymentConfig.type}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-400">Client:</span>
-                      <span className="text-white ml-2">{paymentConfig.clientName}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-400">Method:</span>
-                      <span className="text-white ml-2 capitalize">{paymentMethod}</span>
-                    </div>
-                    {selectedProject && (
-                      <div className="col-span-2">
-                        <span className="text-gray-400">Project:</span>
-                        <span className="text-white ml-2">{selectedProject.projectType} - {selectedProject.address}</span>
-                      </div>
-                    )}
+                    <Button
+                      onClick={() => window.open(generatedLink, "_blank")}
+                      variant="outline"
+                      className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
+                      data-testid="button-open-link"
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Preview
+                    </Button>
+
+                    <Button
+                      onClick={() =>
+                        toast({ title: "PDF", description: "Descarga de PDF próximamente" })
+                      }
+                      variant="outline"
+                      className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
+                      data-testid="button-download-pdf"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      PDF
+                    </Button>
                   </div>
                 </div>
+              </>
+            )}
 
-                {/* Terminal Actions */}
-                {paymentMethod === "terminal" && (
-                  <Button
-                    onClick={() => {
-                      toast({
-                        title: "Opening Terminal",
-                        description: "Stripe Terminal integration opens here in production",
-                      });
-                    }}
-                    className="w-full bg-cyan-400 text-black hover:bg-cyan-300 py-6 text-lg font-semibold"
-                    data-testid="button-open-terminal-guided"
-                  >
-                    <Smartphone className="h-5 w-5 mr-2" />
-                    Open Terminal Interface
-                  </Button>
-                )}
+            {/* ── Terminal action ──────────────────────────────────────────── */}
+            {paymentMethod === "terminal" && (
+              <Button
+                onClick={() =>
+                  toast({
+                    title: "Terminal",
+                    description: "Integración con Stripe Terminal próximamente",
+                  })
+                }
+                className="w-full bg-cyan-400 text-black hover:bg-cyan-300 py-6 text-lg font-semibold"
+                data-testid="button-open-terminal"
+              >
+                <Smartphone className="h-5 w-5 mr-2" />
+                Abrir Terminal
+              </Button>
+            )}
 
-                {/* Payment Link Actions */}
-                {paymentMethod === "link" && generatedLink && (
+            {/* ── Payment summary ──────────────────────────────────────────── */}
+            <div className="bg-gray-800 p-4 rounded-lg">
+              <h4 className="font-medium text-white mb-3 text-sm">Resumen del Pago</h4>
+              <div className="grid grid-cols-2 gap-y-2 text-sm">
+                <span className="text-gray-400">Monto:</span>
+                <span className="text-white font-semibold">{formatDollars(parseFloat(config.amount))}</span>
+
+                <span className="text-gray-400">Tipo:</span>
+                <span className="text-white capitalize">{config.type}</span>
+
+                {config.clientName && (
                   <>
-                    <div className="bg-gray-800 p-4 rounded-lg">
-                      <Label className="text-white mb-2 block">Your Payment Link</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          value={generatedLink}
-                          readOnly
-                          className="bg-gray-700 border-gray-600 text-white font-mono text-sm"
-                          data-testid="input-generated-link-guided"
-                        />
-                        <Button
-                          onClick={() => copyToClipboard(generatedLink)}
-                          variant="outline"
-                          className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
-                          data-testid="button-copy-link-guided"
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label className="text-white mb-3 block">Share Payment Link</Label>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                        <Button
-                          onClick={sendPaymentEmail}
-                          className="bg-gray-800 border border-gray-600 text-white hover:bg-gray-700"
-                          data-testid="button-send-email-guided"
-                        >
-                          <Mail className="h-4 w-4 mr-2" />
-                          Email
-                        </Button>
-                        
-                        {paymentConfig.clientPhone && (
-                          <>
-                            <Button
-                              onClick={shareViaSMS}
-                              className="bg-gray-800 border border-gray-600 text-white hover:bg-gray-700"
-                              data-testid="button-send-sms-guided"
-                            >
-                              <MessageSquare className="h-4 w-4 mr-2" />
-                              SMS
-                            </Button>
-                            
-                            <Button
-                              onClick={shareViaWhatsApp}
-                              className="bg-gray-800 border border-gray-600 text-white hover:bg-gray-700"
-                              data-testid="button-send-whatsapp-guided"
-                            >
-                              <MessageSquare className="h-4 w-4 mr-2" />
-                              WhatsApp
-                            </Button>
-                          </>
-                        )}
-                        
-                        <Button
-                          onClick={() => toast({ title: "QR Code", description: "QR code generator coming soon" })}
-                          className="bg-gray-800 border border-gray-600 text-white hover:bg-gray-700"
-                          data-testid="button-show-qr-guided"
-                        >
-                          <QrCode className="h-4 w-4 mr-2" />
-                          QR Code
-                        </Button>
-                        
-                        <Button
-                          onClick={() => window.open(generatedLink, "_blank")}
-                          className="bg-gray-800 border border-gray-600 text-white hover:bg-gray-700"
-                          data-testid="button-preview-link-guided"
-                        >
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          Preview
-                        </Button>
-                        
-                        <Button
-                          onClick={() => toast({ title: "Download", description: "PDF download coming soon" })}
-                          className="bg-gray-800 border border-gray-600 text-white hover:bg-gray-700"
-                          data-testid="button-download-pdf-guided"
-                        >
-                          <Download className="h-4 w-4 mr-2" />
-                          PDF
-                        </Button>
-                      </div>
-                    </div>
+                    <span className="text-gray-400">Cliente:</span>
+                    <span className="text-white">{config.clientName}</span>
                   </>
                 )}
 
-                {/* Manual Payment Confirmation */}
-                {paymentMethod === "manual" && (
-                  <div className="bg-gray-800 p-4 rounded-lg space-y-3">
-                    <h4 className="font-medium text-white">Recorded Payment Details</h4>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-gray-400">Payment Method:</span>
-                        <span className="text-white ml-2 capitalize">{paymentConfig.manualMethod}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-400">Date Received:</span>
-                        <span className="text-white ml-2">{paymentConfig.paymentDate}</span>
-                      </div>
-                      {paymentConfig.referenceNumber && (
-                        <div className="col-span-2">
-                          <span className="text-gray-400">Reference:</span>
-                          <span className="text-white ml-2">{paymentConfig.referenceNumber}</span>
-                        </div>
-                      )}
-                      {paymentConfig.notes && (
-                        <div className="col-span-2">
-                          <span className="text-gray-400">Notes:</span>
-                          <p className="text-white mt-1">{paymentConfig.notes}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                <span className="text-gray-400">Método:</span>
+                <span className="text-white capitalize">{paymentMethod}</span>
+
+                {selectedProject && (
+                  <>
+                    <span className="text-gray-400">Proyecto:</span>
+                    <span className="text-white text-xs">
+                      {selectedProject.projectType} — {selectedProject.address}
+                    </span>
+                  </>
                 )}
 
-                {/* Next Steps */}
-                <div className="bg-cyan-900/20 border border-cyan-700 p-4 rounded-lg">
-                  <h4 className="font-medium text-cyan-400 mb-2">Next Steps</h4>
-                  <ul className="text-cyan-300 text-sm space-y-1">
-                    {paymentMethod === "terminal" && (
-                      <>
-                        <li>• Process the payment with the client's card</li>
-                        <li>• Payment confirmation will be sent automatically</li>
-                        <li>• Funds will be deposited to your account</li>
-                      </>
-                    )}
-                    {paymentMethod === "link" && (
-                      <>
-                        <li>• Share the payment link with your client</li>
-                        <li>• Track payment status in Payment History</li>
-                        <li>• Client receives confirmation after payment</li>
-                        <li>• Funds deposited to your connected account</li>
-                      </>
-                    )}
-                    {paymentMethod === "manual" && (
-                      <>
-                        <li>• Payment has been recorded in your history</li>
-                        <li>• You can generate a receipt for the client</li>
-                        <li>• Update project status if needed</li>
-                      </>
-                    )}
-                  </ul>
-                </div>
+                {paymentMethod === "manual" && config.referenceNumber && (
+                  <>
+                    <span className="text-gray-400">Referencia:</span>
+                    <span className="text-white">{config.referenceNumber}</span>
+                  </>
+                )}
+              </div>
+            </div>
 
-                {/* Actions */}
-                <div className="flex gap-3">
-                  <Button
-                    onClick={resetWorkflow}
-                    className="flex-1 bg-cyan-400 text-black hover:bg-cyan-300"
-                    data-testid="button-create-another-guided"
-                  >
-                    Create Another Payment
-                  </Button>
-                  <Button
-                    onClick={() => {/* Navigate to history */}}
-                    variant="outline"
-                    className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
-                    data-testid="button-view-history-guided"
-                  >
-                    View History
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </>
+            {/* ── Next steps guidance ──────────────────────────────────────── */}
+            <div className="bg-cyan-900/20 border border-cyan-700 p-4 rounded-lg">
+              <h4 className="font-medium text-cyan-400 mb-2 text-sm">Próximos Pasos</h4>
+              <ul className="text-cyan-300 text-sm space-y-1">
+                {paymentMethod === "link" && (
+                  <>
+                    <li>• Comparte el link con tu cliente por email, SMS o WhatsApp</li>
+                    <li>• Monitorea el estado del pago en Payment History</li>
+                    <li>• El cliente recibirá confirmación automática al pagar</li>
+                    <li>• Los fondos se depositan en tu cuenta conectada</li>
+                  </>
+                )}
+                {paymentMethod === "manual" && (
+                  <>
+                    <li>• El pago ha sido registrado en tu historial</li>
+                    <li>• Puedes generar un recibo para el cliente</li>
+                    <li>• Actualiza el estatus del proyecto si es necesario</li>
+                  </>
+                )}
+                {paymentMethod === "terminal" && (
+                  <>
+                    <li>• Procesa el pago con la tarjeta del cliente</li>
+                    <li>• La confirmación se enviará automáticamente</li>
+                    <li>• Los fondos se depositan en tu cuenta</li>
+                  </>
+                )}
+              </ul>
+            </div>
+
+            {/* ── Actions ──────────────────────────────────────────────────── */}
+            <div className="flex gap-3">
+              <Button
+                onClick={resetWorkflow}
+                className="flex-1 bg-cyan-400 text-black hover:bg-cyan-300 font-semibold"
+                data-testid="button-create-another"
+              >
+                Crear Otro Pago
+              </Button>
+              <Button
+                onClick={() => {/* Navigate to history tab */}}
+                variant="outline"
+                className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
+                data-testid="button-view-history"
+              >
+                Ver Historial
+              </Button>
+            </div>
+
+          </CardContent>
+        </Card>
       )}
     </div>
   );
