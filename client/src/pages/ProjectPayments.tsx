@@ -393,25 +393,18 @@ const ProjectPayments: React.FC = () => {
       return response.json();
     },
     onSuccess: (data) => {
+      // Only invalidate queries - toasts are handled by ProjectPaymentWorkflow
       queryClient.invalidateQueries({
         queryKey: ["/api/contractor-payments/payments"],
       });
       queryClient.invalidateQueries({
         queryKey: ["/api/contractor-payments/dashboard/summary"],
       });
-
-      toast({
-        title: "Payment Created",
-        description: data.message || "Payment has been created successfully.",
-      });
     },
     onError: (error: any) => {
-      toast({
-        title: "Payment Creation Failed",
-        description:
-          error.message || "Failed to create payment. Please try again.",
-        variant: "destructive",
-      });
+      // Errors are handled by ProjectPaymentWorkflow's catch block
+      // Only log here to avoid duplicate toasts
+      console.error("[PAYMENT-MUTATION] Error:", error.message);
     },
   });
 

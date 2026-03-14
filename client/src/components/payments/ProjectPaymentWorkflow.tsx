@@ -205,11 +205,20 @@ export default function ProjectPaymentWorkflow({
   // Format currency from cents to dollars for display
   // IMPORTANT: All amounts in the system are stored in CENTS (integers)
   // Only divide by 100 for display purposes
+  // formatCurrency: expects amount in CENTS (e.g. from Stripe API)
   const formatCurrency = (amountInCents: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
     }).format(amountInCents / 100);
+  };
+
+  // formatDollars: expects amount already in DOLLARS (e.g. from Firebase/user input)
+  const formatDollars = (amountInDollars: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(amountInDollars);
   };
 
   // Calculate suggested payment amount in DOLLARS for display
@@ -644,7 +653,7 @@ export default function ProjectPaymentWorkflow({
                             value={project.id.toString()}
                             className="text-white hover:bg-gray-700 cursor-pointer"
                           >
-                            {project.clientName} - {project.projectType} ({formatCurrency(project.totalPrice || 0)})
+                            {project.clientName} - {project.projectType} ({formatDollars(project.totalPrice || 0)})
                           </SelectItem>
                         ))
                       ) : (
@@ -672,7 +681,7 @@ export default function ProjectPaymentWorkflow({
                       </div>
                       <div className="text-gray-500 mt-1">{selectedProject.address}</div>
                       <div className="text-cyan-400 font-semibold mt-1">
-                        {formatCurrency(selectedProject.totalPrice || 0)}
+                        {formatDollars(selectedProject.totalPrice || 0)}
                       </div>
                     </div>
                   )}
@@ -1222,7 +1231,7 @@ export default function ProjectPaymentWorkflow({
                                 value={project.id.toString()}
                                 className="text-white hover:bg-gray-700 cursor-pointer py-2"
                               >
-                                {project.clientName} - {project.projectType} ({formatCurrency(project.totalPrice || 0)})
+                                {project.clientName} - {project.projectType} ({formatDollars(project.totalPrice || 0)})
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -1239,7 +1248,7 @@ export default function ProjectPaymentWorkflow({
                               </div>
                               <div className="text-right">
                                 <p className="font-semibold text-cyan-400 text-lg">
-                                  {formatCurrency(selectedProject.totalPrice || 0)}
+                                  {formatDollars(selectedProject.totalPrice || 0)}
                                 </p>
                                 <Badge
                                   variant={selectedProject.paymentStatus === "paid" ? "default" : "secondary"}
@@ -1474,6 +1483,34 @@ export default function ProjectPaymentWorkflow({
                         data-testid="switch-auto-send-email"
                       />
                     </div>
+
+                    {/* 💰 Fee Pass-Through Toggle - Guided Mode */}
+                    <div className="bg-gray-700/50 border border-gray-600 rounded-lg p-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 mr-3">
+                          <div className="text-white text-sm font-medium flex items-center gap-2">
+                            <span>💰</span>
+                            <span>¿Quién absorbe la tarifa de plataforma (0.5%)?</span>
+                          </div>
+                          <div className="text-gray-400 text-xs mt-1">
+                            {paymentConfig.feePassThrough
+                              ? `✅ Cliente paga la tarifa — Tú recibes exactamente $${parseFloat(paymentConfig.amount || '0').toFixed(2)}`
+                              : `⚠️ Tú absorbes la tarifa — Recibes $${(parseFloat(paymentConfig.amount || '0') * 0.995).toFixed(2)} de $${parseFloat(paymentConfig.amount || '0').toFixed(2)}`
+                            }
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-center gap-1">
+                          <Switch
+                            checked={paymentConfig.feePassThrough}
+                            onCheckedChange={(checked) => setPaymentConfig({ ...paymentConfig, feePassThrough: checked })}
+                            data-testid="toggle-fee-pass-through-guided"
+                          />
+                          <span className="text-xs text-gray-400">
+                            {paymentConfig.feePassThrough ? 'Cliente' : 'Yo'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -1602,8 +1639,8 @@ export default function ProjectPaymentWorkflow({
                   </div>
                   <p className="text-green-300">
                     {paymentMethod === "terminal" && "Terminal is ready to accept payment"}
-                    {paymentMethod === "link" && `Payment link for ${formatCurrency(parseFloat(paymentConfig.amount))} created successfully`}
-                    {paymentMethod === "manual" && `Payment of ${formatCurrency(parseFloat(paymentConfig.amount))} recorded`}
+                    {paymentMethod === "link" && `Payment link for ${formatDollars(parseFloat(paymentConfig.amount))} created successfully`}
+                    {paymentMethod === "manual" && `Payment of ${formatDollars(parseFloat(paymentConfig.amount))} recorded`}
                   </p>
                 </div>
 
@@ -1613,7 +1650,7 @@ export default function ProjectPaymentWorkflow({
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
                       <span className="text-gray-400">Amount:</span>
-                      <span className="text-white ml-2 font-semibold">{formatCurrency(parseFloat(paymentConfig.amount))}</span>
+                      <span className="text-white ml-2 font-semibold">{formatDollars(parseFloat(paymentConfig.amount))}</span>
                     </div>
                     <div>
                       <span className="text-gray-400">Type:</span>
