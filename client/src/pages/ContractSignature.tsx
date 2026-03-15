@@ -9,7 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, PenTool, Download, CheckCircle, AlertCircle, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { contractHistoryService } from '@/services/contractHistoryService';
+// contractHistoryService removed — not used in public signature page
+// (was causing Firebase to load in isolated public route, causing blank screen)
 
 interface DigitalContract {
   contractId: string;
@@ -59,16 +60,27 @@ const ContractSignature: React.FC = () => {
   }, [contractId, party]);
 
   const loadContract = async () => {
+    // Safety timeout: if the request takes more than 15 seconds, show an error
+    const timeoutId = setTimeout(() => {
+      setError('Request timed out. Please refresh the page and try again.');
+      setLoading(false);
+    }, 15000);
+
     try {
-      console.log(`🔍 Loading contract ${contractId} for ${party}`);
-      
-      // 🚨 CRITICAL DEBUG: Log exact frontend params
-      console.log("🚨 [FRONTEND-DEBUG] contractId:", contractId);
-      console.log("🚨 [FRONTEND-DEBUG] party:", party);
-      console.log("🚨 [FRONTEND-DEBUG] params object:", params);
-      console.log("🚨 [FRONTEND-DEBUG] URL being called:", `/api/dual-signature/contract/${contractId}/${party}`);
-      
-      const response = await fetch(`/api/dual-signature/contract/${contractId}/${party}`);
+      const response = await fetch(`/api/dual-signature/contract/${contractId}/${party}`, {
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const text = await response.text();
+        let message = `Server error (${response.status})`;
+        try { message = JSON.parse(text).message || message; } catch {}
+        setError(message);
+        return;
+      }
+
       const data = await response.json();
       
       if (data.success) {
@@ -87,8 +99,9 @@ const ContractSignature: React.FC = () => {
         setError(data.message || 'Failed to load contract');
       }
     } catch (err) {
+      clearTimeout(timeoutId);
       console.error('Error loading contract:', err);
-      setError('Network error loading contract');
+      setError('Network error. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
