@@ -35,37 +35,48 @@ export interface UserBillingStatus {
 
 class BillingModeService {
 
+  // In-memory cache: uid → { status, expiresAt }
+  private cache = new Map<string, { status: UserBillingStatus; expiresAt: number }>();
+  private readonly CACHE_TTL_MS = 30_000; // 30 seconds
+
   /**
    * Obtiene el estado completo de billing de un usuario.
+   * Queries are parallelized and results are cached for 30s.
    */
   async getUserBillingStatus(firebaseUid: string): Promise<UserBillingStatus> {
     if (!pgDb) {
       return this.getDefaultStatus();
     }
 
-    // Obtener suscripción activa
-    const subscriptionResult = await pgDb.execute(sql`
-      SELECT us.plan_id, us.status, sp.name as plan_name, sp.monthly_credits_grant
-      FROM user_subscriptions us
-      JOIN users u ON u.id = us.user_id
-      JOIN subscription_plans sp ON sp.id = us.plan_id
-      WHERE u.firebase_uid = ${firebaseUid}
-        AND us.status IN ('active', 'trialing')
-      ORDER BY us.created_at DESC
-      LIMIT 1
-    `);
+    // Serve from cache if still fresh
+    const cached = this.cache.get(firebaseUid);
+    if (cached && Date.now() < cached.expiresAt) {
+      return cached.status;
+    }
+
+    // Run both queries IN PARALLEL instead of sequentially
+    const [subscriptionResult, walletResult] = await Promise.all([
+      pgDb.execute(sql`
+        SELECT us.plan_id, us.status, sp.name as plan_name, sp.monthly_credits_grant
+        FROM user_subscriptions us
+        JOIN users u ON u.id = us.user_id
+        JOIN subscription_plans sp ON sp.id = us.plan_id
+        WHERE u.firebase_uid = ${firebaseUid}
+          AND us.status IN ('active', 'trialing')
+        ORDER BY us.created_at DESC
+        LIMIT 1
+      `),
+      pgDb
+        .select({
+          balanceCredits: walletAccounts.balanceCredits,
+          totalTopUpAmountCents: walletAccounts.totalTopUpAmountCents,
+        })
+        .from(walletAccounts)
+        .where(eq(walletAccounts.firebaseUid, firebaseUid))
+        .limit(1),
+    ]);
 
     const subscription = subscriptionResult.rows.length > 0 ? subscriptionResult.rows[0] : null;
-
-    // Obtener wallet
-    const walletResult = await pgDb
-      .select({
-        balanceCredits: walletAccounts.balanceCredits,
-        totalTopUpAmountCents: walletAccounts.totalTopUpAmountCents,
-      })
-      .from(walletAccounts)
-      .where(eq(walletAccounts.firebaseUid, firebaseUid))
-      .limit(1);
 
     const wallet = walletResult.length > 0 ? walletResult[0] : null;
     const currentBalance = wallet?.balanceCredits || 0;
@@ -89,7 +100,7 @@ class BillingModeService {
       (hasActiveSubscription && (subscription?.plan_id as number) !== 5) ||
       totalTopUpCents >= 2000; // $20 = 2000 cents
 
-    return {
+    const result: UserBillingStatus = {
       mode,
       planId: subscription ? (subscription.plan_id as number) : null,
       planName: subscription ? (subscription.plan_name as string) : null,
@@ -99,6 +110,18 @@ class BillingModeService {
       hasActiveSubscription,
       totalTopUpCents,
     };
+
+    // Write to cache
+    this.cache.set(firebaseUid, { status: result, expiresAt: Date.now() + this.CACHE_TTL_MS });
+
+    return result;
+  }
+
+  /**
+   * Invalidate cache for a user (call after subscription changes, top-ups, etc.)
+   */
+  invalidateCache(firebaseUid: string): void {
+    this.cache.delete(firebaseUid);
   }
 
   /**

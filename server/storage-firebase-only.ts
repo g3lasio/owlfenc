@@ -91,29 +91,25 @@ class FirebaseOnlyManager implements IFirebaseOnlyManager {
       const clients = await this.storage.getClients(firebaseUid);
       console.log(`✅ [FIREBASE-MANAGER] ${clients.length} clientes obtenidos`);
       
-      // 🧹 AUTO-CLEAN: Limpieza automática transparente de datos corruptos
-      // El usuario nunca ve este proceso - solo recibe datos limpios
+      // 🧹 AUTO-CLEAN: Limpieza automática en background — NO bloquea la respuesta al usuario
+      // Retornamos los datos originales inmediatamente y limpiamos de forma asíncrona
       if (clients.length > 0) {
-        try {
-          const startTime = Date.now();
-          const cleanResult = await autoCleanService.cleanClientBatch(clients as any);
-          const duration = Date.now() - startTime;
-          
-          if (cleanResult.stats.corrected > 0) {
-            console.log(`🧹 [AUTO-CLEAN] ${cleanResult.stats.corrected}/${clients.length} contactos limpiados en ${duration}ms`);
-            
-            // Guardar correcciones significativas de vuelta a Firebase (async, no bloquea)
-            this.persistCorrections(firebaseUid, cleanResult.cleaned as FirebaseClient[], cleanResult.stats.corrections);
+        setImmediate(async () => {
+          try {
+            const startTime = Date.now();
+            const cleanResult = await autoCleanService.cleanClientBatch(clients as any);
+            const duration = Date.now() - startTime;
+            if (cleanResult.stats.corrected > 0) {
+              console.log(`🧹 [AUTO-CLEAN] ${cleanResult.stats.corrected}/${clients.length} contactos limpiados en ${duration}ms (background)`);
+              this.persistCorrections(firebaseUid, cleanResult.cleaned as FirebaseClient[], cleanResult.stats.corrections);
+            }
+          } catch (cleanError) {
+            console.warn(`⚠️ [AUTO-CLEAN] Error en limpieza en background:`, cleanError);
           }
-          
-          return cleanResult.cleaned as FirebaseClient[];
-        } catch (cleanError) {
-          // Si falla la limpieza, devolver datos originales (graceful degradation)
-          console.warn(`⚠️ [AUTO-CLEAN] Error en limpieza automática, usando datos originales:`, cleanError);
-          return clients;
-        }
+        });
       }
-      
+
+      // Retornar datos originales inmediatamente sin esperar la limpieza
       return clients;
     } catch (error) {
       console.error(`❌ [FIREBASE-MANAGER] Error obteniendo clientes:`, error);

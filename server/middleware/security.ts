@@ -138,8 +138,11 @@ export const securityLogger = (req: Request, res: Response, next: NextFunction) 
     console.warn('🔍 SECURITY LOG: Suspicious URL access:', securityInfo);
   }
   
-  // Log all authentication attempts
-  if (req.url.includes('login') || req.url.includes('register') || req.url.includes('auth')) {
+  // Log actual auth API endpoints only (not Vite static files that contain 'auth' in path)
+  const isAuthApiEndpoint = req.url.startsWith('/api/') && 
+    (req.url.includes('/login') || req.url.includes('/register') || 
+     req.url.includes('/auth/') || req.url.includes('/sessionLogin'));
+  if (isAuthApiEndpoint) {
     console.log('🔐 AUTH LOG:', securityInfo);
   }
   
