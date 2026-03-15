@@ -1,18 +1,16 @@
 /**
  * useWallet — Hook para el sistema PAY AS YOU GROW
  * Mervin AI / Owl Fenc App
- * 
- * Provee:
- * - Balance de créditos en tiempo real
- * - Historial de transacciones
- * - Paquetes de top-up disponibles
- * - Estado de billing del usuario
- * - Función para iniciar un top-up
+ *
+ * OPTIMIZED: Balance is now consumed from WalletContext (single source of truth).
+ * Only fetches packages and billingStatus independently (once per session).
+ * This eliminates duplicate /api/wallet/balance calls that were slowing page loads.
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { fetchWithAuth } from '@/lib/fetch-with-auth';
+import { useWalletContext } from '@/contexts/WalletContext';
 
 // ================================
 // TIPOS
@@ -45,7 +43,7 @@ export interface CreditPackage {
   totalCredits: number;
   priceUsdCents: number;
   stripePriceId: string | null;
-  isPopular?: boolean; // Opcional: puede no venir del backend (no está en la tabla DB)
+  isPopular?: boolean;
   equivalence: {
     aiEstimates: number;
     contracts: number;
@@ -78,6 +76,7 @@ export interface UseWalletReturn {
   initiateTopUp: (packageId: number) => Promise<void>;
   getFeatureCost: (featureName: string) => number;
   canAfford: (featureName: string) => boolean;
+  handleCreditError: (error: any) => boolean;
 
   // Estado del top-up
   isCheckingOut: boolean;
@@ -99,7 +98,6 @@ const FEATURE_COSTS: Record<string, number> = {
 
 // ================================
 // FALLBACK PACKAGES (cuando el endpoint falla o la DB no está lista)
-// Garantiza que el TopUpModal siempre muestre los 3 paquetes
 // ================================
 const FALLBACK_PACKAGES: CreditPackage[] = [
   {
@@ -143,58 +141,30 @@ const FALLBACK_PACKAGES: CreditPackage[] = [
 
 export function useWallet(): UseWalletReturn {
   const { user } = useAuth();
-  const [walletData, setWalletData] = useState<WalletBalance | null>(null);
+
+  // ✅ OPTIMIZATION: Consume balance from WalletContext (single source of truth).
+  // WalletContext already fetches /api/wallet/balance once on login and keeps it fresh.
+  // This eliminates duplicate balance fetches that were causing 3x API calls per page load.
+  const walletCtx = useWalletContext();
+
+  // Only packages and billingStatus are fetched independently (not in WalletContext)
   const [packages, setPackages] = useState<CreditPackage[]>([]);
   const [billingStatus, setBillingStatus] = useState<BillingStatus | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
-  const hasFetched = useRef(false);
-
-  const fetchBalance = useCallback(async () => {
-    if (!user) return;
-
-    try {
-      const response = await fetchWithAuth('/api/wallet/balance');
-
-      if (!response.ok) {
-        if (response.status === 401) return; // No autenticado aún
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      const data = await response.json();
-      if (data.success) {
-        setWalletData({
-          balance: data.balance,
-          totalEarned: data.totalEarned,
-          totalSpent: data.totalSpent,
-          isLocked: data.isLocked,
-          recentTransactions: data.recentTransactions || [],
-        });
-      }
-    } catch (err) {
-      // Silenciar errores de balance para no interrumpir la UX
-      console.warn('[useWallet] Error fetching balance:', err);
-    }
-  }, [user]);
+  const hasFetchedExtras = useRef(false);
 
   const fetchPackages = useCallback(async () => {
     try {
       const response = await fetchWithAuth('/api/wallet/packages');
-
       if (!response.ok) {
-        // Fallback: mostrar paquetes hardcodeados si el endpoint falla
-        // Esto garantiza que el TopUpModal nunca quede en blanco
-        console.warn('[useWallet] /packages endpoint failed, using fallback data');
         setPackages(FALLBACK_PACKAGES);
         return;
       }
-
       const data = await response.json();
       if (data.success && data.packages?.length > 0) {
         setPackages(data.packages);
       } else {
-        // Si el endpoint retorna vacío, usar fallback
         setPackages(FALLBACK_PACKAGES);
       }
     } catch (err) {
@@ -205,12 +175,9 @@ export function useWallet(): UseWalletReturn {
 
   const fetchBillingStatus = useCallback(async () => {
     if (!user) return;
-
     try {
       const response = await fetchWithAuth('/api/wallet/billing-status');
-
       if (!response.ok) return;
-
       const data = await response.json();
       if (data.success) {
         setBillingStatus(data);
@@ -220,45 +187,26 @@ export function useWallet(): UseWalletReturn {
     }
   }, [user]);
 
-  // Carga inicial
+  // Fetch packages + billingStatus once per session (not balance — that's from WalletContext)
   useEffect(() => {
-    if (!user || hasFetched.current) return;
-    hasFetched.current = true;
+    if (!user || hasFetchedExtras.current) return;
+    hasFetchedExtras.current = true;
+    Promise.all([fetchPackages(), fetchBillingStatus()]).catch(console.warn);
+  }, [user, fetchPackages, fetchBillingStatus]);
 
-    setIsLoading(true);
-    Promise.all([fetchBalance(), fetchPackages(), fetchBillingStatus()])
-      .catch(console.warn)
-      .finally(() => setIsLoading(false));
-  }, [user, fetchBalance, fetchPackages, fetchBillingStatus]);
-
-  // Refresh cuando el usuario cambia
+  // Reset on logout
   useEffect(() => {
     if (!user) {
-      hasFetched.current = false;
-      setWalletData(null);
+      hasFetchedExtras.current = false;
       setBillingStatus(null);
     }
   }, [user]);
 
-  // 🔄 Refresh balance automatically when any feature spends credits
-  // Any page/component dispatches 'wallet-credits-spent' after a successful deduction
-  // This ensures the header badge and wallet page update without a manual page refresh
-  useEffect(() => {
-    const handleCreditsSpent = () => {
-      console.log('[useWallet] 🔄 wallet-credits-spent event received — refreshing balance');
-      fetchBalance().catch(console.warn);
-    };
-    window.addEventListener('wallet-credits-spent', handleCreditsSpent);
-    return () => window.removeEventListener('wallet-credits-spent', handleCreditsSpent);
-  }, [fetchBalance]);
-
+  // refreshBalance delegates to WalletContext (which handles deduplication and retry)
   const refreshBalance = useCallback(async () => {
-    await Promise.all([fetchBalance(), fetchBillingStatus()]);
-  }, [fetchBalance, fetchBillingStatus]);
+    await walletCtx.refreshBalance();
+  }, [walletCtx]);
 
-  /**
-   * Helper para manejar errores 402 (Insufficient Credits) de la API
-   */
   const handleCreditError = useCallback((error: any) => {
     if (error?.status === 402 || error?.message?.includes('INSUFFICIENT_CREDITS')) {
       window.dispatchEvent(new CustomEvent('open-wallet-topup'));
@@ -272,31 +220,24 @@ export function useWallet(): UseWalletReturn {
       setError('Authentication required');
       return;
     }
-
     setIsCheckingOut(true);
     setError(null);
-
     try {
       const response = await fetchWithAuth('/api/wallet/top-up/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ packageId }),
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to create checkout session');
       }
-
       const data = await response.json();
-
       if (data.checkoutUrl) {
-        // Redirigir a Stripe Checkout
         window.location.href = data.checkoutUrl;
       } else {
         throw new Error('No checkout URL returned');
       }
-
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to initiate top-up';
       setError(message);
@@ -315,17 +256,28 @@ export function useWallet(): UseWalletReturn {
 
   const canAfford = useCallback((featureName: string): boolean => {
     const cost = getFeatureCost(featureName);
-    const balance = walletData?.balance ?? 0;
+    const balance = walletCtx.walletData?.balance ?? 0;
     return balance >= cost;
-  }, [walletData, getFeatureCost]);
+  }, [walletCtx.walletData, getFeatureCost]);
+
+  // Build a walletData object compatible with the old interface using WalletContext data
+  const walletData: WalletBalance | null = walletCtx.walletData
+    ? {
+        balance: walletCtx.walletData.balance,
+        totalEarned: walletCtx.walletData.totalEarned,
+        totalSpent: walletCtx.walletData.totalSpent,
+        isLocked: walletCtx.walletData.isLocked,
+        recentTransactions: walletCtx.walletData.recentTransactions as WalletTransaction[],
+      }
+    : null;
 
   return {
-    balance: walletData?.balance ?? null,
+    balance: walletCtx.balance,
     walletData,
     packages,
     billingStatus,
-    isLoading,
-    error,
+    isLoading: walletCtx.isLoading,
+    error: error ?? walletCtx.error,
     refreshBalance,
     initiateTopUp,
     handleCreditError,
@@ -337,7 +289,7 @@ export function useWallet(): UseWalletReturn {
 
 /**
  * Helper global para abrir el modal de Top Up desde cualquier lugar
- * sin necesidad de estar dentro de un componente React (ej: interceptores de fetch)
+ * sin necesidad de estar dentro de un componente React.
  */
 export function openTopUpModal() {
   window.dispatchEvent(new CustomEvent('open-wallet-topup'));
@@ -347,7 +299,7 @@ export function openTopUpModal() {
  * Helper global para notificar que se gastaron créditos.
  * Llamar después de cualquier operación exitosa que deduzca créditos.
  * Esto actualiza el badge del header y la página de wallet automáticamente.
- * 
+ *
  * Uso: import { notifyCreditsSpent } from '@/hooks/useWallet';
  *      notifyCreditsSpent(); // después de generar contrato, invoice, etc.
  */

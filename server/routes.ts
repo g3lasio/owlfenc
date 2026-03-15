@@ -440,24 +440,22 @@ if (IS_PRODUCTION) {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // ================================
-  // WALLET MIGRATION + AIRDROP — NON-BLOCKING BACKGROUND TASK
+  // WALLET MIGRATION — NON-BLOCKING BACKGROUND TASK
   // Runs asynchronously after server starts to avoid blocking page loads.
-  // The wallet tables already exist in production — migration is idempotent.
+  // NOTE: AIRDROP is DISABLED — all existing users already received their 120 credits.
+  //       Re-enable only when a new airdrop campaign is needed (change AIRDROP_KEY_PREFIX).
   // ================================
   setImmediate(async () => {
     try {
       const { runWalletMigration } = await import('./migrations/runWalletMigration');
-      const { runAirdrop } = await import('./scripts/airdropCredits');
-      
-      // 1. Run wallet migration (idempotent — safe to run every restart)
+      // Run wallet migration only (idempotent — safe to run every restart)
       await runWalletMigration();
-      
-      // 2. Run airdrop for existing users (idempotent via idempotency key)
-      await runAirdrop().catch((err: any) => {
-        console.error('⚠️  [AIRDROP-INIT] Failed to run airdrop:', err);
-      });
+      // AIRDROP DISABLED: was executing 36+ DB queries on every restart with zero effect.
+      // To re-enable: uncomment below and update AIRDROP_KEY_PREFIX in airdropCredits.ts
+      // const { runAirdrop } = await import('./scripts/airdropCredits');
+      // await runAirdrop().catch((err: any) => console.error('⚠️ [AIRDROP-INIT]', err));
     } catch (err) {
-      console.warn('⚠️  [WALLET] Background migration/airdrop failed:', err instanceof Error ? err.message : err);
+      console.warn('⚠️  [WALLET] Background migration failed:', err instanceof Error ? err.message : err);
     }
   });
 

@@ -786,31 +786,18 @@ console.log('⚠️ [ASSISTANTS] Sistema OpenAI Assistants desactivado - usando 
 // 🤖 Mervin parallel endpoints removed - Mervin V2 now uses existing protected endpoints
 // Mervin should call /api/estimates, /api/contracts, etc. directly
 
-// Add logging middleware only for API routes
+// Minimal API logging middleware — only logs slow requests (>2s) and errors (>=400)
+// Removed verbose per-request logging that was serializing every JSON response body
 app.use('/api', (req, res, next) => {
   const start = Date.now();
   const path = req.path;
-  console.log(`[${new Date().toISOString()}] Iniciando petición: ${req.method} ${path}`);
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
 
   res.on("finish", () => {
     const duration = Date.now() - start;
-    let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-    if (capturedJsonResponse) {
-      logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+    // Only log slow requests or errors to reduce I/O overhead
+    if (res.statusCode >= 400 || duration > 2000) {
+      log(`${req.method} ${path} ${res.statusCode} in ${duration}ms`);
     }
-
-    if (logLine.length > 80) {
-      logLine = logLine.slice(0, 79) + "…";
-    }
-
-    log(logLine);
   });
 
   next();
