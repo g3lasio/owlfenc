@@ -210,8 +210,43 @@ export async function runWalletMigration(): Promise<void> {
       }
     }
 
-    console.log('🚀 [WALLET-MIGRATION] All migrations completed successfully!');
+    // ================================================================
+    // PASO 7: permit_search_history — fix schema mismatch
+    // The table may exist with different columns than the current schema.
+    // We add any missing columns idempotently (IF NOT EXISTS).
+    // ================================================================
+    console.log('🔄 [WALLET-MIGRATION] Ensuring permit_search_history schema is correct...');
 
+    // Create table if it doesn't exist at all
+    await runStatement(pool, 'permit_search_history CREATE', `
+      CREATE TABLE IF NOT EXISTS permit_search_history (
+        id          TEXT PRIMARY KEY,
+        query       TEXT NOT NULL DEFAULT '',
+        results     JSONB,
+        user_id     INTEGER NOT NULL,
+        search_date TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    // Add any columns that may be missing (idempotent — 42701 is ignored by runStatement)
+    await runStatement(pool, 'permit_search_history ADD query',
+      `ALTER TABLE permit_search_history ADD COLUMN IF NOT EXISTS query TEXT NOT NULL DEFAULT ''`);
+    await runStatement(pool, 'permit_search_history ADD results',
+      `ALTER TABLE permit_search_history ADD COLUMN IF NOT EXISTS results JSONB`);
+    await runStatement(pool, 'permit_search_history ADD user_id',
+      `ALTER TABLE permit_search_history ADD COLUMN IF NOT EXISTS user_id INTEGER`);
+    await runStatement(pool, 'permit_search_history ADD search_date',
+      `ALTER TABLE permit_search_history ADD COLUMN IF NOT EXISTS search_date TIMESTAMP NOT NULL DEFAULT NOW()`);
+
+    // Add index for fast lookups by user_id
+    await runStatement(pool, 'permit_search_history INDEX user_id', `
+      CREATE INDEX IF NOT EXISTS idx_permit_search_history_user_id
+      ON permit_search_history (user_id, search_date DESC)
+    `);
+
+    console.log('✅ [WALLET-MIGRATION] permit_search_history schema is up to date');
+
+    console.log('🚀 [WALLET-MIGRATION] All migrations completed successfully!');
   } catch (error) {
     console.error('❌ [WALLET-MIGRATION] Migration failed:', error);
     // NO lanzar el error — el servidor debe arrancar aunque la migración falle parcialmente.

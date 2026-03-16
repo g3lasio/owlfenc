@@ -378,7 +378,7 @@ export default function PermitAdvisor() {
     },
   ];
 
-  // Query para obtener historial desde el backend (PostgreSQL) - fuente única de verdad
+  // Query para obtener historial desde Firebase Firestore (fuente única de verdad)
   const {
     data: historyData = [],
     isLoading: historyLoading,
@@ -388,27 +388,31 @@ export default function PermitAdvisor() {
     queryFn: async () => {
       if (!currentUser?.uid) return [];
       try {
-        console.log("📋 [PERMIT-HISTORY] Cargando historial desde backend...");
-        const response = await apiRequest("GET", "/api/permit/history");
-        const history = await response.json();
-        console.log(`📋 [PERMIT-HISTORY] ${history.length} búsquedas cargadas`);
-        // Normalize the results field (stored as JSON string in DB)
-        // Extract address/projectType from results.meta since DB only stores query+results
-        return history.map((item: any) => {
-          const results = typeof item.results === "string" ? JSON.parse(item.results) : item.results;
-          const address = results?.meta?.fullAddress || results?.meta?.location || item.query?.replace(/^\w+ en /, '') || item.query || 'Unknown address';
-          const projectType = results?.meta?.projectType || item.query?.split(' en ')?.[0] || 'general';
-          return {
-            ...item,
-            results,
-            address,
-            projectType,
-            title: `${projectType} - ${address}`,
-            createdAt: item.searchDate || item.createdAt,
-          };
+        console.log("📋 [PERMIT-HISTORY] Cargando historial desde Firebase...");
+        const q = query(
+          collection(db, 'permit_search_history'),
+          where('userId', '==', currentUser.uid),
+          orderBy('createdAt', 'desc'),
+          limit(50)
+        );
+        const snapshot = await getDocs(q);
+        const history: any[] = [];
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          history.push({
+            id: docSnap.id,
+            ...data,
+            // Normalize: ensure address/projectType are always present
+            address: data.address || 'Unknown address',
+            projectType: data.projectType || 'general',
+            title: data.title || `${data.projectType || 'general'} - ${data.address || 'Unknown'}`,
+            createdAt: data.createdAt,
+          });
         });
+        console.log(`📋 [PERMIT-HISTORY] ${history.length} búsquedas cargadas desde Firebase`);
+        return history;
       } catch (error) {
-        console.error("❌ [PERMIT-HISTORY] Error cargando historial:", error);
+        console.error("❌ [PERMIT-HISTORY] Error cargando historial desde Firebase:", error);
         return [];
       }
     },
@@ -417,12 +421,9 @@ export default function PermitAdvisor() {
     staleTime: 1000 * 60 * 5, // 5 minutos
   });
 
-  // El historial se guarda automáticamente en el backend (PostgreSQL) durante /api/permit/check
-  // Guarda la búsqueda en Firebase Firestore (para PermitSearchHistory component)
-  // y refresca el historial inline (que lee de PostgreSQL via /api/permit/history)
+  // Guarda la búsqueda en Firebase Firestore - fuente única de verdad para historial
   const saveToHistory = async (results: any) => {
-    console.log("📋 [PERMIT-HISTORY] Guardando historial en Firebase y refrescando...");
-    // 1. Save to Firebase Firestore so PermitSearchHistory component can read it
+    console.log("📋 [PERMIT-HISTORY] Guardando historial en Firebase...");
     if (currentUser?.uid) {
       try {
         const title = `${projectType.charAt(0).toUpperCase() + projectType.slice(1)} en ${selectedAddress}`;
@@ -440,7 +441,7 @@ export default function PermitAdvisor() {
         console.error('❌ [PERMIT-HISTORY] Error guardando en Firebase (non-blocking):', firebaseError);
       }
     }
-    // 2. Refetch the inline history list (reads from PostgreSQL via /api/permit/history)
+    // Refetch the inline history list (reads from Firebase)
     setTimeout(() => {
       refetchHistory();
     }, 800);
@@ -920,10 +921,7 @@ export default function PermitAdvisor() {
     }
   };
 
-  const historyQuery = useQuery({
-    queryKey: ["/api/permit/history"],
-    enabled: showHistory,
-  });
+  // historyQuery removed - historyData (Firebase) is the single source of truth
 
   const handleLoadHistoryItem = (item: SearchHistoryItem) => {
     setSelectedAddress(item.address);
