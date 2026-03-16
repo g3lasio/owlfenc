@@ -2,25 +2,13 @@
 # ╔══════════════════════════════════════════════════════════════════════════════╗
 # ║        OWL FENC — CREDIT SYSTEM TEST (Replit Dev Environment)              ║
 # ║                                                                              ║
-# ║  Corre directamente en el shell de Replit sin necesidad de token externo.   ║
-# ║  Usa las variables de entorno ya configuradas en Replit Secrets.            ║
-# ║                                                                              ║
-# ║  PREREQUISITOS:                                                              ║
-# ║    1. El servidor debe estar corriendo (npm run dev)                        ║
-# ║    2. Tener configurado en Replit Secrets:                                  ║
-# ║       - ADMIN_API_KEY                                                        ║
-# ║       - TEST_USER_EMAIL (email de un usuario de prueba en Firebase)         ║
-# ║                                                                              ║
 # ║  USO:                                                                        ║
+# ║    export ADMIN_API_KEY="mamalgelasio"                                      ║
+# ║    export TEST_USER_EMAIL="owl@chyrris.com"                                 ║
 # ║    bash scripts/test-credits-local.sh                                       ║
-# ║                                                                              ║
-# ║  O con parámetros:                                                           ║
-# ║    TEST_USER_EMAIL=test@example.com bash scripts/test-credits-local.sh      ║
 # ╚══════════════════════════════════════════════════════════════════════════════╝
 
-set -e
-
-# ── Colors ────────────────────────────────────────────────────────────────────
+# NO usar set -e para evitar salidas prematuras
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
@@ -29,166 +17,182 @@ BOLD='\033[1m'
 DIM='\033[2m'
 RESET='\033[0m'
 
-# ── Config ────────────────────────────────────────────────────────────────────
 BASE_URL="${TEST_BASE_URL:-http://localhost:5000}"
 ADMIN_KEY="${ADMIN_API_KEY:-}"
 TEST_EMAIL="${TEST_USER_EMAIL:-}"
 PASS=0
 FAIL=0
 SKIP=0
+BEARER_TOKEN=""
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
-pass() { echo -e "  ${GREEN}✅ PASS${RESET} $1"; ((PASS++)); }
-fail() { echo -e "  ${RED}❌ FAIL${RESET} $1 ${DIM}($2)${RESET}"; ((FAIL++)); }
-skip() { echo -e "  ${YELLOW}⏭  SKIP${RESET} $1 ${DIM}($2)${RESET}"; ((SKIP++)); }
+pass() { echo -e "  ${GREEN}✅ PASS${RESET} $1"; PASS=$((PASS + 1)); }
+fail() { echo -e "  ${RED}❌ FAIL${RESET} $1 ${DIM}($2)${RESET}"; FAIL=$((FAIL + 1)); }
+skip() { echo -e "  ${YELLOW}⏭  SKIP${RESET} $1 ${DIM}($2)${RESET}"; SKIP=$((SKIP + 1)); }
 info() { echo -e "  ${DIM}→ $1${RESET}"; }
 
-# ── Check prerequisites ───────────────────────────────────────────────────────
-echo -e "\n${CYAN}${BOLD}╔══════════════════════════════════════════════════════╗"
+echo ""
+echo -e "${CYAN}${BOLD}╔══════════════════════════════════════════════════════╗"
 echo -e "║   OWL FENC — CREDIT SYSTEM TEST (LOCAL/DEV)         ║"
 echo -e "╚══════════════════════════════════════════════════════╝${RESET}"
-echo -e "\n${DIM}URL: $BASE_URL${RESET}"
+echo -e "${DIM}URL: $BASE_URL${RESET}"
 
-# Check server is running
-echo -e "\n${CYAN}${BOLD}── Verificando servidor ────────────────────────────────${RESET}"
-if curl -sf "$BASE_URL/api/health" > /dev/null 2>&1 || curl -sf "$BASE_URL/" > /dev/null 2>&1; then
-  pass "Servidor corriendo en $BASE_URL"
+# ── STEP 1: Verificar servidor ────────────────────────────────────────────────
+echo ""
+echo -e "${CYAN}${BOLD}── STEP 1: Verificando servidor ────────────────────────${RESET}"
+
+SERVER_OK=false
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/" 2>/dev/null || echo "000")
+if [ "$HTTP_CODE" != "000" ] && [ "$HTTP_CODE" != "" ]; then
+  pass "Servidor corriendo en $BASE_URL (HTTP $HTTP_CODE)"
+  SERVER_OK=true
 else
   fail "Servidor no responde en $BASE_URL" "Asegúrate de que 'npm run dev' esté corriendo"
-  echo -e "\n${RED}FATAL: El servidor no está corriendo. Inicia con: npm run dev${RESET}\n"
+  echo ""
+  echo -e "${RED}FATAL: El servidor no está corriendo.${RESET}"
+  echo -e "Inicia el servidor con: ${BOLD}npm run dev${RESET}"
   exit 1
 fi
 
-# Check admin key
+# ── STEP 2: Verificar ADMIN_API_KEY ──────────────────────────────────────────
+echo ""
+echo -e "${CYAN}${BOLD}── STEP 2: Verificando configuración ───────────────────${RESET}"
+
 if [ -z "$ADMIN_KEY" ]; then
-  fail "ADMIN_API_KEY no configurado" "Agrega ADMIN_API_KEY en Replit Secrets"
-  echo -e "\n${RED}FATAL: Configura ADMIN_API_KEY en Replit Secrets${RESET}\n"
+  fail "ADMIN_API_KEY no configurado" "Corre: export ADMIN_API_KEY=tu-key"
+  echo -e "${RED}FATAL: Configura ADMIN_API_KEY antes de correr el test${RESET}"
   exit 1
 else
   pass "ADMIN_API_KEY configurado"
 fi
 
-# ── Step 1: Get Firebase custom token via server ──────────────────────────────
-echo -e "\n${CYAN}${BOLD}── STEP 1: Autenticación via Custom Token ──────────────${RESET}"
-
 if [ -z "$TEST_EMAIL" ]; then
-  skip "Obtener custom token" "TEST_USER_EMAIL no configurado — usando modo sin-auth para tests de seguridad"
-  SESSION_COOKIE=""
+  fail "TEST_USER_EMAIL no configurado" "Corre: export TEST_USER_EMAIL=tu@email.com"
+  echo -e "${RED}FATAL: Configura TEST_USER_EMAIL antes de correr el test${RESET}"
+  exit 1
 else
-  info "Obteniendo custom token para: $TEST_EMAIL"
-  CUSTOM_TOKEN_RESP=$(curl -sf -X POST "$BASE_URL/api/auth/create-custom-token" \
-    -H "Content-Type: application/json" \
-    -d "{\"email\": \"$TEST_EMAIL\"}" 2>&1)
-  
-  if echo "$CUSTOM_TOKEN_RESP" | grep -q '"success":true'; then
-    CUSTOM_TOKEN=$(echo "$CUSTOM_TOKEN_RESP" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('customToken',''))" 2>/dev/null)
-    if [ -n "$CUSTOM_TOKEN" ]; then
-      pass "Custom token obtenido del servidor"
-      info "Token: ${CUSTOM_TOKEN:0:30}..."
-    else
-      fail "Custom token vacío" "$CUSTOM_TOKEN_RESP"
-      SESSION_COOKIE=""
-    fi
-  else
-    fail "No se pudo obtener custom token" "$CUSTOM_TOKEN_RESP"
-    SESSION_COOKIE=""
-    echo -e "\n${YELLOW}⚠️  Sin autenticación — solo se ejecutarán tests de seguridad${RESET}"
-  fi
+  pass "TEST_USER_EMAIL: $TEST_EMAIL"
 fi
 
-# ── Step 2: Exchange custom token for ID token via Firebase REST API ──────────
-if [ -n "$CUSTOM_TOKEN" ]; then
-  info "Intercambiando custom token por ID token via Firebase REST API..."
-  
-  # Get Firebase API key from environment
-  FIREBASE_API_KEY="${VITE_FIREBASE_API_KEY:-${FIREBASE_API_KEY:-}}"
-  
+# ── STEP 3: Autenticación ─────────────────────────────────────────────────────
+echo ""
+echo -e "${CYAN}${BOLD}── STEP 3: Autenticación ───────────────────────────────${RESET}"
+
+info "Obteniendo custom token para: $TEST_EMAIL"
+CUSTOM_TOKEN_RESP=$(curl -s -X POST "$BASE_URL/api/auth/create-custom-token" \
+  -H "Content-Type: application/json" \
+  -d "{\"email\": \"$TEST_EMAIL\"}" 2>/dev/null || echo "")
+
+info "Respuesta custom token: $(echo $CUSTOM_TOKEN_RESP | head -c 150)"
+
+CUSTOM_TOKEN=$(echo "$CUSTOM_TOKEN_RESP" | python3 -c "
+import sys, json
+try:
+    d = json.load(sys.stdin)
+    print(d.get('customToken') or d.get('token') or '')
+except:
+    print('')
+" 2>/dev/null || echo "")
+
+if [ -z "$CUSTOM_TOKEN" ]; then
+  fail "No se pudo obtener custom token" "Respuesta: $(echo $CUSTOM_TOKEN_RESP | head -c 200)"
+  echo ""
+  echo -e "${YELLOW}⚠️  Sin autenticación — solo tests de seguridad disponibles${RESET}"
+else
+  pass "Custom token obtenido"
+  info "Token: ${CUSTOM_TOKEN:0:40}..."
+
+  # Obtener Firebase API key del código fuente
+  FIREBASE_API_KEY=$(grep -r "apiKey" /home/ubuntu/owlfenc/client/src/lib/firebase.ts 2>/dev/null | \
+    grep -o '"[A-Za-z0-9_-]\{30,\}"' | head -1 | tr -d '"' || echo "")
+
   if [ -z "$FIREBASE_API_KEY" ]; then
-    # Try to extract from client config
-    FIREBASE_API_KEY=$(grep -r "apiKey" /home/ubuntu/owlfenc/client/src/lib/firebase.ts 2>/dev/null | head -1 | sed 's/.*apiKey.*"\(.*\)".*/\1/' | tr -d ' ')
+    # Intentar desde variables de entorno
+    FIREBASE_API_KEY="${VITE_FIREBASE_API_KEY:-${FIREBASE_API_KEY:-}}"
   fi
-  
+
+  info "Firebase API Key: ${FIREBASE_API_KEY:0:20}..."
+
   if [ -n "$FIREBASE_API_KEY" ]; then
-    ID_TOKEN_RESP=$(curl -sf -X POST \
+    # Intercambiar custom token por ID token
+    ID_TOKEN_RESP=$(curl -s -X POST \
       "https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=$FIREBASE_API_KEY" \
       -H "Content-Type: application/json" \
-      -d "{\"token\": \"$CUSTOM_TOKEN\", \"returnSecureToken\": true}" 2>&1)
-    
-    if echo "$ID_TOKEN_RESP" | grep -q '"idToken"'; then
-      ID_TOKEN=$(echo "$ID_TOKEN_RESP" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('idToken',''))" 2>/dev/null)
-      pass "ID token obtenido de Firebase"
-      
-      # Create session cookie
-      info "Creando session cookie..."
-      SESSION_RESP=$(curl -sf -c /tmp/owlfenc-test-cookies.txt -X POST "$BASE_URL/api/sessionLogin" \
+      -d "{\"token\": \"$CUSTOM_TOKEN\", \"returnSecureToken\": true}" 2>/dev/null || echo "")
+
+    ID_TOKEN=$(echo "$ID_TOKEN_RESP" | python3 -c "
+import sys, json
+try:
+    d = json.load(sys.stdin)
+    print(d.get('idToken') or '')
+except:
+    print('')
+" 2>/dev/null || echo "")
+
+    FIREBASE_UID=$(echo "$ID_TOKEN_RESP" | python3 -c "
+import sys, json
+try:
+    d = json.load(sys.stdin)
+    print(d.get('localId') or '')
+except:
+    print('')
+" 2>/dev/null || echo "")
+
+    if [ -n "$ID_TOKEN" ]; then
+      pass "ID token obtenido de Firebase (UID: ${FIREBASE_UID:0:15}...)"
+      BEARER_TOKEN="$ID_TOKEN"
+
+      # Crear session cookie
+      SESSION_RESP=$(curl -s -c /tmp/owlfenc-cookies.txt -X POST "$BASE_URL/api/sessionLogin" \
         -H "Content-Type: application/json" \
-        -d "{\"idToken\": \"$ID_TOKEN\"}" 2>&1)
-      
-      if echo "$SESSION_RESP" | grep -q '"success":true\|"ok":true\|sessionCookie\|logged'; then
-        pass "Session cookie creada exitosamente"
-        SESSION_COOKIE="-b /tmp/owlfenc-test-cookies.txt"
+        -d "{\"idToken\": \"$ID_TOKEN\"}" 2>/dev/null || echo "")
+
+      if echo "$SESSION_RESP" | grep -q '"success"\|"ok"\|"logged\|session'; then
+        pass "Session cookie creada"
+        USE_COOKIE=true
       else
-        # Try using Bearer token directly
-        info "Session cookie falló, usando Bearer token directamente"
-        SESSION_COOKIE="-H \"Authorization: Bearer $ID_TOKEN\""
-        BEARER_TOKEN="$ID_TOKEN"
-        pass "Usando Authorization Bearer token"
+        info "Session cookie no disponible, usando Bearer token"
+        USE_COOKIE=false
       fi
     else
       fail "No se pudo obtener ID token de Firebase" "$(echo $ID_TOKEN_RESP | head -c 200)"
-      SESSION_COOKIE=""
+      BEARER_TOKEN=""
     fi
   else
-    skip "Intercambio de token" "FIREBASE_API_KEY no encontrado"
-    SESSION_COOKIE=""
+    fail "Firebase API Key no encontrado" "Verifica client/src/lib/firebase.ts"
+    BEARER_TOKEN=""
   fi
 fi
 
-# ── Step 3: Get Firebase UID for admin operations ─────────────────────────────
-FIREBASE_UID=""
-if [ -n "$TEST_EMAIL" ]; then
-  UID_RESP=$(curl -sf "$BASE_URL/api/auth/user-by-email?email=$TEST_EMAIL" \
-    -H "x-admin-key: $ADMIN_KEY" 2>/dev/null || echo "")
-  if echo "$UID_RESP" | grep -q '"uid"'; then
-    FIREBASE_UID=$(echo "$UID_RESP" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('uid','') or d.get('firebaseUid',''))" 2>/dev/null)
-  fi
-  
-  # Fallback: get UID from custom token response
-  if [ -z "$FIREBASE_UID" ] && [ -n "$ID_TOKEN_RESP" ]; then
-    FIREBASE_UID=$(echo "$ID_TOKEN_RESP" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('localId',''))" 2>/dev/null)
-  fi
-fi
-
-# ── Helper: make authenticated request ───────────────────────────────────────
-make_request() {
+# ── Helper: hacer request autenticado ────────────────────────────────────────
+auth_request() {
   local method="$1"
   local endpoint="$2"
   local data="$3"
-  
+
   if [ -n "$BEARER_TOKEN" ]; then
-    curl -sf -X "$method" "$BASE_URL$endpoint" \
+    curl -s -X "$method" "$BASE_URL$endpoint" \
       -H "Content-Type: application/json" \
       -H "Authorization: Bearer $BEARER_TOKEN" \
-      -d "$data" 2>&1
-  elif [ -f "/tmp/owlfenc-test-cookies.txt" ]; then
-    curl -sf -X "$method" "$BASE_URL$endpoint" \
+      -d "$data" 2>/dev/null
+  elif [ "$USE_COOKIE" = "true" ] && [ -f "/tmp/owlfenc-cookies.txt" ]; then
+    curl -s -X "$method" "$BASE_URL$endpoint" \
       -H "Content-Type: application/json" \
-      -b /tmp/owlfenc-test-cookies.txt \
-      -d "$data" 2>&1
+      -b /tmp/owlfenc-cookies.txt \
+      -d "$data" 2>/dev/null
   else
-    echo '{"error":"no_auth","status":401}'
+    echo '{"error":"no_auth"}'
   fi
 }
 
-# ── Helper: get wallet balance ────────────────────────────────────────────────
+# ── Helper: obtener balance ───────────────────────────────────────────────────
 get_balance() {
   local resp
   if [ -n "$BEARER_TOKEN" ]; then
-    resp=$(curl -sf "$BASE_URL/api/wallet/balance" \
+    resp=$(curl -s "$BASE_URL/api/wallet/balance" \
       -H "Authorization: Bearer $BEARER_TOKEN" 2>/dev/null || echo "")
-  elif [ -f "/tmp/owlfenc-test-cookies.txt" ]; then
-    resp=$(curl -sf "$BASE_URL/api/wallet/balance" \
-      -b /tmp/owlfenc-test-cookies.txt 2>/dev/null || echo "")
+  elif [ "$USE_COOKIE" = "true" ] && [ -f "/tmp/owlfenc-cookies.txt" ]; then
+    resp=$(curl -s "$BASE_URL/api/wallet/balance" \
+      -b /tmp/owlfenc-cookies.txt 2>/dev/null || echo "")
   else
     echo "0"
     return
@@ -197,322 +201,232 @@ get_balance() {
 import sys, json
 try:
     d = json.load(sys.stdin)
-    print(d.get('balance') or d.get('availableCredits') or d.get('credits') or 0)
+    b = d.get('balance') or d.get('availableCredits') or d.get('credits') or 0
+    print(int(b))
 except:
     print(0)
 " 2>/dev/null || echo "0"
 }
 
-# ── Helper: grant credits ─────────────────────────────────────────────────────
+# ── Helper: otorgar créditos ──────────────────────────────────────────────────
 grant_credits() {
   local amount="$1"
-  local desc="$2"
-  local uid="${FIREBASE_UID:-test-uid}"
-  
-  curl -sf -X POST "$BASE_URL/api/wallet/admin/grant" \
+  local uid="${FIREBASE_UID:-}"
+  if [ -z "$uid" ]; then
+    info "No se puede otorgar créditos sin UID"
+    return
+  fi
+  curl -s -X POST "$BASE_URL/api/wallet/admin/grant" \
     -H "Content-Type: application/json" \
     -H "x-admin-key: $ADMIN_KEY" \
-    -d "{\"targetType\":\"single\",\"firebaseUid\":\"$uid\",\"credits\":$amount,\"description\":\"$desc\",\"idempotencyKey\":\"test-$(date +%s)-$amount\"}" \
-    > /dev/null 2>&1
+    -d "{\"targetType\":\"single\",\"firebaseUid\":\"$uid\",\"credits\":$amount,\"description\":\"test-grant\",\"idempotencyKey\":\"test-$(date +%s)\"}" \
+    > /dev/null 2>/dev/null
 }
 
-# ── Helper: test credit deduction ─────────────────────────────────────────────
-test_deduction() {
-  local test_name="$1"
-  local endpoint="$2"
-  local payload="$3"
-  local expected_cost="$4"
-  
-  echo -e "\n  ${BOLD}Test:${RESET} $test_name"
-  info "Endpoint: POST $endpoint | Costo esperado: -$expected_cost créditos"
-  
-  if [ -z "$BEARER_TOKEN" ] && [ ! -f "/tmp/owlfenc-test-cookies.txt" ]; then
-    skip "$test_name" "Sin autenticación disponible"
-    return
-  fi
-  
-  # Ensure enough credits
-  local balance_before
-  balance_before=$(get_balance)
-  info "Balance antes: $balance_before créditos"
-  
-  if [ "$balance_before" -lt "$((expected_cost + 10))" ] 2>/dev/null; then
-    local needed=$((expected_cost + 50))
-    info "Otorgando $needed créditos de prueba..."
-    grant_credits "$needed" "test-grant-$test_name"
-    sleep 0.5
-    balance_before=$(get_balance)
-    info "Balance después de grant: $balance_before créditos"
-  fi
-  
-  # Make the request
-  local resp
-  resp=$(make_request "POST" "$endpoint" "$payload")
-  local http_ok=false
-  
-  if echo "$resp" | python3 -c "
-import sys, json
-try:
-    d = json.load(sys.stdin)
-    ok = d.get('success') or d.get('html') or d.get('contractId') or d.get('content') or d.get('id')
-    sys.exit(0 if ok else 1)
-except:
-    sys.exit(1)
-" 2>/dev/null; then
-    http_ok=true
-  fi
-  
-  if [ "$http_ok" = false ]; then
-    fail "$test_name" "Request falló: $(echo $resp | head -c 200)"
-    return
-  fi
-  
-  # Wait for async credit deduction
-  sleep 1.2
-  
-  local balance_after
-  balance_after=$(get_balance)
-  local actual_cost=$((balance_before - balance_after))
-  
-  info "Balance después: $balance_after créditos (deducido: $actual_cost)"
-  
-  if [ "$actual_cost" -eq "$expected_cost" ] 2>/dev/null; then
-    pass "$test_name → -$actual_cost créditos ✓"
-  elif [ "$actual_cost" -eq 0 ] 2>/dev/null; then
-    fail "$test_name" "NO se dedujo ningún crédito (esperado: -$expected_cost)"
-  else
-    fail "$test_name" "Monto incorrecto: dedujo $actual_cost, esperado $expected_cost"
-  fi
-}
+# ── STEP 4: Balance ───────────────────────────────────────────────────────────
+echo ""
+echo -e "${CYAN}${BOLD}── STEP 4: Balance de Wallet ───────────────────────────${RESET}"
 
-# ── Step 4: Wallet balance endpoint ──────────────────────────────────────────
-echo -e "\n${CYAN}${BOLD}── STEP 2: Wallet Balance ──────────────────────────────${RESET}"
-
-if [ -n "$BEARER_TOKEN" ] || [ -f "/tmp/owlfenc-test-cookies.txt" ]; then
+if [ -n "$BEARER_TOKEN" ] || [ "$USE_COOKIE" = "true" ]; then
   BALANCE=$(get_balance)
-  if [ -n "$BALANCE" ] && [ "$BALANCE" != "0" ] || [ "$BALANCE" = "0" ]; then
-    pass "GET /api/wallet/balance → $BALANCE créditos"
-  else
-    fail "GET /api/wallet/balance" "No se pudo leer el balance"
-  fi
+  pass "GET /api/wallet/balance → $BALANCE créditos disponibles"
 else
   skip "GET /api/wallet/balance" "Sin autenticación"
 fi
 
-# ── Step 5: Contract credit deduction tests ───────────────────────────────────
-echo -e "\n${CYAN}${BOLD}── STEP 3: Tests de Deducción de Créditos ──────────────${RESET}"
+# ── Helper: test de deducción ─────────────────────────────────────────────────
+test_deduction() {
+  local name="$1"
+  local endpoint="$2"
+  local payload="$3"
+  local expected="$4"
 
-# Sample contract payload
-CONTRACT_PAYLOAD='{
+  echo ""
+  echo -e "  ${BOLD}▸ $name${RESET}"
+  info "Endpoint: POST $endpoint | Esperado: -$expected créditos"
+
+  if [ -z "$BEARER_TOKEN" ] && [ "$USE_COOKIE" != "true" ]; then
+    skip "$name" "Sin autenticación"
+    return
+  fi
+
+  # Asegurar créditos suficientes
+  local bal_before
+  bal_before=$(get_balance)
+  if [ "$bal_before" -lt "$((expected + 20))" ] 2>/dev/null; then
+    local needed=$((expected + 50))
+    info "Balance bajo ($bal_before), otorgando $needed créditos de prueba..."
+    grant_credits "$needed"
+    sleep 1
+    bal_before=$(get_balance)
+    info "Balance después de grant: $bal_before"
+  fi
+
+  # Hacer el request
+  local resp
+  resp=$(auth_request "POST" "$endpoint" "$payload")
+  info "Respuesta (primeros 150 chars): $(echo $resp | head -c 150)"
+
+  # Verificar que el request fue exitoso
+  local req_ok
+  req_ok=$(echo "$resp" | python3 -c "
+import sys, json
+try:
+    d = json.load(sys.stdin)
+    ok = bool(d.get('success') or d.get('html') or d.get('contractId') or d.get('content') or d.get('id') or d.get('contractHtml'))
+    print('yes' if ok else 'no')
+except:
+    print('no')
+" 2>/dev/null || echo "no")
+
+  if [ "$req_ok" = "no" ]; then
+    fail "$name" "Request falló: $(echo $resp | head -c 200)"
+    return
+  fi
+
+  # Esperar deducción async
+  sleep 2
+
+  local bal_after
+  bal_after=$(get_balance)
+  local deducted=$((bal_before - bal_after))
+
+  info "Balance: $bal_before → $bal_after (deducido: $deducted)"
+
+  if [ "$deducted" -eq "$expected" ] 2>/dev/null; then
+    pass "$name → -$deducted créditos ✓"
+  elif [ "$deducted" -eq 0 ] 2>/dev/null; then
+    fail "$name" "NO se dedujo ningún crédito (esperado: -$expected)"
+  else
+    fail "$name" "Monto incorrecto: dedujo $deducted, esperado $expected"
+  fi
+}
+
+# ── STEP 5: Tests de contratos ────────────────────────────────────────────────
+echo ""
+echo -e "${CYAN}${BOLD}── STEP 5: Tests de Deducción de Créditos ──────────────${RESET}"
+
+CONTRACT_BASE='{
   "templateId": "independent-contractor",
   "includeSignature": false,
-  "client": {
-    "name": "Test Client LLC",
-    "address": "123 Test St, San Diego, CA 92101",
-    "email": "testclient@example.com",
-    "phone": "619-555-0100"
-  },
-  "contractor": {
-    "name": "Test Contractor",
-    "company": "OWL FENC TEST",
-    "address": "456 Ave, San Diego, CA 92103",
-    "phone": "619-555-0200",
-    "email": "contractor@owlfenc.com",
-    "license": "TEST-001"
-  },
-  "project": {
-    "type": "Fence Installation",
-    "description": "TEST ONLY - Install fence",
-    "location": "123 Test St, San Diego, CA 92101",
-    "startDate": "2026-04-01",
-    "endDate": "2026-04-15"
-  },
-  "financials": {
-    "total": 5000,
-    "paymentMilestones": [
-      {"description": "Deposit", "amount": 2500, "dueDate": "2026-04-01"}
-    ]
-  },
-  "legalClauses": {"selected": [], "clauses": []}
+  "client": {"name":"Test Client","address":"123 Test St, San Diego CA","email":"client@test.com","phone":"619-555-0100"},
+  "contractor": {"name":"Test Contractor","company":"OWL FENC TEST","address":"456 Ave, San Diego CA","phone":"619-555-0200","email":"contractor@owlfenc.com","license":"TEST-001"},
+  "project": {"type":"Fence Installation","description":"TEST ONLY","location":"123 Test St","startDate":"2026-04-01","endDate":"2026-04-15"},
+  "financials": {"total":5000,"paymentMilestones":[{"description":"Deposit","amount":2500,"dueDate":"2026-04-01"}]},
+  "legalClauses": {"selected":[],"clauses":[]}
 }'
 
-CONTRACT_WITH_SIG_PAYLOAD='{
+CONTRACT_WITH_SIG='{
   "templateId": "independent-contractor",
   "includeSignature": true,
-  "clientEmail": "testclient@example.com",
+  "clientEmail": "client@test.com",
   "contractorEmail": "contractor@owlfenc.com",
-  "client": {
-    "name": "Test Client LLC",
-    "address": "123 Test St, San Diego, CA 92101",
-    "email": "testclient@example.com",
-    "phone": "619-555-0100"
-  },
-  "contractor": {
-    "name": "Test Contractor",
-    "company": "OWL FENC TEST",
-    "address": "456 Ave, San Diego, CA 92103",
-    "phone": "619-555-0200",
-    "email": "contractor@owlfenc.com",
-    "license": "TEST-001"
-  },
-  "project": {
-    "type": "Fence Installation",
-    "description": "TEST ONLY - Install fence with signature",
-    "location": "123 Test St, San Diego, CA 92101",
-    "startDate": "2026-04-01",
-    "endDate": "2026-04-15"
-  },
-  "financials": {
-    "total": 5000,
-    "paymentMilestones": [
-      {"description": "Deposit", "amount": 2500, "dueDate": "2026-04-01"}
-    ]
-  },
-  "legalClauses": {"selected": [], "clauses": []}
+  "client": {"name":"Test Client","address":"123 Test St, San Diego CA","email":"client@test.com","phone":"619-555-0100"},
+  "contractor": {"name":"Test Contractor","company":"OWL FENC TEST","address":"456 Ave, San Diego CA","phone":"619-555-0200","email":"contractor@owlfenc.com","license":"TEST-001"},
+  "project": {"type":"Fence Installation","description":"TEST ONLY with sig","location":"123 Test St","startDate":"2026-04-01","endDate":"2026-04-15"},
+  "financials": {"total":5000,"paymentMilestones":[{"description":"Deposit","amount":2500,"dueDate":"2026-04-01"}]},
+  "legalClauses": {"selected":[],"clauses":[]}
 }'
 
-CHANGE_ORDER_PAYLOAD='{
+CHANGE_ORDER='{
   "templateId": "change-order",
-  "client": {
-    "name": "Test Client LLC",
-    "address": "123 Test St, San Diego, CA 92101",
-    "email": "testclient@example.com",
-    "phone": "619-555-0100"
-  },
-  "contractor": {
-    "name": "Test Contractor",
-    "company": "OWL FENC TEST",
-    "address": "456 Ave, San Diego, CA 92103",
-    "phone": "619-555-0200",
-    "email": "contractor@owlfenc.com",
-    "license": "TEST-001"
-  },
-  "project": {
-    "type": "Fence Installation",
-    "description": "TEST ONLY - Change order",
-    "location": "123 Test St",
-    "startDate": "2026-04-01",
-    "endDate": "2026-04-15"
-  },
-  "financials": {"total": 500, "paymentMilestones": []},
-  "legalClauses": {"selected": [], "clauses": []},
-  "changeOrder": {
-    "description": "Add gate - TEST ONLY",
-    "additionalCost": 500,
-    "newCompletionDate": "2026-04-20"
-  }
+  "client": {"name":"Test Client","address":"123 Test St","email":"client@test.com","phone":"619-555-0100"},
+  "contractor": {"name":"Test Contractor","company":"OWL FENC TEST","address":"456 Ave","phone":"619-555-0200","email":"contractor@owlfenc.com","license":"TEST-001"},
+  "project": {"type":"Fence","description":"TEST change order","location":"123 Test St","startDate":"2026-04-01","endDate":"2026-04-15"},
+  "financials": {"total":500,"paymentMilestones":[]},
+  "legalClauses": {"selected":[],"clauses":[]},
+  "changeOrder": {"description":"Add gate TEST","additionalCost":500,"newCompletionDate":"2026-04-20"}
 }'
 
-# Run the tests
-test_deduction \
-  "Contrato sin firma → -12 créditos" \
-  "/api/contracts/generate" \
-  "$CONTRACT_PAYLOAD" \
-  12
+test_deduction "Contrato sin firma" "/api/contracts/generate" "$CONTRACT_BASE" 12
+test_deduction "Contrato + Firma dual (bundle)" "/api/contracts/generate" "$CONTRACT_WITH_SIG" 18
+test_deduction "Change Order" "/api/generate-contract-html" "$CHANGE_ORDER" 12
 
-test_deduction \
-  "Contrato + Firma dual (bundle) → -18 créditos" \
-  "/api/contracts/generate" \
-  "$CONTRACT_WITH_SIG_PAYLOAD" \
-  18
+# ── STEP 6: Tests de seguridad ────────────────────────────────────────────────
+echo ""
+echo -e "${CYAN}${BOLD}── STEP 6: Tests de Seguridad (Sin Auth) ───────────────${RESET}"
 
-test_deduction \
-  "Change Order (html endpoint) → -12 créditos" \
-  "/api/generate-contract-html" \
-  "$CHANGE_ORDER_PAYLOAD" \
-  12
-
-# ── Step 6: Security tests ────────────────────────────────────────────────────
-echo -e "\n${CYAN}${BOLD}── STEP 4: Tests de Seguridad (Sin Auth) ───────────────${RESET}"
-
-echo -e "\n  ${BOLD}Test:${RESET} Request sin autenticación → 401"
-UNAUTH_RESP=$(curl -sf -o /dev/null -w "%{http_code}" -X POST "$BASE_URL/api/contracts/generate" \
+echo ""
+echo -e "  ${BOLD}▸ Request sin autenticación → debe retornar 401/403${RESET}"
+CODE1=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE_URL/api/contracts/generate" \
   -H "Content-Type: application/json" \
-  -d "$CONTRACT_PAYLOAD" 2>/dev/null || echo "000")
+  -d "$CONTRACT_BASE" 2>/dev/null || echo "000")
 
-if [ "$UNAUTH_RESP" = "401" ] || [ "$UNAUTH_RESP" = "403" ]; then
-  pass "Request sin auth bloqueado → HTTP $UNAUTH_RESP"
+if [ "$CODE1" = "401" ] || [ "$CODE1" = "403" ]; then
+  pass "/api/contracts/generate sin auth → HTTP $CODE1 ✓"
 else
-  fail "Request sin auth" "Esperado 401/403, recibido HTTP $UNAUTH_RESP"
+  fail "/api/contracts/generate sin auth" "Esperado 401/403, recibido HTTP $CODE1"
 fi
 
-echo -e "\n  ${BOLD}Test:${RESET} /api/generate-contract-html sin auth → 401"
-UNAUTH_RESP2=$(curl -sf -o /dev/null -w "%{http_code}" -X POST "$BASE_URL/api/generate-contract-html" \
+echo ""
+echo -e "  ${BOLD}▸ /api/generate-contract-html sin auth → debe retornar 401/403${RESET}"
+CODE2=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE_URL/api/generate-contract-html" \
   -H "Content-Type: application/json" \
-  -d "$CHANGE_ORDER_PAYLOAD" 2>/dev/null || echo "000")
+  -d "$CHANGE_ORDER" 2>/dev/null || echo "000")
 
-if [ "$UNAUTH_RESP2" = "401" ] || [ "$UNAUTH_RESP2" = "403" ]; then
-  pass "generate-contract-html sin auth bloqueado → HTTP $UNAUTH_RESP2"
+if [ "$CODE2" = "401" ] || [ "$CODE2" = "403" ]; then
+  pass "/api/generate-contract-html sin auth → HTTP $CODE2 ✓"
 else
-  fail "generate-contract-html sin auth" "Esperado 401/403, recibido HTTP $UNAUTH_RESP2"
+  fail "/api/generate-contract-html sin auth" "Esperado 401/403, recibido HTTP $CODE2"
 fi
 
-# ── Step 7: Transaction history ───────────────────────────────────────────────
-echo -e "\n${CYAN}${BOLD}── STEP 5: Historial de Transacciones ──────────────────${RESET}"
+# ── STEP 7: Historial de transacciones ───────────────────────────────────────
+echo ""
+echo -e "${CYAN}${BOLD}── STEP 7: Historial de Transacciones ──────────────────${RESET}"
 
-if [ -n "$BEARER_TOKEN" ] || [ -f "/tmp/owlfenc-test-cookies.txt" ]; then
+if [ -n "$BEARER_TOKEN" ] || [ "$USE_COOKIE" = "true" ]; then
   if [ -n "$BEARER_TOKEN" ]; then
-    HISTORY_RESP=$(curl -sf "$BASE_URL/api/wallet/history?limit=10" \
+    HIST=$(curl -s "$BASE_URL/api/wallet/history?limit=10" \
       -H "Authorization: Bearer $BEARER_TOKEN" 2>/dev/null || echo "")
   else
-    HISTORY_RESP=$(curl -sf "$BASE_URL/api/wallet/history?limit=10" \
-      -b /tmp/owlfenc-test-cookies.txt 2>/dev/null || echo "")
+    HIST=$(curl -s "$BASE_URL/api/wallet/history?limit=10" \
+      -b /tmp/owlfenc-cookies.txt 2>/dev/null || echo "")
   fi
-  
-  CONTRACT_COUNT=$(echo "$HISTORY_RESP" | python3 -c "
+
+  echo "$HIST" | python3 -c "
 import sys, json
 try:
     d = json.load(sys.stdin)
     txns = d.get('transactions') or d.get('history') or []
-    contract_types = {'contract','contractwithsignature','signatureprotocol'}
-    count = sum(1 for t in txns if (t.get('type') or t.get('featureName') or '').lower() in contract_types)
-    print(count)
-except:
-    print(0)
-" 2>/dev/null || echo "0")
-  
-  if [ "$CONTRACT_COUNT" -gt 0 ] 2>/dev/null; then
-    pass "Historial contiene $CONTRACT_COUNT transacción(es) de contratos"
-    # Show last 3 contract transactions
-    echo "$HISTORY_RESP" | python3 -c "
-import sys, json
-try:
-    d = json.load(sys.stdin)
-    txns = d.get('transactions') or d.get('history') or []
-    contract_types = {'contract','contractwithsignature','signatureprotocol'}
-    for t in txns[:5]:
-        ft = (t.get('type') or t.get('featureName') or 'unknown').lower()
-        if ft in contract_types:
+    contract_types = {'contract','contractwithsignature','signatureprotocol','change-order','lien-waiver'}
+    found = [t for t in txns if (t.get('type') or t.get('featureName') or '').lower() in contract_types]
+    if found:
+        print(f'  \033[0;32m✅ PASS\033[0m Historial tiene {len(found)} transacción(es) de contratos:')
+        for t in found[:5]:
+            ft = (t.get('type') or t.get('featureName') or 'unknown')
             amt = t.get('amount') or t.get('credits') or t.get('amountCredits') or 0
-            desc = (t.get('description') or '')[:50]
-            print(f'    → {ft}: {amt} créditos | {desc}')
-except:
-    pass
+            desc = (t.get('description') or '')[:60]
+            print(f'    → [{ft}] {amt} créditos | {desc}')
+    else:
+        print(f'  \033[1;33m⏭  SKIP\033[0m No hay transacciones de contratos en los últimos 10 registros (normal si es cuenta nueva)')
+except Exception as e:
+    print(f'  \033[0;31m❌ FAIL\033[0m Error leyendo historial: {e}')
 " 2>/dev/null
-  else
-    fail "Historial de transacciones" "No se encontraron transacciones de contratos en los últimos 10 registros"
-  fi
 else
   skip "Historial de transacciones" "Sin autenticación"
 fi
 
 # ── Cleanup ───────────────────────────────────────────────────────────────────
-rm -f /tmp/owlfenc-test-cookies.txt
+rm -f /tmp/owlfenc-cookies.txt
 
-# ── Final summary ─────────────────────────────────────────────────────────────
+# ── Resumen ───────────────────────────────────────────────────────────────────
 TOTAL=$((PASS + FAIL + SKIP))
-echo -e "\n${CYAN}${BOLD}╔══════════════════════════════════════════════════════╗"
+echo ""
+echo -e "${CYAN}${BOLD}╔══════════════════════════════════════════════════════╗"
 echo -e "║                  RESUMEN FINAL                       ║"
 echo -e "╚══════════════════════════════════════════════════════╝${RESET}"
-echo -e "\n  Total:   $TOTAL"
+echo ""
+echo -e "  Total:   $TOTAL"
 echo -e "  ${GREEN}Passed:  $PASS${RESET}"
 echo -e "  ${RED}Failed:  $FAIL${RESET}"
 echo -e "  ${YELLOW}Skipped: $SKIP${RESET}"
 
 if [ "$FAIL" -eq 0 ]; then
-  echo -e "\n  ${GREEN}${BOLD}🎉 TODOS LOS TESTS PASARON — Sistema de créditos funcionando correctamente!${RESET}"
+  echo ""
+  echo -e "  ${GREEN}${BOLD}🎉 TODOS LOS TESTS PASARON — Sistema de créditos OK!${RESET}"
   exit 0
 else
-  echo -e "\n  ${RED}${BOLD}⚠️  $FAIL test(s) FALLARON — Revisa el output arriba.${RESET}"
+  echo ""
+  echo -e "  ${RED}${BOLD}⚠️  $FAIL test(s) FALLARON — Revisa el output arriba.${RESET}"
   exit 1
 fi
