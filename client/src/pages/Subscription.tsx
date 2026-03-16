@@ -105,25 +105,9 @@ export default function Subscription() {
         throw new Error("No se pudo obtener token de autenticación. Por favor inicia sesión de nuevo.");
       }
 
-      // Si es Free Trial, usar el endpoint de activación de trial
-      if (planCode === 'FREE_TRIAL' || planId === 4) {
-        const response = await fetch('/api/secure-trial/activate', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'No se pudo activar el Free Trial');
-        }
-
-        toast({
-          title: "¡Free Trial Activado!",
-          description: "Tienes 14 días de acceso ilimitado a todas las funciones.",
-        });
-      } else if (planId === 5 || planCode === 'PRIMO_CHAMBEADOR' || planCode === 'primo_chambeador') {
+      // FREE_TRIAL (planId 4) está desactivado — el onboarding usa créditos de bienvenida
+      // Solo se activa Primo Chambeador (plan gratuito por defecto)
+      if (planId === 5 || planCode === 'PRIMO_CHAMBEADOR' || planCode === 'primo_chambeador') {
         // Para Primo Chambeador (plan gratuito por defecto)
         const response = await fetch('/api/subscription/activate-free-plan', {
           method: 'POST',
@@ -440,50 +424,25 @@ export default function Subscription() {
         console.error("Error al limpiar parámetros de URL:", error);
       }
 
-      // Procesar resultado después de un breve retraso para permitir que la interfaz se renderice
+      // Procesar resultado después de un breve retraso para que el webhook de Stripe procese
       setTimeout(async () => {
         if (isSuccess) {
-          console.log("Procesando redirección exitosa");
+          console.log("✅ [SUBSCRIPTION] Pago completado — esperando procesamiento del webhook de Stripe...");
           
-          // Activate subscription since webhook isn't working
-          try {
-            const response = await fetch('/api/subscription/simulate-checkout', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                email: userEmail,
-                planId: 2 // Assuming Mero Patrón plan
-              }),
-            });
-
-            if (response.ok) {
-              console.log("Subscription activated successfully");
-              toast({
-                title: "¡Suscripción activada!",
-                description: "Tu suscripción ha sido activada correctamente.",
-              });
-            } else {
-              console.error("Failed to activate subscription");
-              toast({
-                title: "¡Pago procesado exitosamente!",
-                description: "Tu pago ha sido procesado. La suscripción se activará en breve.",
-              });
-            }
-          } catch (error) {
-            console.error("Error activating subscription:", error);
-            toast({
-              title: "¡Pago procesado exitosamente!",
-              description: "Tu pago ha sido procesado. La suscripción se activará en breve.",
-            });
-          }
-
-          // Actualizar los datos de la suscripción
-          queryClient.invalidateQueries({
-            queryKey: ["/api/subscription/user-subscription"],
+          // La suscripción se activa automáticamente via webhook de Stripe
+          // Solo necesitamos refrescar los datos del usuario después de un momento
+          toast({
+            title: "¡Pago procesado!",
+            description: "Tu suscripción se está activando. Esto puede tomar unos segundos.",
           });
-          console.log("Datos de suscripción actualizados");
+
+          // Refrescar datos de suscripción después de 3 segundos (tiempo para webhook)
+          setTimeout(() => {
+            queryClient.invalidateQueries({
+              queryKey: ["/api/subscription/user-subscription", userEmail],
+            });
+            console.log("✅ [SUBSCRIPTION] Datos de suscripción refrescados");
+          }, 3000);
         } else if (isCanceled) {
           console.log("Procesando redirección cancelada");
           toast({

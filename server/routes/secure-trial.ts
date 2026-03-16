@@ -11,41 +11,16 @@ const router = Router();
 
 /**
  * POST /api/secure-trial/activate
- * Activate secure 14-day trial with serverTimestamp (IMMUTABLE)
- * REQUIRES FIREBASE AUTHENTICATION - NO BYPASS POSSIBLE
+ * DISABLED: Free trial feature has been discontinued.
+ * New users receive 120 welcome credits via the wallet system instead.
  */
 router.post('/activate', verifyFirebaseAuth, async (req, res) => {
-  try {
-    // SECURITY: Get UID from verified Firebase token, not request body
-    const uid = (req as AuthenticatedRequest).uid;
-    
-    // UID is guaranteed to exist from Firebase auth middleware
-    
-    console.log(`🔒 [SECURE-TRIAL-API] Activating secure trial for: ${uid}`);
-    
-    const trialEntitlements = await secureTrialService.createSecureTrial(uid);
-    
-    res.json({
-      success: true,
-      message: 'Secure trial activated with serverTimestamp protection',
-      trial: {
-        uid: trialEntitlements.uid,
-        planName: trialEntitlements.planName,
-        daysRemaining: trialEntitlements.trial.daysRemaining,
-        isTrialing: trialEntitlements.trial.isTrialing,
-        status: trialEntitlements.trial.status,
-        // Don't expose serverTimestamp for security
-        expiresAt: trialEntitlements.trial.endDate
-      }
-    });
-    
-  } catch (error) {
-    console.error('❌ [SECURE-TRIAL-API] Error activating trial:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to activate secure trial'
-    });
-  }
+  console.warn('⚠️ [SECURE-TRIAL-API] Trial activation attempted but feature is disabled');
+  res.status(410).json({
+    success: false,
+    error: 'Free trial feature has been discontinued. New users receive 120 welcome credits instead.',
+    code: 'TRIAL_DISABLED'
+  });
 });
 
 /**

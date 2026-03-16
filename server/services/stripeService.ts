@@ -424,24 +424,40 @@ class StripeService {
         `[${new Date().toISOString()}] Manejando evento checkout.session.completed - Sesión ID: ${session.id}`,
       );
       
-      // Extract metadata - handle both Firebase UID and email
+      // Extract Firebase UID from client_reference_id (set during checkout creation)
+      const firebaseUid = session.client_reference_id || session.metadata?.userId;
       const userEmail = session.customer_email || session.customer_details?.email;
-      const planId = parseInt(session.metadata.planId);
-      const billingCycle = session.metadata.billingCycle;
+      const planId = parseInt(session.metadata?.planId || '0');
+      const billingCycle = session.metadata?.billingCycle || 'monthly';
 
+      if (!firebaseUid) {
+        console.error(`[${new Date().toISOString()}] No Firebase UID in client_reference_id or metadata.userId`);
+        return;
+      }
       if (!userEmail) {
         console.error(`[${new Date().toISOString()}] No customer email found in session metadata`);
         return;
       }
 
-      // STRIPE WEBHOOK LIMITATION: No tiene acceso directo a Firebase UID
-      // SISTEMA UNIFICADO: Usar servicio de identidad para mapeo consistente  
-      const userId = `user_${userEmail.replace(/[@.]/g, '_')}`;
-      
+      const userId = firebaseUid; // Use real Firebase UID
+
+      // Save stripe_customers mapping so webhook service can find user by Stripe customerId
+      try {
+        const { db: firestoreDb, admin: adminSdk } = await import('../lib/firebase-admin.js');
+        await firestoreDb.collection('stripe_customers').doc(session.customer).set({
+          customerId: session.customer,
+          uid: firebaseUid,
+          email: userEmail,
+          createdAt: adminSdk.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
+        console.log(`✅ [STRIPE-WEBHOOK] stripe_customers mapping saved: ${session.customer} → ${firebaseUid}`);
+      } catch (mappingError) {
+        console.error('⚠️ [STRIPE-WEBHOOK] Failed to save stripe_customers mapping (non-fatal):', mappingError);
+      }
+
       console.log(
-        `[${new Date().toISOString()}] Processing Stripe webhook - LEGACY ID TEMPORAL: ${userId} (email: ${userEmail}), plan: ${planId}`,
+        `[${new Date().toISOString()}] Processing checkout.session.completed for Firebase UID: ${userId} (email: ${userEmail}), plan: ${planId}`,
       );
-      console.warn(`⚠️ [STRIPE-WEBHOOK] TEMPORAL: Usando email-based ID hasta implementar mapeo Firebase UID`);
 
       // Get subscription details from Stripe
       const subscription = await stripe.subscriptions.retrieve(
