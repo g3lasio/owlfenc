@@ -58,15 +58,17 @@ const LIVE_PRICE_MAP: PriceRegistry = {
   },
   
   // Mero Patrón - $49.99/month or $509.88/year (15% discount)
+  // Price IDs verified in Stripe Dashboard — 2026-03-16
   9: {
-    monthly: process.env.STRIPE_PRICE_MERO_PATRON_MONTHLY || 'price_PLACEHOLDER_MERO_MONTHLY',
-    yearly: process.env.STRIPE_PRICE_MERO_PATRON_YEARLY || 'price_PLACEHOLDER_MERO_YEARLY',
+    monthly: process.env.STRIPE_PRICE_MERO_PATRON_MONTHLY || 'price_1SRPnBBAAfD6dhk7gSFDh1qp',
+    yearly: process.env.STRIPE_PRICE_MERO_PATRON_YEARLY || 'price_1SRPsvBAAfD6dhk7tZkyfdLL',
   },
   
   // Master Contractor - $99.99/month or $1,019.89/year (15% discount)
+  // Price IDs verified in Stripe Dashboard — 2026-03-16
   6: {
-    monthly: process.env.STRIPE_PRICE_MASTER_MONTHLY || 'price_PLACEHOLDER_MASTER_MONTHLY',
-    yearly: process.env.STRIPE_PRICE_MASTER_YEARLY || 'price_PLACEHOLDER_MASTER_YEARLY',
+    monthly: process.env.STRIPE_PRICE_MASTER_MONTHLY || 'price_1SRPx5BAAfD6dhk7MqMWnnDT',
+    yearly: process.env.STRIPE_PRICE_MASTER_YEARLY || 'price_1SRPzTBAAfD6dhk7mvgUJ8jy',
   },
 };
 

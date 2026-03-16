@@ -44,7 +44,10 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       "Sin compromiso de pago",
       "Cancela en cualquier momento"
     ],
-    isActive: true,
+    // ❌ DESACTIVADO — 2026-03-16: Free trial eliminado del flujo de onboarding.
+    // El sistema de créditos (wallet) maneja el onboarding con 20 créditos de bienvenida.
+    // Mantener en el catálogo para compatibilidad con usuarios existentes (planId 4 en DB).
+    isActive: false,
     interval: 'monthly',
   },
   {
@@ -75,7 +78,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     description: "Para contratistas profesionales",
     motto: "Most popular for growing contractors",
     price: 4999,        // $49.99/mes
-    yearlyPrice: 50990, // $509.90/año (15% descuento — pago único anual)
+    yearlyPrice: 50988, // $509.88/año (15% descuento — pago único anual) — sincronizado con Stripe price_1SRPsvBAAfD6dhk7tZkyfdLL
     features: [
       "⚡ 500 AI credits included per month",
       "Access to all features — no limits",
@@ -97,7 +100,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     description: "Sin límites para profesionales",
     motto: "Unlimited everything for professionals",
     price: 9999,         // $99.99/mes
-    yearlyPrice: 101990, // $1,019.90/año (15% descuento — pago único anual)
+    yearlyPrice: 101989, // $1,019.89/año (15% descuento — pago único anual) — sincronizado con Stripe price_1SRPzTBAAfD6dhk7mvgUJ8jy
     features: [
       "⚡ 1,200 AI credits included per month",
       "Access to all features — no limits",
