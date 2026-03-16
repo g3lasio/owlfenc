@@ -151,8 +151,14 @@ export function requireCredits(options: CreditCheckOptions) {
     const firebaseUid = extractFirebaseUid(req, options.getFirebaseUid);
 
     if (!firebaseUid) {
-      // Si no hay UID, dejar pasar (el auth middleware ya maneja esto)
-      next();
+      // Si no hay UID y se requieren créditos, bloquear con 401.
+      // El requireAuth debería haber bloqueado antes, pero esto es una capa de seguridad adicional.
+      console.warn(`🔒 [CREDIT-CHECK] No Firebase UID found for feature '${featureName}' — blocking request with 401`);
+      res.status(401).json({
+        success: false,
+        error: 'Autenticación requerida para usar esta función',
+        code: 'AUTH_REQUIRED'
+      });
       return;
     }
 

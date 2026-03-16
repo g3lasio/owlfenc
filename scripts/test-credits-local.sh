@@ -84,12 +84,15 @@ CUSTOM_TOKEN_RESP=$(curl -s -X POST "$BASE_URL/api/auth/create-custom-token" \
 
 info "Respuesta custom token: $(echo $CUSTOM_TOKEN_RESP | head -c 150)"
 
-CUSTOM_TOKEN=$(echo "$CUSTOM_TOKEN_RESP" | python3 -c "
-import sys, json
+# Usar archivo temporal para evitar truncamiento de tokens largos
+echo "$CUSTOM_TOKEN_RESP" > /tmp/owlfenc-custom-token-resp.json
+CUSTOM_TOKEN=$(python3 -c "
+import json
 try:
-    d = json.load(sys.stdin)
+    with open('/tmp/owlfenc-custom-token-resp.json') as f:
+        d = json.load(f)
     print(d.get('customToken') or d.get('token') or '')
-except:
+except Exception as e:
     print('')
 " 2>/dev/null || echo "")
 
@@ -119,19 +122,23 @@ else
       -H "Content-Type: application/json" \
       -d "{\"token\": \"$CUSTOM_TOKEN\", \"returnSecureToken\": true}" 2>/dev/null || echo "")
 
-    ID_TOKEN=$(echo "$ID_TOKEN_RESP" | python3 -c "
-import sys, json
+    # Usar archivo temporal para tokens largos
+    echo "$ID_TOKEN_RESP" > /tmp/owlfenc-idtoken-resp.json
+    ID_TOKEN=$(python3 -c "
+import json
 try:
-    d = json.load(sys.stdin)
+    with open('/tmp/owlfenc-idtoken-resp.json') as f:
+        d = json.load(f)
     print(d.get('idToken') or '')
 except:
     print('')
 " 2>/dev/null || echo "")
 
-    FIREBASE_UID=$(echo "$ID_TOKEN_RESP" | python3 -c "
-import sys, json
+    FIREBASE_UID=$(python3 -c "
+import json
 try:
-    d = json.load(sys.stdin)
+    with open('/tmp/owlfenc-idtoken-resp.json') as f:
+        d = json.load(f)
     print(d.get('localId') or '')
 except:
     print('')
@@ -348,8 +355,10 @@ echo -e "${CYAN}${BOLD}── STEP 6: Tests de Seguridad (Sin Auth) ────
 
 echo ""
 echo -e "  ${BOLD}▸ Request sin autenticación → debe retornar 401/403${RESET}"
+# Usar --no-cookie-jar y sin -b para asegurar request completamente limpia
 CODE1=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE_URL/api/contracts/generate" \
   -H "Content-Type: application/json" \
+  --cookie "" \
   -d "$CONTRACT_BASE" 2>/dev/null || echo "000")
 
 if [ "$CODE1" = "401" ] || [ "$CODE1" = "403" ]; then
@@ -362,6 +371,7 @@ echo ""
 echo -e "  ${BOLD}▸ /api/generate-contract-html sin auth → debe retornar 401/403${RESET}"
 CODE2=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE_URL/api/generate-contract-html" \
   -H "Content-Type: application/json" \
+  --cookie "" \
   -d "$CHANGE_ORDER" 2>/dev/null || echo "000")
 
 if [ "$CODE2" = "401" ] || [ "$CODE2" = "403" ]; then
