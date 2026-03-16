@@ -13,10 +13,59 @@ export const securityHeaders = helmet({
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
       fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://maps.googleapis.com", "https://api.mapbox.com", "https://js.stripe.com", "https://appleid.cdn-apple.com", "https://cdn.jsdelivr.net", "https://replit.com"],
+      scriptSrc: [
+        "'self'",
+        "'unsafe-inline'",
+        "'unsafe-eval'",
+        // Maps & Geo
+        "https://maps.googleapis.com",
+        "https://api.mapbox.com",
+        // Payments
+        "https://js.stripe.com",
+        // Auth
+        "https://appleid.cdn-apple.com",
+        // CDN
+        "https://cdn.jsdelivr.net",
+        // Dev tools
+        "https://replit.com",
+        // Analytics — required to avoid CSP errors on all pages
+        "https://www.googletagmanager.com",
+        "https://www.googletagmanager.com/gtm.js",
+        "https://www.googletagmanager.com/gtag/js",
+        "https://www.google-analytics.com",
+        "https://www.redditstatic.com",
+        "https://connect.facebook.net",
+      ],
       imgSrc: ["'self'", "data:", "https:", "blob:"],
-      connectSrc: ["'self'", "https://api.openai.com", "https://api.anthropic.com", "https://api.stripe.com", "https://firestore.googleapis.com", "https://identitytoolkit.googleapis.com", "https://securetoken.googleapis.com", "https://*.googleapis.com", "https://firebasestorage.googleapis.com", "https://storage.googleapis.com", "https://api.mapbox.com", "https://*.tiles.mapbox.com", "https://events.mapbox.com", "wss:"],
-      frameSrc: ["'self'", "https://js.stripe.com"],
+      connectSrc: [
+        "'self'",
+        // AI APIs
+        "https://api.openai.com",
+        "https://api.anthropic.com",
+        // Payments
+        "https://api.stripe.com",
+        // Firebase
+        "https://firestore.googleapis.com",
+        "https://identitytoolkit.googleapis.com",
+        "https://securetoken.googleapis.com",
+        "https://*.googleapis.com",
+        "https://firebasestorage.googleapis.com",
+        "https://storage.googleapis.com",
+        // Maps
+        "https://api.mapbox.com",
+        "https://*.tiles.mapbox.com",
+        "https://events.mapbox.com",
+        // Analytics
+        "https://www.google-analytics.com",
+        "https://analytics.google.com",
+        "https://www.googletagmanager.com",
+        "https://stats.g.doubleclick.net",
+        "https://www.redditstatic.com",
+        "https://alb.reddit.com",
+        // WebSockets
+        "wss:",
+      ],
+      frameSrc: ["'self'", "https://js.stripe.com", "https://www.googletagmanager.com"],
       objectSrc: ["'none'"],
       upgradeInsecureRequests: [],
     },

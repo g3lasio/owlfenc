@@ -613,6 +613,26 @@ app.post('/api/contractor-payments/create-payment-link', async (req: any, res) =
 // 🛡️ APPLY SECURITY MIDDLEWARE FIRST (Order is critical!)
 // 📦 RESPONSE COMPRESSION - Reduces payload size by 60-70% for JSON/HTML responses
 app.use(compression());
+
+// 🔓 RELAXED CSP FOR PUBLIC ROUTES: /sign/, /estimate/, /shared-estimate/, /verify, /pay/
+// These routes are accessed by clients/contractors who are NOT logged in.
+// The strict global CSP from helmet causes blank screens on signing pages because
+// analytics scripts (GTM, Reddit Pixel) are blocked before React can mount.
+// Public routes only need Stripe.js + Firebase (for contract data) + basic self-origin.
+app.use(['/sign', '/estimate', '/shared-estimate', '/verify', '/pay'], (_req: Request, res: Response, next: NextFunction) => {
+  res.setHeader('Content-Security-Policy',
+    "default-src 'self'; " +
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://cdn.jsdelivr.net; " +
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; " +
+    "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; " +
+    "img-src 'self' data: https: blob:; " +
+    "connect-src 'self' https://api.stripe.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.googleapis.com https://firebasestorage.googleapis.com wss:; " +
+    "frame-src 'self' https://js.stripe.com; " +
+    "object-src 'none';"
+  );
+  next();
+});
+
 app.use(securityHeaders);
 app.use(cors(corsConfig));
 app.use(securityLogger);

@@ -15,53 +15,95 @@
     <!-- 🔐 Enable WebAuthn API for biometric authentication in iframes -->
     <meta http-equiv="Permissions-Policy" content="publickey-credentials-get=(self), publickey-credentials-create=(self)" />
     <title>Owl Fenc</title>
-    
-    <!-- Google Tag Manager -->
-    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-    })(window,document,'script','dataLayer','GTM-PLACEHOLDER');</script>
-    <!-- End Google Tag Manager -->
-    
-    <!-- Google Ads Conversion Tracking with Cross-Domain Support -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-17220070682"></script>
+
+    <!--
+      🚀 PERFORMANCE: Analytics scripts are skipped on public routes (/sign/, /estimate/, /verify, /pay/)
+      to ensure instant rendering for clients receiving contract/estimate links.
+      CSP errors from blocked analytics scripts were causing blank screens on signing pages.
+    -->
     <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      
-      // Configure cross-domain tracking to link landing page and app
-      gtag('set', 'linker', {
-        'domains': ['owllanding.replit.app', 'app.owlfenc.com', 'mervin.chyrris.com']
-      });
-      
-      gtag('config', 'AW-17220070682');
+      // Detect public routes BEFORE any analytics load
+      var _isPublicRoute = (
+        window.location.pathname.indexOf('/sign/') === 0 ||
+        window.location.pathname.indexOf('/estimate/') === 0 ||
+        window.location.pathname.indexOf('/shared-estimate/') === 0 ||
+        window.location.pathname.indexOf('/verify') === 0 ||
+        window.location.pathname.indexOf('/pay/') === 0
+      );
+    </script>
+
+    <!-- Google Tag Manager — skipped on public routes to prevent CSP errors -->
+    <script>
+      if (!_isPublicRoute) {
+        (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+        new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+        j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+        'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+        })(window,document,'script','dataLayer','GTM-PLACEHOLDER');
+      }
+    </script>
+    <!-- End Google Tag Manager -->
+
+    <!-- Google Ads Conversion Tracking — skipped on public routes -->
+    <script>
+      if (!_isPublicRoute) {
+        var _gads = document.createElement('script');
+        _gads.async = true;
+        _gads.src = 'https://www.googletagmanager.com/gtag/js?id=AW-17220070682';
+        document.head.appendChild(_gads);
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('set', 'linker', {
+          'domains': ['owllanding.replit.app', 'app.owlfenc.com', 'mervin.chyrris.com']
+        });
+        gtag('config', 'AW-17220070682');
+      }
     </script>
     <!-- End Google Ads -->
-    
-    <!-- Reddit Pixel -->
+
+    <!-- Reddit Pixel — skipped on public routes -->
     <script>
-    !function(w,d){if(!w.rdt){var p=w.rdt=function(){p.sendEvent?p.sendEvent.apply(p,arguments):p.callQueue.push(arguments)};p.callQueue=[];var t=d.createElement("script");t.src="https://www.redditstatic.com/ads/pixel.js",t.async=!0;var s=d.getElementsByTagName("script")[0];s.parentNode.insertBefore(t,s)}}(window,document);rdt('init','a2_icq74st4akdq', {"optOut":false,"useDecimalCurrencyValues":true});
+      if (!_isPublicRoute) {
+        !function(w,d){if(!w.rdt){var p=w.rdt=function(){p.sendEvent?p.sendEvent.apply(p,arguments):p.callQueue.push(arguments)};p.callQueue=[];var t=d.createElement("script");t.src="https://www.redditstatic.com/ads/pixel.js",t.async=!0;var s=d.getElementsByTagName("script")[0];s.parentNode.insertBefore(t,s)}}(window,document);
+        rdt('init','a2_icq74st4akdq', {"optOut":false,"useDecimalCurrencyValues":true});
+      }
     </script>
     <!-- End Reddit Pixel -->
-    
-    <!-- NOTE: Google Maps removed - using Mapbox for address autocomplete instead -->
-    <!-- If Google Maps is needed, configure VITE_GOOGLE_MAPS_API_KEY in secrets -->
-    <!-- Apple Sign-In JS SDK - deferred to not block initial render -->
-    <script defer type="text/javascript" src="https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js"></script>
-    <!-- Stripe.js SDK for Payment Processing -->
+
+    <!-- Apple Sign-In JS SDK — only needed in main app, deferred -->
+    <script>
+      if (!_isPublicRoute) {
+        var _apple = document.createElement('script');
+        _apple.defer = true;
+        _apple.type = 'text/javascript';
+        _apple.src = 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js';
+        document.head.appendChild(_apple);
+      }
+    </script>
+
+    <!-- Stripe.js SDK for Payment Processing — needed on all pages -->
     <script defer src="https://js.stripe.com/v3/"></script>
   </head>
   <body>
-    <!-- Google Tag Manager (noscript) -->
-    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PLACEHOLDER"
-    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- Google Tag Manager (noscript) — skipped on public routes -->
+    <script>
+      if (!_isPublicRoute) {
+        document.write('<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PLACEHOLDER" height="0" width="0" style="display:none;visibility:hidden"><\/iframe><\/noscript>');
+      }
+    </script>
     <!-- End Google Tag Manager (noscript) -->
-    
+
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <!-- This script injects a replit badge into the page, please feel free to remove this line -->
-    <script type="text/javascript" src="https://replit.com/public/js/replit-badge-v3.js"></script>
+    <!-- Replit badge — skipped on public routes -->
+    <script>
+      if (!_isPublicRoute) {
+        var _rb = document.createElement('script');
+        _rb.type = 'text/javascript';
+        _rb.src = 'https://replit.com/public/js/replit-badge-v3.js';
+        document.body.appendChild(_rb);
+      }
+    </script>
   </body>
 </html>
