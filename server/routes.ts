@@ -9469,6 +9469,7 @@ ENHANCED LEGAL CLAUSE:`;
   // *** CONTRACT HTML GENERATION FOR LEGAL COMPLIANCE WORKFLOW ***
   app.post(
     "/api/generate-contract-html",
+    requireAuth, requireCredits({ featureName: "contract" }),
     async (req: Request, res: Response) => {
       try {
         console.log(
@@ -9616,15 +9617,17 @@ ENHANCED LEGAL CLAUSE:`;
           contractHTML = premiumPdfService.generateProfessionalLegalContractHTML(contractData);
         }
 
-        console.log("✅ [CONTRACT-HTML] HTML contract generated successfully");
+         console.log("✅ [CONTRACT-HTML] HTML contract generated successfully");
         console.log("📏 [CONTRACT-HTML] HTML length:", contractHTML.length);
         console.log("🔍 [CONTRACT-HTML] Protection clauses in output:", contractHTML.includes('INTELLIGENT CONTRACTOR PROTECTION CLAUSES'));
-
+        // 💳 Deduct credits AFTER successful generation
+        const contractId = `CON-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`;
+        await deductFeatureCredits(req, contractId, 'Contract HTML generated');
         // Return JSON response with HTML content
         res.json({
           success: true,
           html: contractHTML,
-          contractId: `CON-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`,
+          contractId,
           generatedAt: new Date().toISOString(),
           clientName: contractData.client?.name,
           contractorName: contractData.contractor?.name,
@@ -9655,7 +9658,7 @@ ENHANCED LEGAL CLAUSE:`;
   // - Automatic recycle after 3 consecutive failures
   // - Returns both HTML and PDF in single request
   // 🔐 SECURITY: Session Cookie ONLY (simple, robust, production-ready)
-  app.post("/api/contracts/generate", requireCredits({ featureName: "contract" }), async (req: Request, res: Response) => {
+  app.post("/api/contracts/generate", requireAuth, requireCredits({ featureName: "contract", detectBundle: true }), async (req: Request, res: Response) => {
     const startTime = Date.now();
     
     try {
