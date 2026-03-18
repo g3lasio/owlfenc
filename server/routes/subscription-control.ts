@@ -14,6 +14,11 @@ const databaseStorage = new DatabaseStorage();
  * Reemplazan el sistema fragmentado de Maps en memoria
  */
 
+// ⚡ In-memory cache for suspension status — avoids a Firestore read on every request
+// TTL: 5 minutes. Cache is invalidated automatically when a webhook updates the user's status.
+const suspensionCache = new Map<string, { data: object; expiresAt: number }>();
+const SUSPENSION_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 export function registerSubscriptionControlRoutes(app: any) {
   
   // Obtener estado real de suscripción (REEMPLAZA /user/subscription)
@@ -257,22 +262,30 @@ export function registerSubscriptionControlRoutes(app: any) {
         return res.status(401).json({ error: 'Usuario no autenticado', success: false });
       }
 
-      console.log(`🔍 [SUSPENSION-CHECK] Checking suspension status for user: ${firebaseUid}`);
+      // ⚡ Cache hit: return cached result if still valid
+      const cached = suspensionCache.get(firebaseUid);
+      if (cached && Date.now() < cached.expiresAt) {
+        return res.json(cached.data);
+      }
 
+      console.log(`🔍 [SUSPENSION-CHECK] Checking suspension status for user: ${firebaseUid}`);
       // Import Firebase Admin
-      const { db: firebaseDb } = await import('../lib/firebase-admin.js');
+      const { db: firebaseDb } = await import('../lib/firebase-admin.js');;
       
       // Check Firestore entitlements for downgrade reason
       const entitlementsDoc = await firebaseDb.collection('entitlements').doc(firebaseUid).get();
       
       if (!entitlementsDoc.exists) {
         console.log(`ℹ️ [SUSPENSION-CHECK] No entitlements found for user ${firebaseUid}`);
-        return res.json({
+        const noSuspensionResult = {
           success: true,
           isSuspended: false,
           reason: null,
           message: 'No suspension found'
-        });
+        };
+        // ⚡ Cache the result for 5 minutes
+        suspensionCache.set(firebaseUid, { data: noSuspensionResult, expiresAt: Date.now() + SUSPENSION_CACHE_TTL });
+        return res.json(noSuspensionResult);
       }
 
       const entitlements = entitlementsDoc.data();
@@ -289,14 +302,18 @@ export function registerSubscriptionControlRoutes(app: any) {
 
       console.log(`📊 [SUSPENSION-CHECK] User ${firebaseUid} - Suspended: ${isSuspended}, Reason: ${downgradedReason}`);
 
-      res.json({
+      const suspensionResult = {
         success: true,
         isSuspended: !!isSuspended,
         reason: downgradedReason || null,
         downgradedAt: downgradedAt ? new Date(downgradedAt._seconds * 1000).toISOString() : null,
         currentPlanId: planId || 5, // Default to Primo Chambeador
         message: isSuspended ? 'Account suspended due to payment issues' : 'Account active'
-      });
+      };
+      // ⚡ Cache the result for 5 minutes (suspended users get shorter cache to re-check sooner)
+      const cacheTTL = isSuspended ? 60 * 1000 : SUSPENSION_CACHE_TTL; // 1 min if suspended, 5 min if active
+      suspensionCache.set(firebaseUid, { data: suspensionResult, expiresAt: Date.now() + cacheTTL });
+      res.json(suspensionResult);
 
     } catch (error) {
       console.error('❌ [SUSPENSION-CHECK] Error checking suspension status:', error);

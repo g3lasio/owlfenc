@@ -37,7 +37,7 @@ class ModernPdfService {
   private browserPool: any = null;
   private browserLaunchPromise: Promise<any> | null = null;
   private lastBrowserUseTime: number = 0;
-  private readonly BROWSER_IDLE_TIMEOUT = 60000; // 1 minute
+  private readonly BROWSER_IDLE_TIMEOUT = 30 * 60 * 1000; // 30 minutes — keeps browser warm in production
   private readonly MAX_GENERATION_TIME = 25000; // 25 seconds max
   
   private constructor() {

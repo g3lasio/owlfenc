@@ -19,7 +19,7 @@ class BrowserPool {
   private isInitializing: boolean = false;
   private initPromise: Promise<Browser> | null = null;
   private lastUsed: number = 0;
-  private readonly IDLE_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+  private readonly IDLE_TIMEOUT = 30 * 60 * 1000; // 30 minutes — keeps browser warm in production to avoid cold-start delay on PDF generation
   private cleanupTimer: NodeJS.Timeout | null = null;
 
   static getInstance(): BrowserPool {
