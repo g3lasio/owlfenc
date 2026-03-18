@@ -263,9 +263,21 @@ class StripeService {
         // El sistema de créditos (wallet) maneja el onboarding con créditos de bienvenida
 
         // 🎟️ PARTNERSHIP DISCOUNT: Apply coupon only for Master Contractor (planId 6)
+        // IMPORTANT: Stripe discounts[] requires the coupon ID, NOT the coupon name/code
+        // Map human-readable partner codes → Stripe coupon IDs
+        const PARTNER_COUPON_MAP: Record<string, string> = {
+          'NEXLEAD': 'Qmbtx032',  // NEXLEAD Agency Partner — 15% off forever
+          // To add future agencies: 'AGENCYCODE': 'stripe_coupon_id'
+        };
         if (options.couponCode && options.planId === 6) {
-          console.log(`[${new Date().toISOString()}] Applying partnership coupon: ${options.couponCode} for Master Contractor`);
-          sessionConfig.discounts = [{ coupon: options.couponCode }];
+          const normalizedCode = options.couponCode.trim().toUpperCase();
+          const stripeCouponId = PARTNER_COUPON_MAP[normalizedCode];
+          if (stripeCouponId) {
+            console.log(`[${new Date().toISOString()}] ✅ Applying partnership coupon: ${normalizedCode} → Stripe ID: ${stripeCouponId}`);
+            sessionConfig.discounts = [{ coupon: stripeCouponId }];
+          } else {
+            console.warn(`[${new Date().toISOString()}] ⚠️ Unknown partner code: ${normalizedCode} — not applied to checkout`);
+          }
         } else if (options.couponCode && options.planId !== 6) {
           console.warn(`[${new Date().toISOString()}] Coupon ${options.couponCode} rejected — only valid for Master Contractor plan`);
         }
