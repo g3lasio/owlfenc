@@ -384,18 +384,32 @@ export default function PermitAdvisor() {
     isLoading: historyLoading,
     refetch: refetchHistory,
   } = useQuery({
-    queryKey: ["permitHistory", currentUser?.uid],
+    queryKey: ["permitHistory", user?.uid ?? currentUser?.uid],
     queryFn: async () => {
-      if (!currentUser?.uid) return [];
+      const uid = user?.uid ?? currentUser?.uid;
+      if (!uid) return [];
       try {
         console.log("📋 [PERMIT-HISTORY] Cargando historial desde Firebase...");
-        const q = query(
-          collection(db, 'permit_search_history'),
-          where('userId', '==', currentUser.uid),
-          orderBy('createdAt', 'desc'),
-          limit(50)
-        );
-        const snapshot = await getDocs(q);
+        let snapshot;
+        try {
+          // Primary query: composite index (userId + createdAt desc)
+          const q = query(
+            collection(db, 'permit_search_history'),
+            where('userId', '==', uid),
+            orderBy('createdAt', 'desc'),
+            limit(50)
+          );
+          snapshot = await getDocs(q);
+        } catch (indexError: any) {
+          // Fallback: composite index still building — query without orderBy, sort in JS
+          console.warn("⚠️ [PERMIT-HISTORY] Index not ready, using simple query:", indexError?.message);
+          const qSimple = query(
+            collection(db, 'permit_search_history'),
+            where('userId', '==', uid),
+            limit(50)
+          );
+          snapshot = await getDocs(qSimple);
+        }
         const history: any[] = [];
         snapshot.forEach((docSnap) => {
           const data = docSnap.data();
@@ -409,6 +423,12 @@ export default function PermitAdvisor() {
             createdAt: data.createdAt,
           });
         });
+        // Sort descending by createdAt (handles fallback case too)
+        history.sort((a, b) => {
+          const aMs = a.createdAt?.toMillis?.() ?? (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0);
+          const bMs = b.createdAt?.toMillis?.() ?? (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0);
+          return bMs - aMs;
+        });
         console.log(`📋 [PERMIT-HISTORY] ${history.length} búsquedas cargadas desde Firebase`);
         return history;
       } catch (error) {
@@ -416,7 +436,7 @@ export default function PermitAdvisor() {
         return [];
       }
     },
-    enabled: !!currentUser?.uid,
+    enabled: !!(user?.uid ?? currentUser?.uid),
     refetchOnWindowFocus: false,
     staleTime: 1000 * 60 * 5, // 5 minutos
   });
