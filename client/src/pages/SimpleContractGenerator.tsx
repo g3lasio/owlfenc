@@ -2539,8 +2539,50 @@ export default function SimpleContractGenerator() {
 
   // Direct PDF download function - uses working PDF endpoint
   const handleDownloadPDF = useCallback(async () => {
+    // ✅ FIX: Use documentFlowType as the authoritative template ID.
+    // selectedDocumentType can get auto-reset to 'independent-contractor' by the
+    // fetchDocumentTypes useEffect when templates reload. documentFlowType is
+    // only set by explicit user action and never auto-reset.
+    const effectiveTemplateId = (documentFlowType && documentFlowType !== 'independent-contractor')
+      ? documentFlowType
+      : selectedDocumentType;
+
+    // ✅ FAST PATH: If contractData already has a pdfBase64 (e.g. certificate-completion
+    // generates the PDF server-side and stores it in contractData.pdfBase64),
+    // decode and download it directly without making another API call.
+    if (contractData?.pdfBase64 && effectiveTemplateId !== 'independent-contractor') {
+      console.log(`⚡ [PDF DOWNLOAD] Using pre-generated pdfBase64 for template '${effectiveTemplateId}'`);
+      const isAuthenticated = !!(currentUser?.uid || profile?.email);
+      if (!isAuthenticated) {
+        toast({ title: 'Authentication Required', description: 'Please sign in to download PDFs', variant: 'destructive' });
+        return;
+      }
+      if (isPrimoChambeador) {
+        toast({ title: 'Upgrade Required', description: 'Upgrade to Mero Patrón to unlock PDF downloads', variant: 'destructive' });
+        return;
+      }
+      try {
+        const byteChars = atob(contractData.pdfBase64);
+        const byteArr = new Uint8Array(byteChars.length);
+        for (let i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i);
+        const blob = new Blob([byteArr], { type: 'application/pdf' });
+        const clientName = contractData?.client?.name || contractData?.clientInfo?.name || 'client';
+        const fileName = generatePdfFilename(effectiveTemplateId, clientName);
+        await shareOrDownloadPdf(blob, fileName, {
+          title: `${effectiveTemplateId.toUpperCase()} - ${clientName}`,
+          text: `Professional document for ${clientName}`,
+          clientName,
+        });
+        toast({ title: '✅ PDF Downloaded', description: 'Check your downloads folder' });
+      } catch (err) {
+        console.error('❌ [PDF DOWNLOAD] pdfBase64 decode error:', err);
+        toast({ title: 'Download Failed', description: 'Could not decode the PDF. Please try again.', variant: 'destructive' });
+      }
+      return;
+    }
+
     // ✅ REGISTRY-DRIVEN: Use template registry for data routing
-    const dataSource = templateConfigRegistry.getDataSource(selectedDocumentType);
+    const dataSource = templateConfigRegistry.getDataSource(effectiveTemplateId);
     const usesContractData = dataSource === 'contract';
     
     // Validate data availability based on template's data source
@@ -2550,7 +2592,7 @@ export default function SimpleContractGenerator() {
     
     // Early return if no data is available for the template type
     if (!hasContractData && !hasProjectData) {
-      console.log(`❌ [PDF DOWNLOAD] No data available for template '${selectedDocumentType}' (dataSource: ${dataSource})`);
+      console.log(`❌ [PDF DOWNLOAD] No data available for template '${effectiveTemplateId}' (dataSource: ${dataSource})`);
       return;
     }
     
@@ -2579,7 +2621,7 @@ export default function SimpleContractGenerator() {
     try {
       // ✅ REGISTRY-DRIVEN: Use unified payload builder for contract-based templates
       if (hasContractData) {
-        const { payload, useBinaryEndpoint } = buildRegistryDrivenPdfPayload(selectedDocumentType);
+        const { payload, useBinaryEndpoint } = buildRegistryDrivenPdfPayload(effectiveTemplateId);
         
         if (payload && useBinaryEndpoint) {
           console.log(`📄 [${selectedDocumentType.toUpperCase()}] Downloading PDF via binary endpoint...`);
