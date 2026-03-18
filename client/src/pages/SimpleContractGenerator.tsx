@@ -2648,18 +2648,18 @@ export default function SimpleContractGenerator() {
             throw new Error('Downloaded PDF is empty');
           }
           
-          console.log(`✅ [${selectedDocumentType.toUpperCase()}] PDF blob received: ${blob.size} bytes`);
+          console.log(`✅ [${effectiveTemplateId.toUpperCase()}] PDF blob received: ${blob.size} bytes`);
           
           // Generate filename using registry-driven helper
           const clientName = contractData?.client?.name || contractData?.clientInfo?.name || 'client';
-          const fileName = generatePdfFilename(selectedDocumentType, clientName);
+          const fileName = generatePdfFilename(effectiveTemplateId, clientName);
           
           // Use native share on mobile/tablet, direct download on desktop
           const isMobile = isMobileDevice();
           const canShare = isNativeShareSupported();
           
           await shareOrDownloadPdf(blob, fileName, {
-            title: `${selectedDocumentType.toUpperCase()} - ${clientName}`,
+            title: `${effectiveTemplateId.toUpperCase()} - ${clientName}`,
             text: `Professional document for ${clientName}`,
             clientName: clientName,
           });
@@ -2801,7 +2801,7 @@ export default function SimpleContractGenerator() {
           clauses: selectedClausesData,
         },
         // ✅ FIX: Add templateId for multi-template support (Change Order, etc.)
-        templateId: selectedDocumentType !== 'independent-contractor' ? selectedDocumentType : undefined,
+        templateId: (documentFlowType && documentFlowType !== 'independent-contractor') ? documentFlowType : (selectedDocumentType !== 'independent-contractor' ? selectedDocumentType : undefined),
       };
 
       console.log("📄 [PDF DOWNLOAD] Complete payload with clauses:", {
@@ -3131,7 +3131,7 @@ export default function SimpleContractGenerator() {
         originalRequest: selectedProject,
         
         // Multi-Template System: Pass selected template ID (if not default)
-        templateId: selectedDocumentType !== 'independent-contractor' ? selectedDocumentType : undefined,
+        templateId: (documentFlowType && documentFlowType !== 'independent-contractor') ? documentFlowType : (selectedDocumentType !== 'independent-contractor' ? selectedDocumentType : undefined),
       };
 
       // CRITICAL VALIDATION: Log financial data for debugging corruption issues
@@ -3310,7 +3310,7 @@ export default function SimpleContractGenerator() {
       const dualSignaturePayload = {
         userId: currentUser.uid,
         contractHTML: contractHTML,
-        templateId: selectedDocumentType, // Critical: Tells backend which signature mode to use (single/dual/none)
+        templateId: (documentFlowType && documentFlowType !== 'independent-contractor') ? documentFlowType : selectedDocumentType, // Critical: Tells backend which signature mode to use (single/dual/none)
         contractData: {
           contractorName:
             profile?.company || profile?.ownerName || "Contractor Name",
@@ -5536,7 +5536,7 @@ export default function SimpleContractGenerator() {
                         try {
                           const documentPayload = {
                             userId: currentUser?.uid,
-                            templateId: selectedDocumentType,
+                            templateId: (documentFlowType && documentFlowType !== 'independent-contractor') ? documentFlowType : selectedDocumentType,
                             client: {
                               name: editableData.clientName || clientFromSource.name || '',
                               address: editableData.clientAddress || clientFromSource.address || '',
