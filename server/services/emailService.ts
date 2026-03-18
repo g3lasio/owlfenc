@@ -58,14 +58,14 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
  * @param name - Nombre del remitente
  * @param email - Email del remitente
  * @param message - Mensaje del formulario
- * @param targetEmail - Email de destino (por defecto info@0wlfunding.com)
+ * @param targetEmail - Email de destino (por defecto info@owlfenc.com)
  * @returns Promesa que se resuelve a verdadero si el envío es exitoso, falso en caso contrario
  */
 export async function sendContactFormEmail(
   name: string,
   email: string,
   message: string,
-  targetEmail: string = 'info@0wlfunding.com'
+  targetEmail: string = 'info@owlfenc.com'
 ): Promise<boolean> {
   // Crear el texto plano del mensaje
   const textContent = `
@@ -118,7 +118,7 @@ ${message}
   
   return sendEmail({
     to: targetEmail,
-    from: 'no-reply@0wlfunding.com', // Debe ser un dominio verificado en SendGrid
+    from: 'noreply@owlfenc.com', // Debe ser un dominio verificado en SendGrid
     subject: `Nuevo contacto de ${name} - Formulario Web`,
     text: textContent,
     html: htmlContent,

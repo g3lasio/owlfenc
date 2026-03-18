@@ -285,7 +285,7 @@ export class SystemAPIService {
       // Preparar datos para dual signature
       const contractData = {
         contractorName: 'OwlFence Inc.', // TODO: Obtener de settings
-        contractorEmail: 'contractor@owlfence.com', // TODO: Obtener de settings
+        contractorEmail: 'contractor@owlfenc.com', // TODO: Obtener de settings
         contractorCompany: 'OwlFence Inc.', // TODO: Obtener de settings
         contractorPhone: '',
         clientName: params.clientName,

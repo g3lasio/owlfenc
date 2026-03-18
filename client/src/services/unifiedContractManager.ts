@@ -174,7 +174,7 @@ export class UnifiedContractManager {
       contractorEmail: {
         displayName: 'Email del Contratista',
         required: false,
-        suggestedValue: 'info@owlfence.com',
+        suggestedValue: 'info@owlfenc.com',
         reason: 'Email de contacto profesional'
       }
     };

@@ -246,7 +246,7 @@ export function UsageDashboard({
                   <Badge variant="secondary">Expiring soon</Badge>
                 )}
               </div>
-            </div>
+            </CardContent>
           </Card>
         )}
       </div>

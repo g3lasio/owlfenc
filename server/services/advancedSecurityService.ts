@@ -54,7 +54,7 @@ export class AdvancedSecurityService {
     cors: {
       origin: [
         'https://owl-fence.replit.app',
-        'https://owlfence.com',
+        'https://owlfenc.com',
         process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : ''
       ].filter(Boolean),
       credentials: true,

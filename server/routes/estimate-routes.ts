@@ -335,7 +335,7 @@ export function registerEstimateRoutes(app: Express): void {
       // Adaptamos los parámetros para usar sendEmail
       const emailSent = await sendEmail({
         to: emailData.to,
-        from: 'no-reply@0wlfunding.com',
+        from: 'noreply@owlfenc.com',
         subject: emailData.subject,
         html: emailData.html,
         text: emailData.message

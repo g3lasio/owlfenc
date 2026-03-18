@@ -456,7 +456,7 @@ const CompletionStep: React.FC<{
   const [formData, setFormData] = useState<Partial<ContractData>>({
     ...extractedData,
     contractorName: 'OWL FENCE LLC',
-    contractorEmail: 'contracts@owlfence.com',
+    contractorEmail: 'contracts@owlfenc.com',
     contractorPhone: '(512) 555-0123',
     contractorAddress: '456 Business Ave, Austin, TX 78702',
     contractorLicense: 'TX-CONT-123456',

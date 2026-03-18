@@ -13,7 +13,7 @@ const contactFormSchema = z.object({
 
 /**
  * @route POST /api/contact
- * @desc Procesa un formulario de contacto y envía un email a info@0wlfunding.com
+ * @desc Procesa un formulario de contacto y envía un email a info@owlfenc.com
  */
 router.post('/', async (req: Request, res: Response) => {
   try {

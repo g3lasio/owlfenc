@@ -746,10 +746,10 @@ export default function Subscription() {
         </p>
         <div className="mt-4">
           <a
-            href="mailto:ventas@owlfence.com"
+            href="mailto:ventas@owlfenc.com"
             className="text-primary hover:underline font-medium"
           >
-            ventas@owlfence.com
+            ventas@owlfenc.com
           </a>
         </div>
       </div>

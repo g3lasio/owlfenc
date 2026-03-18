@@ -336,7 +336,7 @@ export function formatContractData(extractedData: any): ContractData {
   const contractorName = extractedData.contratista?.nombre || 'Owl Fenc Co.';
   const contractorAddress = extractedData.contratista?.direccion || '2901 Owens Ct, Fairfield, CA 94534 US';
   const contractorPhone = extractedData.contratista?.telefono || '(202) 549-3519';
-  const contractorEmail = extractedData.contratista?.email || 'contact@owlfence.com';
+  const contractorEmail = extractedData.contratista?.email || 'contact@owlfenc.com';
   const contractorLicense = extractedData.contratista?.licencia || 'OWL-2023-CA';
   
   return {

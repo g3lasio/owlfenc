@@ -102,8 +102,8 @@ Este mensaje fue enviado desde el formulario de contacto del sitio web de Owl Fu
       
       // Configurar el mensaje de email
       const msg = {
-        to: 'info@0wlfunding.com',
-        from: 'no-reply@0wlfunding.com', // Debe ser un dominio verificado en SendGrid
+        to: 'info@owlfenc.com',
+        from: 'noreply@owlfenc.com', // Debe ser un dominio verificado en SendGrid
         subject: `Nuevo contacto de ${name} - Formulario Web`,
         text: textContent,
         html: htmlContent,
