@@ -594,65 +594,6 @@ export default function Subscription() {
         </div>
       )}
 
-      {/* 🎟️ PARTNERSHIP DISCOUNT FIELD - Only visible for Master Contractor */}
-      <div className="mb-8 max-w-md mx-auto">
-        <div className="border border-border/50 rounded-xl p-5 bg-card/50 backdrop-blur-sm">
-          <div className="flex items-center gap-2 mb-3">
-            <Tag className="h-4 w-4 text-primary" />
-            <span className="text-sm font-semibold text-foreground">Partnership Discount</span>
-            <span className="text-xs text-muted-foreground">(Master Contractor only)</span>
-          </div>
-          <div className="flex gap-2">
-            <Input
-              placeholder="Enter partner code (e.g. NEXLEAD)"
-              value={couponCode}
-              onChange={(e) => {
-                setCouponCode(e.target.value.toUpperCase());
-                setCouponApplied(false);
-                setCouponError("");
-              }}
-              className="font-mono text-sm tracking-wider uppercase"
-              maxLength={20}
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              className="shrink-0"
-              onClick={() => {
-                const code = couponCode.trim().toUpperCase();
-                if (!code) {
-                  setCouponError("Enter a partner code first");
-                  return;
-                }
-                // Client-side validation: known codes
-                const validCodes = ["NEXLEAD"];
-                if (validCodes.includes(code)) {
-                  setCouponApplied(true);
-                  setCouponError("");
-                } else {
-                  setCouponApplied(false);
-                  setCouponError("Invalid partner code. Contact sales@owlfenc.com");
-                }
-              }}
-            >
-              Apply
-            </Button>
-          </div>
-          {couponApplied && (
-            <div className="flex items-center gap-1.5 mt-2 text-emerald-400 text-xs font-medium">
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              <span>NEXLEAD applied — 15% off Master Contractor (forever)</span>
-            </div>
-          )}
-          {couponError && (
-            <div className="flex items-center gap-1.5 mt-2 text-destructive text-xs">
-              <XCircle className="h-3.5 w-3.5" />
-              <span>{couponError}</span>
-            </div>
-          )}
-        </div>
-      </div>
-
       {/* Mostrar las tarjetas de planes */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-10">
         {/* 🎯 FORCED DISPLAY: Always show all active plans */}
@@ -672,26 +613,89 @@ export default function Subscription() {
               return shouldShow;
             })
             .map((plan: SubscriptionPlan, index) => (
-              <PricingCard
-                key={plan.id || `plan-${index}`}
-                name={plan.name}
-                description={plan.description}
-                price={plan.price}
-                yearlyPrice={plan.yearlyPrice}
-                features={plan.features as string[]}
-                isYearly={isYearly}
-                motto={plan.motto}
-                isMostPopular={getIsMostPopular(plan.code)}
-                onSelectPlan={handlePlanSelection}
-                planId={plan.id}
-                isLoading={isLoading}
-                code={plan.code}
-                isActive={plan.id === activePlanId}
-                expirationDate={plan.id === activePlanId ? (expirationDate || undefined) : undefined}
-                currentUserPlanId={activePlanId}
-                onManageSubscription={createCustomerPortal}
-                hasUsedTrial={hasUsedTrial}
-              />
+              <div key={plan.id || `plan-${index}`} className="flex flex-col gap-3">
+                <PricingCard
+                  name={plan.name}
+                  description={plan.description}
+                  price={plan.price}
+                  yearlyPrice={plan.yearlyPrice}
+                  features={plan.features as string[]}
+                  isYearly={isYearly}
+                  motto={plan.motto}
+                  isMostPopular={getIsMostPopular(plan.code)}
+                  onSelectPlan={(id) => {
+                    if (plan.id === 6 && couponCode.trim() && !couponApplied) {
+                      setCouponError("Click Apply to validate your partner code first");
+                      return;
+                    }
+                    handlePlanSelection(id);
+                  }}
+                  planId={plan.id}
+                  isLoading={isLoading}
+                  code={plan.code}
+                  isActive={plan.id === activePlanId}
+                  expirationDate={plan.id === activePlanId ? (expirationDate || undefined) : undefined}
+                  currentUserPlanId={activePlanId}
+                  onManageSubscription={createCustomerPortal}
+                  hasUsedTrial={hasUsedTrial}
+                />
+                {/* 🎟️ PARTNERSHIP DISCOUNT - Only shown below Master Contractor card */}
+                {plan.id === 6 && (
+                  <div className="border border-border/40 rounded-xl p-4 bg-card/30 backdrop-blur-sm">
+                    <div className="flex items-center gap-2 mb-2.5">
+                      <Tag className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-xs font-semibold text-foreground">Partnership Discount</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Enter partner code"
+                        value={couponCode}
+                        onChange={(e) => {
+                          setCouponCode(e.target.value.toUpperCase());
+                          setCouponApplied(false);
+                          setCouponError("");
+                        }}
+                        className="font-mono text-xs tracking-wider uppercase h-8"
+                        maxLength={20}
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="shrink-0 h-8 text-xs"
+                        onClick={() => {
+                          const code = couponCode.trim().toUpperCase();
+                          if (!code) {
+                            setCouponError("Enter a partner code first");
+                            return;
+                          }
+                          const validCodes = ["NEXLEAD"];
+                          if (validCodes.includes(code)) {
+                            setCouponApplied(true);
+                            setCouponError("");
+                          } else {
+                            setCouponApplied(false);
+                            setCouponError("Invalid code. Contact your agency representative.");
+                          }
+                        }}
+                      >
+                        Apply
+                      </Button>
+                    </div>
+                    {couponApplied && (
+                      <div className="flex items-center gap-1.5 mt-2 text-emerald-400 text-xs font-medium">
+                        <CheckCircle2 className="h-3 w-3" />
+                        <span>Partner discount applied — 15% off forever</span>
+                      </div>
+                    )}
+                    {couponError && (
+                      <div className="flex items-center gap-1.5 mt-2 text-destructive text-xs">
+                        <XCircle className="h-3 w-3" />
+                        <span>{couponError}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             ))
         ) : (
           <div className="col-span-full text-center py-12">
