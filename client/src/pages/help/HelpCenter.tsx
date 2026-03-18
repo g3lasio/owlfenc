@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useLocation } from 'wouter';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
@@ -11,6 +12,8 @@ import {
 } from 'lucide-react';
 
 export default function HelpCenter() {
+  const [, navigate] = useLocation();
+
   // Redirect to docs page after 3 seconds
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -147,7 +150,7 @@ export default function HelpCenter() {
           <Button 
             variant="outline" 
             size="lg"
-            onClick={() => window.location.href = '/support/get-support'}
+            onClick={() => navigate('/support/get-support')}
           >
             <MessageSquare className="mr-2 h-5 w-5" />
             Contact Support
