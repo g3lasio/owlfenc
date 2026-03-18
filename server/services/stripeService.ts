@@ -262,21 +262,28 @@ class StripeService {
         // No free trial — checkout directo sin periodo de prueba
         // El sistema de créditos (wallet) maneja el onboarding con créditos de bienvenida
 
-        // 🎟️ PARTNERSHIP DISCOUNT: Apply coupon only for Master Contractor (planId 6)
-        // IMPORTANT: Stripe discounts[] requires the coupon ID, NOT the coupon name/code
-        // Map human-readable partner codes → Stripe coupon IDs
-        const PARTNER_COUPON_MAP: Record<string, string> = {
-          'NEXLEAD': 'Qmbtx032',  // NEXLEAD Agency Partner — 15% off forever
-          // To add future agencies: 'AGENCYCODE': 'stripe_coupon_id'
-        };
+        // 🎟️ PARTNERSHIP DISCOUNT: Dynamic Stripe coupon validation
+        // Looks up the coupon by name directly in Stripe — no hardcoded map needed.
+        // Any coupon created in Stripe (or via the admin dashboard) works automatically.
         if (options.couponCode && options.planId === 6) {
           const normalizedCode = options.couponCode.trim().toUpperCase();
-          const stripeCouponId = PARTNER_COUPON_MAP[normalizedCode];
-          if (stripeCouponId) {
-            console.log(`[${new Date().toISOString()}] ✅ Applying partnership coupon: ${normalizedCode} → Stripe ID: ${stripeCouponId}`);
-            sessionConfig.discounts = [{ coupon: stripeCouponId }];
-          } else {
-            console.warn(`[${new Date().toISOString()}] ⚠️ Unknown partner code: ${normalizedCode} — not applied to checkout`);
+          try {
+            // Search Stripe coupons for one whose name matches the partner code
+            const coupons = await stripe.coupons.list({ limit: 100 });
+            const matchedCoupon = coupons.data.find(
+              (c) => c.name?.toUpperCase() === normalizedCode || c.id.toUpperCase() === normalizedCode
+            );
+            if (matchedCoupon && matchedCoupon.valid) {
+              console.log(`[${new Date().toISOString()}] ✅ Partner coupon found: ${normalizedCode} → Stripe ID: ${matchedCoupon.id} (${matchedCoupon.percent_off}% off)`);
+              sessionConfig.discounts = [{ coupon: matchedCoupon.id }];
+            } else if (matchedCoupon && !matchedCoupon.valid) {
+              console.warn(`[${new Date().toISOString()}] ⚠️ Partner coupon ${normalizedCode} exists but is no longer valid (expired or depleted)`);
+            } else {
+              console.warn(`[${new Date().toISOString()}] ⚠️ Partner coupon ${normalizedCode} not found in Stripe — not applied`);
+            }
+          } catch (couponError: any) {
+            // Non-fatal: if coupon lookup fails, proceed with checkout without discount
+            console.warn(`[${new Date().toISOString()}] ⚠️ Could not validate partner coupon ${normalizedCode}: ${couponError.message}`);
           }
         } else if (options.couponCode && options.planId !== 6) {
           console.warn(`[${new Date().toISOString()}] Coupon ${options.couponCode} rejected — only valid for Master Contractor plan`);
