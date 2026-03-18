@@ -16,6 +16,8 @@ export default function Subscription() {
   const [couponCode, setCouponCode] = useState("");
   const [couponApplied, setCouponApplied] = useState(false);
   const [couponError, setCouponError] = useState("");
+  const [couponValidating, setCouponValidating] = useState(false);
+  const [couponInfo, setCouponInfo] = useState<{ percentOff?: number | null; duration?: string } | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { currentUser } = useAuth();
@@ -662,29 +664,58 @@ export default function Subscription() {
                         variant="outline"
                         size="sm"
                         className="shrink-0 h-8 text-xs"
-                        onClick={() => {
+                        disabled={couponValidating}
+                        onClick={async () => {
                           const code = couponCode.trim().toUpperCase();
                           if (!code) {
                             setCouponError("Enter a partner code first");
                             return;
                           }
-                          const validCodes = ["NEXLEAD"];
-                          if (validCodes.includes(code)) {
-                            setCouponApplied(true);
-                            setCouponError("");
-                          } else {
-                            setCouponApplied(false);
-                            setCouponError("Invalid code. Contact your agency representative.");
+                          setCouponValidating(true);
+                          setCouponApplied(false);
+                          setCouponError("");
+                          setCouponInfo(null);
+                          try {
+                            let token: string | null = null;
+                            if (currentUser) {
+                              try { token = await currentUser.getIdToken(true); } catch {}
+                              if (!token) { try { token = await currentUser.getIdToken(false); } catch {} }
+                            }
+                            if (!token) token = localStorage.getItem('firebase_id_token');
+                            const res = await fetch('/api/subscription/validate-coupon', {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                              },
+                              body: JSON.stringify({ couponCode: code }),
+                            });
+                            const data = await res.json();
+                            if (data.valid) {
+                              setCouponApplied(true);
+                              setCouponInfo({ percentOff: data.percentOff, duration: data.duration });
+                            } else {
+                              setCouponApplied(false);
+                              setCouponError(data.error || 'Invalid code. Contact your agency representative.');
+                            }
+                          } catch {
+                            setCouponError('Could not validate code. Please try again.');
+                          } finally {
+                            setCouponValidating(false);
                           }
                         }}
                       >
-                        Apply
+                        {couponValidating ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Apply'}
                       </Button>
                     </div>
                     {couponApplied && (
                       <div className="flex items-center gap-1.5 mt-2 text-emerald-400 text-xs font-medium">
                         <CheckCircle2 className="h-3 w-3" />
-                        <span>Partner discount applied — 15% off forever</span>
+                        <span>
+                          Partner discount applied —{" "}
+                          {couponInfo?.percentOff ? `${couponInfo.percentOff}% off` : 'discount applied'}
+                          {couponInfo?.duration === 'forever' ? ' forever' : ''}
+                        </span>
                       </div>
                     )}
                     {couponError && (

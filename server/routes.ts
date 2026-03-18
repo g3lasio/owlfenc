@@ -5779,6 +5779,25 @@ ENHANCED LEGAL CLAUSE:`;
     }
   );
 
+  // 🎟️ VALIDATE PARTNER COUPON: Dynamic validation against Stripe
+  app.post(
+    "/api/subscription/validate-coupon",
+    requireAuth,
+    async (req: Request, res: Response) => {
+      try {
+        const { couponCode } = req.body;
+        if (!couponCode || typeof couponCode !== "string") {
+          return res.status(400).json({ valid: false, error: "Coupon code is required" });
+        }
+        const result = await stripeService.validatePartnerCoupon(couponCode);
+        return res.json(result);
+      } catch (err: any) {
+        console.error("[VALIDATE-COUPON] Error:", err.message);
+        return res.status(500).json({ valid: false, error: "Could not validate coupon at this time." });
+      }
+    }
+  );
+
   app.post(
     "/api/subscription/create-checkout",
     requireAuth,

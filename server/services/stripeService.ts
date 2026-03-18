@@ -1316,6 +1316,40 @@ class StripeService {
       throw error;
     }
   }
+
+  // 🎟️ VALIDATE PARTNER COUPON: Check if a partner code is valid in Stripe
+  async validatePartnerCoupon(couponCode: string): Promise<{
+    valid: boolean;
+    percentOff?: number | null;
+    amountOff?: number | null;
+    duration?: string;
+    name?: string;
+    error?: string;
+  }> {
+    try {
+      const normalizedCode = couponCode.trim().toUpperCase();
+      const coupons = await stripe.coupons.list({ limit: 100 });
+      const matched = coupons.data.find(
+        (c) => c.name?.toUpperCase() === normalizedCode || c.id.toUpperCase() === normalizedCode
+      );
+      if (!matched) {
+        return { valid: false, error: 'Invalid partner code.' };
+      }
+      if (!matched.valid) {
+        return { valid: false, error: 'This partner code has expired or reached its usage limit.' };
+      }
+      return {
+        valid: true,
+        percentOff: matched.percent_off,
+        amountOff: matched.amount_off,
+        duration: matched.duration,
+        name: matched.name || matched.id,
+      };
+    } catch (err: any) {
+      console.error(`[${new Date().toISOString()}] ⚠️ validatePartnerCoupon error:`, err.message);
+      return { valid: false, error: 'Could not validate coupon at this time.' };
+    }
+  }
 }
 
 export const stripeService = new StripeService();
