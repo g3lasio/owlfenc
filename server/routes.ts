@@ -5797,6 +5797,7 @@ ENHANCED LEGAL CLAUSE:`;
           cancelUrl: z.string(),
           userEmail: z.string().email().optional(),
           userName: z.string().optional(),
+          couponCode: z.string().optional(), // Partnership/agency discount code
         });
 
         const validationResult = schema.safeParse(req.body);
@@ -5816,6 +5817,7 @@ ENHANCED LEGAL CLAUSE:`;
           cancelUrl,
           userEmail,
           userName,
+          couponCode,
         } = validationResult.data;
 
         // ✅ PLANES SINCRONIZADOS CON LA BASE DE DATOS (subscription_plans table)
@@ -5928,6 +5930,7 @@ ENHANCED LEGAL CLAUSE:`;
             billingCycle,
             successUrl,
             cancelUrl,
+            couponCode, // Partnership/agency discount code (only applied for Master Contractor)
           });
 
           if (!checkoutUrl) {

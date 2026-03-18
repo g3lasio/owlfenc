@@ -27,6 +27,7 @@ interface SubscriptionCheckoutOptions {
   billingCycle: "monthly" | "yearly";
   successUrl: string;
   cancelUrl: string;
+  couponCode?: string; // Optional partnership/agency discount coupon (Master Contractor only)
 }
 
 interface ManageSubscriptionOptions {
@@ -260,6 +261,14 @@ class StripeService {
 
         // No free trial — checkout directo sin periodo de prueba
         // El sistema de créditos (wallet) maneja el onboarding con créditos de bienvenida
+
+        // 🎟️ PARTNERSHIP DISCOUNT: Apply coupon only for Master Contractor (planId 6)
+        if (options.couponCode && options.planId === 6) {
+          console.log(`[${new Date().toISOString()}] Applying partnership coupon: ${options.couponCode} for Master Contractor`);
+          sessionConfig.discounts = [{ coupon: options.couponCode }];
+        } else if (options.couponCode && options.planId !== 6) {
+          console.warn(`[${new Date().toISOString()}] Coupon ${options.couponCode} rejected — only valid for Master Contractor plan`);
+        }
 
         // Create checkout session
         const session = await stripe.checkout.sessions.create(sessionConfig);

@@ -2,16 +2,20 @@ import React, { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { PricingToggle } from "@/components/ui/pricing-toggle";
 import { PricingCard } from "@/components/ui/pricing-card";
-import { Loader2 } from "lucide-react";
+import { Loader2, Tag, CheckCircle2, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { getActivePlans, type SubscriptionPlan } from "@shared/subscription-plans";
 
 export default function Subscription() {
   const [isYearly, setIsYearly] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponApplied, setCouponApplied] = useState(false);
+  const [couponError, setCouponError] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { currentUser } = useAuth();
@@ -187,13 +191,18 @@ export default function Subscription() {
       }
 
       // Construir los parámetros para la solicitud
-      const params = {
+      const params: any = {
         userEmail,
         planId,
         billingCycle: isYearly ? "yearly" : "monthly",
         successUrl: window.location.origin + "/subscription?success=true&session_id={CHECKOUT_SESSION_ID}",
         cancelUrl: window.location.origin + "/subscription?canceled=true",
       };
+      // 🎟️ PARTNERSHIP DISCOUNT: Only pass coupon for Master Contractor (planId 6)
+      if (couponCode.trim() && planId === 6) {
+        params.couponCode = couponCode.trim().toUpperCase();
+        console.log("🎟️ [CHECKOUT] Applying partnership coupon:", params.couponCode);
+      }
 
       if (!userEmail.includes("@")) {
         throw new Error("El correo electrónico del usuario no es válido");
@@ -584,6 +593,65 @@ export default function Subscription() {
           )}
         </div>
       )}
+
+      {/* 🎟️ PARTNERSHIP DISCOUNT FIELD - Only visible for Master Contractor */}
+      <div className="mb-8 max-w-md mx-auto">
+        <div className="border border-border/50 rounded-xl p-5 bg-card/50 backdrop-blur-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <Tag className="h-4 w-4 text-primary" />
+            <span className="text-sm font-semibold text-foreground">Partnership Discount</span>
+            <span className="text-xs text-muted-foreground">(Master Contractor only)</span>
+          </div>
+          <div className="flex gap-2">
+            <Input
+              placeholder="Enter partner code (e.g. NEXLEAD)"
+              value={couponCode}
+              onChange={(e) => {
+                setCouponCode(e.target.value.toUpperCase());
+                setCouponApplied(false);
+                setCouponError("");
+              }}
+              className="font-mono text-sm tracking-wider uppercase"
+              maxLength={20}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              className="shrink-0"
+              onClick={() => {
+                const code = couponCode.trim().toUpperCase();
+                if (!code) {
+                  setCouponError("Enter a partner code first");
+                  return;
+                }
+                // Client-side validation: known codes
+                const validCodes = ["NEXLEAD"];
+                if (validCodes.includes(code)) {
+                  setCouponApplied(true);
+                  setCouponError("");
+                } else {
+                  setCouponApplied(false);
+                  setCouponError("Invalid partner code. Contact sales@owlfenc.com");
+                }
+              }}
+            >
+              Apply
+            </Button>
+          </div>
+          {couponApplied && (
+            <div className="flex items-center gap-1.5 mt-2 text-emerald-400 text-xs font-medium">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              <span>NEXLEAD applied — 15% off Master Contractor (forever)</span>
+            </div>
+          )}
+          {couponError && (
+            <div className="flex items-center gap-1.5 mt-2 text-destructive text-xs">
+              <XCircle className="h-3.5 w-3.5" />
+              <span>{couponError}</span>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Mostrar las tarjetas de planes */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-10">
