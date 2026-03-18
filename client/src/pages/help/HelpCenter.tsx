@@ -14,7 +14,7 @@ export default function HelpCenter() {
   // Redirect to docs page after 3 seconds
   useEffect(() => {
     const timer = setTimeout(() => {
-      window.open('https://owllanding.replit.app/docs', '_blank');
+      window.open('https://mervin.chyrris.com/docs', '_blank');
     }, 3000);
 
     return () => clearTimeout(timer);
@@ -55,7 +55,7 @@ export default function HelpCenter() {
           <Button 
             size="lg" 
             className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg text-lg px-8 py-6"
-            onClick={() => window.open('https://owllanding.replit.app/docs', '_blank')}
+            onClick={() => window.open('https://mervin.chyrris.com/docs', '_blank')}
           >
             <ExternalLink className="mr-2 h-5 w-5" />
             Go to Documentation
@@ -66,12 +66,12 @@ export default function HelpCenter() {
             <p className="text-sm text-muted-foreground">
               <strong>URL:</strong>{' '}
               <a 
-                href="https://owllanding.replit.app/docs" 
+                href="https://mervin.chyrris.com/docs" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="text-blue-600 dark:text-blue-400 hover:underline"
               >
-                https://owllanding.replit.app/docs
+                https://mervin.chyrris.com/docs
               </a>
             </p>
           </div>
