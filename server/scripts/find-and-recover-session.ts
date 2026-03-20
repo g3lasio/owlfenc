@@ -1,9 +1,9 @@
 /**
- * FIND SESSION AND RECOVER CREDITS
+ * DIRECT CREDIT RECOVERY SCRIPT
  * ============================================================
- * Finds the Checkout Session ID for a given Payment Intent ID.
- * If no Checkout Session exists (payment made directly via PaymentIntent),
- * it uses the Payment Intent ID as the idempotency key and grants credits.
+ * Grants credits directly to a user without calling the Stripe API.
+ * Use this when you have already confirmed the payment in the Stripe
+ * Dashboard and just need to manually credit the user's wallet.
  *
  * USAGE:
  *   npx tsx server/scripts/find-and-recover-session.ts \
@@ -16,8 +16,6 @@
 
 import dotenv from 'dotenv';
 dotenv.config();
-
-import Stripe from 'stripe';
 
 async function main() {
   const args = process.argv.slice(2);
@@ -41,82 +39,20 @@ async function main() {
     process.exit(1);
   }
 
-  const stripeKey = process.env.STRIPE_SECRET_KEY;
-  if (!stripeKey) {
-    console.error('❌ STRIPE_SECRET_KEY not set in environment');
-    process.exit(1);
-  }
-
-  const stripe = new Stripe(stripeKey, { apiVersion: '2025-06-30.basil' as any });
+  const packageId = parseInt(packageIdStr, 10);
 
   console.log('');
   console.log('══════════════════════════════════════════════════════');
-  console.log('  FIND SESSION & RECOVER CREDITS');
+  console.log('  DIRECT CREDIT RECOVERY');
   console.log('══════════════════════════════════════════════════════');
   console.log(`  Payment Intent : ${paymentIntentId}`);
   console.log(`  Firebase UID   : ${firebaseUid}`);
-  console.log(`  Package ID     : ${packageIdStr}`);
-  console.log(`  Mode           : ${dryRun ? 'DRY RUN' : '⚠️  LIVE'}`);
+  console.log(`  Package ID     : ${packageId}`);
+  console.log(`  Mode           : ${dryRun ? 'DRY RUN (no changes)' : '⚠️  LIVE (will write to DB)'}`);
   console.log('══════════════════════════════════════════════════════');
   console.log('');
 
-  // 1. Try to find a Checkout Session for this Payment Intent
-  let sessionId: string | null = null;
-  let amountTotal = 0;
-
-  console.log(`🔍 Looking up Checkout Session for ${paymentIntentId}...`);
-  try {
-    const sessions = await stripe.checkout.sessions.list({
-      payment_intent: paymentIntentId,
-      limit: 5,
-    });
-
-    if (sessions.data.length > 0) {
-      const session = sessions.data[0];
-      sessionId = session.id;
-      amountTotal = session.amount_total || 0;
-      console.log(`✅ Found Checkout Session: ${sessionId}`);
-      console.log(`   Status   : ${session.status}`);
-      console.log(`   Amount   : $${(amountTotal / 100).toFixed(2)}`);
-    } else {
-      console.log(`ℹ️  No Checkout Session found — using Payment Intent directly.`);
-    }
-  } catch (err: any) {
-    console.log(`ℹ️  Could not list sessions: ${err.message} — using Payment Intent directly.`);
-  }
-
-  // 2. If no session found, verify the Payment Intent itself
-  if (!sessionId) {
-    console.log(`🔍 Verifying Payment Intent ${paymentIntentId}...`);
-    const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
-    console.log(`   Status : ${pi.status}`);
-    console.log(`   Amount : $${((pi.amount_received || 0) / 100).toFixed(2)}`);
-
-    if (pi.status !== 'succeeded') {
-      console.error(`❌ Payment Intent status is "${pi.status}" — only "succeeded" payments should be recovered.`);
-      process.exit(1);
-    }
-
-    amountTotal = pi.amount_received || pi.amount;
-    // Use the payment intent ID as the idempotency key (prefixed with topup:pi:)
-    sessionId = `pi_recovery:${paymentIntentId}`;
-    console.log(`✅ Payment confirmed succeeded. Using recovery key: ${sessionId}`);
-  }
-
-  console.log('');
-
-  if (dryRun) {
-    console.log('🔍 DRY RUN — would grant credits with:');
-    console.log(`   Firebase UID : ${firebaseUid}`);
-    console.log(`   Session Key  : ${sessionId}`);
-    console.log(`   Package ID   : ${packageIdStr}`);
-    console.log(`   Amount       : $${(amountTotal / 100).toFixed(2)}`);
-    console.log('');
-    console.log('Remove --dry-run to apply.');
-    process.exit(0);
-  }
-
-  // 3. Connect to DB and grant credits
+  // Connect to DB
   const { db: pgDb } = await import('../db');
   const { walletService } = await import('../services/walletService');
   const { creditPackages } = await import('@shared/schema');
@@ -128,8 +64,34 @@ async function main() {
     process.exit(1);
   }
 
-  // Check idempotency — was this already processed?
-  const idempotencyKey = `topup:${sessionId}`;
+  // 1. Look up the credit package
+  const pkgResult = await pgDb
+    .select()
+    .from(creditPackages)
+    .where(eq(creditPackages.id, packageId))
+    .limit(1);
+
+  if (pkgResult.length === 0) {
+    console.error(`❌ Credit package ${packageId} not found.`);
+    const all = await pgDb
+      .select({ id: creditPackages.id, name: creditPackages.name, credits: creditPackages.credits, bonus: creditPackages.bonusCredits })
+      .from(creditPackages);
+    console.error('Available packages:');
+    all.forEach(p => console.error(`  ID ${p.id}: ${p.name} — ${p.credits + p.bonus} credits`));
+    process.exit(1);
+  }
+
+  const pkg = pkgResult[0];
+  const totalCredits = pkg.credits + pkg.bonusCredits;
+
+  console.log(`📦 Package found: "${pkg.name}"`);
+  console.log(`   Base credits  : ${pkg.credits}`);
+  console.log(`   Bonus credits : ${pkg.bonusCredits}`);
+  console.log(`   Total credits : ${totalCredits}`);
+  console.log('');
+
+  // 2. Check idempotency — was this payment already processed?
+  const idempotencyKey = `topup:pi_recovery:${paymentIntentId}`;
   const existing = await pgDb
     .select()
     .from(walletTransactions)
@@ -141,35 +103,28 @@ async function main() {
     console.log(`   Transaction ID : ${existing[0].id}`);
     console.log(`   Credits granted: ${existing[0].amountCredits}`);
     console.log(`   Balance after  : ${existing[0].balanceAfter}`);
+    console.log('');
+    console.log('No action needed — credits were already applied.');
     process.exit(0);
   }
 
-  // Look up the credit package
-  const packageId = parseInt(packageIdStr, 10);
-  const pkgResult = await pgDb
-    .select()
-    .from(creditPackages)
-    .where(eq(creditPackages.id, packageId))
-    .limit(1);
+  console.log(`⚠️  Payment ${paymentIntentId} has NOT been credited yet.`);
+  console.log('');
 
-  if (pkgResult.length === 0) {
-    console.error(`❌ Credit package ${packageId} not found.`);
-    const all = await pgDb.select({ id: creditPackages.id, name: creditPackages.name, credits: creditPackages.credits, bonus: creditPackages.bonusCredits }).from(creditPackages);
-    console.error('Available packages:');
-    all.forEach(p => console.error(`  ID ${p.id}: ${p.name} — ${p.credits + p.bonus} credits`));
-    process.exit(1);
+  if (dryRun) {
+    console.log('🔍 DRY RUN — would grant:');
+    console.log(`   ${totalCredits} credits to Firebase UID: ${firebaseUid}`);
+    console.log(`   Idempotency key: ${idempotencyKey}`);
+    console.log('');
+    console.log('Run without --dry-run to apply.');
+    process.exit(0);
   }
 
-  const pkg = pkgResult[0];
-  const totalCredits = pkg.credits + pkg.bonusCredits;
-
-  console.log(`📦 Package: "${pkg.name}" — ${totalCredits} credits`);
+  // 3. Ensure wallet exists and grant credits
   console.log(`🎁 Granting ${totalCredits} credits to ${firebaseUid}...`);
 
-  // Ensure wallet exists
   await walletService.getOrCreateWallet(firebaseUid);
 
-  // Grant credits using addCredits directly (since we have no real session ID)
   await walletService.addCredits({
     firebaseUid,
     amountCredits: totalCredits,
@@ -177,8 +132,8 @@ async function main() {
     description: `${pkg.name} — ${totalCredits} credits (${pkg.credits} + ${pkg.bonusCredits} bonus) [manual recovery]`,
     idempotencyKey,
     stripePaymentIntentId: paymentIntentId,
-    stripeCheckoutSessionId: sessionId,
-    topUpAmountCents: amountTotal,
+    stripeCheckoutSessionId: `manual_recovery_${paymentIntentId}`,
+    topUpAmountCents: pkg.priceUsdCents,
     metadata: {
       packageId,
       packageName: pkg.name,
@@ -186,19 +141,21 @@ async function main() {
       bonusCredits: pkg.bonusCredits,
       recoveredManually: true,
       recoveredAt: new Date().toISOString(),
+      reason: 'Webhook was failing due to missing STRIPE_WEBHOOK_SECRET — credits not granted at purchase time',
     },
     expiresAt: undefined,
   });
 
   console.log('');
   console.log('══════════════════════════════════════════════════════');
-  console.log(`✅ SUCCESS: ${totalCredits} credits granted to ${firebaseUid}`);
+  console.log(`✅ SUCCESS: ${totalCredits} credits granted`);
+  console.log(`   User     : ${firebaseUid} (m3rvin20@outlook.com)`);
   console.log(`   Package  : ${pkg.name}`);
-  console.log(`   User     : m3rvin20@outlook.com`);
+  console.log(`   Credits  : ${totalCredits} (${pkg.credits} base + ${pkg.bonusCredits} bonus)`);
   console.log(`   PI       : ${paymentIntentId}`);
   console.log('══════════════════════════════════════════════════════');
   console.log('');
-  console.log('Next: Notify the user that their 50 Mervin AI credits are now available.');
+  console.log('✉️  Notify the user that their credits are now available in their account.');
   process.exit(0);
 }
 
