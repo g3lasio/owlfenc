@@ -1528,9 +1528,18 @@ console.log('🔧 [UNIFIED-ANALYSIS] Sistema híbrido registrado en /api/analysi
     console.warn('⚠️ Running without frontend dev server — API routes are still active');
   }
 
-  console.log('✅ OWL FENCE AI PLATFORM READY FOR DEPLOYMENT!');
+   console.log('✅ OWL FENCE AI PLATFORM READY FOR DEPLOYMENT!');
   console.log('📊 Multi-tenant contractor management system active');
   console.log('🎯 Professional contract generation and email delivery enabled');
+
+  // 🎁 MONTHLY CREDITS SCHEDULER: Grant 20 free credits/month to Primo Chambeador users
+  // Paid plan credits are handled by Stripe webhook (invoice.payment_succeeded)
+  import('./services/monthlyCreditsService.js').then(({ monthlyCreditsService }) => {
+    monthlyCreditsService.startScheduler();
+    console.log('✅ [STARTUP] Monthly credits scheduler started');
+  }).catch((err: any) => {
+    console.error('❌ [STARTUP] Monthly credits scheduler failed to start:', err.message);
+  });
 
   // ⚡ PERFORMANCE OPTIMIZATION: Pre-warm the browser pool for signature PDFs
   // This runs async after server startup to eliminate cold-start latency for clients

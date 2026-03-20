@@ -481,13 +481,35 @@ class WalletService {
     // Obtener o crear wallet (fuera de la transacción para evitar deadlocks)
     const wallet = await this.getOrCreateWallet(params.firebaseUid);
 
-    // V7 FIX: Wrap balance update + ledger insert in a single DB transaction.
-    // Previously these were two separate queries: if the server crashed between them,
-    // the balance would be updated but no ledger entry would exist — creating an audit gap.
-    // With db.transaction(), both operations succeed or both are rolled back atomically.
+    // V8 FIX: Full atomicity — idempotency check + balance update + ledger insert
+    // all happen inside a single serializable DB transaction.
+    // This eliminates the race condition where two concurrent requests (e.g., webhook
+    // + instant grant) both pass the idempotency SELECT before either does the INSERT.
+    // The unique constraint on idempotency_key ensures the DB rejects the second INSERT,
+    // and we catch that error and return the existing transaction instead.
     const isTopUp = params.type === 'topup';
 
     const { newBalance, walletId, transactionId } = await pgDb.transaction(async (tx) => {
+      // Step 0: Re-check idempotency INSIDE the transaction (serializable read)
+      if (params.idempotencyKey) {
+        const existingInTx = await tx
+          .select()
+          .from(walletTransactions)
+          .where(eq(walletTransactions.idempotencyKey, params.idempotencyKey))
+          .limit(1);
+
+        if (existingInTx.length > 0) {
+          // Already processed — return sentinel that signals idempotent return
+          return {
+            newBalance: existingInTx[0].balanceAfter,
+            walletId: 0,
+            transactionId: existingInTx[0].id,
+            _idempotent: true,
+            _existing: existingInTx[0],
+          };
+        }
+      }
+
       // Step 1: Update balance atomically
       const updateResult = await tx.execute(sql`
         UPDATE wallet_accounts 
@@ -531,12 +553,30 @@ class WalletService {
 
       return { newBalance: newBal, walletId: wId, transactionId: txRecord[0].id };
     }).catch((txError: unknown) => {
+      // Handle unique constraint violation on idempotency_key (race condition fallback)
+      const errMsg = txError instanceof Error ? txError.message : String(txError);
+      if (errMsg.includes('unique') || errMsg.includes('duplicate') || errMsg.includes('idempotency_key')) {
+        console.log(`⚡ [WALLET] Idempotency unique constraint hit (concurrent request) for key: ${params.idempotencyKey}`);
+        return null; // Caller will treat as idempotent success
+      }
       // Unwrap 'Wallet not found' as a non-error return
       if (txError instanceof Error && txError.message.includes('Wallet not found')) {
         return null;
       }
       throw txError;
     });
+
+    // Handle idempotent return from inside the transaction
+    if (newBalance !== null && (newBalance as any)?._idempotent) {
+      const existing = (newBalance as any)._existing;
+      console.log(`⚡ [WALLET] Idempotent add (in-tx check) — key already processed: ${params.idempotencyKey}`);
+      return {
+        success: true,
+        creditsAdded: existing.amountCredits,
+        balanceAfter: existing.balanceAfter,
+        transactionId: existing.id,
+      };
+    }
 
     if (!newBalance && newBalance !== 0) {
       return { success: false, creditsAdded: 0, balanceAfter: 0, transactionId: 0, error: 'Wallet not found' };

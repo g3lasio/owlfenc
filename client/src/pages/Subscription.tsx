@@ -30,35 +30,73 @@ export default function Subscription() {
 
   console.log("⚡ [SUBSCRIPTION-INSTANT] Planes cargados instantáneamente:", plans.length);
 
-  // Check for successful payment and refresh subscription status
+  // ⚡ INSTANT CREDIT GRANT: When user returns from Stripe subscription checkout,
+  // immediately call /api/subscription/confirm to grant credits without waiting for webhook.
   useEffect(() => {
-    const checkSuccessRedirect = async () => {
+    const confirmSubscription = async () => {
       const urlParams = new URLSearchParams(window.location.search);
       const success = urlParams.get("success");
       const sessionId = urlParams.get("session_id");
       
-      if (success === "true" && sessionId && userEmail) {
-        console.log("✅ Payment completed, checking subscription status...");
+      if (success === "true" && sessionId && currentUser) {
+        console.log("⚡ [SUB-CONFIRM] Payment completed, granting credits instantly...");
         
-        // Show success message
+        // Show processing message
         toast({
           title: "¡Pago procesado!",
-          description: "Verificando el estado de tu suscripción...",
+          description: "Activando tu suscripción y créditos...",
           variant: "default",
         });
-        
-        // Wait a moment for webhook processing, then refresh subscription data
-        setTimeout(() => {
-          queryClient.invalidateQueries({ queryKey: ["/api/subscription/user-subscription", userEmail] });
-        }, 2000);
-        
-        // Clean up URL parameters
+
+        // Clean up URL parameters immediately
         window.history.replaceState({}, document.title, window.location.pathname);
+
+        try {
+          const token = await currentUser.getIdToken(true);
+          const response = await fetch('/api/subscription/confirm', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({ session_id: sessionId }),
+          });
+
+          const data = await response.json();
+          console.log("⚡ [SUB-CONFIRM] Result:", data);
+
+          if (data.success && data.creditsGranted) {
+            toast({
+              title: "✅ ¡Suscripción activada!",
+              description: `${data.creditsAmount} créditos agregados a tu cuenta. Balance: ${data.currentBalance} créditos.`,
+              variant: "default",
+            });
+          } else if (data.success) {
+            toast({
+              title: "✅ ¡Suscripción activada!",
+              description: "Tu plan ha sido activado correctamente.",
+              variant: "default",
+            });
+          }
+        } catch (confirmErr) {
+          console.warn("⚠️ [SUB-CONFIRM] Instant confirm failed (webhook will handle it):", confirmErr);
+          // Non-fatal: webhook will still grant credits
+          toast({
+            title: "¡Pago procesado!",
+            description: "Tu suscripción se activará en unos momentos.",
+            variant: "default",
+          });
+        }
+
+        // Refresh subscription and wallet data
+        queryClient.invalidateQueries({ queryKey: ["/api/subscription/user-subscription", userEmail] });
+        queryClient.invalidateQueries({ queryKey: ["/api/wallet/balance"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/wallet/transactions"] });
       }
     };
     
-    checkSuccessRedirect();
-  }, [userEmail, toast, queryClient]);
+    confirmSubscription();
+  }, [userEmail, currentUser, toast, queryClient]);
 
   // Obtenemos la información de la suscripción actual del usuario
   // ✅ OPTIMIZACIÓN: Usando sistema de autenticación con timeout para evitar bloqueos infinitos

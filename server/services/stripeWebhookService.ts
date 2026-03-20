@@ -10,6 +10,7 @@ import { trialNotificationService } from './trialNotificationService.js';
 import { productionUsageService } from './productionUsageService.js';
 import { securityOptimizationService } from './securityOptimizationService.js';
 import { createStripeClient } from '../config/stripe.js';
+import { getPlanIdFromPriceId } from '../config/stripePriceRegistry.js';
 import { db as pgDb } from '../db.js';
 import { users, userSubscriptions } from '@shared/schema';
 import { eq, sql } from 'drizzle-orm';
@@ -429,8 +430,21 @@ export class StripeWebhookService {
     try {
       const subscription = event.data.object as Stripe.Subscription;
       const customerId = subscription.customer as string;
-      
-      console.log(`❌ [STRIPE-WEBHOOK] Subscription canceled for customer: ${customerId}`);
+
+      // ✅ FIX: Respect cancel_at_period_end.
+      // When a user cancels, Stripe first fires customer.subscription.updated with
+      // cancel_at_period_end=true (subscription still active). The actual
+      // customer.subscription.deleted event fires only when the period ends.
+      // We must NOT downgrade the user on the .updated event if cancel_at_period_end=true.
+      // This handler only fires for the .deleted event, so the subscription is truly ended.
+      // However, we double-check the status to be safe.
+      if (subscription.status === 'canceled' && subscription.cancel_at_period_end) {
+        // This should not happen (cancel_at_period_end is cleared when subscription ends),
+        // but guard against it just in case.
+        console.log(`ℹ️  [STRIPE-WEBHOOK] Subscription ${subscription.id} has cancel_at_period_end=true but status=canceled — downgrading now (period ended)`);
+      }
+
+      console.log(`❌ [STRIPE-WEBHOOK] Subscription truly ended for customer: ${customerId} (status: ${subscription.status})`);
       
       const user = await this.findUserByStripeCustomerId(customerId);
       
@@ -767,27 +781,25 @@ export class StripeWebhookService {
    * Determine plan from Stripe subscription (customize based on your price IDs)
    */
   private determinePlanFromSubscription(subscription: Stripe.Subscription): any {
-    // This is where you'd map your Stripe price IDs to your internal plans
-    // For now, we'll use a simple default mapping
+    // Extract the Stripe price ID from the subscription items
+    const priceId = subscription.items?.data?.[0]?.price?.id;
     
-    // You can check subscription.items.data[0].price.id to determine the plan
-    // const priceId = subscription.items.data[0]?.price?.id;
+    // Use the reverse-lookup from stripePriceRegistry to get the internal planId
+    const planId = priceId ? getPlanIdFromPriceId(priceId) : null;
     
-    // Default to 'mero' plan for paid subscriptions
+    if (planId) {
+      const planName = PLAN_NAMES[planId as keyof typeof PLAN_NAMES] || 'unknown';
+      const limits = PLAN_LIMITS[planId as keyof typeof PLAN_LIMITS] || PLAN_LIMITS[PLAN_IDS.PRIMO_CHAMBEADOR];
+      console.log(`🗺️  [STRIPE-WEBHOOK] Mapped price ${priceId} → planId=${planId} (${planName})`);
+      return { planId, planName, limits };
+    }
+    
+    // Fallback: if price ID not found in registry, default to Mero Patrón (9)
+    console.warn(`⚠️  [STRIPE-WEBHOOK] Could not map price ID '${priceId}' to a plan — defaulting to Mero Patrón (9)`);
     return {
-      planId: 2,
-      planName: 'mero',
-      limits: {
-        basicEstimates: 50,
-        aiEstimates: 25,
-        contracts: 25,
-        propertyVerifications: 20,
-        permitAdvisor: 30,
-        projects: null, // unlimited
-        invoices: null, // unlimited
-        paymentTracking: null, // unlimited
-        deepsearch: 20
-      }
+      planId: PLAN_IDS.MERO_PATRON,
+      planName: PLAN_NAMES[PLAN_IDS.MERO_PATRON],
+      limits: PLAN_LIMITS[PLAN_IDS.MERO_PATRON],
     };
   }
   

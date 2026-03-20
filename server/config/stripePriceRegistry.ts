@@ -271,6 +271,32 @@ export async function validatePriceRegistry(): Promise<{
 }
 
 /**
+ * Reverse lookup: get internal planId from a Stripe price ID.
+ * Used by webhook handlers to determine which plan a subscription belongs to.
+ * Checks both live and test registries so it works in both modes.
+ * Returns null if the price ID is not found.
+ */
+export function getPlanIdFromPriceId(priceId: string): number | null {
+  // Check the active registry first (mode-aware)
+  const registry = getPriceRegistry();
+  for (const [planIdStr, pricePair] of Object.entries(registry)) {
+    if (pricePair.monthly === priceId || pricePair.yearly === priceId) {
+      return parseInt(planIdStr, 10);
+    }
+  }
+  // Also check the other registry (in case mode detection is off)
+  const otherRegistry = isTestMode() ? LIVE_PRICE_MAP : TEST_PRICE_MAP;
+  for (const [planIdStr, pricePair] of Object.entries(otherRegistry)) {
+    if (pricePair.monthly === priceId || pricePair.yearly === priceId) {
+      const planId = parseInt(planIdStr, 10);
+      console.warn(`⚠️  [PRICE-REGISTRY] Price ${priceId} found in ${isTestMode() ? 'LIVE' : 'TEST'} registry but running in ${isTestMode() ? 'TEST' : 'LIVE'} mode`);
+      return planId;
+    }
+  }
+  return null;
+}
+
+/**
  * Get all configured price IDs for a plan
  * Useful for testing and debugging
  */

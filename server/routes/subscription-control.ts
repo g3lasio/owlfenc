@@ -4,6 +4,10 @@ import { robustSubscriptionService } from '../services/robustSubscriptionService
 import { verifyFirebaseAuth } from '../middleware/firebase-auth';
 import { userMappingService } from '../services/userMappingService';
 import { DatabaseStorage } from '../DatabaseStorage';
+import { createStripeClient } from '../config/stripe.js';
+import { walletService } from '../services/walletService.js';
+import { getPlanIdFromPriceId } from '../config/stripePriceRegistry.js';
+import { PLAN_MONTHLY_CREDITS } from '@shared/wallet-schema';
 
 // Inicializar UserMappingService
 const databaseStorage = new DatabaseStorage();
@@ -321,6 +325,117 @@ export function registerSubscriptionControlRoutes(app: any) {
         error: 'Error checking suspension status',
         success: false 
       });
+    }
+  });
+
+  // ================================================================
+  // ⚡ POST /api/subscription/confirm
+  // Instant credit grant when user returns from Stripe subscription checkout.
+  // Verifies the Stripe Checkout Session, activates the plan, and grants
+  // the first month's credits immediately — without waiting for the webhook.
+  // Idempotent: safe to call multiple times for the same session.
+  // ================================================================
+  app.post('/api/subscription/confirm', verifyFirebaseAuth, async (req: Request, res: Response) => {
+    try {
+      const firebaseUid = req.firebaseUser?.uid;
+      if (!firebaseUid) {
+        return res.status(401).json({ error: 'Authentication required', success: false });
+      }
+
+      const { session_id: sessionId } = req.body;
+      if (!sessionId) {
+        return res.status(400).json({ error: 'session_id is required', success: false });
+      }
+
+      console.log(`⚡ [SUB-CONFIRM] Confirming subscription for ${firebaseUid}, session: ${sessionId}`);
+
+      const stripe = createStripeClient();
+
+      // 1. Retrieve the Checkout Session from Stripe
+      let session: any;
+      try {
+        session = await stripe.checkout.sessions.retrieve(sessionId, {
+          expand: ['subscription', 'subscription.items.data.price'],
+        });
+      } catch (stripeErr: any) {
+        console.error('❌ [SUB-CONFIRM] Failed to retrieve Stripe session:', stripeErr.message);
+        return res.status(400).json({ error: 'Invalid or expired session_id', success: false });
+      }
+
+      // 2. Verify payment was successful
+      if (session.payment_status !== 'paid' && session.status !== 'complete') {
+        return res.json({
+          success: true,
+          creditsGranted: false,
+          message: 'Payment not yet completed',
+          paymentStatus: session.payment_status,
+        });
+      }
+
+      // 3. Determine the plan from the subscription's price ID
+      const subscription = session.subscription as any;
+      const priceId = subscription?.items?.data?.[0]?.price?.id;
+      const planId = priceId ? getPlanIdFromPriceId(priceId) : null;
+      const planCredits = (PLAN_MONTHLY_CREDITS as Record<number, number>);
+      const monthlyCredits = planId ? (planCredits[planId] || 0) : 0;
+      const planName = planId ? `Plan ${planId}` : 'Unknown';
+
+      // 4. Ensure user exists in PostgreSQL and has a wallet
+      try {
+        const email = req.firebaseUser?.email || '';
+        await userMappingService.getOrCreateUserIdForFirebaseUid(firebaseUid, email);
+        await walletService.getOrCreateWallet(firebaseUid);
+      } catch (userErr) {
+        console.warn(`⚠️  [SUB-CONFIRM] Could not ensure PG user/wallet:`, userErr);
+      }
+
+      // 5. Grant first-month credits instantly (idempotent)
+      let creditsGranted = false;
+      let creditsAmount = 0;
+
+      if (monthlyCredits > 0 && subscription?.id) {
+        const invoiceId = session.invoice || `checkout:${sessionId}`;
+        const idempotencyKey = `subscription_grant:${subscription.id}:${invoiceId}`;
+
+        const grantResult = await walletService.addCredits({
+          firebaseUid,
+          amountCredits: monthlyCredits,
+          type: 'subscription_grant',
+          description: `First month credits — ${planName} (${monthlyCredits} credits)`,
+          idempotencyKey,
+          subscriptionPlanId: planId || undefined,
+          metadata: {
+            planId,
+            planName,
+            sessionId,
+            subscriptionId: subscription.id,
+            source: 'subscription_confirm_instant',
+          },
+        });
+
+        if (grantResult.success) {
+          creditsGranted = true;
+          creditsAmount = grantResult.creditsAdded;
+          console.log(`✅ [SUB-CONFIRM] Granted ${creditsAmount} credits to ${firebaseUid} for ${planName}`);
+        }
+      }
+
+      // 6. Return result with current balance
+      const currentBalance = await walletService.getBalance(firebaseUid);
+
+      return res.json({
+        success: true,
+        creditsGranted,
+        creditsAmount,
+        planId,
+        planName,
+        currentBalance,
+        subscriptionId: subscription?.id,
+      });
+
+    } catch (error) {
+      console.error('❌ [SUB-CONFIRM] Error confirming subscription:', error);
+      return res.status(500).json({ error: 'Failed to confirm subscription', success: false });
     }
   });
 }
