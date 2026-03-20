@@ -23,7 +23,8 @@ import { walletAccounts, walletTransactions } from '@shared/wallet-schema';
 import { users, userSubscriptions } from '@shared/schema';
 import { eq, and, isNull, sql, lt, gte } from 'drizzle-orm';
 import { walletService } from './walletService.js';
-import { PLAN_IDS, PLAN_MONTHLY_CREDITS } from '@shared/wallet-schema';
+import { PLAN_MONTHLY_CREDITS } from '@shared/wallet-schema';
+import { PLAN_IDS } from '@shared/permissions-config';
 
 const FREE_PLAN_ID = PLAN_IDS?.PRIMO_CHAMBEADOR ?? 5;
 const FREE_PLAN_MONTHLY_CREDITS = (PLAN_MONTHLY_CREDITS as Record<number, number>)[FREE_PLAN_ID] ?? 20;
