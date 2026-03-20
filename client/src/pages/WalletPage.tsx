@@ -9,7 +9,7 @@
  * - Estado de billing del usuario
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'wouter';
 import {
   Zap,
@@ -23,6 +23,8 @@ import {
   AlertTriangle,
   RefreshCw,
   ChevronRight,
+  Sparkles,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +32,7 @@ import { Separator } from '@/components/ui/separator';
 import { useWallet, type WalletTransaction } from '@/hooks/useWallet';
 import { useWalletContext } from '@/contexts/WalletContext';
 import { TopUpModal } from '@/components/wallet/TopUpModal';
+import { fetchWithAuth } from '@/lib/fetch-with-auth';
 import { cn } from '@/lib/utils';
 
 // ================================
@@ -107,6 +110,51 @@ function TransactionRow({ tx }: { tx: WalletTransaction }) {
 }
 
 // ================================
+// PAYMENT SUCCESS BANNER
+// ================================
+function PaymentSuccessBanner({
+  creditsAmount,
+  packageName,
+  newBalance,
+  onDismiss,
+}: {
+  creditsAmount: number;
+  packageName: string | null;
+  newBalance: number | null;
+  onDismiss: () => void;
+}) {
+  return (
+    <div className="relative overflow-hidden rounded-xl border border-green-500/40 bg-gradient-to-r from-green-950/60 via-emerald-900/40 to-cyan-950/60 p-5 shadow-lg shadow-green-900/20">
+      <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 via-emerald-500/10 to-cyan-500/5 animate-pulse" />
+      <div className="relative flex items-start gap-4">
+        <div className="flex-shrink-0 rounded-full bg-green-500/20 p-3">
+          <Sparkles className="h-6 w-6 text-green-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-base font-bold text-green-300">⚡ Credits Added Instantly!</h3>
+          <p className="mt-1 text-sm text-green-200/80">
+            <span className="font-bold text-green-300 text-base">+{creditsAmount.toLocaleString()} Mervin AI credits</span>
+            {packageName && <span className="text-green-200/60"> ({packageName})</span>} have been added to your account.
+          </p>
+          {newBalance !== null && (
+            <p className="mt-1.5 text-sm text-cyan-300/80">
+              New balance: <span className="font-bold text-cyan-300">{newBalance.toLocaleString()} credits</span>
+            </p>
+          )}
+        </div>
+        <button
+          onClick={onDismiss}
+          className="flex-shrink-0 text-green-400/60 hover:text-green-300 transition-colors text-xl leading-none mt-0.5"
+          aria-label="Dismiss"
+        >
+          ×
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ================================
 // MAIN PAGE
 // ================================
 // Named export for embedded use in Billing.tsx
@@ -115,6 +163,14 @@ export function WalletPage({ embedded = false }: { embedded?: boolean }) {
   const [showTopUpModal, setShowTopUpModal] = useState(false);
   const [fullHistory, setFullHistory] = useState<WalletTransaction[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+
+  // ⚡ Instant payment success state
+  const [paymentSuccess, setPaymentSuccess] = useState<{
+    creditsAmount: number;
+    packageName: string | null;
+    newBalance: number | null;
+  } | null>(null);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   // Use global context for balance/walletData — keeps header badge and this page in sync
   const { balance, walletData, isLoading, refreshBalance } = useWalletContext();
@@ -126,27 +182,38 @@ export function WalletPage({ embedded = false }: { embedded?: boolean }) {
     isCheckingOut,
   } = useWallet();
 
-  // Verificar si viene de un top-up exitoso
+  // ⚡ INSTANT CREDIT GRANT: When user returns from Stripe Checkout, verify payment
+  // and grant credits immediately server-side — no waiting for webhook.
+  const processPaymentReturn = useCallback(async (sessionId: string) => {
+    setIsProcessingPayment(true);
+    try {
+      const response = await fetchWithAuth(`/api/wallet/top-up/status?session_id=${encodeURIComponent(sessionId)}`);
+      const data = await response.json();
+      if (data.paymentStatus === 'paid') {
+        setPaymentSuccess({
+          creditsAmount: data.creditsAmount || 0,
+          packageName: data.packageName || null,
+          newBalance: data.currentBalance,
+        });
+        // Refresh balance in context so header badge and balance card update
+        await refreshBalance();
+      }
+    } catch (err) {
+      console.warn('[WalletPage] Error processing payment return:', err);
+    } finally {
+      setIsProcessingPayment(false);
+      // Clean URL regardless of outcome
+      window.history.replaceState({}, '', '/wallet');
+    }
+  }, [refreshBalance]);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const sessionId = params.get('session_id');
-
     if (sessionId) {
-      // Verificar el estado del pago
-      fetch(`/api/wallet/top-up/status?session_id=${sessionId}`, {
-        credentials: 'include',
-      })
-        .then(r => r.json())
-        .then(data => {
-          if (data.paymentStatus === 'paid') {
-            refreshBalance();
-            // Limpiar la URL
-            window.history.replaceState({}, '', '/wallet');
-          }
-        })
-        .catch(console.warn);
+      processPaymentReturn(sessionId);
     }
-  }, [refreshBalance]);
+  }, [processPaymentReturn]);
 
   // Cargar historial completo
   const loadFullHistory = async () => {
@@ -199,6 +266,24 @@ export function WalletPage({ embedded = false }: { embedded?: boolean }) {
             Refresh
           </Button>
         </div>
+
+        {/* ⚡ Processing payment indicator */}
+        {isProcessingPayment && (
+          <div className="flex items-center gap-3 rounded-xl border border-cyan-800/40 bg-cyan-950/20 px-4 py-3 text-sm text-cyan-300">
+            <Loader2 className="h-4 w-4 animate-spin flex-shrink-0" />
+            <span>Verifying payment and adding your credits…</span>
+          </div>
+        )}
+
+        {/* ⚡ Instant success banner */}
+        {paymentSuccess && !isProcessingPayment && (
+          <PaymentSuccessBanner
+            creditsAmount={paymentSuccess.creditsAmount}
+            packageName={paymentSuccess.packageName}
+            newBalance={paymentSuccess.newBalance}
+            onDismiss={() => setPaymentSuccess(null)}
+          />
+        )}
 
         {/* Balance Card */}
         <div className={cn(

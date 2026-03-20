@@ -284,6 +284,37 @@ class StripeTopUpService {
       creditsGranted: session.payment_status === 'paid',
     };
   }
+
+  /**
+   * Get full details of a Checkout Session including metadata needed for instant credit grant.
+   * Used by the /api/wallet/top-up/status endpoint for the primary credit-grant path.
+   */
+  async getCheckoutSessionDetails(sessionId: string): Promise<{
+    status: string;
+    paymentStatus: string;
+    firebaseUid: string | null;
+    packageId: number | null;
+    packageName: string | null;
+    amountTotal: number;
+    paymentIntentId: string | null;
+  }> {
+    const stripe = createStripeClient();
+    
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    
+    const packageIdRaw = session.metadata?.package_id;
+    const packageId = packageIdRaw ? parseInt(packageIdRaw, 10) : null;
+    
+    return {
+      status: session.status || 'unknown',
+      paymentStatus: session.payment_status,
+      firebaseUid: session.metadata?.firebase_uid || null,
+      packageId: packageId && !isNaN(packageId) ? packageId : null,
+      packageName: session.metadata?.package_name || null,
+      amountTotal: session.amount_total || 0,
+      paymentIntentId: typeof session.payment_intent === 'string' ? session.payment_intent : null,
+    };
+  }
 }
 
 export const stripeTopUpService = new StripeTopUpService();

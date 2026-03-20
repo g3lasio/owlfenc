@@ -554,8 +554,9 @@ class WalletService {
 
   /**
    * PROCESAR COMPLETACIÓN DE TOP-UP
-   * Llamado SOLO desde el webhook de Stripe (checkout.session.completed).
-   * NUNCA desde success_url.
+   * Llamado desde el endpoint /api/wallet/top-up/status (instant grant, primary path)
+   * y también desde el webhook de Stripe (backup/redundancy).
+   * Idempotente — seguro llamar múltiples veces para la misma sesión.
    */
   async processTopUpCompletion(
     sessionId: string,
@@ -563,7 +564,7 @@ class WalletService {
     firebaseUid: string,
     amountCents: number,
     packageId: number
-  ): Promise<void> {
+  ): Promise<{ creditsGranted: number; wasNew: boolean; transactionId: number }> {
     if (!pgDb) throw new Error('Database not available');
 
     // Obtener el paquete de créditos
@@ -583,7 +584,7 @@ class WalletService {
     // Idempotency key basado en el checkout session ID
     const idempotencyKey = `topup:${sessionId}`;
 
-    await this.addCredits({
+    const result = await this.addCredits({
       firebaseUid,
       amountCredits: totalCredits,
       type: 'topup',
@@ -602,7 +603,15 @@ class WalletService {
       expiresAt: undefined,
     });
 
-    console.log(`🎉 [WALLET] Top-up completed: ${totalCredits} credits for user ${firebaseUid}`);
+    // wasNew = true if this is the first time (not idempotent replay)
+    const wasNew = result.creditsAdded > 0;
+    console.log(`🎉 [WALLET] Top-up completed: ${totalCredits} credits for user ${firebaseUid} (wasNew=${wasNew})`);
+
+    return {
+      creditsGranted: result.creditsAdded || totalCredits,
+      wasNew,
+      transactionId: result.transactionId,
+    };
   }
 
   /**

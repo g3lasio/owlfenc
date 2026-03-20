@@ -16,6 +16,7 @@ import { Router, Request, Response } from 'express';
 import { walletService } from '../services/walletService';
 import { stripeTopUpService } from '../services/stripeTopUpService';
 import { billingModeService } from '../services/billingModeService';
+import { userMappingService } from '../services/userMappingService';
 import { FEATURE_CREDIT_COSTS } from '@shared/schema';
 import { requireAuth } from '../middleware/unified-session-auth';
 import { pool } from '../db';
@@ -307,8 +308,11 @@ router.post('/top-up/checkout', requireAuth, async (req: Request, res: Response)
 
 // ================================
 // GET /api/wallet/top-up/status?session_id=xxx
+// ⚡ INSTANT CREDIT GRANT — verifies Stripe session AND grants credits immediately
+// This is the primary credit-grant path. The webhook is a backup/redundancy.
+// Idempotent: safe to call multiple times for the same session.
 // ================================
-router.get('/top-up/status', async (req: Request, res: Response) => {
+router.get('/top-up/status', requireAuth, async (req: Request, res: Response) => {
   try {
     const sessionId = req.query.session_id as string;
 
@@ -316,20 +320,75 @@ router.get('/top-up/status', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'session_id is required' });
     }
 
+    const firebaseUid = getFirebaseUid(req);
+    if (!firebaseUid) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    // 1. Verify payment status with Stripe
     const status = await stripeTopUpService.getCheckoutSessionStatus(sessionId);
 
-    // Si el pago fue exitoso, también retornar el balance actualizado
+    let creditsGranted = false;
+    let creditsJustGranted = false;
+    let creditsAmount = 0;
     let currentBalance: number | null = null;
+    let packageName: string | null = null;
+
     if (status.paymentStatus === 'paid') {
-      const firebaseUid = getFirebaseUid(req);
-      if (firebaseUid) {
-        currentBalance = await walletService.getBalance(firebaseUid);
+      // 2. Get full session details to extract metadata (package_id, firebase_uid)
+      try {
+        const sessionDetails = await stripeTopUpService.getCheckoutSessionDetails(sessionId);
+        const packageId = sessionDetails.packageId;
+        const sessionFirebaseUid = sessionDetails.firebaseUid || firebaseUid;
+
+        if (packageId) {
+          // 3. Ensure user exists in PostgreSQL (create if first-time buyer)
+          try {
+            const userEmail = (req as any).firebaseUser?.email;
+            await userMappingService.getOrCreateUserIdForFirebaseUid(sessionFirebaseUid, userEmail);
+          } catch (userErr) {
+            console.warn(`⚠️ [WALLET-ROUTES] Could not ensure PG user for ${sessionFirebaseUid}:`, userErr);
+          }
+
+          // 4. Ensure wallet exists
+          await walletService.getOrCreateWallet(sessionFirebaseUid);
+
+          // 5. Grant credits INSTANTLY and idempotently
+          const result = await walletService.processTopUpCompletion(
+            sessionId,
+            sessionDetails.paymentIntentId || sessionId,
+            sessionFirebaseUid,
+            sessionDetails.amountTotal || 0,
+            packageId
+          );
+
+          creditsGranted = true;
+          creditsJustGranted = result?.wasNew ?? true;
+          creditsAmount = result?.creditsGranted ?? 0;
+          packageName = sessionDetails.packageName || null;
+
+          // 6. Invalidate balance cache so next /balance call returns fresh data
+          invalidateWalletCache(sessionFirebaseUid);
+
+          console.log(`⚡ [WALLET-ROUTES] Instant grant: ${creditsAmount} credits to ${sessionFirebaseUid} (session: ${sessionId}, new: ${creditsJustGranted})`);
+        }
+      } catch (grantErr) {
+        console.error('❌ [WALLET-ROUTES] Error during instant credit grant:', grantErr);
+        // Don't fail the request — credits may have been granted by webhook already
       }
+
+      // 7. Return fresh balance
+      currentBalance = await walletService.getBalance(firebaseUid);
+      invalidateWalletCache(firebaseUid);
     }
 
     return res.json({
       success: true,
       ...status,
+      creditsGranted,
+      creditsJustGranted,
+      creditsAmount,
+      packageName,
       currentBalance,
     });
 
