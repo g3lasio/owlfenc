@@ -120,10 +120,26 @@ async function main() {
     process.exit(0);
   }
 
-  // 3. Ensure wallet exists and grant credits
+  // 3. Ensure user exists in PostgreSQL (create if needed)
+  console.log(`🔍 Ensuring user exists in PostgreSQL...`);
+  const { userMappingService } = await import('../services/userMappingService');
+  
+  let pgUserId: number;
+  try {
+    pgUserId = await userMappingService.getOrCreateUserIdForFirebaseUid(
+      firebaseUid,
+      'm3rvin20@outlook.com' // email from Stripe Dashboard
+    );
+    console.log(`✅ User found/created in PostgreSQL with ID: ${pgUserId}`);
+  } catch (err: any) {
+    console.error('❌ Could not resolve PostgreSQL user ID:', err.message);
+    process.exit(1);
+  }
+
+  // 4. Ensure wallet exists and grant credits
   console.log(`🎁 Granting ${totalCredits} credits to ${firebaseUid}...`);
 
-  await walletService.getOrCreateWallet(firebaseUid);
+  await walletService.getOrCreateWallet(firebaseUid, pgUserId);
 
   await walletService.addCredits({
     firebaseUid,
