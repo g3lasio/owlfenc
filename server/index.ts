@@ -184,6 +184,15 @@ app.get('/api/pdf-debug', async (_req, res) => {
   }
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 🔗 STRIPE WEBHOOKS — MUST be registered BEFORE any express.json() middleware.
+// Stripe sends raw JSON and signs it with HMAC-SHA256. If express.json() runs
+// first it consumes the readable stream and the raw bytes are lost, making
+// signature verification impossible (causes 500 / signature mismatch errors).
+// ─────────────────────────────────────────────────────────────────────────────
+app.use("/api/webhooks", stripeWebhooksRoutes);
+console.log('🔗 [STRIPE-WEBHOOKS] Registered BEFORE express.json() — raw body preserved for signature verification');
+
 // 🚀 STRIPE CONNECT EXPRESS ENDPOINTS - BEFORE ALL MIDDLEWARE (NO AUTH REQUIRED)
 // These must be registered BEFORE validateApiKeys middleware to allow unauthenticated onboarding
 app.use(express.json({ limit: '10mb' })); // Enable JSON parsing for these endpoints only
@@ -1171,9 +1180,8 @@ console.log('🧪 [QA-TESTING] Sistema de testing QA registrado en /api/qa');
 app.use("/api/ui-guards", uiGuardsRoutes);
 console.log('🎨 [UI-GUARDS] Guards de UI para límites registrados en /api/ui-guards');
 
-// 🔗 Registrar webhooks de Stripe para automatización de pagos
-app.use("/api/webhooks", stripeWebhooksRoutes);
-console.log('🔗 [STRIPE-WEBHOOKS] Webhooks de Stripe registrados en /api/webhooks');
+// NOTE: Stripe webhooks are registered BEFORE express.json() at the top of this file.
+// Do NOT add a second registration here — it would create a duplicate route.
 
 // 🚨 Registrar sistema de alertas para monitoreo y abuso
 app.use("/api/alerts", alertingRoutes);
