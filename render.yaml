@@ -25,5 +25,10 @@ services:
         sync: false
       - key: STRIPE_SECRET_KEY
         sync: false
+      # CRITICAL: Required for Stripe webhook signature verification.
+      # Get this from Stripe Dashboard → Developers → Webhooks → your endpoint → Signing secret.
+      # Without this, credit top-ups will NOT be granted after payment.
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
       - key: RESEND_API_KEY
         sync: false
