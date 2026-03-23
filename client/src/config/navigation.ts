@@ -145,12 +145,6 @@ export const navigationGroups: NavigationGroup[] = [
         badge: "NEW"
       },
       {
-        id: "billing",
-        label: "navigation.billing",
-        path: "/billing",
-        icon: "lucide-credit-card"
-      },
-      {
         id: "subscription",
         label: "navigation.subscription",
         path: "/subscription",

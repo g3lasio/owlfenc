@@ -23,6 +23,7 @@ import {
   AlertTriangle,
   RefreshCw,
   ChevronRight,
+  ExternalLink,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -31,6 +32,8 @@ import { useWallet, type WalletTransaction } from '@/hooks/useWallet';
 import { useWalletContext } from '@/contexts/WalletContext';
 import { TopUpModal } from '@/components/wallet/TopUpModal';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 // ================================
 // TRANSACTION ICON
@@ -115,6 +118,9 @@ export function WalletPage({ embedded = false }: { embedded?: boolean }) {
   const [showTopUpModal, setShowTopUpModal] = useState(false);
   const [fullHistory, setFullHistory] = useState<WalletTransaction[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [isPortalLoading, setIsPortalLoading] = useState(false);
+  const { currentUser } = useAuth();
+  const { toast } = useToast();
 
   // Use global context for balance/walletData — keeps header badge and this page in sync
   const { balance, walletData, isLoading, refreshBalance } = useWalletContext();
@@ -125,6 +131,38 @@ export function WalletPage({ embedded = false }: { embedded?: boolean }) {
     initiateTopUp,
     isCheckingOut,
   } = useWallet();
+
+  // Open Stripe Customer Portal
+  const handleManageSubscription = async () => {
+    if (!currentUser) return;
+    setIsPortalLoading(true);
+    try {
+      let token: string | null = null;
+      try { token = await currentUser.getIdToken(true); } catch {}
+      if (!token) { try { token = await currentUser.getIdToken(false); } catch {} }
+      if (!token) token = localStorage.getItem('firebase_id_token');
+      if (!token) throw new Error('No auth token available');
+
+      const response = await fetch('/api/subscription/create-portal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ successUrl: window.location.origin + '/wallet' }),
+      });
+      const data = await response.json();
+      if (data?.url) {
+        const win = window.open(data.url, '_blank');
+        if (!win) {
+          toast({ title: 'Popup blocked', description: 'Please allow popups for this site and try again.', variant: 'destructive' });
+        }
+      } else {
+        throw new Error('No portal URL received');
+      }
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message || 'Could not open billing portal.', variant: 'destructive' });
+    } finally {
+      setIsPortalLoading(false);
+    }
+  };
 
   // Verificar si viene de un top-up exitoso
   useEffect(() => {
@@ -189,15 +227,31 @@ export function WalletPage({ embedded = false }: { embedded?: boolean }) {
               Manage your AI credits and purchase history
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={refreshBalance}
-            className="gap-2 border-border/50"
-          >
-            <RefreshCw className="h-3.5 w-3.5" />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={refreshBalance}
+              className="gap-2 border-border/50"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              Refresh
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleManageSubscription}
+              disabled={isPortalLoading}
+              className="gap-2 border-cyan-800/40 text-cyan-400 hover:bg-cyan-950/30 hover:text-cyan-300"
+            >
+              {isPortalLoading ? (
+                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <ExternalLink className="h-3.5 w-3.5" />
+              )}
+              Manage Subscription
+            </Button>
+          </div>
         </div>
 
         {/* Balance Card */}
