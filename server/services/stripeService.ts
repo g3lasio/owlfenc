@@ -263,30 +263,46 @@ class StripeService {
         // El sistema de créditos (wallet) maneja el onboarding con créditos de bienvenida
 
         // 🎟️ PARTNERSHIP DISCOUNT: Dynamic Stripe coupon validation
-        // Looks up the coupon by name directly in Stripe — no hardcoded map needed.
+        // Looks up the coupon by ID, exact name, or partial name match in Stripe.
         // Any coupon created in Stripe (or via the admin dashboard) works automatically.
         if (options.couponCode && options.planId === 6) {
           const normalizedCode = options.couponCode.trim().toUpperCase();
           try {
-            // Search Stripe coupons for one whose name matches the partner code
             const coupons = await stripe.coupons.list({ limit: 100 });
-            const matchedCoupon = coupons.data.find(
-              (c) => c.name?.toUpperCase() === normalizedCode || c.id.toUpperCase() === normalizedCode
+            
+            // Step 1: Try exact match by ID or name
+            let matchedCoupon = coupons.data.find(
+              (c) => c.id.toUpperCase() === normalizedCode || c.name?.toUpperCase() === normalizedCode
             );
+            
+            // Step 2: If no exact match, try partial match (e.g. "NEXLEAD" matches "NEXLEAD – Agency Partner Discount")
+            if (!matchedCoupon) {
+              matchedCoupon = coupons.data.find(
+                (c) => c.name?.toUpperCase().startsWith(normalizedCode) || normalizedCode.startsWith(c.id.toUpperCase())
+              );
+            }
+            
+            // Step 3: Try contains match as last resort
+            if (!matchedCoupon) {
+              matchedCoupon = coupons.data.find(
+                (c) => c.name?.toUpperCase().includes(normalizedCode) || normalizedCode.includes(c.name?.toUpperCase() || '')
+              );
+            }
+
             if (matchedCoupon && matchedCoupon.valid) {
-              console.log(`[${new Date().toISOString()}] ✅ Partner coupon found: ${normalizedCode} → Stripe ID: ${matchedCoupon.id} (${matchedCoupon.percent_off}% off)`);
+              console.log(`[CHECKOUT] ✅ Partner coupon applied: "${normalizedCode}" → Stripe ID: "${matchedCoupon.id}" (${matchedCoupon.percent_off}% off)`);
               sessionConfig.discounts = [{ coupon: matchedCoupon.id }];
             } else if (matchedCoupon && !matchedCoupon.valid) {
-              console.warn(`[${new Date().toISOString()}] ⚠️ Partner coupon ${normalizedCode} exists but is no longer valid (expired or depleted)`);
+              console.warn(`[CHECKOUT] ⚠️ Partner coupon "${normalizedCode}" found but is expired or depleted — not applied`);
             } else {
-              console.warn(`[${new Date().toISOString()}] ⚠️ Partner coupon ${normalizedCode} not found in Stripe — not applied`);
+              console.warn(`[CHECKOUT] ⚠️ Partner coupon "${normalizedCode}" not found in Stripe — not applied`);
             }
           } catch (couponError: any) {
             // Non-fatal: if coupon lookup fails, proceed with checkout without discount
-            console.warn(`[${new Date().toISOString()}] ⚠️ Could not validate partner coupon ${normalizedCode}: ${couponError.message}`);
+            console.warn(`[CHECKOUT] ⚠️ Could not validate partner coupon "${normalizedCode}": ${couponError.message}`);
           }
         } else if (options.couponCode && options.planId !== 6) {
-          console.warn(`[${new Date().toISOString()}] Coupon ${options.couponCode} rejected — only valid for Master Contractor plan`);
+          console.warn(`[CHECKOUT] Coupon "${options.couponCode}" rejected — only valid for Master Contractor plan (planId 6)`);
         }
 
         // Create checkout session
