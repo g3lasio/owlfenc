@@ -79,7 +79,6 @@ export const securityHeaders = helmet({
 
 /**
  * Lista de dominios de producción autorizados para WebAuthn
- * Estos dominios pueden usar WebAuthn cuando están embebidos
  */
 const WEBAUTHN_ALLOWED_ORIGINS = [
   'https://app.owlfenc.com',
@@ -94,50 +93,85 @@ export const sanitizeRequest = (req: Request, res: Response, next: NextFunction)
   for (const key in req.query) {
     if (typeof req.query[key] === 'string') {
       req.query[key] = (req.query[key] as string)
-        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove script tags
-        .replace(/javascript:/gi, '') // Remove javascript: URLs
-        .replace(/on\w+\s*=/gi, ''); // Remove event handlers
+        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+        .replace(/javascript:/gi, '')
+        .replace(/on\w+\s*=/gi, '');
     }
+  }
+
+  // Add security response headers
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+  const currentOrigin = `https://${req.hostname}`;
+  const isProductionOrigin = WEBAUTHN_ALLOWED_ORIGINS.some(origin =>
+    currentOrigin === origin || req.hostname === origin.replace('https://', '')
+  );
+
+  if (isProductionOrigin) {
+    res.setHeader('Permissions-Policy',
+      `publickey-credentials-get=(self "${WEBAUTHN_ALLOWED_ORIGINS.join('" "')}"), ` +
+      `publickey-credentials-create=(self "${WEBAUTHN_ALLOWED_ORIGINS.join('" "')}")`
+    );
+  } else {
+    res.setHeader('Permissions-Policy',
+      'publickey-credentials-get=(self), publickey-credentials-create=(self)'
+    );
   }
 
   next();
 };
 
-// Request logging for security monitoring
+// API Key validation middleware
+export const validateApiKeys = (req: Request, res: Response, next: NextFunction) => {
+  if (process.env.NODE_ENV === 'production') {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.includes('demo') || authHeader === 'Bearer demo-token') {
+      console.error('🚨 SECURITY ALERT: Demo token used in production!');
+      return res.status(401).json({
+        error: 'Token de desarrollo no permitido en producción',
+        code: 'INVALID_TOKEN_TYPE'
+      });
+    }
+  }
+  next();
+};
+
+// Request logging for security monitoring — improved to avoid sensitive data exposure
 export const securityLogger = (req: Request, res: Response, next: NextFunction) => {
   const startTime = Date.now();
-  
-  // SECURITY: Only log non-sensitive information
+
+  // SECURITY: Only log non-sensitive information (no User-Agent, no Authorization headers)
   const securityInfo = {
     ip: req.ip || req.connection.remoteAddress,
     method: req.method,
     url: req.url,
     timestamp: new Date().toISOString(),
     firebaseUser: req.firebaseUser?.uid || null
-    // NOTE: Intentionally NOT logging User-Agent, Authorization headers, or request body
   };
-  
+
   // Log suspicious activity
   if (req.url.includes('admin') || req.url.includes('debug') || req.url.includes('test')) {
     console.warn('[SECURITY] Suspicious URL access attempt:', securityInfo);
   }
-  
-  // Log actual auth API endpoints only (not Vite static files that contain 'auth' in path)
-  const isAuthApiEndpoint = req.url.startsWith('/api/') && 
-    (req.url.includes('/login') || req.url.includes('/register') || 
+
+  // Log auth API endpoints only when DEBUG_AUTH is enabled
+  const isAuthApiEndpoint = req.url.startsWith('/api/') &&
+    (req.url.includes('/login') || req.url.includes('/register') ||
      req.url.includes('/auth/') || req.url.includes('/sessionLogin'));
   if (isAuthApiEndpoint && process.env.DEBUG_AUTH === 'true') {
-    // Only log auth events in debug mode to avoid exposing user info in production
-    console.log('[AUTH-EVENT] User authentication attempt:', { uid: securityInfo.firebaseUser, method: securityInfo.method });
+    console.log('[AUTH-EVENT] Authentication attempt:', { uid: securityInfo.firebaseUser, method: securityInfo.method });
   }
-  
+
   res.on('finish', () => {
     const duration = Date.now() - startTime;
     if (res.statusCode >= 400) {
       console.warn('[ERROR] Request failed:', { method: securityInfo.method, url: securityInfo.url, statusCode: res.statusCode, duration });
     }
   });
-  
+
   next();
 };
 
@@ -146,27 +180,40 @@ export const validateEnvironment = () => {
   const requiredEnvVars = [
     'DATABASE_URL',
     'FIREBASE_PROJECT_ID',
-    'FIREBASE_PRIVATE_KEY',
-    'FIREBASE_CLIENT_EMAIL',
+    'SESSION_SECRET',
+    'OPENAI_API_KEY',
+    'ANTHROPIC_API_KEY'
   ];
 
-  const missingVars = requiredEnvVars.filter(v => !process.env[v]);
-  if (missingVars.length > 0) {
-    console.warn(`⚠️ Missing environment variables: ${missingVars.join(', ')}`);
-  }
+  const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+
+  /* if (missingVars.length > 0) {
+    console.error('🚨 CRITICAL: Missing environment variables:', missingVars);
+    process.exit(1);
+  } */
+
+  // Check for exposed keys
+  const sensitiveVars = ['STRIPE_SECRET_KEY', 'DATABASE_URL', 'SESSION_SECRET'];
+  sensitiveVars.forEach(varName => {
+    const value = process.env[varName];
+    if (value && (value.includes('demo') || value.includes('test') || value.includes('placeholder'))) {
+      console.warn(`⚠️ WARNING: ${varName} appears to contain test/demo values in production`);
+    }
+  });
 };
 
-// Demo token security check
-export const checkDemoToken = (req: Request, res: Response, next: NextFunction) => {
-  const token = req.headers.authorization?.split(' ')[1];
-  if (token === 'demo-token-12345' && process.env.NODE_ENV === 'production') {
-    console.error('🚨 SECURITY ALERT: Demo token used in production!');
-    return res.status(401).json({ error: 'Invalid authentication token' });
-  }
-  next();
-};
-
-// WebAuthn origin validation
-export const validateWebAuthnOrigin = (origin: string): boolean => {
-  return WEBAUTHN_ALLOWED_ORIGINS.includes(origin);
+// CORS configuration for production
+export const corsConfig = {
+  origin: process.env.NODE_ENV === 'production'
+    ? [process.env.ALLOWED_ORIGINS?.split(',') || []].flat().filter(Boolean)
+    : true, // Allow all origins in development
+  credentials: true, // CRITICAL: Required for session cookies
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'X-Firebase-UID',
+    'X-User-Email'
+  ]
 };
