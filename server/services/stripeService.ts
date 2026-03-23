@@ -1328,16 +1328,41 @@ class StripeService {
   }> {
     try {
       const normalizedCode = couponCode.trim().toUpperCase();
+      console.log(`🎟️ [COUPON-VALIDATION] Validating coupon code: "${normalizedCode}"`);
+      
       const coupons = await stripe.coupons.list({ limit: 100 });
-      const matched = coupons.data.find(
-        (c) => c.name?.toUpperCase() === normalizedCode || c.id.toUpperCase() === normalizedCode
+      console.log(`🎟️ [COUPON-VALIDATION] Found ${coupons.data.length} coupons in Stripe`);
+      
+      // Log all available coupons for debugging
+      coupons.data.forEach((c, idx) => {
+        console.log(`  [${idx}] ID: "${c.id}" | Name: "${c.name}" | Valid: ${c.valid} | Percent Off: ${c.percent_off}% | Duration: ${c.duration}`);
+      });
+      
+      // Improved matching logic: try exact match first
+      let matched = coupons.data.find(
+        (c) => c.id.toUpperCase() === normalizedCode || c.name?.toUpperCase() === normalizedCode
       );
-      if (!matched) {
-        return { valid: false, error: 'Invalid partner code.' };
+      
+      // If no exact match, try partial match on name
+      if (!matched && coupons.data.length > 0) {
+        matched = coupons.data.find(
+          (c) => c.name?.toUpperCase().includes(normalizedCode) || normalizedCode.includes(c.name?.toUpperCase() || '')
+        );
       }
+      
+      if (!matched) {
+        console.log(`❌ [COUPON-VALIDATION] No matching coupon found for: "${normalizedCode}"`);
+        return { valid: false, error: 'Invalid partner code. Please check the code and try again.' };
+      }
+      
+      console.log(`✅ [COUPON-VALIDATION] Matched coupon: ID="${matched.id}" | Name="${matched.name}"`);
+      
       if (!matched.valid) {
+        console.log(`⚠️ [COUPON-VALIDATION] Coupon is invalid/expired: ${matched.id}`);
         return { valid: false, error: 'This partner code has expired or reached its usage limit.' };
       }
+      
+      console.log(`✅ [COUPON-VALIDATION] Coupon is valid - returning discount info`);
       return {
         valid: true,
         percentOff: matched.percent_off,
@@ -1346,8 +1371,9 @@ class StripeService {
         name: matched.name || matched.id,
       };
     } catch (err: any) {
-      console.error(`[${new Date().toISOString()}] ⚠️ validatePartnerCoupon error:`, err.message);
-      return { valid: false, error: 'Could not validate coupon at this time.' };
+      console.error(`[${new Date().toISOString()}] ❌ [COUPON-VALIDATION] Error:`, err.message);
+      console.error(`Stack trace:`, err.stack);
+      return { valid: false, error: 'Could not validate coupon at this time. Please try again later.' };
     }
   }
 }
