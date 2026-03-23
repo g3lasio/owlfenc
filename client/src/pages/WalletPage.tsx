@@ -32,7 +32,7 @@ import { useWallet, type WalletTransaction } from '@/hooks/useWallet';
 import { useWalletContext } from '@/contexts/WalletContext';
 import { TopUpModal } from '@/components/wallet/TopUpModal';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/components/auth/AuthSessionProvider';
 import { useToast } from '@/hooks/use-toast';
 
 // ================================
