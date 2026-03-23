@@ -11,7 +11,7 @@ import { sql } from 'drizzle-orm';
 import * as schema from '@shared/schema';
 
 // Configure Neon for HTTP mode (more reliable than WebSocket for serverless)
-neonConfig.fetchConnectionCache = true;
+// Note: fetchConnectionCache is now always true by default in newer versions of @neondatabase/serverless
 
 export interface RetryConfig {
   maxRetries: number;

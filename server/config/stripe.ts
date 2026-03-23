@@ -54,7 +54,13 @@ export function isOrganizationApiKey(): boolean {
  * Supports both STRIPE_PUBLISHABLE_KEY and STRIPE_PUBLIC_KEY
  */
 export function getStripePublishableKey(): string | undefined {
-  return process.env.STRIPE_PUBLISHABLE_KEY || process.env.STRIPE_PUBLIC_KEY;
+  const key = process.env.STRIPE_PUBLISHABLE_KEY || process.env.STRIPE_PUBLIC_KEY;
+  
+  if (!key && process.env.NODE_ENV === 'production') {
+    console.warn('⚠️ [STRIPE-CONFIG] Publishable Key not configured in production. Frontend Stripe integration may not work.');
+  }
+  
+  return key;
 }
 
 /**

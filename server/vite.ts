@@ -40,6 +40,15 @@ export async function setupVite(app: Express, server: Server) {
     appType: "custom",
   });
 
+  // 🚀 PERFORMANCE: Add caching headers for static assets
+  app.use((req, res, next) => {
+    // Cache CSS, JS, and other static assets for 1 year (they have hashes)
+    if (req.url.match(/\.(js|css|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot)$/)) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    }
+    next();
+  });
+
   app.use(vite.middlewares);
   app.use("*", async (req, res, next) => {
     const url = req.originalUrl;
@@ -67,9 +76,11 @@ export async function setupVite(app: Express, server: Server) {
       let template = await fs.promises.readFile(clientTemplate, "utf-8");
       template = template.replace(
         `src="/src/main.tsx"`,
-        `src="/src/main.tsx?v=${nanoid()}"`,
+        `src="/src/main.tsx?v=${nanoid()}"`
       );
       const page = await vite.transformIndexHtml(url, template);
+      // Don't cache HTML — always serve fresh
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.status(200).set({ "Content-Type": "text/html" }).end(page);
     } catch (e) {
       vite.ssrFixStacktrace(e as Error);

@@ -6,7 +6,7 @@ import ws from 'ws';
 
 // Configure Neon for WebSocket mode - REQUIRED for transaction support
 neonConfig.webSocketConstructor = ws;
-neonConfig.fetchConnectionCache = true;
+// Note: fetchConnectionCache is now always true by default in newer versions of @neondatabase/serverless
 
 if (!process.env.DATABASE_URL) {
   console.error("DATABASE_URL must be set. Did you forget to provision a database?");
