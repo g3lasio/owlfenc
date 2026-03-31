@@ -32,7 +32,8 @@ import phase4OptimizationRoutes from "./routes/phase4-optimization";
 import adminContractsRoutes from "./routes/admin-contracts";
 import urlShortenerRoutes from "./routes/urlShortener";
 import mervinV2Routes from "./routes/mervin-v2";
-import contractVerificationRoutes from "./routes/contract-verification";
+import contractVerificationRoutes from './routes/contract-verification';
+import leadprimeNetworkRoutes from './routes/leadprimeNetwork';
 // import assistantsRoutes from "./routes/assistants"; // DESACTIVADO - Sistema obsoleto de OpenAI Assistants
 // mervinEstimatesRoutes removed - Mervin now uses existing endpoints
 
@@ -1202,6 +1203,10 @@ console.log('🔗 [URL-SHORTENER] Sistema de acortamiento de URLs registrado en 
 // 🔍 Registrar rutas de verificación de contratos (PÚBLICO)
 app.use("/api", contractVerificationRoutes);
 console.log('🔍 [VERIFY] Sistema de verificación de contratos registrado en /api/verify');
+
+// 🌐 LeadPrime Network Integration
+app.use("/api/leadprime-network", leadprimeNetworkRoutes);
+console.log('🌐 [LEADPRIME-NETWORK] Integración con LeadPrime Network registrada en /api/leadprime-network');
 
 // 🧪 Endpoints de prueba para verificar conectividad backend
 app.get('/api/test/ping', (req, res) => {

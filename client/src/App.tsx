@@ -20,6 +20,7 @@ const Materials = lazy(() => import("./pages/Materials"));
 const EstimatesWizard = lazy(() => import("./pages/EstimatesWizard"));
 // ChatInterface is loaded through ChatProvider, not directly imported here
 const Profile = lazy(() => import("@/pages/Profile"));
+const LeadPrimeNetwork = lazy(() => import("@/pages/LeadPrimeNetwork"));
 const PropertyOwnershipVerifier = lazy(() => import("@/pages/PropertyOwnershipVerifier"));
 const PermitAdvisor = lazy(() => import("@/pages/PermitAdvisor"));
 const OwlFunding = lazy(() => import("@/pages/OwlFunding"));
@@ -310,6 +311,9 @@ function MainAppRouter() {
               </Route>
               <Route path="/profile">
                 {() => <ProtectedRoute component={Profile} />}
+              </Route>
+              <Route path="/leadprime-network">
+                {() => <ProtectedRoute component={LeadPrimeNetwork} />}
               </Route>
               <Route path="/settings">
                 {() => <ProtectedRoute component={Profile} />}

@@ -132,6 +132,13 @@ export const navigationGroups: NavigationGroup[] = [
     title: "account",
     items: [
       {
+        id: "leadprime-network",
+        label: "LeadPrime Network",
+        path: "/leadprime-network",
+        icon: "lucide-globe",
+        badge: "NEW"
+      },
+      {
         id: "profile",
         label: "navigation.companyProfile",
         path: "/profile",
