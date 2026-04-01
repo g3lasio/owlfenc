@@ -98,8 +98,9 @@ router.post("/connect", async (req: Request, res: Response) => {
     return res.status(400).json({ error: "Invalid token format. Must start with lpn_" });
   }
 
-  // Validate token with LeadPrime
-  const validation = await callLeadPrime("GET", "/network/documents/validate-token", token);
+  // Validate token with LeadPrime via the public owlfencBridge endpoint
+  // POST /api/leadprime-network/connection — no JWT required, uses Bearer lpn_ token
+  const validation = await callLeadPrime("POST", "/leadprime-network/connection", token);
   if (!validation.ok) {
     return res.status(400).json({
       error: "Token not recognized by LeadPrime. Please generate a new token.",
@@ -107,7 +108,7 @@ router.post("/connect", async (req: Request, res: Response) => {
     });
   }
 
-  const handle = validation.data?.handle || null;
+  const handle = validation.data?.handle || validation.data?.network_handle || null;
 
   // Persist to DB
   if (db) {
