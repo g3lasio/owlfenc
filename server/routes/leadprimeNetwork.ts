@@ -25,8 +25,12 @@ const router = Router();
 const LEADPRIME_API = process.env.LEADPRIME_API_URL || "https://leadprime.chyrris.com/api";
 
 // ─── Auth middleware (Firebase UID from request) ──────────────────────────────
+// Uses req.firebaseUser.uid — set by verifyFirebaseAuth middleware (firebase-auth.ts)
 function getFirebaseUid(req: Request): string | null {
-  return (req as any).user?.uid || null;
+  return (req as any).firebaseUser?.uid ||
+         (req as any).user?.uid ||
+         (req.headers['x-firebase-uid'] as string) ||
+         null;
 }
 
 // ─── Helper: call LeadPrime API ───────────────────────────────────────────────
