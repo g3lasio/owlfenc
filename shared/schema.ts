@@ -89,6 +89,12 @@ export const users = pgTable('users', {
   stripeConnectAccountId: text('stripe_connect_account_id'),
   defaultPaymentTerms: integer('default_payment_terms').default(30), // días para pago
   invoiceMessageTemplate: text('invoice_message_template'),
+  // LeadPrime Network integration
+  leadprimeToken: text('leadprime_token'),
+  leadprimeHandle: text('leadprime_handle'),
+  leadprimeConnectedAt: timestamp('leadprime_connected_at'),
+  leadprimeSyncedDocs: integer('leadprime_synced_docs').default(0),
+  leadprimeLastSync: timestamp('leadprime_last_sync'),
 });
 
 // Projects table

@@ -1470,6 +1470,28 @@ console.log('🔧 [UNIFIED-ANALYSIS] Sistema híbrido registrado en /api/analysi
   await registerRoutes(app);
   console.log("✅ [ROUTES] All routes registered (including wallet PAYG routes)");
 
+  // Run LeadPrime Network columns migration (idempotent — safe on every restart)
+  try {
+    const { Pool } = await import('@neondatabase/serverless');
+    if (process.env.DATABASE_URL) {
+      const migPool = new Pool({ connectionString: process.env.DATABASE_URL });
+      await migPool.query(`
+        ALTER TABLE users
+          ADD COLUMN IF NOT EXISTS leadprime_token TEXT,
+          ADD COLUMN IF NOT EXISTS leadprime_handle TEXT,
+          ADD COLUMN IF NOT EXISTS leadprime_connected_at TIMESTAMP,
+          ADD COLUMN IF NOT EXISTS leadprime_synced_docs INTEGER DEFAULT 0,
+          ADD COLUMN IF NOT EXISTS leadprime_last_sync TIMESTAMP
+      `);
+      await migPool.end();
+      console.log('✅ [MIGRATION] LeadPrime Network columns ready');
+    }
+  } catch (migErr: any) {
+    if (!['42701', '42P07'].includes(migErr?.code)) {
+      console.warn('⚠️ [MIGRATION] LeadPrime columns warning:', migErr?.message);
+    }
+  }
+
   const port = parseInt(process.env.PORT ?? '5000', 10);
 
   // 🔗 URL SHORTENER REDIRECT - Handle /s/:shortCode redirects

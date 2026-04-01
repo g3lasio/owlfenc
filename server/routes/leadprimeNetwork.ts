@@ -1,8 +1,8 @@
 /**
  * LeadPrime Network Routes — Owl Fenc Backend
- * 
+ *
  * Handles:
- * - GET  /api/leadprime-network/connection          → get connection status
+ * - GET  /api/leadprime-network/connection          → get connection status (from DB)
  * - POST /api/leadprime-network/connect             → link account with API token
  * - DELETE /api/leadprime-network/connection        → unlink account
  * - POST /api/leadprime-network/sync                → manual sync all docs
@@ -10,6 +10,9 @@
  * - POST /api/leadprime-network/send-document       → send doc to specific @handle
  * - GET  /api/leadprime-network/sync-status         → get sync stats
  * - GET  /api/leadprime-network/validate-handle/:h  → validate a @handle exists in LeadPrime
+ *
+ * FIX: Connection state is now persisted in the users table (leadprime_token column)
+ *      instead of in-memory Map — survives server restarts.
  */
 import { Router, Request, Response } from "express";
 import { db } from "../db";
@@ -23,7 +26,6 @@ const LEADPRIME_API = process.env.LEADPRIME_API_URL || "https://leadprime.chyrri
 
 // ─── Auth middleware (Firebase UID from request) ──────────────────────────────
 function getFirebaseUid(req: Request): string | null {
-  // Firebase auth sets req.user in the auth middleware
   return (req as any).user?.uid || null;
 }
 
@@ -51,31 +53,34 @@ async function callLeadPrime(
   }
 }
 
-// ─── In-memory connection store (replace with DB column in production) ────────
-// Format: { [firebaseUid]: { token, handle, connectedAt, lastSync } }
-const connectionStore = new Map<string, {
-  token: string;
-  handle: string;
-  connectedAt: string;
-  lastSync?: string;
-  syncedDocs: number;
-}>();
+// ─── Helper: get user row by Firebase UID ────────────────────────────────────
+async function getUserByUid(uid: string) {
+  if (!db) return null;
+  try {
+    const rows = await db.select().from(users).where(eq(users.firebaseUid, uid)).limit(1);
+    return rows[0] || null;
+  } catch {
+    return null;
+  }
+}
 
 // ─── GET /connection ──────────────────────────────────────────────────────────
 router.get("/connection", async (req: Request, res: Response) => {
   const uid = getFirebaseUid(req);
   if (!uid) return res.status(401).json({ error: "Unauthorized" });
 
-  const conn = connectionStore.get(uid);
-  if (!conn) return res.json({ connected: false });
+  const user = await getUserByUid(uid);
+  if (!user || !user.leadprimeToken) {
+    return res.json({ connected: false });
+  }
 
   return res.json({
     connected: true,
-    handle: conn.handle,
-    connectedAt: conn.connectedAt,
-    lastSync: conn.lastSync,
-    syncedDocs: conn.syncedDocs,
-    token: `${conn.token.substring(0, 8)}...${conn.token.slice(-4)}`, // masked
+    handle: user.leadprimeHandle,
+    connectedAt: user.leadprimeConnectedAt,
+    lastSync: user.leadprimeLastSync,
+    syncedDocs: user.leadprimeSyncedDocs || 0,
+    token: `${user.leadprimeToken.substring(0, 8)}...${user.leadprimeToken.slice(-4)}`,
   });
 });
 
@@ -94,17 +99,30 @@ router.post("/connect", async (req: Request, res: Response) => {
   if (!validation.ok) {
     return res.status(400).json({
       error: "Token not recognized by LeadPrime. Please generate a new token.",
+      detail: validation.data,
     });
   }
 
-  const handle = validation.data?.handle || "unknown";
+  const handle = validation.data?.handle || null;
 
-  connectionStore.set(uid, {
-    token,
-    handle,
-    connectedAt: new Date().toISOString(),
-    syncedDocs: 0,
-  });
+  // Persist to DB
+  if (db) {
+    try {
+      await db
+        .update(users)
+        .set({
+          leadprimeToken: token,
+          leadprimeHandle: handle,
+          leadprimeConnectedAt: new Date(),
+          leadprimeSyncedDocs: 0,
+          leadprimeLastSync: null,
+        })
+        .where(eq(users.firebaseUid, uid));
+    } catch (err) {
+      console.error("[LEADPRIME-NETWORK] Failed to persist token to DB:", err);
+      // Non-fatal — still return success
+    }
+  }
 
   // Trigger initial sync in background
   triggerInitialSync(uid, token).catch(console.error);
@@ -117,7 +135,23 @@ router.delete("/connection", async (req: Request, res: Response) => {
   const uid = getFirebaseUid(req);
   if (!uid) return res.status(401).json({ error: "Unauthorized" });
 
-  connectionStore.delete(uid);
+  if (db) {
+    try {
+      await db
+        .update(users)
+        .set({
+          leadprimeToken: null,
+          leadprimeHandle: null,
+          leadprimeConnectedAt: null,
+          leadprimeSyncedDocs: 0,
+          leadprimeLastSync: null,
+        })
+        .where(eq(users.firebaseUid, uid));
+    } catch (err) {
+      console.error("[LEADPRIME-NETWORK] Failed to clear token from DB:", err);
+    }
+  }
+
   return res.json({ disconnected: true });
 });
 
@@ -126,11 +160,12 @@ router.get("/sync-status", async (req: Request, res: Response) => {
   const uid = getFirebaseUid(req);
   if (!uid) return res.status(401).json({ error: "Unauthorized" });
 
-  const conn = connectionStore.get(uid);
-  if (!conn) return res.status(400).json({ error: "Not connected" });
+  const user = await getUserByUid(uid);
+  if (!user || !user.leadprimeToken) {
+    return res.status(400).json({ error: "Not connected to LeadPrime Network" });
+  }
 
-  // Get counts from LeadPrime
-  const result = await callLeadPrime("GET", `/network/documents/sync-status`, conn.token);
+  const result = await callLeadPrime("GET", "/network/documents/sync-status", user.leadprimeToken);
   if (!result.ok) {
     return res.json({ estimates: 0, invoices: 0, contracts: 0, permits: 0, lastSyncAt: null });
   }
@@ -143,10 +178,12 @@ router.post("/sync", async (req: Request, res: Response) => {
   const uid = getFirebaseUid(req);
   if (!uid) return res.status(401).json({ error: "Unauthorized" });
 
-  const conn = connectionStore.get(uid);
-  if (!conn) return res.status(400).json({ error: "Not connected to LeadPrime" });
+  const user = await getUserByUid(uid);
+  if (!user || !user.leadprimeToken) {
+    return res.status(400).json({ error: "Not connected to LeadPrime" });
+  }
 
-  const synced = await triggerInitialSync(uid, conn.token);
+  const synced = await triggerInitialSync(uid, user.leadprimeToken);
   return res.json({ synced });
 });
 
@@ -155,17 +192,19 @@ router.post("/sync-document", async (req: Request, res: Response) => {
   const uid = getFirebaseUid(req);
   if (!uid) return res.status(401).json({ error: "Unauthorized" });
 
-  const conn = connectionStore.get(uid);
-  if (!conn) return res.status(400).json({ error: "Not connected" });
+  const user = await getUserByUid(uid);
+  if (!user || !user.leadprimeToken) {
+    return res.status(400).json({ error: "Not connected" });
+  }
 
   const payload = req.body;
   if (!payload.doc_type || !payload.doc_reference) {
     return res.status(400).json({ error: "doc_type and doc_reference are required" });
   }
 
-  const result = await callLeadPrime("POST", "/network/documents/receive", conn.token, {
+  const result = await callLeadPrime("POST", "/network/documents/receive", user.leadprimeToken, {
     ...payload,
-    sender_handle: conn.handle,
+    sender_handle: user.leadprimeHandle,
     source: "owlfenc",
     auto_sync: true,
   });
@@ -174,14 +213,17 @@ router.post("/sync-document", async (req: Request, res: Response) => {
     return res.status(500).json({ error: "Failed to sync to LeadPrime" });
   }
 
-  // Update sync count
-  const existing = connectionStore.get(uid);
-  if (existing) {
-    connectionStore.set(uid, {
-      ...existing,
-      lastSync: new Date().toISOString(),
-      syncedDocs: existing.syncedDocs + 1,
-    });
+  // Update sync count and lastSync in DB
+  if (db) {
+    try {
+      await db
+        .update(users)
+        .set({
+          leadprimeSyncedDocs: (user.leadprimeSyncedDocs || 0) + 1,
+          leadprimeLastSync: new Date(),
+        })
+        .where(eq(users.firebaseUid, uid));
+    } catch {}
   }
 
   return res.json({ synced: true, doc_reference: payload.doc_reference });
@@ -192,17 +234,19 @@ router.post("/send-document", async (req: Request, res: Response) => {
   const uid = getFirebaseUid(req);
   if (!uid) return res.status(401).json({ error: "Unauthorized" });
 
-  const conn = connectionStore.get(uid);
-  if (!conn) return res.status(400).json({ error: "Not connected to LeadPrime Network" });
+  const user = await getUserByUid(uid);
+  if (!user || !user.leadprimeToken) {
+    return res.status(400).json({ error: "Not connected to LeadPrime Network" });
+  }
 
   const { recipient_handle, ...docPayload } = req.body;
   if (!recipient_handle) {
     return res.status(400).json({ error: "recipient_handle is required" });
   }
 
-  const result = await callLeadPrime("POST", "/network/documents/receive", conn.token, {
+  const result = await callLeadPrime("POST", "/network/documents/receive", user.leadprimeToken, {
     ...docPayload,
-    sender_handle: conn.handle,
+    sender_handle: user.leadprimeHandle,
     recipient_handle,
     source: "owlfenc",
     auto_sync: false,
@@ -222,8 +266,10 @@ router.get("/validate-handle/:handle", async (req: Request, res: Response) => {
   const uid = getFirebaseUid(req);
   if (!uid) return res.status(401).json({ error: "Unauthorized" });
 
-  const conn = connectionStore.get(uid);
-  if (!conn) return res.status(400).json({ error: "Not connected to LeadPrime Network" });
+  const user = await getUserByUid(uid);
+  if (!user || !user.leadprimeToken) {
+    return res.status(400).json({ error: "Not connected to LeadPrime Network" });
+  }
 
   const { handle } = req.params;
   if (!handle || handle.length < 3) {
@@ -233,7 +279,7 @@ router.get("/validate-handle/:handle", async (req: Request, res: Response) => {
   const result = await callLeadPrime(
     "GET",
     `/network/validate-handle/${encodeURIComponent(handle)}`,
-    conn.token
+    user.leadprimeToken
   );
 
   if (!result.ok) return res.json({ exists: false });
@@ -242,20 +288,18 @@ router.get("/validate-handle/:handle", async (req: Request, res: Response) => {
 
 // ─── Background sync helper ───────────────────────────────────────────────────
 async function triggerInitialSync(uid: string, token: string): Promise<number> {
-  // In a real implementation, this would query the Owl Fenc DB for the user's
-  // documents and send them all to LeadPrime. For now, it triggers a sync
-  // request and LeadPrime pulls the data.
   const result = await callLeadPrime("POST", "/network/documents/request-sync", token, {
     source: "owlfenc",
     uid,
   });
 
-  const conn = connectionStore.get(uid);
-  if (conn) {
-    connectionStore.set(uid, {
-      ...conn,
-      lastSync: new Date().toISOString(),
-    });
+  if (db) {
+    try {
+      await db
+        .update(users)
+        .set({ leadprimeLastSync: new Date() })
+        .where(eq(users.firebaseUid, uid));
+    } catch {}
   }
 
   return result.data?.synced || 0;
