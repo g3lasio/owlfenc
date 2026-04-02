@@ -45,7 +45,7 @@ async function callLeadPrime(
       method,
       headers: {
         "Content-Type": "application/json",
-        "X-LeadPrime-Token": token,
+        "Authorization": `Bearer ${token}`,
         "X-Source": "owlfenc",
       },
       body: body ? JSON.stringify(body) : undefined,
