@@ -361,8 +361,12 @@ async function triggerFullSync(
         doc_title: `Estimate #${e.estimateNumber || doc.id} — ${e.clientName || "Client"}`,
         doc_reference: e.estimateNumber || doc.id,
         external_id: `owlfenc_estimate_${doc.id}`,
+        // Project grouping fields
+        owlfenc_project_id: doc.id,           // Firebase estimate doc ID — the root of a project
+        client_email: e.clientEmail || null,
+        client_name: e.clientName || null,
         project_address: e.projectAddress || e.clientAddress || null,
-        project_name: e.projectType || null,
+        project_name: e.projectType || e.projectSubtype || null,
         amount: e.total ? parseFloat(String(e.total)) : null,
         currency: "USD",
         status: e.status || "sent",
@@ -381,7 +385,7 @@ async function triggerFullSync(
   if (pool) {
     try {
       const invResult = await pool.query(
-        `SELECT pp.id, pp.invoice_number, pp.client_name, pp.amount, pp.status, pp.created_at,
+        `SELECT pp.id, pp.invoice_number, pp.client_name, pp.client_email, pp.amount, pp.status, pp.created_at,
                 pp.firebase_project_id
          FROM project_payments pp
          JOIN users u ON u.id = pp.user_id
@@ -399,6 +403,10 @@ async function triggerFullSync(
           doc_title: `Invoice #${inv.invoice_number} — ${inv.client_name || "Client"}`,
           doc_reference: inv.invoice_number,
           external_id: `owlfenc_invoice_${inv.id}`,
+          // Project grouping: firebase_project_id links invoice to its parent estimate
+          owlfenc_project_id: inv.firebase_project_id || null,
+          client_name: inv.client_name || null,
+          client_email: inv.client_email || null,
           amount: amountDollars,
           currency: "USD",
           status: inv.status === 'succeeded' ? 'paid' : (inv.status || "pending"),
@@ -415,7 +423,7 @@ async function triggerFullSync(
   if (pool) {
     try {
       const ctrResult = await pool.query(
-        `SELECT id, contract_id, client_name, client_address, total_amount, status, created_at, permanent_pdf_url
+        `SELECT id, contract_id, client_name, client_email, client_address, total_amount, status, created_at, permanent_pdf_url
          FROM digital_contracts
          WHERE user_id = $1
          ORDER BY created_at DESC
@@ -428,6 +436,9 @@ async function triggerFullSync(
           doc_title: `Contract — ${ctr.client_name || "Client"}`,
           doc_reference: ctr.contract_id || ctr.id,
           external_id: `owlfenc_contract_${ctr.id}`,
+          // Project grouping: match by client_email + project_address
+          client_email: ctr.client_email || null,
+          client_name: ctr.client_name || null,
           project_address: ctr.client_address || null,
           amount: ctr.total_amount ? parseFloat(ctr.total_amount) : null,
           currency: "USD",
@@ -460,6 +471,9 @@ async function triggerFullSync(
         doc_title: `Permit Search — ${p.query || p.address || p.city || "Search"}`,
         doc_reference: doc.id,
         external_id: `owlfenc_permit_${doc.id}`,
+        // Project grouping: match by address
+        client_email: p.clientEmail || null,
+        client_name: p.clientName || null,
         project_address: p.address ? `${p.address}${p.city ? ", " + p.city : ""}${p.state ? ", " + p.state : ""}` : null,
         project_name: p.permitType || p.projectType || null,
         status: p.status || "completed",
@@ -489,6 +503,9 @@ async function triggerFullSync(
         doc_title: `Property Research — ${p.address || "Address"}`,
         doc_reference: doc.id,
         external_id: `owlfenc_property_${doc.id}`,
+        // Project grouping: match by address
+        client_email: p.clientEmail || null,
+        client_name: p.ownerName || null,
         project_address: p.address ? `${p.address}${p.city ? ", " + p.city : ""}${p.state ? ", " + p.state : ""}` : null,
         project_name: p.ownerName ? `Owner: ${p.ownerName}` : null,
         status: p.status || "completed",
