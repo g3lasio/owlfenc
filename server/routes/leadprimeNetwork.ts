@@ -5,7 +5,7 @@
  * - GET  /api/leadprime-network/connection          → get connection status (from DB)
  * - POST /api/leadprime-network/connect             → link account with API token
  * - DELETE /api/leadprime-network/connection        → unlink account
- * - POST /api/leadprime-network/sync                → manual sync all docs
+ * - POST /api/leadprime-network/sync                → manual sync all docs (REAL DATA)
  * - POST /api/leadprime-network/sync-document       → sync single document
  * - POST /api/leadprime-network/send-document       → send doc to specific @handle
  * - GET  /api/leadprime-network/sync-status         → get sync stats
@@ -13,11 +13,14 @@
  *
  * FIX: Connection state is now persisted in the users table (leadprime_token column)
  *      instead of in-memory Map — survives server restarts.
+ * FIX v2: triggerInitialSync now reads REAL data from Firestore + PostgreSQL and
+ *         pushes it to LeadPrime via POST /api/leadprime-network/history.
  */
 import { Router, Request, Response } from "express";
-import { db } from "../db";
+import { db, pool } from "../db";
 import { users } from "@shared/schema";
 import { eq } from "drizzle-orm";
+import { db as firebaseDb } from "../firebase-admin";
 
 const router = Router();
 
@@ -25,7 +28,6 @@ const router = Router();
 const LEADPRIME_API = process.env.LEADPRIME_API_URL || "https://leadprime.chyrris.com/api";
 
 // ─── Auth middleware (Firebase UID from request) ──────────────────────────────
-// Uses req.firebaseUser.uid — set by verifyFirebaseAuth middleware (firebase-auth.ts)
 function getFirebaseUid(req: Request): string | null {
   return (req as any).firebaseUser?.uid ||
          (req as any).user?.uid ||
@@ -99,7 +101,6 @@ router.post("/connect", async (req: Request, res: Response) => {
   }
 
   // Validate token with LeadPrime via the public owlfencBridge endpoint
-  // POST /api/leadprime-network/connection — no JWT required, uses Bearer lpn_ token
   const validation = await callLeadPrime("POST", "/leadprime-network/connection", token);
   if (!validation.ok) {
     return res.status(400).json({
@@ -108,7 +109,8 @@ router.post("/connect", async (req: Request, res: Response) => {
     });
   }
 
-  const handle = validation.data?.handle || validation.data?.network_handle || null;
+  const handle = validation.data?.handle || validation.data?.network_handle ||
+                 validation.data?.contractor?.handle || null;
 
   // Persist to DB
   if (db) {
@@ -125,12 +127,11 @@ router.post("/connect", async (req: Request, res: Response) => {
         .where(eq(users.firebaseUid, uid));
     } catch (err) {
       console.error("[LEADPRIME-NETWORK] Failed to persist token to DB:", err);
-      // Non-fatal — still return success
     }
   }
 
-  // Trigger initial sync in background
-  triggerInitialSync(uid, token).catch(console.error);
+  // Trigger initial sync in background — now pushes REAL data
+  triggerFullSync(uid, token).catch(console.error);
 
   return res.json({ connected: true, handle });
 });
@@ -170,12 +171,20 @@ router.get("/sync-status", async (req: Request, res: Response) => {
     return res.status(400).json({ error: "Not connected to LeadPrime Network" });
   }
 
-  const result = await callLeadPrime("GET", "/network/documents/sync-status", user.leadprimeToken);
+  const result = await callLeadPrime("GET", "/leadprime-network/status", user.leadprimeToken);
   if (!result.ok) {
-    return res.json({ estimates: 0, invoices: 0, contracts: 0, permits: 0, lastSyncAt: null });
+    return res.json({
+      estimates: 0, invoices: 0, contracts: 0, permits: 0,
+      lastSyncAt: user.leadprimeLastSync || null,
+      syncedDocs: user.leadprimeSyncedDocs || 0,
+    });
   }
 
-  return res.json(result.data);
+  return res.json({
+    ...result.data,
+    lastSyncAt: user.leadprimeLastSync || null,
+    syncedDocs: user.leadprimeSyncedDocs || 0,
+  });
 });
 
 // ─── POST /sync (manual full sync) ───────────────────────────────────────────
@@ -188,8 +197,19 @@ router.post("/sync", async (req: Request, res: Response) => {
     return res.status(400).json({ error: "Not connected to LeadPrime" });
   }
 
-  const synced = await triggerInitialSync(uid, user.leadprimeToken);
-  return res.json({ synced });
+  try {
+    const result = await triggerFullSync(uid, user.leadprimeToken);
+    return res.json({
+      success: true,
+      imported: result.imported,
+      skipped: result.skipped,
+      total: result.total,
+      breakdown: result.breakdown,
+    });
+  } catch (err: any) {
+    console.error("[LEADPRIME-NETWORK] Sync error:", err.message);
+    return res.status(500).json({ error: "Sync failed", detail: err.message });
+  }
 });
 
 // ─── POST /sync-document (auto-sync single doc) ───────────────────────────────
@@ -207,11 +227,20 @@ router.post("/sync-document", async (req: Request, res: Response) => {
     return res.status(400).json({ error: "doc_type and doc_reference are required" });
   }
 
-  const result = await callLeadPrime("POST", "/network/documents/receive", user.leadprimeToken, {
-    ...payload,
-    sender_handle: user.leadprimeHandle,
-    source: "owlfenc",
-    auto_sync: true,
+  // Single doc push via /history endpoint (no recipient needed for own records)
+  const result = await callLeadPrime("POST", "/leadprime-network/history", user.leadprimeToken, {
+    documents: [{
+      doc_type: payload.doc_type,
+      doc_title: payload.doc_title || payload.doc_reference,
+      doc_reference: payload.doc_reference,
+      external_id: payload.external_id || payload.doc_reference,
+      project_address: payload.project_address,
+      amount: payload.amount,
+      currency: payload.currency || "USD",
+      doc_url: payload.doc_url,
+      status: payload.status || "pending",
+      created_at: payload.created_at,
+    }],
   });
 
   if (!result.ok) {
@@ -249,12 +278,10 @@ router.post("/send-document", async (req: Request, res: Response) => {
     return res.status(400).json({ error: "recipient_handle is required" });
   }
 
-  const result = await callLeadPrime("POST", "/network/documents/receive", user.leadprimeToken, {
+  const result = await callLeadPrime("POST", "/leadprime-network/documents/push", user.leadprimeToken, {
     ...docPayload,
-    sender_handle: user.leadprimeHandle,
     recipient_handle,
     source: "owlfenc",
-    auto_sync: false,
   });
 
   if (!result.ok) {
@@ -291,23 +318,221 @@ router.get("/validate-handle/:handle", async (req: Request, res: Response) => {
   return res.json(result.data);
 });
 
-// ─── Background sync helper ───────────────────────────────────────────────────
-async function triggerInitialSync(uid: string, token: string): Promise<number> {
-  const result = await callLeadPrime("POST", "/network/documents/request-sync", token, {
-    source: "owlfenc",
-    uid,
-  });
+// ─── Full sync: reads ALL data from OWL FENC and pushes to LeadPrime ──────────
+/**
+ * Reads estimates (Firebase), invoices (PostgreSQL), contracts (PostgreSQL),
+ * permit searches (Firebase), and property searches (Firebase) for the given
+ * Firebase UID, then bulk-pushes them all to LeadPrime via /history endpoint.
+ *
+ * Uses the owlfencBridge /history endpoint which accepts documents WITHOUT
+ * a recipient_handle — they are stored as the sender's own historical records.
+ */
+async function triggerFullSync(
+  uid: string,
+  token: string
+): Promise<{ imported: number; skipped: number; total: number; breakdown: Record<string, number> }> {
+  const documents: any[] = [];
+  const breakdown: Record<string, number> = {
+    estimates: 0,
+    invoices: 0,
+    contracts: 0,
+    permits: 0,
+    properties: 0,
+  };
 
+  // ── 1. Estimates from Firebase ────────────────────────────────────────────
+  try {
+    const estimatesSnap = await firebaseDb
+      .collection("estimates")
+      .where("userId", "==", uid)
+      .orderBy("createdAt", "desc")
+      .limit(500)
+      .get();
+
+    for (const doc of estimatesSnap.docs) {
+      const e = doc.data();
+      documents.push({
+        doc_type: "estimate",
+        doc_title: `Estimate #${e.estimateNumber || doc.id} — ${e.clientName || "Client"}`,
+        doc_reference: e.estimateNumber || doc.id,
+        external_id: `owlfenc_estimate_${doc.id}`,
+        project_address: e.projectAddress || e.clientAddress || null,
+        project_name: e.projectType || null,
+        amount: e.total ? parseFloat(String(e.total)) : null,
+        currency: "USD",
+        status: e.status || "sent",
+        created_at: e.createdAt?.toDate ? e.createdAt.toDate().toISOString() : (e.createdAt || null),
+      });
+      breakdown.estimates++;
+    }
+  } catch (err: any) {
+    console.warn("[LEADPRIME-SYNC] Could not read estimates from Firebase:", err.message);
+  }
+
+  // ── 2. Invoices from PostgreSQL ───────────────────────────────────────────
+  if (pool) {
+    try {
+      const invResult = await pool.query(
+        `SELECT id, invoice_number, client_name, client_address, total_amount, status, created_at
+         FROM invoices
+         WHERE user_id = $1
+         ORDER BY created_at DESC
+         LIMIT 500`,
+        [uid]
+      );
+      for (const inv of invResult.rows) {
+        documents.push({
+          doc_type: "invoice",
+          doc_title: `Invoice #${inv.invoice_number} — ${inv.client_name || "Client"}`,
+          doc_reference: inv.invoice_number,
+          external_id: `owlfenc_invoice_${inv.id}`,
+          project_address: inv.client_address || null,
+          amount: inv.total_amount ? parseFloat(inv.total_amount) : null,
+          currency: "USD",
+          status: inv.status || "pending",
+          created_at: inv.created_at ? new Date(inv.created_at).toISOString() : null,
+        });
+        breakdown.invoices++;
+      }
+    } catch (err: any) {
+      console.warn("[LEADPRIME-SYNC] Could not read invoices from PostgreSQL:", err.message);
+    }
+  }
+
+  // ── 3. Digital Contracts from PostgreSQL ─────────────────────────────────
+  if (pool) {
+    try {
+      const ctrResult = await pool.query(
+        `SELECT id, contract_id, client_name, client_address, total_amount, status, created_at, permanent_pdf_url
+         FROM digital_contracts
+         WHERE user_id = $1
+         ORDER BY created_at DESC
+         LIMIT 500`,
+        [uid]
+      );
+      for (const ctr of ctrResult.rows) {
+        documents.push({
+          doc_type: "contract",
+          doc_title: `Contract — ${ctr.client_name || "Client"}`,
+          doc_reference: ctr.contract_id || ctr.id,
+          external_id: `owlfenc_contract_${ctr.id}`,
+          project_address: ctr.client_address || null,
+          amount: ctr.total_amount ? parseFloat(ctr.total_amount) : null,
+          currency: "USD",
+          doc_url: ctr.permanent_pdf_url || null,
+          status: ctr.status || "pending",
+          created_at: ctr.created_at ? new Date(ctr.created_at).toISOString() : null,
+        });
+        breakdown.contracts++;
+      }
+    } catch (err: any) {
+      console.warn("[LEADPRIME-SYNC] Could not read contracts from PostgreSQL:", err.message);
+    }
+  }
+
+  // ── 4. Permit searches from Firebase ─────────────────────────────────────
+  try {
+    const permitsSnap = await firebaseDb
+      .collection("searches/permits/history")
+      .where("userId", "==", uid)
+      .orderBy("createdAt", "desc")
+      .limit(200)
+      .get();
+
+    for (const doc of permitsSnap.docs) {
+      const p = doc.data();
+      documents.push({
+        doc_type: "permit",
+        doc_title: `Permit Search — ${p.query || p.address || p.city || "Search"}`,
+        doc_reference: doc.id,
+        external_id: `owlfenc_permit_${doc.id}`,
+        project_address: p.address ? `${p.address}${p.city ? ", " + p.city : ""}${p.state ? ", " + p.state : ""}` : null,
+        project_name: p.permitType || p.projectType || null,
+        status: p.status || "completed",
+        created_at: p.createdAt?.toDate ? p.createdAt.toDate().toISOString() : (p.createdAt || null),
+      });
+      breakdown.permits++;
+    }
+  } catch (err: any) {
+    console.warn("[LEADPRIME-SYNC] Could not read permit searches from Firebase:", err.message);
+  }
+
+  // ── 5. Property searches from Firebase ───────────────────────────────────
+  try {
+    const propsSnap = await firebaseDb
+      .collection("searches/property/history")
+      .where("userId", "==", uid)
+      .orderBy("createdAt", "desc")
+      .limit(200)
+      .get();
+
+    for (const doc of propsSnap.docs) {
+      const p = doc.data();
+      documents.push({
+        doc_type: "ownership_report",
+        doc_title: `Property Research — ${p.address || "Address"}`,
+        doc_reference: doc.id,
+        external_id: `owlfenc_property_${doc.id}`,
+        project_address: p.address ? `${p.address}${p.city ? ", " + p.city : ""}${p.state ? ", " + p.state : ""}` : null,
+        project_name: p.ownerName ? `Owner: ${p.ownerName}` : null,
+        status: p.status || "completed",
+        created_at: p.createdAt?.toDate ? p.createdAt.toDate().toISOString() : (p.createdAt || null),
+      });
+      breakdown.properties++;
+    }
+  } catch (err: any) {
+    console.warn("[LEADPRIME-SYNC] Could not read property searches from Firebase:", err.message);
+  }
+
+  // ── Push all documents to LeadPrime in batches of 100 ────────────────────
+  let totalImported = 0;
+  let totalSkipped = 0;
+
+  if (documents.length === 0) {
+    console.log(`[LEADPRIME-SYNC] No documents found for uid ${uid}`);
+  } else {
+    const BATCH_SIZE = 100;
+    for (let i = 0; i < documents.length; i += BATCH_SIZE) {
+      const batch = documents.slice(i, i + BATCH_SIZE);
+      try {
+        const result = await callLeadPrime("POST", "/leadprime-network/history", token, {
+          documents: batch,
+        });
+        if (result.ok) {
+          totalImported += result.data?.imported || 0;
+          totalSkipped += result.data?.skipped || 0;
+        } else {
+          console.error(`[LEADPRIME-SYNC] Batch ${i / BATCH_SIZE + 1} failed:`, result.data);
+          totalSkipped += batch.length;
+        }
+      } catch (err: any) {
+        console.error(`[LEADPRIME-SYNC] Batch ${i / BATCH_SIZE + 1} error:`, err.message);
+        totalSkipped += batch.length;
+      }
+    }
+  }
+
+  // ── Update user's sync stats in DB ────────────────────────────────────────
   if (db) {
     try {
       await db
         .update(users)
-        .set({ leadprimeLastSync: new Date() })
+        .set({
+          leadprimeSyncedDocs: totalImported,
+          leadprimeLastSync: new Date(),
+        })
         .where(eq(users.firebaseUid, uid));
     } catch {}
   }
 
-  return result.data?.synced || 0;
+  console.log(`[LEADPRIME-SYNC] uid=${uid} total=${documents.length} imported=${totalImported} skipped=${totalSkipped}`, breakdown);
+
+  return {
+    imported: totalImported,
+    skipped: totalSkipped,
+    total: documents.length,
+    breakdown,
+  };
 }
 
 export default router;
