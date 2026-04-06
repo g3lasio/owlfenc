@@ -320,12 +320,17 @@ router.get("/validate-handle/:handle", async (req: Request, res: Response) => {
 
 // ─── Full sync: reads ALL data from OWL FENC and pushes to LeadPrime ──────────
 /**
- * Reads estimates (Firebase), invoices (PostgreSQL), contracts (PostgreSQL),
- * permit searches (Firebase), and property searches (Firebase) for the given
+ * Reads estimates (Firebase), invoices/payments (PostgreSQL via project_payments),
+ * contracts (PostgreSQL), permit searches (Firebase permit_searches collection),
+ * and property searches (Firebase property_searches collection) for the given
  * Firebase UID, then bulk-pushes them all to LeadPrime via /history endpoint.
  *
- * Uses the owlfencBridge /history endpoint which accepts documents WITHOUT
- * a recipient_handle — they are stored as the sender's own historical records.
+ * FIX v3:
+ * - invoices: uses project_payments table (invoices table doesn't exist in production)
+ * - permits: uses Firebase 'permit_searches' collection (has index, not subcollection path)
+ * - properties: uses Firebase 'property_searches' collection (has index, not subcollection path)
+ * - ownership_report type: changed to 'other' to pass LeadPrime's doc_type constraint
+ *   (until migration 090 is applied in production)
  */
 async function triggerFullSync(
   uid: string,
@@ -369,27 +374,34 @@ async function triggerFullSync(
     console.warn("[LEADPRIME-SYNC] Could not read estimates from Firebase:", err.message);
   }
 
-  // ── 2. Invoices from PostgreSQL ───────────────────────────────────────────
+  // ── 2. Invoices from PostgreSQL (via project_payments — the real invoice table) ──
+  // NOTE: The 'invoices' table in schema.ts was never migrated to production.
+  //       OWL FENC stores payment/invoice records in 'project_payments' instead.
+  //       We need to join with users to get the integer userId from firebaseUid.
   if (pool) {
     try {
       const invResult = await pool.query(
-        `SELECT id, invoice_number, client_name, client_address, total_amount, status, created_at
-         FROM invoices
-         WHERE user_id = $1
-         ORDER BY created_at DESC
+        `SELECT pp.id, pp.invoice_number, pp.client_name, pp.amount, pp.status, pp.created_at,
+                pp.firebase_project_id
+         FROM project_payments pp
+         JOIN users u ON u.id = pp.user_id
+         WHERE u.firebase_uid = $1
+           AND pp.invoice_number IS NOT NULL
+         ORDER BY pp.created_at DESC
          LIMIT 500`,
         [uid]
       );
       for (const inv of invResult.rows) {
+        // Amount is stored in cents in project_payments
+        const amountDollars = inv.amount ? inv.amount / 100 : null;
         documents.push({
           doc_type: "invoice",
           doc_title: `Invoice #${inv.invoice_number} — ${inv.client_name || "Client"}`,
           doc_reference: inv.invoice_number,
           external_id: `owlfenc_invoice_${inv.id}`,
-          project_address: inv.client_address || null,
-          amount: inv.total_amount ? parseFloat(inv.total_amount) : null,
+          amount: amountDollars,
           currency: "USD",
-          status: inv.status || "pending",
+          status: inv.status === 'succeeded' ? 'paid' : (inv.status || "pending"),
           created_at: inv.created_at ? new Date(inv.created_at).toISOString() : null,
         });
         breakdown.invoices++;
@@ -431,9 +443,11 @@ async function triggerFullSync(
   }
 
   // ── 4. Permit searches from Firebase ─────────────────────────────────────
+  // FIX: Use 'permit_searches' collection (has composite index) instead of
+  //      'searches/permits/history' subcollection path (no index, causes FAILED_PRECONDITION)
   try {
     const permitsSnap = await firebaseDb
-      .collection("searches/permits/history")
+      .collection("permit_searches")
       .where("userId", "==", uid)
       .orderBy("createdAt", "desc")
       .limit(200)
@@ -458,9 +472,11 @@ async function triggerFullSync(
   }
 
   // ── 5. Property searches from Firebase ───────────────────────────────────
+  // FIX: Use 'property_searches' collection (has composite index) instead of
+  //      'searches/property/history' subcollection path (no index, causes FAILED_PRECONDITION)
   try {
     const propsSnap = await firebaseDb
-      .collection("searches/property/history")
+      .collection("property_searches")
       .where("userId", "==", uid)
       .orderBy("createdAt", "desc")
       .limit(200)
@@ -469,7 +485,7 @@ async function triggerFullSync(
     for (const doc of propsSnap.docs) {
       const p = doc.data();
       documents.push({
-        doc_type: "ownership_report",
+        doc_type: "other",  // ownership_report — using 'other' until migration 090 is applied in LeadPrime
         doc_title: `Property Research — ${p.address || "Address"}`,
         doc_reference: doc.id,
         external_id: `owlfenc_property_${doc.id}`,
