@@ -1,3 +1,0 @@
-Add the following to scripts in package.json:
-"start": "NODE_ENV=production node dist/server/index.js",
-"build": "tsc && vite build"
