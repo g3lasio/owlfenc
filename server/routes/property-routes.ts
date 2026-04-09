@@ -1,5 +1,5 @@
 import { Express, Request, Response } from "express";
-import { propertyService } from "../services/propertyService";
+import { secureAttomService } from "../services/secure-attom-service"; // Direct ATTOM API
 import { verifyFirebaseAuth as requireAuth } from "../middleware/firebase-auth";
 import { getSecureUserId } from "../utils/secureUserHelper";
 import { firebaseSearchService } from "../services/firebaseSearchService";
@@ -9,6 +9,9 @@ import { requireCredits, deductFeatureCredits } from "../middleware/credit-check
 /**
  * Esta función registra las rutas relacionadas con la obtención
  * de información de propiedades inmobiliarias
+ * 
+ * FIX: Migrado de attom-wrapper.replit.app (caído) a llamada directa a ATTOM API
+ * usando secure-attom-service con ATTOM_API_KEY
  */
 export function registerPropertyRoutes(app: Express): void {
   // Endpoint para obtener detalles de una propiedad por dirección
@@ -27,61 +30,54 @@ export function registerPropertyRoutes(app: Express): void {
     console.log('Solicitando datos de propiedad para dirección:', address);
     
     try {
-      let result: any;
       const startTime = Date.now();
-      
-      // Si se solicita explícitamente usar datos simulados o estamos en modo desarrollo
-      if (useMock || process.env.NODE_ENV === 'development') {
+      let propertyData: any = null;
+      let source = 'ATTOM';
+
+      // Si se solicita explícitamente usar datos simulados
+      if (useMock) {
         console.log('Usando servicio de propiedad simulado para:', address);
-        // Importar dinámicamente para evitar dependencia circular
         const { mockPropertyService } = await import('../services/mockPropertyService');
-        result = await mockPropertyService.getPropertyDetailsWithDiagnostics(address);
+        const mockResult = await mockPropertyService.getPropertyDetailsWithDiagnostics(address);
+        propertyData = mockResult.data;
+        source = 'SIMULADO';
       } else {
-        console.log('Iniciando solicitud al wrapper de ATTOM API...');
-        // Usar el nuevo método con diagnósticos para obtener información más detallada
+        // Intentar con ATTOM API directa (secure-attom-service)
+        console.log('Iniciando solicitud directa a ATTOM API...');
         try {
-          result = await propertyService.getPropertyDetailsWithDiagnostics(address);
-        } catch (apiError) {
-          console.log('Error en servicio principal, recurriendo al servicio simulado');
-          // Si el servicio principal falla, usar el servicio simulado como respaldo
+          propertyData = await secureAttomService.getPropertyDetails(address);
+          console.log('✅ ATTOM API respondió correctamente');
+        } catch (attomError: any) {
+          console.error('⚠️ ATTOM API falló:', attomError.message);
+          // Fallback: usar datos simulados si ATTOM falla
+          console.log('Recurriendo al servicio simulado como respaldo...');
           const { mockPropertyService } = await import('../services/mockPropertyService');
-          result = await mockPropertyService.getPropertyDetailsWithDiagnostics(address);
+          const mockResult = await mockPropertyService.getPropertyDetailsWithDiagnostics(address);
+          propertyData = mockResult.data;
+          source = 'SIMULADO (respaldo)';
         }
       }
-      
+
       const endTime = Date.now();
-      
-      console.log(`Solicitud completada en ${endTime - startTime}ms con estado: ${result.status || 'SUCCESS'}`);
-      
-      // Incluir información diagnóstica en logs para depuración
-      console.log(`Diagnóstico de la solicitud: ${JSON.stringify({
-        status: result.status || 'SUCCESS',
-        parsedAddress: result.diagnostics?.parsedAddress || 'disponible',
-        errorType: result.error?.type,
-        processingTime: endTime - startTime
-      })}`);
-      
-      if (result.status === 'ERROR') {
-        console.log('Error en la solicitud:', result.error);
+      console.log(`Solicitud completada en ${endTime - startTime}ms, fuente: ${source}`);
+
+      if (!propertyData) {
         return res.status(404).json({
           message: 'No se encontró información para la dirección proporcionada'
         });
       }
-      
-      // Preparar respuesta para el cliente
+
       const response = {
-        property: result.data || result.property, // Compatibilidad con ambos formatos de respuesta
-        source: result.diagnostics?.source === 'mock_data' ? 'SIMULADO' : 'ATTOM'
+        property: propertyData,
+        source
       };
-      
-      // 🔥 INTEGRACIÓN COMPLETA: Guardar en historial E incrementar contador
-      // Esto asegura que tanto búsquedas manuales como de Mervin se registren igual
+
+      // 🔥 Guardar en historial E incrementar contador
       try {
         const userId = req.firebaseUser?.uid;
         if (userId && response.property) {
           console.log('💾 [PROPERTY-HISTORY] Guardando búsqueda en historial para usuario:', userId);
           
-          // 1️⃣ GUARDAR EN HISTORIAL DE FIREBASE
           await firebaseSearchService.createPropertySearch({
             userId,
             searchType: 'property',
@@ -94,15 +90,13 @@ export function registerPropertyRoutes(app: Express): void {
             lotSize: response.property.lotSize,
             propertyType: response.property.propertyType,
             searchResults: response.property,
-            searchProvider: result.diagnostics?.source === 'mock_data' ? 'MOCK' : 'ATTOM',
+            searchProvider: source.includes('SIMULADO') ? 'MOCK' : 'ATTOM',
             status: 'completed'
           });
           
           console.log('✅ [PROPERTY-HISTORY] Búsqueda guardada exitosamente en historial');
           
-          // 2️⃣ INCREMENTAR CONTADOR DE USO (Firebase Firestore)
           await productionUsageService.consumeFeature(userId, 'propertyVerifications');
-          
           console.log('✅ [PROPERTY-USAGE] Contador incrementado: propertyVerifications +1');
         }
       } catch (historyError) {
@@ -110,10 +104,10 @@ export function registerPropertyRoutes(app: Express): void {
         console.error('⚠️ [PROPERTY-HISTORY] Error guardando historial o incrementando contador:', historyError);
       }
       
-      // 💳 Deduct credits AFTER successful ATTOM response
+      // 💳 Deduct credits AFTER successful response
       try {
         await deductFeatureCredits(req, address, 'Property verification details');
-        console.log('✅ [PROPERTY-CREDITS] 15 credits deducted for propertyVerification');
+        console.log('✅ [PROPERTY-CREDITS] Credits deducted for propertyVerification');
       } catch (creditErr) {
         console.error('⚠️ [PROPERTY-CREDITS] Failed to deduct credits:', creditErr);
       }
@@ -121,22 +115,12 @@ export function registerPropertyRoutes(app: Express): void {
       console.log('===== FIN DE SOLICITUD DE DETALLES DE PROPIEDAD =====');
       return res.json(response);
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al obtener detalles de propiedad:', error);
-      // Usar servicio simulado como último recurso
-      try {
-        const { mockPropertyService } = await import('../services/mockPropertyService');
-        const mockResult = await mockPropertyService.getPropertyDetailsWithDiagnostics(address);
-        
-        return res.json({
-          property: mockResult.data,
-          source: 'SIMULADO (respaldo)'
-        });
-      } catch (fallbackError) {
-        return res.status(500).json({
-          message: 'Error interno al procesar la solicitud de detalles de propiedad'
-        });
-      }
+      return res.status(500).json({
+        message: 'Error interno al procesar la solicitud de detalles de propiedad',
+        detail: error.message
+      });
     }
   });
 }
