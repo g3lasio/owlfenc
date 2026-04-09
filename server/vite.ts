@@ -90,18 +90,36 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  const distPath = path.resolve(import.meta.dirname, "public");
+  // In production, client build outputs to dist/public (as per vite.config.ts)
+  // We use process.cwd() to ensure we're looking in the right place relative to the project root
+  const distPath = path.resolve(process.cwd(), "dist", "public");
+
+  log(`🔧 Setting up static file serving from: ${distPath}`);
 
   if (!fs.existsSync(distPath)) {
-    throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`,
-    );
+    log(`⚠️ Could not find the build directory: ${distPath}`, "express");
+    // Fallback to "public" relative to this file (legacy behavior)
+    const altPath = path.resolve(import.meta.dirname, "public");
+    if (fs.existsSync(altPath)) {
+      log(`✅ Found alternative build directory: ${altPath}`);
+      app.use(express.static(altPath));
+      app.use("*", (_req, res) => {
+        res.sendFile(path.resolve(altPath, "index.html"));
+      });
+      return;
+    }
+    log(`❌ No static build directory found. App may fail to serve frontend.`, "express");
   }
 
   app.use(express.static(distPath));
 
-  // fall through to index.html if the file doesn't exist
+  // fall through to index.html if the file doesn't exist (SPA fallback)
   app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
+    const indexPath = path.resolve(distPath, "index.html");
+    if (fs.existsSync(indexPath)) {
+      res.sendFile(indexPath);
+    } else {
+      res.status(404).send("Frontend build files missing. Please run 'npm run build' first.");
+    }
   });
 }
