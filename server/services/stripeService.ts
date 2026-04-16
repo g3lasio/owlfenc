@@ -27,7 +27,7 @@ interface SubscriptionCheckoutOptions {
   billingCycle: "monthly" | "yearly";
   successUrl: string;
   cancelUrl: string;
-  couponCode?: string; // Optional partnership/agency discount coupon (Master Contractor only)
+  couponCode?: string; // Optional partnership/agency discount coupon (Mero Patrón + Master Contractor)
 }
 
 interface ManageSubscriptionOptions {
@@ -263,10 +263,13 @@ class StripeService {
         // El sistema de créditos (wallet) maneja el onboarding con créditos de bienvenida
 
         // 🎟️ PARTNERSHIP DISCOUNT: Dynamic Stripe coupon validation
-        // Looks up the coupon by ID, exact name, or partial name match in Stripe.
+        // Supports both Mero Patrón (planId 9) and Master Contractor (planId 6).
+        // Respects the 'appliesTo' metadata field set in the admin dashboard.
         // Any coupon created in Stripe (or via the admin dashboard) works automatically.
-        if (options.couponCode && options.planId === 6) {
+        const PAID_PLAN_IDS = [6, 9]; // Master Contractor, Mero Patrón
+        if (options.couponCode && PAID_PLAN_IDS.includes(options.planId)) {
           const normalizedCode = options.couponCode.trim().toUpperCase();
+          const currentPlanName = options.planId === 6 ? 'Master Contractor' : 'Mero Patron';
           try {
             const coupons = await stripe.coupons.list({ limit: 100 });
             
@@ -290,8 +293,26 @@ class StripeService {
             }
 
             if (matchedCoupon && matchedCoupon.valid) {
-              console.log(`[CHECKOUT] ✅ Partner coupon applied: "${normalizedCode}" → Stripe ID: "${matchedCoupon.id}" (${matchedCoupon.percent_off}% off)`);
-              sessionConfig.discounts = [{ coupon: matchedCoupon.id }];
+              // Check if coupon is restricted to a specific plan via appliesTo metadata
+              const appliesTo = (matchedCoupon.metadata as any)?.appliesTo;
+              const planAllowed =
+                !appliesTo ||
+                appliesTo === 'All Plans' ||
+                (appliesTo === 'Master Contractor' && options.planId === 6) ||
+                (appliesTo === 'Mero Patron' && options.planId === 9) ||
+                (appliesTo === 'Mero Patrón' && options.planId === 9);
+
+              if (planAllowed) {
+                const discountDisplay = matchedCoupon.percent_off
+                  ? `${matchedCoupon.percent_off}% off`
+                  : `$${((matchedCoupon.amount_off || 0) / 100).toFixed(2)} off`;
+                console.log(`[CHECKOUT] ✅ Partner coupon applied: "${normalizedCode}" → Stripe ID: "${matchedCoupon.id}" (${discountDisplay}) for plan ${currentPlanName}`);
+                sessionConfig.discounts = [{ coupon: matchedCoupon.id }];
+                // 🔍 Store partner code in metadata for referral tracking in webhook
+                (sessionConfig.metadata as any).partnerCode = normalizedCode;
+              } else {
+                console.warn(`[CHECKOUT] ⚠️ Partner coupon "${normalizedCode}" is restricted to "${appliesTo}" — not applicable for plan "${currentPlanName}"`);
+              }
             } else if (matchedCoupon && !matchedCoupon.valid) {
               console.warn(`[CHECKOUT] ⚠️ Partner coupon "${normalizedCode}" found but is expired or depleted — not applied`);
             } else {
@@ -301,8 +322,8 @@ class StripeService {
             // Non-fatal: if coupon lookup fails, proceed with checkout without discount
             console.warn(`[CHECKOUT] ⚠️ Could not validate partner coupon "${normalizedCode}": ${couponError.message}`);
           }
-        } else if (options.couponCode && options.planId !== 6) {
-          console.warn(`[CHECKOUT] Coupon "${options.couponCode}" rejected — only valid for Master Contractor plan (planId 6)`);
+        } else if (options.couponCode && !PAID_PLAN_IDS.includes(options.planId)) {
+          console.warn(`[CHECKOUT] Coupon "${options.couponCode}" rejected — only valid for paid plans (Mero Patrón or Master Contractor)`);
         }
 
         // Create checkout session
@@ -538,6 +559,40 @@ class StripeService {
       console.log(
         `[${new Date().toISOString()}] ✅ Subscription created/updated in Firebase for user: ${userId}`,
       );
+
+      // 🔍 PARTNER REFERRAL TRACKING: Save partner code and create referral record
+      const partnerCode = session.metadata?.partnerCode;
+      if (partnerCode) {
+        try {
+          const { db: firestoreDb, admin: adminSdk } = await import('../lib/firebase-admin.js');
+          
+          // 1. Save partner_code_used on the user's profile
+          await firestoreDb.collection('users').doc(userId).set({
+            partner_code_used: partnerCode,
+            partner_code_applied_at: adminSdk.firestore.FieldValue.serverTimestamp(),
+          }, { merge: true });
+          console.log(`🔍 [PARTNER-TRACKING] Saved partner_code_used="${partnerCode}" on user ${userId}`);
+
+          // 2. Create a record in partner_referrals collection
+          const planNames: Record<number, string> = { 6: 'Master Contractor', 9: 'Mero Patrón' };
+          await firestoreDb.collection('partner_referrals').add({
+            partnerCode: partnerCode,
+            userId: userId,
+            userEmail: userEmail,
+            planId: planId,
+            planName: planNames[planId] || `Plan ${planId}`,
+            billingCycle: billingCycle,
+            stripeCustomerId: session.customer,
+            stripeSubscriptionId: session.subscription,
+            subscribedAt: adminSdk.firestore.FieldValue.serverTimestamp(),
+            commissionStatus: 'pending', // pending | paid
+          });
+          console.log(`🔍 [PARTNER-TRACKING] Created partner_referral record: partnerCode=${partnerCode}, user=${userId}, plan=${planNames[planId]}`);
+        } catch (trackingError) {
+          // Non-fatal: tracking failure should not break subscription activation
+          console.error('⚠️ [PARTNER-TRACKING] Failed to save referral record (non-fatal):', trackingError);
+        }
+      }
     } catch (error) {
       console.error(
         `[${new Date().toISOString()}] Error al manejar checkout completado:`,
