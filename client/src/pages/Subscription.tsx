@@ -17,7 +17,7 @@ export default function Subscription() {
   const [couponApplied, setCouponApplied] = useState(false);
   const [couponError, setCouponError] = useState("");
   const [couponValidating, setCouponValidating] = useState(false);
-  const [couponInfo, setCouponInfo] = useState<{ percentOff?: number | null; duration?: string } | null>(null);
+  const [couponInfo, setCouponInfo] = useState<{ percentOff?: number | null; amountOff?: number | null; duration?: string; durationInMonths?: number | null; appliesTo?: string | null } | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { currentUser } = useAuth();
@@ -200,8 +200,8 @@ export default function Subscription() {
         successUrl: window.location.origin + "/subscription?success=true&session_id={CHECKOUT_SESSION_ID}",
         cancelUrl: window.location.origin + "/subscription?canceled=true",
       };
-      // 🎟️ PARTNERSHIP DISCOUNT: Only pass coupon for Master Contractor (planId 6)
-      if (couponCode.trim() && planId === 6) {
+      // 🎟️ PARTNERSHIP DISCOUNT: Pass coupon for both paid plans (planId 6 = Master Contractor, planId 9 = Mero Patrón)
+      if (couponCode.trim() && (planId === 6 || planId === 9)) {
         params.couponCode = couponCode.trim().toUpperCase();
         console.log("🎟️ [CHECKOUT] Applying partnership coupon:", params.couponCode);
       }
@@ -626,7 +626,7 @@ export default function Subscription() {
                   motto={plan.motto}
                   isMostPopular={getIsMostPopular(plan.code)}
                   onSelectPlan={(id) => {
-                    if (plan.id === 6 && couponCode.trim() && !couponApplied) {
+                    if ((plan.id === 6 || plan.id === 9) && couponCode.trim() && !couponApplied) {
                       setCouponError("Click Apply to validate your partner code first");
                       return;
                     }
@@ -641,8 +641,8 @@ export default function Subscription() {
                   onManageSubscription={createCustomerPortal}
                   hasUsedTrial={hasUsedTrial}
                 />
-                {/* 🎟️ PARTNERSHIP DISCOUNT - Only shown below Master Contractor card */}
-                {plan.id === 6 && (
+                {/* 🎟️ PARTNERSHIP DISCOUNT - Shown below both paid plan cards (Mero Patrón and Master Contractor) */}
+                {(plan.id === 6 || plan.id === 9) && (
                   <div className="border border-border/40 rounded-xl p-4 bg-card/30 backdrop-blur-sm">
                     <div className="flex items-center gap-2 mb-2.5">
                       <Tag className="h-3.5 w-3.5 text-primary" />
@@ -693,7 +693,7 @@ export default function Subscription() {
                             const data = await res.json();
                             if (data.valid) {
                               setCouponApplied(true);
-                              setCouponInfo({ percentOff: data.percentOff, duration: data.duration });
+                              setCouponInfo({ percentOff: data.percentOff, amountOff: data.amountOff, duration: data.duration, durationInMonths: data.durationInMonths, appliesTo: data.appliesTo });
                             } else {
                               setCouponApplied(false);
                               setCouponError(data.error || 'Invalid code. Contact your agency representative.');
@@ -709,13 +709,30 @@ export default function Subscription() {
                       </Button>
                     </div>
                     {couponApplied && (
-                      <div className="flex items-center gap-1.5 mt-2 text-emerald-400 text-xs font-medium">
-                        <CheckCircle2 className="h-3 w-3" />
-                        <span>
-                          Partner discount applied —{" "}
-                          {couponInfo?.percentOff ? `${couponInfo.percentOff}% off` : 'discount applied'}
-                          {couponInfo?.duration === 'forever' ? ' forever' : ''}
-                        </span>
+                      <div className="flex flex-col gap-1 mt-2">
+                        <div className="flex items-center gap-1.5 text-emerald-400 text-xs font-medium">
+                          <CheckCircle2 className="h-3 w-3" />
+                          <span>
+                            Partner discount applied —{" "}
+                            {couponInfo?.percentOff
+                              ? `${couponInfo.percentOff}% off`
+                              : couponInfo?.amountOff
+                              ? `$${(couponInfo.amountOff / 100).toFixed(2)} off`
+                              : 'discount applied'}
+                            {couponInfo?.duration === 'forever'
+                              ? ' every billing cycle'
+                              : couponInfo?.duration === 'once'
+                              ? ' on first payment'
+                              : couponInfo?.duration === 'repeating' && couponInfo?.durationInMonths
+                              ? ` for ${couponInfo.durationInMonths} months`
+                              : ''}
+                          </span>
+                        </div>
+                        {couponInfo?.appliesTo && couponInfo.appliesTo !== 'All Plans' && (
+                          <p className="text-xs text-muted-foreground pl-4.5">
+                            Valid for: {couponInfo.appliesTo} plan only
+                          </p>
+                        )}
                       </div>
                     )}
                     {couponError && (

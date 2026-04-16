@@ -1394,7 +1394,9 @@ class StripeService {
     percentOff?: number | null;
     amountOff?: number | null;
     duration?: string;
+    durationInMonths?: number | null;
     name?: string;
+    appliesTo?: string | null;
     error?: string;
   }> {
     try {
@@ -1439,7 +1441,9 @@ class StripeService {
         percentOff: matched.percent_off,
         amountOff: matched.amount_off,
         duration: matched.duration,
+        durationInMonths: matched.duration_in_months ?? null,
         name: matched.name || matched.id,
+        appliesTo: (matched.metadata as any)?.appliesTo ?? null,
       };
     } catch (err: any) {
       console.error(`[${new Date().toISOString()}] ❌ [COUPON-VALIDATION] Error:`, err.message);
