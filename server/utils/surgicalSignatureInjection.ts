@@ -1,3 +1,4 @@
+import { launchBrowser } from './chromiumResolver';
 import * as cheerio from 'cheerio';
 
 interface SignatureData {
@@ -131,9 +132,8 @@ export async function generatePdfFromSignedHtml(
   console.log('📄 [SURGICAL] Generating PDF from signed HTML');
   
   try {
-    const puppeteer = await import('puppeteer');
-    
-    const browser = await puppeteer.launch({
+        
+    const browser = await launchBrowser({
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });

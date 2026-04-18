@@ -1,5 +1,5 @@
 
-import puppeteer from 'puppeteer';
+import { launchBrowser } from '../utils/chromiumResolver';
 import path from 'path';
 import fs from 'fs/promises';
 
@@ -104,7 +104,7 @@ export class DocumentService {
    * @returns Buffer con el contenido del PDF
    */
   async generatePdfFromHtml(html: string): Promise<Buffer> {
-    const browser = await puppeteer.launch({
+    const browser = await launchBrowser({
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
       headless: true
     });

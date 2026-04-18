@@ -1,4 +1,4 @@
-import * as puppeteer from 'puppeteer';
+import { launchBrowser } from './chromiumResolver';
 
 interface PdfOptions {
   title?: string;
@@ -19,7 +19,7 @@ export async function createPdfWithExactHtmlLayout(
   
   try {
     // Launch Puppeteer with optimal settings
-    browser = await puppeteer.launch({
+    browser = await launchBrowser({
       headless: true,
       args: [
         '--no-sandbox',

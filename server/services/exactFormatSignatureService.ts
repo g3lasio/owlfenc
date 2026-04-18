@@ -12,7 +12,7 @@
  */
 
 import * as cheerio from 'cheerio';
-import puppeteer from 'puppeteer';
+import { launchBrowser } from '../utils/chromiumResolver';
 
 interface SignatureData {
   name: string;
@@ -151,7 +151,7 @@ export class ExactFormatSignatureService {
   static async generateExactFormatPDF(signedHTML: string): Promise<Buffer> {
     console.log('🎯 [EXACT-LAYOUT-PDF] Creating PDF that EXACTLY matches HTML preview structure');
     
-    const browser = await puppeteer.launch({
+    const browser = await launchBrowser({
       headless: true,
       args: [
         '--no-sandbox',

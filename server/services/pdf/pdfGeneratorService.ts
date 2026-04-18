@@ -5,7 +5,7 @@
  * Convierte HTML a PDF de alta calidad
  */
 
-import puppeteer from 'puppeteer';
+import { launchBrowser } from '../../utils/chromiumResolver';
 import { generatePermitReportHTML, CompanyInfo } from './permitReportGenerator';
 import fs from 'fs';
 import path from 'path';
@@ -40,9 +40,9 @@ export class PDFGeneratorService {
       console.log('🔧 [PDF-GENERATOR] Generando HTML...');
       const html = generatePermitReportHTML(params.permitData, params.companyInfo);
       
-      // 2. Lanzar Puppeteer
-      console.log('🚀 [PDF-GENERATOR] Lanzando Puppeteer...');
-      const browser = await puppeteer.launch({
+      // 2. Lanzar browser via chromiumResolver (maneja Railway/@sparticuz en producción)
+      console.log('🚀 [PDF-GENERATOR] Lanzando browser via chromiumResolver...');
+      const browser = await launchBrowser({
         headless: true,
         args: [
           '--no-sandbox',

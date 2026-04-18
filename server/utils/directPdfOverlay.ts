@@ -1,3 +1,4 @@
+import { launchBrowser } from './chromiumResolver';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import fs from 'fs/promises';
 import path from 'path';
@@ -117,9 +118,8 @@ export async function generateSignedContractWithOverlay(
     console.log('📄 [OVERLAY] Starting two-step PDF generation process');
     
     // Step 1: Generate original PDF from HTML using Puppeteer
-    const puppeteer = await import('puppeteer');
-    
-    const browser = await puppeteer.launch({
+        
+    const browser = await launchBrowser({
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });

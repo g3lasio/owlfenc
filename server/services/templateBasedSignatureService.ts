@@ -1,3 +1,4 @@
+import { launchBrowser } from '../utils/chromiumResolver';
 import fs from 'fs/promises';
 import path from 'path';
 import { PDFDocument } from 'pdf-lib';
@@ -102,9 +103,8 @@ export class TemplateBasedSignatureService {
       }
       
       // Generate PDF using Puppeteer
-      const puppeteer = await import('puppeteer');
-      
-      const browser = await puppeteer.launch({
+            
+      const browser = await launchBrowser({
         headless: true,
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
       });
