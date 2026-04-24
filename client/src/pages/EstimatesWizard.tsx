@@ -103,6 +103,15 @@ import {
   Sparkles,
   Shield,
   CheckCircle,
+  BarChart2,
+  TrendingUp,
+  TrendingDown,
+  Settings,
+  Sliders,
+  DollarSign,
+  PieChart,
+  Target,
+  Info,
 } from "lucide-react";
 import axios from "axios";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -209,6 +218,261 @@ const TEMPLATE_OPTIONS = [
     tier: "premium"
   }
 ];
+
+// ─── Profitability Dashboard Component ────────────────────────────────────────
+function ProfitabilityDashboard({ estimates, settings }: { estimates: any[], settings: any }) {
+  const totalRevenue = estimates.reduce((sum: number, e: any) => sum + (e.total || 0), 0);
+  const estimateCount = estimates.length;
+  const avgEstimate = estimateCount > 0 ? totalRevenue / estimateCount : 0;
+  const estimatedCOGS = totalRevenue / (1 + (settings.defaultMarkupPercent / 100));
+  const estimatedProfit = totalRevenue - estimatedCOGS;
+  const profitMarginPct = totalRevenue > 0 ? (estimatedProfit / totalRevenue) * 100 : 0;
+  const statusBreakdown = {
+    approved: estimates.filter((e: any) => e.status === 'approved').length,
+    sent: estimates.filter((e: any) => e.status === 'sent').length,
+    draft: estimates.filter((e: any) => e.status === 'draft').length,
+  };
+  const approvedRevenue = estimates.filter((e: any) => e.status === 'approved').reduce((sum: number, e: any) => sum + (e.total || 0), 0);
+  const fmt = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(n);
+  return (
+    <div className="space-y-6">
+      <div className="cyber-panel p-6">
+        <h3 className="text-xl font-bold text-green-400 mb-2 flex items-center gap-2">
+          <BarChart2 className="h-5 w-5" />
+          Profitability Dashboard
+        </h3>
+        <p className="text-gray-400 text-sm">Your private business intelligence — clients never see this data.</p>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-gray-900 border border-cyan-500/30 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <DollarSign className="h-4 w-4 text-cyan-400" />
+            <span className="text-xs text-gray-400 uppercase tracking-wide">Total Pipeline</span>
+          </div>
+          <p className="text-2xl font-bold text-cyan-400">{fmt(totalRevenue)}</p>
+          <p className="text-xs text-gray-500 mt-1">{estimateCount} estimates</p>
+        </div>
+        <div className="bg-gray-900 border border-green-500/30 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <CheckCircle className="h-4 w-4 text-green-400" />
+            <span className="text-xs text-gray-400 uppercase tracking-wide">Approved Revenue</span>
+          </div>
+          <p className="text-2xl font-bold text-green-400">{fmt(approvedRevenue)}</p>
+          <p className="text-xs text-gray-500 mt-1">{statusBreakdown.approved} approved</p>
+        </div>
+        <div className="bg-gray-900 border border-yellow-500/30 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <TrendingUp className="h-4 w-4 text-yellow-400" />
+            <span className="text-xs text-gray-400 uppercase tracking-wide">Est. Profit</span>
+          </div>
+          <p className="text-2xl font-bold text-yellow-400">{fmt(estimatedProfit)}</p>
+          <p className="text-xs text-gray-500 mt-1">{profitMarginPct.toFixed(1)}% margin</p>
+        </div>
+        <div className="bg-gray-900 border border-purple-500/30 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Target className="h-4 w-4 text-purple-400" />
+            <span className="text-xs text-gray-400 uppercase tracking-wide">Avg Estimate</span>
+          </div>
+          <p className="text-2xl font-bold text-purple-400">{fmt(avgEstimate)}</p>
+          <p className="text-xs text-gray-500 mt-1">per project</p>
+        </div>
+      </div>
+      <div className="bg-gray-900 border border-gray-700 rounded-lg p-6">
+        <h4 className="text-sm font-semibold text-gray-300 mb-4 flex items-center gap-2">
+          <PieChart className="h-4 w-4 text-cyan-400" />
+          Estimate Status Breakdown
+        </h4>
+        <div className="grid grid-cols-3 gap-4">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-green-400">{statusBreakdown.approved}</div>
+            <div className="text-xs text-gray-400 mt-1">Approved</div>
+            <div className="text-xs text-green-400">{estimateCount > 0 ? ((statusBreakdown.approved / estimateCount) * 100).toFixed(0) : 0}% close rate</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-yellow-400">{statusBreakdown.sent}</div>
+            <div className="text-xs text-gray-400 mt-1">Pending</div>
+            <div className="text-xs text-yellow-400">{fmt(estimates.filter((e: any) => e.status === 'sent').reduce((s: number, e: any) => s + (e.total || 0), 0))}</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-gray-400">{statusBreakdown.draft}</div>
+            <div className="text-xs text-gray-400 mt-1">Drafts</div>
+            <div className="text-xs text-gray-400">{fmt(estimates.filter((e: any) => e.status === 'draft').reduce((s: number, e: any) => s + (e.total || 0), 0))}</div>
+          </div>
+        </div>
+      </div>
+      <div className="bg-gray-900 border border-gray-700 rounded-lg p-6">
+        <h4 className="text-sm font-semibold text-gray-300 mb-4 flex items-center gap-2">
+          <Sliders className="h-4 w-4 text-cyan-400" />
+          Per-Estimate Profitability Analysis
+        </h4>
+        <div className="flex items-center gap-2 mb-4 p-3 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+          <Info className="h-4 w-4 text-blue-400 flex-shrink-0" />
+          <p className="text-xs text-blue-300">
+            Profit estimates use your Settings markup of <strong>{settings.defaultMarkupPercent}%</strong>. Update Settings for more accurate projections.
+          </p>
+        </div>
+        {estimates.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            <BarChart2 className="h-10 w-10 mx-auto mb-3 opacity-30" />
+            <p>No estimates yet. Create your first estimate to see profitability data.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-700">
+                  <th className="text-left py-2 px-3 text-gray-400 font-medium">Client</th>
+                  <th className="text-left py-2 px-3 text-gray-400 font-medium hidden md:table-cell">Type</th>
+                  <th className="text-right py-2 px-3 text-gray-400 font-medium">Revenue</th>
+                  <th className="text-right py-2 px-3 text-gray-400 font-medium">Est. COGS</th>
+                  <th className="text-right py-2 px-3 text-gray-400 font-medium">Est. Profit</th>
+                  <th className="text-center py-2 px-3 text-gray-400 font-medium">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {estimates.slice(0, 20).map((est: any) => {
+                  const revenue = est.total || 0;
+                  const cogs = revenue / (1 + settings.defaultMarkupPercent / 100);
+                  const profit = revenue - cogs;
+                  const margin = revenue > 0 ? (profit / revenue) * 100 : 0;
+                  return (
+                    <tr key={est.id} className="border-b border-gray-800 hover:bg-gray-800/50 transition-colors">
+                      <td className="py-2 px-3">
+                        <div className="font-medium text-white">{est.clientName}</div>
+                        <div className="text-xs text-gray-500">{est.estimateNumber}</div>
+                      </td>
+                      <td className="py-2 px-3 hidden md:table-cell">
+                        <span className="text-xs text-gray-400 capitalize">{est.projectType || 'general'}</span>
+                      </td>
+                      <td className="py-2 px-3 text-right font-medium text-cyan-400">{fmt(revenue)}</td>
+                      <td className="py-2 px-3 text-right text-red-400">{fmt(cogs)}</td>
+                      <td className="py-2 px-3 text-right">
+                        <div className={`font-bold ${profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>{fmt(profit)}</div>
+                        <div className="text-xs text-gray-500">{margin.toFixed(1)}%</div>
+                      </td>
+                      <td className="py-2 px-3 text-center">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                          est.status === 'approved' ? 'bg-green-900/50 text-green-400 border border-green-500/30' :
+                          est.status === 'sent' ? 'bg-yellow-900/50 text-yellow-400 border border-yellow-500/30' :
+                          'bg-gray-800 text-gray-400 border border-gray-600'
+                        }`}>{est.status}</span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Estimate Settings Panel Component ────────────────────────────────────────
+function EstimateSettingsPanel({ settings, onSave }: { settings: any, onSave: (s: any) => void }) {
+  const [local, setLocal] = React.useState({ ...settings });
+  const [saved, setSaved] = React.useState(false);
+  const handleSave = () => {
+    onSave(local);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+  return (
+    <div className="space-y-6">
+      <div className="cyber-panel p-6">
+        <h3 className="text-xl font-bold text-purple-400 mb-2 flex items-center gap-2">
+          <Settings className="h-5 w-5" />
+          Estimate Settings
+        </h3>
+        <p className="text-gray-400 text-sm">Configure default values for all new estimates. These are your private business settings.</p>
+      </div>
+      <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 space-y-6">
+        <h4 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
+          <DollarSign className="h-4 w-4 text-cyan-400" />
+          Pricing & Profit Defaults
+        </h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm text-gray-300 mb-2">Default Overhead % <span className="text-xs text-gray-500">(rent, insurance, admin)</span></label>
+            <div className="flex items-center gap-3">
+              <input type="range" min="0" max="50" step="1" value={local.defaultOverheadPercent}
+                onChange={e => setLocal({ ...local, defaultOverheadPercent: Number(e.target.value) })}
+                className="flex-1 accent-cyan-400" />
+              <span className="text-cyan-400 font-bold w-12 text-right">{local.defaultOverheadPercent}%</span>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Industry average: 15–25%</p>
+          </div>
+          <div>
+            <label className="block text-sm text-gray-300 mb-2">Default Markup % <span className="text-xs text-gray-500">(profit on top of costs)</span></label>
+            <div className="flex items-center gap-3">
+              <input type="range" min="0" max="100" step="1" value={local.defaultMarkupPercent}
+                onChange={e => setLocal({ ...local, defaultMarkupPercent: Number(e.target.value) })}
+                className="flex-1 accent-cyan-400" />
+              <span className="text-cyan-400 font-bold w-12 text-right">{local.defaultMarkupPercent}%</span>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Industry average: 20–35%</p>
+          </div>
+          <div>
+            <label className="block text-sm text-gray-300 mb-2">Default Tax Rate % <span className="text-xs text-gray-500">(materials only)</span></label>
+            <div className="flex items-center gap-3">
+              <input type="range" min="0" max="15" step="0.25" value={local.defaultTaxRate}
+                onChange={e => setLocal({ ...local, defaultTaxRate: Number(e.target.value) })}
+                className="flex-1 accent-cyan-400" />
+              <span className="text-cyan-400 font-bold w-12 text-right">{local.defaultTaxRate}%</span>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">CA sales tax: 7.25–10.75%</p>
+          </div>
+          <div>
+            <label className="block text-sm text-gray-300 mb-2">Default Profit Margin % <span className="text-xs text-gray-500">(pre-filled in new estimates)</span></label>
+            <div className="flex items-center gap-3">
+              <input type="range" min="0" max="50" step="1" value={local.defaultProfitMargin}
+                onChange={e => setLocal({ ...local, defaultProfitMargin: Number(e.target.value) })}
+                className="flex-1 accent-cyan-400" />
+              <span className="text-cyan-400 font-bold w-12 text-right">{local.defaultProfitMargin}%</span>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">0% = no automatic margin applied</p>
+          </div>
+        </div>
+        <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+          <div>
+            <p className="text-sm text-gray-300 font-medium">Apply tax to materials only</p>
+            <p className="text-xs text-gray-500 mt-0.5">Recommended for California — labor is not taxable</p>
+          </div>
+          <button
+            onClick={() => setLocal({ ...local, taxOnMaterialsOnly: !local.taxOnMaterialsOnly })}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${local.taxOnMaterialsOnly ? 'bg-cyan-500' : 'bg-gray-600'}`}
+          >
+            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${local.taxOnMaterialsOnly ? 'translate-x-6' : 'translate-x-1'}`} />
+          </button>
+        </div>
+      </div>
+      <div className="bg-gray-900 border border-green-500/30 rounded-lg p-6">
+        <h4 className="text-sm font-semibold text-green-400 mb-4 flex items-center gap-2">
+          <TrendingUp className="h-4 w-4" />
+          Your Pricing Formula Preview (based on $10,000 COGS, $5,000 materials)
+        </h4>
+        <div className="space-y-2 text-sm font-mono">
+          <div className="flex justify-between text-gray-400"><span>Direct Costs (COGS)</span><span>$10,000</span></div>
+          <div className="flex justify-between text-yellow-400"><span>+ Overhead ({local.defaultOverheadPercent}%)</span><span>+${(10000 * local.defaultOverheadPercent / 100).toFixed(0)}</span></div>
+          <div className="flex justify-between text-green-400"><span>+ Markup / Profit ({local.defaultMarkupPercent}%)</span><span>+${(10000 * local.defaultMarkupPercent / 100).toFixed(0)}</span></div>
+          <div className="flex justify-between text-cyan-400"><span>+ Tax ({local.defaultTaxRate}% on materials)</span><span>+${(5000 * local.defaultTaxRate / 100).toFixed(0)}</span></div>
+          <div className="border-t border-gray-700 pt-2 flex justify-between text-white font-bold text-base">
+            <span>Client Pays</span>
+            <span className="text-cyan-400">${(10000 + (10000 * local.defaultOverheadPercent / 100) + (10000 * local.defaultMarkupPercent / 100) + (5000 * local.defaultTaxRate / 100)).toFixed(0)}</span>
+          </div>
+        </div>
+      </div>
+      <div className="flex justify-end">
+        <button onClick={handleSave}
+          className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${saved ? 'bg-green-500 text-black' : 'bg-purple-600 hover:bg-purple-500 text-white'}`}>
+          {saved ? <CheckCircle className="h-4 w-4" /> : <Settings className="h-4 w-4" />}
+          {saved ? 'Settings Saved!' : 'Save Settings'}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function EstimatesWizardFixed() {
   const { currentUser } = useAuth(); // ✅ Using AuthContext which provides currentUser
@@ -375,6 +639,25 @@ export default function EstimatesWizardFixed() {
 
   // Estimates history states
   const [showEstimatesHistory, setShowEstimatesHistory] = useState(false);
+  // ── 4-Tab Navigation ──────────────────────────────────────────────────────
+  const [activeView, setActiveView] = useState<"new-estimate" | "history" | "profitability" | "settings">("new-estimate");
+  // ── Estimate Settings (persisted to localStorage) ─────────────────────────
+  const [estimateSettings, setEstimateSettings] = useState(() => {
+    try {
+      const saved = localStorage.getItem("owlfenc_estimate_settings");
+      return saved ? JSON.parse(saved) : {
+        defaultOverheadPercent: 15,
+        defaultMarkupPercent: 20,
+        defaultTaxRate: 8.5,
+        defaultProfitMargin: 0,
+        showProfitOnEstimate: false,
+        currency: "USD",
+        taxOnMaterialsOnly: true,
+      };
+    } catch { return { defaultOverheadPercent: 15, defaultMarkupPercent: 20, defaultTaxRate: 8.5, defaultProfitMargin: 0, showProfitOnEstimate: false, currency: "USD", taxOnMaterialsOnly: true }; }
+  });
+  // ── Estimate Settings (persisted to localStorage) ─────────────────────────
+
   const [savedEstimates, setSavedEstimates] = useState<any[]>([]);
   const [isLoadingEstimates, setIsLoadingEstimates] = useState(false);
   const [historySearchQuery, setHistorySearchQuery] = useState("");
@@ -6922,27 +7205,63 @@ This link provides a professional view of your estimate that you can access anyt
               </h1>
             </div>
 
-            {/* Navigation Buttons */}
+            {/* 4-Tab Navigation — same pill style as Legal Defense */}
             <div className="flex justify-center mb-8">
-              <div className="flex bg-gray-900 backdrop-blur-sm rounded-lg border border-gray-700 overflow-hidden">
-                <button className="px-6 py-3 bg-cyan-400 text-black font-semibold flex items-center gap-2 border-r border-gray-700 hover:bg-cyan-300">
-                  <FileText className="h-5 w-5" />
+              <div className="bg-gray-900 border border-gray-700 rounded-lg p-1 flex gap-1 flex-wrap justify-center">
+                <button
+                  onClick={() => setActiveView("new-estimate")}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                    activeView === "new-estimate"
+                      ? "bg-cyan-400 text-black"
+                      : "text-gray-300 hover:text-white hover:bg-gray-800"
+                  }`}
+                >
+                  <FileText className="h-4 w-4" />
                   New Estimate
                 </button>
                 <button
                   onClick={() => {
-                    setShowEstimatesHistory(true);
+                    setActiveView("history");
                     loadSavedEstimates();
                   }}
-                  className="px-6 py-3 text-gray-300 hover:text-white hover:bg-gray-800 transition-all duration-200 flex items-center gap-2 relative"
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                    activeView === "history"
+                      ? "bg-cyan-400 text-black"
+                      : "text-gray-300 hover:text-white hover:bg-gray-800"
+                  }`}
                 >
-                  <Clock className="h-5 w-5" />
+                  <Clock className="h-4 w-4" />
                   History
                   {savedEstimates.length > 0 && (
-                    <span className="ml-2 bg-cyan-600 text-white text-xs rounded-full px-2 py-1 min-w-[1.5rem] h-6 flex items-center justify-center font-bold">
+                    <span className="ml-1 bg-cyan-600 text-white text-xs rounded-full px-1.5 py-0.5 font-bold">
                       {savedEstimates.length}
                     </span>
                   )}
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveView("profitability");
+                    loadSavedEstimates();
+                  }}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                    activeView === "profitability"
+                      ? "bg-green-500 text-black"
+                      : "text-gray-300 hover:text-white hover:bg-gray-800"
+                  }`}
+                >
+                  <BarChart2 className="h-4 w-4" />
+                  Profitability
+                </button>
+                <button
+                  onClick={() => setActiveView("settings")}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                    activeView === "settings"
+                      ? "bg-purple-500 text-black"
+                      : "text-gray-300 hover:text-white hover:bg-gray-800"
+                  }`}
+                >
+                  <Settings className="h-4 w-4" />
+                  Settings
                 </button>
               </div>
             </div>
@@ -6952,8 +7271,8 @@ This link provides a professional view of your estimate that you can access anyt
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        {/* HISTORIAL INLINE - Estructura EXACTA de Legal Defense */}
-        {showEstimatesHistory ? (
+        {/* ── TAB: HISTORY ─────────────────────────────────────────────────── */}
+        {activeView === "history" ? (
           <div className="cyber-panel p-6">
             <h3 className="text-xl font-bold text-cyan-400 mb-6 flex items-center">
               <Clock className="w-5 h-5 mr-2" />
@@ -7163,6 +7482,7 @@ This link provides a professional view of your estimate that you can access anyt
               <Button
                 variant="outline"
                 onClick={() => {
+                  setActiveView("new-estimate");
                   setShowEstimatesHistory(false);
                   setHistorySearchQuery("");
                 }}
@@ -7174,6 +7494,7 @@ This link provides a professional view of your estimate that you can access anyt
               </Button>
               <Button
                 onClick={() => {
+                  setActiveView("new-estimate");
                   setShowEstimatesHistory(false);
                   setHistorySearchQuery("");
                   setIsEditMode(false);
@@ -7203,6 +7524,13 @@ This link provides a professional view of your estimate that you can access anyt
               </Button>
             </div>
           </div>
+        ) : activeView === "profitability" ? (
+          <ProfitabilityDashboard estimates={savedEstimates} settings={estimateSettings} />
+        ) : activeView === "settings" ? (
+          <EstimateSettingsPanel settings={estimateSettings} onSave={(newSettings) => {
+            setEstimateSettings(newSettings);
+            localStorage.setItem("owlfenc_estimate_settings", JSON.stringify(newSettings));
+          }} />
         ) : (
           <div className="bg-gray-900 backdrop-blur-sm rounded-lg border border-gray-700 p-6">
             <div className="mb-6">
