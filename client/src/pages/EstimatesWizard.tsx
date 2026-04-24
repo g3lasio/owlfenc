@@ -574,7 +574,7 @@ export default function EstimatesWizardFixed() {
     subtotal: 0,
     tax: 0,
     total: 0,
-    taxRate: 10, // Default 10% instead of 16%
+    taxRate: 0, // Default 0% — user must set their local rate
     discountType: "percentage",
     discountValue: 0,
     discountAmount: 0,
@@ -654,7 +654,7 @@ export default function EstimatesWizardFixed() {
         currency: "USD",
         taxOnMaterialsOnly: true,
       };
-    } catch { return { defaultOverheadPercent: 15, defaultMarkupPercent: 20, defaultTaxRate: 8.5, defaultProfitMargin: 0, showProfitOnEstimate: false, currency: "USD", taxOnMaterialsOnly: true }; }
+    } catch { return { defaultOverheadPercent: 15, defaultMarkupPercent: 20, defaultTaxRate: 0, defaultProfitMargin: 0, showProfitOnEstimate: false, currency: "USD", taxOnMaterialsOnly: true }; }
   });
   // ── Estimate Settings (persisted to localStorage) ─────────────────────────
 
@@ -2808,7 +2808,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           taxRate:
             projectData.taxRate > 100
               ? projectData.taxRate / 100
-              : projectData.taxRate || 10,
+              : projectData.taxRate || 0,
           // RESTAURAR VALORES DE DESCUENTO GUARDADOS
           discountType: projectData.discountType || "percentage",
           discountValue: projectData.discountValue || 0,
@@ -3056,7 +3056,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
         // CÁLCULOS SEGUROS: Financial totals stored as direct values
         subtotal: estimate.subtotal, // CÁLCULOS SEGUROS: valores directos
-        taxRate: estimate.taxRate || 10, // CÁLCULOS SEGUROS: valores directos
+        taxRate: estimate.taxRate || 0, // CÁLCULOS SEGUROS: valores directos
         taxAmount: estimate.tax, // CÁLCULOS SEGUROS: valores directos
 
         // CRÍTICO: Guardar información completa de descuentos
@@ -3736,8 +3736,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
             description: "Professional installation and labor services",
           },
           additionalCosts: {
-            taxRate: estimate.taxRate || 10,
-            taxRateBasisPoints: estimate.taxRate || 10, // CÁLCULOS SEGUROS: valores directos
+            taxRate: estimate.taxRate || 0,
+            taxRateBasisPoints: estimate.taxRate || 0, // CÁLCULOS SEGUROS: valores directos
             taxAmount: estimate.tax,
             taxAmountCents: estimate.tax, // CÁLCULOS SEGUROS: valores directos
             discountType: estimate.discountType || null,
@@ -3793,7 +3793,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           sortOrder: index,
           isOptional: false,
         })),
-        taxRate: estimate.taxRate || 10,
+        taxRate: estimate.taxRate || 0,
         taxAmount: estimate.tax, // CÁLCULOS SEGUROS: valores directos
         estimateAmount: estimate.total, // CÁLCULOS SEGUROS: valores directos
       };
@@ -4291,7 +4291,7 @@ This link provides a professional view of your estimate that you can access anyt
         discountType: estimate.discountType || "percentage",
         discountValue: estimate.discountValue || 0,
         tax: estimate.tax || 0,
-        taxRate: estimate.taxRate || 10,
+        taxRate: estimate.taxRate || 0,
         total: estimate.total || 0,
         notes: estimate.notes || "Estimado generado por Owl Fenc",
       };
