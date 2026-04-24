@@ -91,7 +91,7 @@ export class DeepSearchService {
         try {
           const precisionResult = await precisionQuantityCalculationService.calculateADUQuantities(
             projectDescription, 
-            location || 'California'
+            location || 'United States'
           );
           
           return this.convertPrecisionResultToDeepSearchResult(precisionResult);
