@@ -7460,9 +7460,57 @@ This link provides a professional view of your estimate that you can access anyt
                             </button>
                             
                             <button
-                              onClick={() => {
-                                navigator.clipboard.writeText(`${window.location.origin}/estimate/${est.id}`);
-                                toast({ title: "Link copiado", description: "URL copiada al portapapeles" });
+                              onClick={async () => {
+                                try {
+                                  const originalData = est.originalData || {};
+                                  const shareableEstimate = {
+                                    client: originalData.clientInformation || {
+                                      name: est.clientName,
+                                      email: est.clientEmail || '',
+                                      address: '',
+                                    },
+                                    items: est.items || originalData.projectTotalCosts?.materialCosts?.items || [],
+                                    projectDetails: originalData.projectDetails || est.title || '',
+                                    subtotal: est.total,
+                                    tax: 0,
+                                    total: est.total,
+                                    taxRate: originalData.taxRate || 0,
+                                    discountType: originalData.discountType || 'none',
+                                    discountValue: originalData.discountValue || 0,
+                                    discountAmount: originalData.discountAmount || 0,
+                                    discountName: originalData.discountName || '',
+                                    contractor: {
+                                      company: profile?.company || 'Contractor',
+                                      address: profile?.address || '',
+                                      city: profile?.city || '',
+                                      state: profile?.state || '',
+                                      zipCode: profile?.zipCode || '',
+                                      phone: profile?.phone || '',
+                                      email: profile?.email || '',
+                                      website: profile?.website || '',
+                                      license: profile?.license || '',
+                                      logo: profile?.logo || '',
+                                    },
+                                    template: selectedTemplate,
+                                    createdAt: new Date().toISOString(),
+                                  };
+                                  const response = await fetch('/api/share-estimate', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ estimateData: shareableEstimate }),
+                                  });
+                                  if (!response.ok) throw new Error('Failed to create share link');
+                                  const result = await response.json();
+                                  if (result.success && result.shareUrl) {
+                                    await navigator.clipboard.writeText(result.shareUrl);
+                                    toast({ title: "Link copiado", description: "URL copiada al portapapeles" });
+                                  } else {
+                                    throw new Error('No share URL returned');
+                                  }
+                                } catch (err) {
+                                  console.error('Copy link error:', err);
+                                  toast({ title: "Error", description: "No se pudo generar el enlace", variant: "destructive" });
+                                }
                               }}
                               className="estimate-action-btn"
                               data-testid={`button-copy-url-${est.id}`}
