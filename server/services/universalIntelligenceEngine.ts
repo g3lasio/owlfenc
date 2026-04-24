@@ -16,12 +16,12 @@
  *  - STRICT FINANCIAL FIDELITY: Mathematically applies the contractor's exact
  *    profit margin, overhead, tax rate, and flat-rate settings.
  *  - SUPERIOR REASONING: Uses the most capable reasoning model available
- *    (claude-opus-4-7 / claude-sonnet-4-6 / claude-haiku-4-5) to think through each project like a
- *    seasoned professional with 40+ years of cross-industry experience.
+ *    (claude-sonnet-4-20250514 → claude-3-7-sonnet-20250219 → claude-3-5-sonnet-20241022)
+ *    to think through each project like a seasoned professional with 40+ years of cross-industry experience.
  *
- * Model: claude-opus-4-7 (most capable model, verified Apr 2026 — $5/$25 per MTok)
- *        Fallback 1: claude-sonnet-4-6 if Opus unavailable
- *        Fallback 2: claude-haiku-4-5-20251001 as last resort
+ * Model: claude-sonnet-4-20250514 (most capable confirmed model in this project)
+ *        Fallback 1: claude-3-7-sonnet-20250219 if primary unavailable
+ *        Fallback 2: claude-3-5-sonnet-20241022 as last resort
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
@@ -32,13 +32,14 @@ const anthropic = new Anthropic({
 });
 
 // ─── Model Configuration ─────────────────────────────────────────────────────
-// Verified from official Anthropic docs (Apr 2026):
-//   claude-opus-4-7     → $5/MTok in  | $25/MTok out  | 1M ctx | Highest reasoning
-//   claude-sonnet-4-6   → $3/MTok in  | $15/MTok out  | 1M ctx | Best speed/intelligence
-//   claude-haiku-4-5-20251001 → $1/MTok in | $5/MTok out | 200k ctx | Fastest
-const PRIMARY_MODEL   = 'claude-opus-4-7';           // Most capable — used for all estimates
-const FALLBACK_MODEL  = 'claude-sonnet-4-6';          // Fallback if Opus unavailable
-const FALLBACK2_MODEL = 'claude-haiku-4-5-20251001';  // Last resort — fast and cheap
+// Verified working models in this project (Apr 2026):
+//   claude-sonnet-4-20250514   → Latest Claude Sonnet 4, confirmed in anthropic-summarize.ts
+//   claude-3-7-sonnet-20250219 → Claude 3.7 Sonnet, used across all production services
+//   claude-3-5-sonnet-20241022 → Claude 3.5 Sonnet, stable fallback
+// NOTE: When Anthropic releases claude-opus-4 or higher, update PRIMARY_MODEL here.
+const PRIMARY_MODEL   = 'claude-sonnet-4-20250514';      // Most capable confirmed model
+const FALLBACK_MODEL  = 'claude-3-7-sonnet-20250219';    // Proven production model
+const FALLBACK2_MODEL = 'claude-3-5-sonnet-20241022';    // Stable last resort
 
 // ─── Type Definitions ─────────────────────────────────────────────────────────
 
