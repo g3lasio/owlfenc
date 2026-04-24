@@ -16,11 +16,12 @@
  *  - STRICT FINANCIAL FIDELITY: Mathematically applies the contractor's exact
  *    profit margin, overhead, tax rate, and flat-rate settings.
  *  - SUPERIOR REASONING: Uses the most capable reasoning model available
- *    (claude-sonnet-4-20250514 / claude-3-7-sonnet) to think through each project like a
+ *    (claude-opus-4-7 / claude-sonnet-4-6 / claude-haiku-4-5) to think through each project like a
  *    seasoned professional with 40+ years of cross-industry experience.
  *
- * Model: claude-sonnet-4-20250514 (highest reasoning capability currently available)
- *        Falls back to claude-3-7-sonnet-20250219 if primary is unavailable.
+ * Model: claude-opus-4-7 (most capable model, verified Apr 2026 — $5/$25 per MTok)
+ *        Fallback 1: claude-sonnet-4-6 if Opus unavailable
+ *        Fallback 2: claude-haiku-4-5-20251001 as last resort
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
@@ -31,10 +32,13 @@ const anthropic = new Anthropic({
 });
 
 // ─── Model Configuration ─────────────────────────────────────────────────────
-// Primary: claude-sonnet-4-20250514 (most advanced model currently in production)
-// Fallback: claude-3-7-sonnet-20250219 (proven stable in production)
-const PRIMARY_MODEL = 'claude-sonnet-4-20250514';
-const FALLBACK_MODEL = 'claude-3-7-sonnet-20250219';
+// Verified from official Anthropic docs (Apr 2026):
+//   claude-opus-4-7     → $5/MTok in  | $25/MTok out  | 1M ctx | Highest reasoning
+//   claude-sonnet-4-6   → $3/MTok in  | $15/MTok out  | 1M ctx | Best speed/intelligence
+//   claude-haiku-4-5-20251001 → $1/MTok in | $5/MTok out | 200k ctx | Fastest
+const PRIMARY_MODEL   = 'claude-opus-4-7';           // Most capable — used for all estimates
+const FALLBACK_MODEL  = 'claude-sonnet-4-6';          // Fallback if Opus unavailable
+const FALLBACK2_MODEL = 'claude-haiku-4-5-20251001';  // Last resort — fast and cheap
 
 // ─── Type Definitions ─────────────────────────────────────────────────────────
 
@@ -438,11 +442,16 @@ export class UniversalIntelligenceEngine {
     systemPrompt: string,
     userPrompt: string,
     maxTokens: number = 8000
-  ): Promise<string> {
-    // Try primary model first
-    try {
+  ): Promise<{ text: string; modelUsed: string }> {
+    const isModelError = (e: any) =>
+      e.status === 404 || e.status === 400 ||
+      e.message?.includes('model') ||
+      e.message?.includes('not found') ||
+      e.message?.includes('does not exist');
+
+    const callModel = async (model: string) => {
       const response = await anthropic.messages.create({
-        model: PRIMARY_MODEL,
+        model,
         max_tokens: maxTokens,
         temperature: 0.1,
         system: systemPrompt,
@@ -451,23 +460,32 @@ export class UniversalIntelligenceEngine {
       const content = response.content[0];
       if (content.type !== 'text') throw new Error('Non-text response from Claude');
       return content.text;
-    } catch (primaryError: any) {
-      // If model not found, fall back to claude-3-opus
-      if (primaryError.status === 404 || primaryError.status === 400 || primaryError.message?.includes('model') || primaryError.message?.includes('not found')) {
-        console.log(`⚠️ [UIE] Primary model ${PRIMARY_MODEL} unavailable, falling back to ${FALLBACK_MODEL}`);
-        const response = await anthropic.messages.create({
-          model: FALLBACK_MODEL,
-          max_tokens: maxTokens,
-          temperature: 0.1,
-          system: systemPrompt,
-          messages: [{ role: 'user', content: userPrompt }],
-        });
-        const content = response.content[0];
-        if (content.type !== 'text') throw new Error('Non-text response from Claude fallback');
-        return content.text;
-      }
-      throw primaryError;
+    };
+
+    // Tier 1 — Claude Opus 4.7 (most capable)
+    try {
+      const text = await callModel(PRIMARY_MODEL);
+      console.log(`✅ [UIE] Using ${PRIMARY_MODEL}`);
+      return { text, modelUsed: PRIMARY_MODEL };
+    } catch (e1: any) {
+      if (!isModelError(e1)) throw e1;
+      console.warn(`⚠️ [UIE] ${PRIMARY_MODEL} unavailable, trying ${FALLBACK_MODEL}`);
     }
+
+    // Tier 2 — Claude Sonnet 4.6
+    try {
+      const text = await callModel(FALLBACK_MODEL);
+      console.log(`✅ [UIE] Using fallback ${FALLBACK_MODEL}`);
+      return { text, modelUsed: FALLBACK_MODEL };
+    } catch (e2: any) {
+      if (!isModelError(e2)) throw e2;
+      console.warn(`⚠️ [UIE] ${FALLBACK_MODEL} unavailable, trying ${FALLBACK2_MODEL}`);
+    }
+
+    // Tier 3 — Claude Haiku 4.5 (last resort)
+    const text = await callModel(FALLBACK2_MODEL);
+    console.log(`✅ [UIE] Using last-resort ${FALLBACK2_MODEL}`);
+    return { text, modelUsed: FALLBACK2_MODEL };
   }
 
   /**
@@ -497,10 +515,11 @@ export class UniversalIntelligenceEngine {
     let modelUsed = PRIMARY_MODEL;
 
     try {
-      rawText = await this.callClaude(systemPrompt, userPrompt, 10000);
+      const result = await this.callClaude(systemPrompt, userPrompt, 10000);
+      rawText = result.text;
+      modelUsed = result.modelUsed;
     } catch (err: any) {
-      modelUsed = FALLBACK_MODEL;
-      console.error(`❌ [UIE] Claude call failed:`, err.message);
+      console.error(`❌ [UIE] All Claude models failed:`, err.message);
       throw new Error(`Universal Intelligence Engine failed: ${err.message}`);
     }
 
