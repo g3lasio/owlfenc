@@ -445,9 +445,16 @@ export class UniversalIntelligenceEngine {
   ): Promise<{ text: string; modelUsed: string }> {
     const isModelError = (e: any) =>
       e.status === 404 || e.status === 400 ||
+      e.status === 402 || // Payment Required — model not available on current plan
+      e.status === 403 || // Forbidden — model access denied
+      e.status === 529 || // Anthropic overloaded
       e.message?.includes('model') ||
       e.message?.includes('not found') ||
-      e.message?.includes('does not exist');
+      e.message?.includes('does not exist') ||
+      e.message?.includes('payment') ||
+      e.message?.includes('billing') ||
+      e.message?.includes('access') ||
+      e.message?.includes('unavailable');
 
     const callModel = async (model: string) => {
       const response = await anthropic.messages.create({
