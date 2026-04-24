@@ -98,12 +98,19 @@ export class BackupDisasterRecoveryService {
     availabilityTarget: 99.9 // 99.9%
   };
 
+  // Concurrency guard: prevents multiple simultaneous backup runs
+  private isBackupRunning = false;
+  private isDRTestRunning = false;
+
   constructor() {
     console.log('💾 [BACKUP-DR] Servicio de backups y DR Fase 4 inicializado');
     this.initializeDRMetrics();
-    this.startBackupScheduler();
-    this.startRetentionCleaner();
-    this.scheduleDRTests();
+    // NOTE: Schedulers are intentionally NOT started in the constructor.
+    // The backup/DR service uses simulated data only (Math.random + setTimeout).
+    // Starting schedulers here causes log flooding when multiple Railway replicas
+    // run concurrently. Schedulers must be explicitly enabled via admin API only.
+    // TODO: Re-enable when real GCS/BigQuery integration is implemented.
+    console.log('📅 [BACKUP-DR] Schedulers desactivados (servicio en modo simulación). Actívalos manualmente via /api/phase4/backup/trigger');
   }
 
   /**
@@ -111,6 +118,13 @@ export class BackupDisasterRecoveryService {
    * Export mensual de entitlements/usage/audit_logs a GCS
    */
   async createMonthlyBackup(): Promise<BackupJob> {
+    // Concurrency guard: prevent multiple simultaneous backup runs
+    if (this.isBackupRunning) {
+      console.warn('⚠️ [BACKUP] Backup already in progress, skipping duplicate trigger');
+      const existingJob = this.backupJobs[this.backupJobs.length - 1];
+      if (existingJob) return existingJob;
+    }
+    this.isBackupRunning = true;
     const job: BackupJob = {
       id: `backup_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       type: 'full',
@@ -158,6 +172,9 @@ export class BackupDisasterRecoveryService {
       
       this.drMetrics.backupSuccess = false;
       throw error;
+    } finally {
+      // Always release the concurrency guard
+      this.isBackupRunning = false;
     }
   }
 
@@ -280,6 +297,12 @@ export class BackupDisasterRecoveryService {
     issues: string[];
     report: string;
   }> {
+    // Concurrency guard: prevent multiple simultaneous DR tests
+    if (this.isDRTestRunning) {
+      console.warn('⚠️ [DR-TEST] DR test already in progress, skipping duplicate trigger');
+      return { success: false, duration: 0, issues: ['DR test already running'], report: 'Skipped: already running' };
+    }
+    this.isDRTestRunning = true;
     console.log('🧪 [DR-TEST] Iniciando simulacro de disaster recovery...');
 
     const startTime = Date.now();
@@ -334,6 +357,9 @@ export class BackupDisasterRecoveryService {
       console.error('❌ [DR-TEST] Error en simulacro:', error);
       
       return { success: false, duration, issues, report: 'Test failed due to error' };
+    } finally {
+      // Always release the concurrency guard
+      this.isDRTestRunning = false;
     }
   }
 

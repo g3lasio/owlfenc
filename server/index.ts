@@ -42,7 +42,8 @@ import { verifyFirebaseAuth } from './middleware/firebase-auth';
 import { observabilityService } from './services/observabilityService';
 import { performanceOptimizationService } from './services/performanceOptimizationService';
 import { advancedSecurityService } from './services/advancedSecurityService';
-import { backupDisasterRecoveryService } from './services/backupDisasterRecoveryService';
+// NOTE: backupDisasterRecoveryService is intentionally NOT imported here.
+// It is imported only by phase4-optimization routes to avoid double-instantiation.
 import { setupProductionRoutes, setupProductionErrorHandlers } from "./production-setup";
 
 // 🛡️ SECURITY MIDDLEWARE - Applied immediately for maximum protection
