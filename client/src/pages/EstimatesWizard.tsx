@@ -1589,12 +1589,21 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
       // Enhanced error handling - REMOVED AbortController to prevent cancellation issues
       // API request already has built-in timeout handling for DeepSearch (120s)
+      // ── Inject user settings into DeepSearch request ──────────────────────
+      // This ensures the backend respects the contractor's tax rate, overhead,
+      // markup, and tax-on-materials-only preference for EVERY estimate.
       const requestData = {
         projectDescription: description,
         includeMaterials: searchType === "materials" || searchType === "full",
         includeLabor: searchType === "labor" || searchType === "full",
-        location: estimate.client?.address || "Estados Unidos",
+        location: estimate.client?.address || "United States",
         projectType: "construction",
+        // User settings — passed from EstimateSettings tab (localStorage)
+        taxRate: estimateSettings.defaultTaxRate ?? 0,
+        taxOnMaterialsOnly: estimateSettings.taxOnMaterialsOnly ?? true,
+        overheadPercent: estimateSettings.defaultOverheadPercent ?? 0,
+        markupPercent: estimateSettings.defaultMarkupPercent ?? 0,
+        profitMarginPercent: estimateSettings.defaultProfitMargin ?? 0,
       };
 
       console.log("🔍 NEW DEEPSEARCH - Request data:", requestData);
@@ -7527,9 +7536,22 @@ This link provides a professional view of your estimate that you can access anyt
         ) : activeView === "profitability" ? (
           <ProfitabilityDashboard estimates={savedEstimates} settings={estimateSettings} />
         ) : activeView === "settings" ? (
-          <EstimateSettingsPanel settings={estimateSettings} onSave={(newSettings) => {
+          <EstimateSettingsPanel settings={estimateSettings} onSave={async (newSettings) => {
             setEstimateSettings(newSettings);
+            // Save to localStorage for instant access
             localStorage.setItem("owlfenc_estimate_settings", JSON.stringify(newSettings));
+            // Also persist to Firebase so agent calls (LeadPrime, Mervin) respect these settings
+            try {
+              const authHeaders = await getAuthHeaders();
+              await fetch('/api/estimate-settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...authHeaders },
+                credentials: 'include',
+                body: JSON.stringify(newSettings),
+              });
+            } catch (e) {
+              console.warn('[EstimateSettings] Could not persist to Firebase, using localStorage only:', e);
+            }
           }} />
         ) : (
           <div className="bg-gray-900 backdrop-blur-sm rounded-lg border border-gray-700 p-6">

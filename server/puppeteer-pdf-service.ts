@@ -171,11 +171,19 @@ export class PuppeteerPdfService {
     const hasDiscount = discountRaw > 0;
     const discount = hasDiscount ? formatCurrency(discountRaw) : '$0.00';
     const taxRate = data.estimate?.tax_rate || 0;
+    const taxAmountRaw = parseCurrency(data.estimate?.tax_amount || '0');
     const taxAmount = this.formatPrice(data.estimate?.tax_amount);
+    // Only show tax row if there is actually a tax rate and tax amount
+    const hasTax = taxRate > 0 && taxAmountRaw > 0;
     const total = this.formatPrice(data.estimate?.total);
 
     // Compute display values before template string
     const taxRateDisplay = parseFloat((taxRate).toFixed(4));
+    // taxAppliedTo: 'materials_only' (default, most US states) or 'full_subtotal'
+    const taxAppliedTo = (data.estimate as any)?.tax_applied_to || 'materials_only';
+    const taxLabel = taxAppliedTo === 'materials_only'
+      ? `Tax on Materials (${taxRateDisplay}%)`
+      : `Sales Tax (${taxRateDisplay}%)`;
     const totalRaw = parseCurrency(data.estimate?.total || '0');
     const depositAmount = formatCurrency(totalRaw * 0.5);
 
@@ -677,10 +685,11 @@ export class PuppeteerPdfService {
                 <span class="total-row-label">Discount</span>
                 <span class="total-row-value">-${discount}</span>
             </div>` : ''}
+            ${hasTax ? `
             <div class="total-row">
-                <span class="total-row-label">Tax (${taxRateDisplay}%)</span>
+                <span class="total-row-label">${taxLabel}</span>
                 <span class="total-row-value">${taxAmount}</span>
-            </div>
+            </div>` : ''}
             <div class="total-row grand">
                 <span class="total-row-label">TOTAL</span>
                 <span class="total-row-value">${total}</span>

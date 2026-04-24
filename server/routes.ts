@@ -8153,6 +8153,60 @@ ENHANCED LEGAL CLAUSE:`;
     }
   });
 
+  // ─── Estimate Settings Endpoints ──────────────────────────────────────────
+  // These endpoints persist the contractor's estimate settings (tax rate, overhead,
+  // markup, profit margin) to Firebase so that agent calls (LeadPrime, Mervin)
+  // can respect the same settings as the wizard.
+  
+  app.get("/api/estimate-settings", verifyFirebaseAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.firebaseUser?.uid;
+      if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+      const doc = await admin.firestore().collection('estimate_settings').doc(userId).get();
+      if (!doc.exists) {
+        // Return defaults — no CA hardcoding, contractor must set their own rate
+        return res.json({
+          defaultTaxRate: 0,
+          taxOnMaterialsOnly: true,
+          defaultOverheadPercent: 0,
+          defaultMarkupPercent: 0,
+          defaultProfitMargin: 0,
+          showProfitOnEstimate: false,
+          currency: 'USD',
+        });
+      }
+      return res.json(doc.data());
+    } catch (error) {
+      console.error('[ESTIMATE-SETTINGS GET] Error:', error);
+      res.status(500).json({ error: 'Failed to fetch estimate settings' });
+    }
+  });
+
+  app.post("/api/estimate-settings", verifyFirebaseAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.firebaseUser?.uid;
+      if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+      const settings = req.body;
+      // Validate basic types
+      const sanitized = {
+        defaultTaxRate: typeof settings.defaultTaxRate === 'number' ? settings.defaultTaxRate : 0,
+        taxOnMaterialsOnly: settings.taxOnMaterialsOnly !== false,
+        defaultOverheadPercent: typeof settings.defaultOverheadPercent === 'number' ? settings.defaultOverheadPercent : 0,
+        defaultMarkupPercent: typeof settings.defaultMarkupPercent === 'number' ? settings.defaultMarkupPercent : 0,
+        defaultProfitMargin: typeof settings.defaultProfitMargin === 'number' ? settings.defaultProfitMargin : 0,
+        showProfitOnEstimate: settings.showProfitOnEstimate === true,
+        currency: typeof settings.currency === 'string' ? settings.currency : 'USD',
+        updatedAt: new Date().toISOString(),
+      };
+      await admin.firestore().collection('estimate_settings').doc(userId).set(sanitized, { merge: true });
+      console.log(`[ESTIMATE-SETTINGS POST] Saved settings for user ${userId}`);
+      return res.json({ success: true, settings: sanitized });
+    } catch (error) {
+      console.error('[ESTIMATE-SETTINGS POST] Error:', error);
+      res.status(500).json({ error: 'Failed to save estimate settings' });
+    }
+  });
+
   // Company Information Firebase Inner Collection Endpoint
   app.post("/api/company-information", async (req: Request, res: Response) => {
     try {

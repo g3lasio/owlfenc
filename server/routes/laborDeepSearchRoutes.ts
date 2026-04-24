@@ -38,13 +38,19 @@ const CombinedAnalysisSchema = z.object({
   includeMaterials: z.boolean().default(true),
   includeLabor: z.boolean().default(true),
   estimateId: z.string().optional(),
-  // Flat Rate / Profit Margin fields
+  // Pricing / Tax / Margin fields (all from user's EstimateSettings)
   // profitMarginPercent: contractor desired profit margin (e.g., 20 = 20%)
   // targetPrice: specific agreed price with the client (overrides profitMarginPercent)
-  // taxRate: sales tax rate to apply to materials only (e.g., 8.5 = 8.5%)
+  // taxRate: sales tax rate (e.g., 8.5 = 8.5%) — NATIONWIDE, no CA default
+  // taxOnMaterialsOnly: true = tax only on materials (most US states), false = tax on all
+  // overheadPercent: overhead to add on top of direct costs (e.g., 15 = 15%)
+  // markupPercent: markup to add on top of costs + overhead (e.g., 20 = 20%)
   profitMarginPercent: z.number().min(0).max(500).optional(),
   targetPrice: z.number().min(0).optional(),
-  taxRate: z.number().min(0).max(30).optional()
+  taxRate: z.number().min(0).max(30).optional(),
+  taxOnMaterialsOnly: z.boolean().optional().default(true),
+  overheadPercent: z.number().min(0).max(200).optional(),
+  markupPercent: z.number().min(0).max(500).optional()
 });
 
 export function registerLaborDeepSearchRoutes(app: Express): void {
@@ -290,10 +296,23 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
         const totalLaborCost = laborResult.totalLaborCost || laborCosts.reduce((sum, l) => sum + l.total, 0);
         const baseSubtotal = totalMaterialsCost + totalLaborCost;
 
-        // Tax: apply ONLY to materials (California law and most US states)
-        const taxRateDecimal = (validatedData.taxRate !== undefined ? validatedData.taxRate : 8.5) / 100;
-        const taxAmount = totalMaterialsCost * taxRateDecimal;
-        const baseTotalWithTax = baseSubtotal + taxAmount;
+        // Tax: NATIONWIDE — no hardcoded default. Rate comes from user settings.
+        // taxOnMaterialsOnly: true (default) = tax only on materials (legally safer for most US states).
+        const taxRateDecimal = (validatedData.taxRate !== undefined ? validatedData.taxRate : 0) / 100;
+        const taxOnMaterialsOnly = validatedData.taxOnMaterialsOnly !== false; // default: true
+        const taxableBase = taxOnMaterialsOnly ? totalMaterialsCost : baseSubtotal;
+        const taxAmount = taxableBase * taxRateDecimal;
+        
+        // Overhead + Markup: applied on top of direct costs before profit margin.
+        // overhead: covers fixed business costs (insurance, equipment, admin)
+        // markup: additional margin on top of overhead-adjusted costs
+        const overheadPercent = validatedData.overheadPercent ?? 0;
+        const markupPercent = validatedData.markupPercent ?? 0;
+        const overheadAmount = baseSubtotal * (overheadPercent / 100);
+        const markupBase = baseSubtotal + overheadAmount;
+        const markupAmount = markupBase * (markupPercent / 100);
+        const adjustedSubtotal = markupBase + markupAmount;
+        const baseTotalWithTax = adjustedSubtotal + taxAmount;
 
         // Flat Rate / Profit Margin
         let grandTotal = baseTotalWithTax;
@@ -326,19 +345,24 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
           grandTotal = priceToClient;
         }
 
-        if (profitMarginData) {
-          contractorView = {
-            baseMaterialsCost: Math.round(totalMaterialsCost * 100) / 100,
-            baseLaborCost: Math.round(totalLaborCost * 100) / 100,
-            baseSubtotal: Math.round(baseSubtotal * 100) / 100,
-            taxOnMaterials: Math.round(taxAmount * 100) / 100,
-            taxRate: (taxRateDecimal * 100).toFixed(2) + '%',
-            baseTotalWithTax: Math.round(baseTotalWithTax * 100) / 100,
-            profitAmount: Math.round(profitMarginData.profitAmount * 100) / 100,
-            profitPercent: profitMarginData.profitPercent,
-            finalPriceToClient: Math.round(grandTotal * 100) / 100,
-          };
-        }
+        // Always build contractorView (not just when profitMarginData exists)
+        contractorView = {
+          baseMaterialsCost: Math.round(totalMaterialsCost * 100) / 100,
+          baseLaborCost: Math.round(totalLaborCost * 100) / 100,
+          baseSubtotal: Math.round(baseSubtotal * 100) / 100,
+          overheadPercent: overheadPercent,
+          overheadAmount: Math.round(overheadAmount * 100) / 100,
+          markupPercent: markupPercent,
+          markupAmount: Math.round(markupAmount * 100) / 100,
+          adjustedSubtotal: Math.round(adjustedSubtotal * 100) / 100,
+          taxOnMaterials: Math.round(taxAmount * 100) / 100,
+          taxRate: (taxRateDecimal * 100).toFixed(2) + '%',
+          taxAppliedTo: taxOnMaterialsOnly ? 'materials_only' : 'full_subtotal',
+          baseTotalWithTax: Math.round(baseTotalWithTax * 100) / 100,
+          profitAmount: profitMarginData ? Math.round(profitMarginData.profitAmount * 100) / 100 : 0,
+          profitPercent: profitMarginData ? profitMarginData.profitPercent : 0,
+          finalPriceToClient: Math.round(grandTotal * 100) / 100,
+        };
 
         const fullCostsResult = {
           projectType: materialsResult.projectType,

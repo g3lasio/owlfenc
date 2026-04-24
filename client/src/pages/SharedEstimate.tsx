@@ -543,10 +543,16 @@ export default function SharedEstimate() {
                     </div>
                   )}
                   
-                  <div className="flex justify-between items-center p-3 bg-blue-500/10 border border-blue-400/30 rounded-lg">
-                    <span className="text-blue-400 tracking-wider">TAX ({(estimateData.taxRate * 100).toFixed(1)}%):</span>
-                    <span className="text-blue-400 font-mono font-bold text-lg">{formatCurrency(estimateData.tax)}</span>
-                  </div>
+                  {estimateData.tax > 0 && estimateData.taxRate > 0 && (
+                    <div className="flex justify-between items-center p-3 bg-blue-500/10 border border-blue-400/30 rounded-lg">
+                      <span className="text-blue-400 tracking-wider">
+                        {(estimateData as any).taxAppliedTo === 'full_subtotal'
+                          ? `SALES TAX (${(estimateData.taxRate * 100).toFixed(1)}%):`
+                          : `TAX ON MATERIALS (${(estimateData.taxRate * 100).toFixed(1)}%):` }
+                      </span>
+                      <span className="text-blue-400 font-mono font-bold text-lg">{formatCurrency(estimateData.tax)}</span>
+                    </div>
+                  )}
                   
                   <div className="h-px bg-gradient-to-r from-transparent via-yellow-400 to-transparent my-4"></div>
                   

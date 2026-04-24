@@ -253,14 +253,18 @@ export class TransformStepAdapter implements WorkflowStepAdapter {
     
     const subtotal = materialsSubtotal + laborSubtotal;
     
-    // ─── 2. Tax on materials only ─────────────────────────────────────────────
-    // Tax rate can be overridden per-request via context (e.g., user sets 9.25% in wizard).
-    // Default: 8.5% (Solano County, CA — where the primary user base is located).
-    const taxRate = (typeof context.taxRate === 'number' && context.taxRate >= 0)
-      ? context.taxRate
-      : 0.085;
+    // ─── 2. Tax calculation (NATIONWIDE — no CA default) ──────────────────────
+    // taxRate: always provided by caller. Can be decimal (0.0875) or percent (8.75).
+    // Normalize: if value > 1, treat as percentage and convert to decimal.
+    const rawTaxRate = typeof context.taxRate === 'number' ? context.taxRate : 0;
+    const taxRate = rawTaxRate > 1 ? rawTaxRate / 100 : rawTaxRate;
     
-    const tax = materialsSubtotal * taxRate;
+    // taxOnMaterialsOnly: true = apply tax only to materials (most US states for labor).
+    // false = apply tax to full subtotal (some states/jurisdictions).
+    // Default: true (conservative, legally safer for most US states).
+    const taxOnMaterialsOnly: boolean = context.taxOnMaterialsOnly !== false;
+    
+    const tax = taxOnMaterialsOnly ? (materialsSubtotal * taxRate) : (subtotal * taxRate);
     const baseTotal = subtotal + tax;
     
     // ─── 3. Flat Rate / Profit Margin ─────────────────────────────────────────
