@@ -421,7 +421,7 @@ function EstimateSettingsPanel({ settings, onSave }: { settings: any, onSave: (s
                 className="flex-1 accent-cyan-400" />
               <span className="text-cyan-400 font-bold w-12 text-right">{local.defaultTaxRate}%</span>
             </div>
-            <p className="text-xs text-gray-500 mt-1">CA sales tax: 7.25–10.75%</p>
+            <p className="text-xs text-gray-500 mt-1">US range: 0% (OR, MT) to 10.75% (MA)</p>
           </div>
           <div>
             <label className="block text-sm text-gray-300 mb-2">Default Profit Margin % <span className="text-xs text-gray-500">(pre-filled in new estimates)</span></label>
@@ -437,7 +437,7 @@ function EstimateSettingsPanel({ settings, onSave }: { settings: any, onSave: (s
         <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg border border-gray-700">
           <div>
             <p className="text-sm text-gray-300 font-medium">Apply tax to materials only</p>
-            <p className="text-xs text-gray-500 mt-0.5">Recommended for California — labor is not taxable</p>
+            <p className="text-xs text-gray-500 mt-0.5">Most US states: sales tax applies to materials only, not labor</p>
           </div>
           <button
             onClick={() => setLocal({ ...local, taxOnMaterialsOnly: !local.taxOnMaterialsOnly })}
@@ -6200,13 +6200,13 @@ This link provides a professional view of your estimate that you can access anyt
 
                         {/* Reset button with glow effect */}
                         {(estimate.discountValue > 0 ||
-                          estimate.taxRate !== 10 ||
+                          estimate.taxRate !== (estimateSettings.defaultTaxRate ?? 0) ||
                           estimate.discountName) && (
                           <button
                             onClick={() =>
                               setEstimate((prev) => ({
                                 ...prev,
-                                taxRate: 10,
+                                taxRate: estimateSettings.defaultTaxRate ?? 0,
                                 discountValue: 0,
                                 discountType: "percentage",
                                 discountName: "",
@@ -7516,12 +7516,16 @@ This link provides a professional view of your estimate that you can access anyt
                     subtotal: 0,
                     tax: 0,
                     total: 0,
-                    taxRate: 10,
+                    taxRate: estimateSettings.defaultTaxRate ?? 0,
                     discountType: "percentage",
                     discountValue: 0,
                     discountAmount: 0,
                     discountName: "",
                     attachments: [],
+                    profitMarginPercent: estimateSettings.defaultProfitMargin ?? 0,
+                    targetPrice: 0,
+                    profitAmount: 0,
+                    contractorBaseCost: 0,
                   });
                   window.history.replaceState({}, document.title, window.location.pathname);
                 }}
