@@ -18,6 +18,7 @@ import { Request, Response, Express } from 'express';
 import { z } from 'zod';
 import { laborDeepSearchService } from '../services/laborDeepSearchService';
 import { deepSearchService } from '../services/deepSearchService';
+import { universalIntelligenceEngine } from '../services/universalIntelligenceEngine';
 import { verifyFirebaseAuth } from '../middleware/firebase-auth';
 import { requireAuth } from '../middleware/unified-session-auth';
 import { requireCredits, deductFeatureCredits } from '../middleware/credit-check';
@@ -262,14 +263,67 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
     requireCredits({ featureName: 'deepSearchFull' }), // 💳 20 créditos — Full Costs (Materials + Labor)
     async (req: Request, res: Response) => {
       const userId = req.firebaseUser?.uid;
-      
+
+      // ═══════════════════════════════════════════════════════════════════════
+      // UNIVERSAL INTELLIGENCE ENGINE — Primary path
+      // Uses Claude Opus (highest reasoning) for any industry / project type.
+      // No hardcoded material lists. No rigid validation rules.
+      // Falls back to legacy dual-deepsearch only if UIE throws.
+      // ═══════════════════════════════════════════════════════════════════════
       try {
-        console.log(`🔍 [FULL COSTS] User: ${userId} - Nueva solicitud combinada (DUAL DEEPSEARCH)`);
+        console.log(`🧠 [UIE FULL COSTS] User: ${userId} - Universal Intelligence Engine starting`);
 
         const validatedData = CombinedAnalysisSchema.parse(req.body);
-        
-        console.log(`🔍 [FULL COSTS] Ejecutando AMBOS DeepSearch en paralelo...`);
-        
+
+        const uieResult = await universalIntelligenceEngine.estimate(
+          validatedData.projectDescription,
+          validatedData.location || '',
+          'full',
+          {
+            profitMarginPercent: validatedData.profitMarginPercent ?? 0,
+            targetPrice: validatedData.targetPrice ?? 0,
+            taxRate: validatedData.taxRate ?? 0,
+            taxOnMaterialsOnly: validatedData.taxOnMaterialsOnly ?? true,
+            overheadPercent: validatedData.overheadPercent ?? 0,
+            markupPercent: validatedData.markupPercent ?? 0,
+          }
+        );
+
+        const legacyResult = universalIntelligenceEngine.toLegacyFormat(uieResult);
+
+        // 💳 DEDUCIR CRÉDITOS TRAS ÉXITO
+        await deductFeatureCredits(req, undefined, 'DeepSearch Full Costs (UIE — Universal Intelligence Engine)');
+
+        console.log(`✅ [UIE FULL COSTS] User: ${userId} - Completed`, {
+          projectType: uieResult.projectType,
+          industry: uieResult.industryCategory,
+          materials: uieResult.materials.length,
+          labor: uieResult.laborCosts.length,
+          grandTotal: uieResult.grandTotal,
+          model: uieResult.aiModel,
+        });
+
+        return res.json({
+          success: true,
+          data: legacyResult,
+          timestamp: new Date().toISOString(),
+          searchType: 'universal_intelligence_engine',
+          engine: 'UIE-v1',
+          model: uieResult.aiModel,
+        });
+
+      } catch (uieError: any) {
+        console.error(`❌ [UIE FULL COSTS] User: ${userId} - UIE failed, falling back to legacy dual-deepsearch:`, uieError.message);
+      }
+
+      // ═══════════════════════════════════════════════════════════════════════
+      // LEGACY FALLBACK — Only runs if UIE throws an unrecoverable error
+      // ═══════════════════════════════════════════════════════════════════════
+      try {
+        const validatedData = CombinedAnalysisSchema.parse(req.body);
+
+        console.log(`🔍 [FULL COSTS LEGACY] User: ${userId} - Running legacy dual DeepSearch`);
+
         const [materialsResult, laborResult] = await Promise.all([
           deepSearchService.analyzeProject(
             validatedData.projectDescription,
@@ -282,30 +336,29 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
           )
         ]);
 
-        console.log(`✅ [FULL COSTS] Materials: ${materialsResult.materials.length} items, Labor: ${laborResult.laborItems.length} items`);
-
         const laborCosts = laborResult.laborItems.map(item => ({
+          id: item.id,
+          name: item.name,
           category: item.category,
           description: item.description,
+          quantity: item.quantity,
+          unit: item.unit,
+          unitPrice: item.unitPrice,
           hours: item.quantity,
           rate: item.unitPrice,
-          total: item.totalCost
+          total: item.totalCost,
+          totalCost: item.totalCost,
         }));
 
-        const totalMaterialsCost = materialsResult.materials.reduce((sum, m) => sum + (m.totalPrice || 0), 0);
-        const totalLaborCost = laborResult.totalLaborCost || laborCosts.reduce((sum, l) => sum + l.total, 0);
+        const totalMaterialsCost = materialsResult.materials.reduce((sum: number, m: any) => sum + (m.totalPrice || 0), 0);
+        const totalLaborCost = laborResult.totalLaborCost || laborCosts.reduce((sum: number, l: any) => sum + l.total, 0);
         const baseSubtotal = totalMaterialsCost + totalLaborCost;
 
-        // Tax: NATIONWIDE — no hardcoded default. Rate comes from user settings.
-        // taxOnMaterialsOnly: true (default) = tax only on materials (legally safer for most US states).
         const taxRateDecimal = (validatedData.taxRate !== undefined ? validatedData.taxRate : 0) / 100;
-        const taxOnMaterialsOnly = validatedData.taxOnMaterialsOnly !== false; // default: true
+        const taxOnMaterialsOnly = validatedData.taxOnMaterialsOnly !== false;
         const taxableBase = taxOnMaterialsOnly ? totalMaterialsCost : baseSubtotal;
         const taxAmount = taxableBase * taxRateDecimal;
-        
-        // Overhead + Markup: applied on top of direct costs before profit margin.
-        // overhead: covers fixed business costs (insurance, equipment, admin)
-        // markup: additional margin on top of overhead-adjusted costs
+
         const overheadPercent = validatedData.overheadPercent ?? 0;
         const markupPercent = validatedData.markupPercent ?? 0;
         const overheadAmount = baseSubtotal * (overheadPercent / 100);
@@ -314,46 +367,26 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
         const adjustedSubtotal = markupBase + markupAmount;
         const baseTotalWithTax = adjustedSubtotal + taxAmount;
 
-        // Flat Rate / Profit Margin
         let grandTotal = baseTotalWithTax;
         let profitMarginData: any = null;
-        let contractorView: any = null;
 
         if (validatedData.targetPrice && validatedData.targetPrice > 0) {
           const profitAmount = validatedData.targetPrice - baseTotalWithTax;
           const profitPercent = baseTotalWithTax > 0 ? (profitAmount / baseTotalWithTax) * 100 : 0;
-          profitMarginData = {
-            mode: 'flat_rate',
-            targetPrice: Math.round(validatedData.targetPrice * 100) / 100,
-            baseCost: Math.round(baseTotalWithTax * 100) / 100,
-            profitAmount: Math.round(profitAmount * 100) / 100,
-            profitPercent: Math.round(profitPercent * 10) / 10,
-            scalingFactor: baseTotalWithTax > 0 ? validatedData.targetPrice / baseTotalWithTax : 1,
-          };
+          profitMarginData = { mode: 'flat_rate', targetPrice: validatedData.targetPrice, baseCost: baseTotalWithTax, profitAmount, profitPercent, scalingFactor: baseTotalWithTax > 0 ? validatedData.targetPrice / baseTotalWithTax : 1 };
           grandTotal = validatedData.targetPrice;
         } else if (validatedData.profitMarginPercent && validatedData.profitMarginPercent > 0) {
           const profitAmount = baseTotalWithTax * (validatedData.profitMarginPercent / 100);
-          const priceToClient = baseTotalWithTax + profitAmount;
-          profitMarginData = {
-            mode: 'margin',
-            profitPercent: validatedData.profitMarginPercent,
-            profitAmount: Math.round(profitAmount * 100) / 100,
-            baseCost: Math.round(baseTotalWithTax * 100) / 100,
-            priceToClient: Math.round(priceToClient * 100) / 100,
-            scalingFactor: 1 + (validatedData.profitMarginPercent / 100),
-          };
-          grandTotal = priceToClient;
+          profitMarginData = { mode: 'margin', profitPercent: validatedData.profitMarginPercent, profitAmount, baseCost: baseTotalWithTax, priceToClient: baseTotalWithTax + profitAmount, scalingFactor: 1 + (validatedData.profitMarginPercent / 100) };
+          grandTotal = baseTotalWithTax + profitAmount;
         }
 
-        // Always build contractorView (not just when profitMarginData exists)
-        contractorView = {
+        const contractorView = {
           baseMaterialsCost: Math.round(totalMaterialsCost * 100) / 100,
           baseLaborCost: Math.round(totalLaborCost * 100) / 100,
           baseSubtotal: Math.round(baseSubtotal * 100) / 100,
-          overheadPercent: overheadPercent,
-          overheadAmount: Math.round(overheadAmount * 100) / 100,
-          markupPercent: markupPercent,
-          markupAmount: Math.round(markupAmount * 100) / 100,
+          overheadPercent, overheadAmount: Math.round(overheadAmount * 100) / 100,
+          markupPercent, markupAmount: Math.round(markupAmount * 100) / 100,
           adjustedSubtotal: Math.round(adjustedSubtotal * 100) / 100,
           taxOnMaterials: Math.round(taxAmount * 100) / 100,
           taxRate: (taxRateDecimal * 100).toFixed(2) + '%',
@@ -368,7 +401,7 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
           projectType: materialsResult.projectType,
           projectScope: materialsResult.projectScope,
           materials: materialsResult.materials,
-          laborCosts: laborCosts,
+          laborCosts,
           additionalCosts: materialsResult.additionalCosts || [],
           totalMaterialsCost: Math.round(totalMaterialsCost * 100) / 100,
           totalLaborCost: Math.round(totalLaborCost * 100) / 100,
@@ -380,63 +413,43 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
           baseTotalWithTax: Math.round(baseTotalWithTax * 100) / 100,
           grandTotal: Math.round(grandTotal * 100) / 100,
           profitMargin: profitMarginData,
-          contractorView: contractorView,
+          contractorView,
           confidence: Math.min(materialsResult.confidence, 0.85),
-          recommendations: [
-            ...materialsResult.recommendations,
-            `Labor: ${laborResult.laborItems.length} servicios detectados`,
-            `Duración estimada: ${laborResult.estimatedDuration}`,
-            `Crew size: ${laborResult.crewSize} trabajadores`
-          ],
-          warnings: [
-            ...materialsResult.warnings,
-            ...(laborResult.safetyConsiderations || []).map(s => `⚠️ ${s}`)
-          ]
+          recommendations: [...materialsResult.recommendations, `Labor: ${laborResult.laborItems.length} servicios detectados`],
+          warnings: [...materialsResult.warnings, ...(laborResult.safetyConsiderations || []).map((s: string) => `⚠️ ${s}`)]
         };
 
-        // 💳 DEDUCIR CRÉDITOS TRAS ÉXITO
-        await deductFeatureCredits(req, undefined, 'DeepSearch Full Costs (Materials + Labor)');
+        await deductFeatureCredits(req, undefined, 'DeepSearch Full Costs (Legacy Fallback)');
 
-        console.log(`✅ [FULL COSTS] User: ${userId} - Completado:`, {
-          materialsCount: materialsResult.materials.length,
-          laborCount: laborCosts.length,
-          grandTotal
-        });
-
-        res.json({
+        return res.json({
           success: true,
           data: fullCostsResult,
           timestamp: new Date().toISOString(),
-          searchType: 'dual_deepsearch'
+          searchType: 'dual_deepsearch_legacy'
         });
 
       } catch (error: any) {
-        console.error(`❌ [FULL COSTS] User: ${userId} - Error:`, error);
-        
-        // Identificar tipo específico de error
+        console.error(`❌ [FULL COSTS] User: ${userId} - All engines failed:`, error);
+
         let errorMessage = 'Error en análisis combinado de materiales y labor';
         let errorCode = 'DUAL_DEEPSEARCH_ERROR';
         let statusCode = 500;
-        
-        if (error.message?.includes('API key') || error.message?.includes('api_key') || error.message?.includes('Invalid API Key')) {
+
+        if (error.message?.includes('API key') || error.message?.includes('api_key')) {
           errorMessage = 'Error de configuración de API de IA. Contacte al administrador.';
-          errorCode = 'API_KEY_ERROR';
-          statusCode = 503;
+          errorCode = 'API_KEY_ERROR'; statusCode = 503;
         } else if (error.message?.includes('timeout') || error.message?.includes('timed out')) {
           errorMessage = 'La búsqueda tardó demasiado. Intenta con una descripción más corta.';
-          errorCode = 'TIMEOUT_ERROR';
-          statusCode = 504;
+          errorCode = 'TIMEOUT_ERROR'; statusCode = 504;
         } else if (error.message?.includes('rate limit') || error.message?.includes('quota')) {
           errorMessage = 'Se alcanzó el límite de búsquedas. Intenta más tarde.';
-          errorCode = 'RATE_LIMIT_ERROR';
-          statusCode = 429;
+          errorCode = 'RATE_LIMIT_ERROR'; statusCode = 429;
         } else if (error.name === 'ZodError') {
           errorMessage = 'Datos de entrada inválidos. Verifica la descripción del proyecto.';
-          errorCode = 'VALIDATION_ERROR';
-          statusCode = 400;
+          errorCode = 'VALIDATION_ERROR'; statusCode = 400;
         }
-        
-        res.status(statusCode).json({
+
+        return res.status(statusCode).json({
           success: false,
           error: errorMessage,
           code: errorCode,
