@@ -37,7 +37,14 @@ const CombinedAnalysisSchema = z.object({
   projectType: z.string().optional(),
   includeMaterials: z.boolean().default(true),
   includeLabor: z.boolean().default(true),
-  estimateId: z.string().optional()
+  estimateId: z.string().optional(),
+  // Flat Rate / Profit Margin fields
+  // profitMarginPercent: contractor desired profit margin (e.g., 20 = 20%)
+  // targetPrice: specific agreed price with the client (overrides profitMarginPercent)
+  // taxRate: sales tax rate to apply to materials only (e.g., 8.5 = 8.5%)
+  profitMarginPercent: z.number().min(0).max(500).optional(),
+  targetPrice: z.number().min(0).optional(),
+  taxRate: z.number().min(0).max(30).optional()
 });
 
 export function registerLaborDeepSearchRoutes(app: Express): void {
@@ -281,7 +288,57 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
 
         const totalMaterialsCost = materialsResult.materials.reduce((sum, m) => sum + (m.totalPrice || 0), 0);
         const totalLaborCost = laborResult.totalLaborCost || laborCosts.reduce((sum, l) => sum + l.total, 0);
-        const grandTotal = totalMaterialsCost + totalLaborCost;
+        const baseSubtotal = totalMaterialsCost + totalLaborCost;
+
+        // Tax: apply ONLY to materials (California law and most US states)
+        const taxRateDecimal = (validatedData.taxRate !== undefined ? validatedData.taxRate : 8.5) / 100;
+        const taxAmount = totalMaterialsCost * taxRateDecimal;
+        const baseTotalWithTax = baseSubtotal + taxAmount;
+
+        // Flat Rate / Profit Margin
+        let grandTotal = baseTotalWithTax;
+        let profitMarginData: any = null;
+        let contractorView: any = null;
+
+        if (validatedData.targetPrice && validatedData.targetPrice > 0) {
+          const profitAmount = validatedData.targetPrice - baseTotalWithTax;
+          const profitPercent = baseTotalWithTax > 0 ? (profitAmount / baseTotalWithTax) * 100 : 0;
+          profitMarginData = {
+            mode: 'flat_rate',
+            targetPrice: Math.round(validatedData.targetPrice * 100) / 100,
+            baseCost: Math.round(baseTotalWithTax * 100) / 100,
+            profitAmount: Math.round(profitAmount * 100) / 100,
+            profitPercent: Math.round(profitPercent * 10) / 10,
+            scalingFactor: baseTotalWithTax > 0 ? validatedData.targetPrice / baseTotalWithTax : 1,
+          };
+          grandTotal = validatedData.targetPrice;
+        } else if (validatedData.profitMarginPercent && validatedData.profitMarginPercent > 0) {
+          const profitAmount = baseTotalWithTax * (validatedData.profitMarginPercent / 100);
+          const priceToClient = baseTotalWithTax + profitAmount;
+          profitMarginData = {
+            mode: 'margin',
+            profitPercent: validatedData.profitMarginPercent,
+            profitAmount: Math.round(profitAmount * 100) / 100,
+            baseCost: Math.round(baseTotalWithTax * 100) / 100,
+            priceToClient: Math.round(priceToClient * 100) / 100,
+            scalingFactor: 1 + (validatedData.profitMarginPercent / 100),
+          };
+          grandTotal = priceToClient;
+        }
+
+        if (profitMarginData) {
+          contractorView = {
+            baseMaterialsCost: Math.round(totalMaterialsCost * 100) / 100,
+            baseLaborCost: Math.round(totalLaborCost * 100) / 100,
+            baseSubtotal: Math.round(baseSubtotal * 100) / 100,
+            taxOnMaterials: Math.round(taxAmount * 100) / 100,
+            taxRate: (taxRateDecimal * 100).toFixed(2) + '%',
+            baseTotalWithTax: Math.round(baseTotalWithTax * 100) / 100,
+            profitAmount: Math.round(profitMarginData.profitAmount * 100) / 100,
+            profitPercent: profitMarginData.profitPercent,
+            finalPriceToClient: Math.round(grandTotal * 100) / 100,
+          };
+        }
 
         const fullCostsResult = {
           projectType: materialsResult.projectType,
@@ -289,10 +346,17 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
           materials: materialsResult.materials,
           laborCosts: laborCosts,
           additionalCosts: materialsResult.additionalCosts || [],
-          totalMaterialsCost,
-          totalLaborCost,
+          totalMaterialsCost: Math.round(totalMaterialsCost * 100) / 100,
+          totalLaborCost: Math.round(totalLaborCost * 100) / 100,
           totalAdditionalCost: materialsResult.totalAdditionalCost || 0,
-          grandTotal,
+          taxAmount: Math.round(taxAmount * 100) / 100,
+          taxRate: taxRateDecimal,
+          taxAppliedTo: 'materials_only',
+          baseSubtotal: Math.round(baseSubtotal * 100) / 100,
+          baseTotalWithTax: Math.round(baseTotalWithTax * 100) / 100,
+          grandTotal: Math.round(grandTotal * 100) / 100,
+          profitMargin: profitMarginData,
+          contractorView: contractorView,
           confidence: Math.min(materialsResult.confidence, 0.85),
           recommendations: [
             ...materialsResult.recommendations,

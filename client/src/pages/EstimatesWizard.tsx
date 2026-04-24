@@ -178,6 +178,11 @@ interface EstimateData {
   discountValue: number;
   discountAmount: number;
   discountName: string;
+  // Profit Margin / Flat Rate (contractor-only, never shown to client)
+  profitMarginPercent: number; // 0 = no margin applied
+  targetPrice: number;         // 0 = no flat rate applied
+  profitAmount: number;        // calculated profit in dollars
+  contractorBaseCost: number;  // base cost before profit
 }
 
 const STEPS = [
@@ -310,6 +315,10 @@ export default function EstimatesWizardFixed() {
     discountValue: 0,
     discountAmount: 0,
     discountName: "",
+    profitMarginPercent: 0,
+    targetPrice: 0,
+    profitAmount: 0,
+    contractorBaseCost: 0,
   });
 
   // Data from existing systems
@@ -1599,28 +1608,46 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
     // Calculate tax on discounted amount
     const tax = subtotalAfterDiscount * (estimate.taxRate / 100);
-    const total = subtotalAfterDiscount + tax;
+    const baseTotal = subtotalAfterDiscount + tax;
+
+    // Profit Margin / Flat Rate calculation (contractor-only)
+    let profitAmount = 0;
+    let total = baseTotal;
+    if (estimate.targetPrice > 0) {
+      profitAmount = estimate.targetPrice - baseTotal;
+      total = estimate.targetPrice;
+    } else if (estimate.profitMarginPercent > 0) {
+      profitAmount = baseTotal * (estimate.profitMarginPercent / 100);
+      total = baseTotal + profitAmount;
+    }
 
     console.log("🔍 FINAL TOTALS DEBUG", {
       subtotal,
       discountAmount,
       subtotalAfterDiscount,
       tax,
+      baseTotal,
+      profitMarginPercent: estimate.profitMarginPercent,
+      targetPrice: estimate.targetPrice,
+      profitAmount,
       total,
     });
-
     setEstimate((prev) => ({
       ...prev,
       subtotal,
       tax,
       total,
       discountAmount,
+      profitAmount,
+      contractorBaseCost: baseTotal,
     }));
   }, [
     estimate.items,
     estimate.taxRate,
     estimate.discountType,
     estimate.discountValue,
+    estimate.profitMarginPercent,
+    estimate.targetPrice,
   ]);
 
   // 🔄 AUTO-SAVE con DEBOUNCE MEJORADO - useRef para evitar primer render
@@ -5899,6 +5926,81 @@ This link provides a professional view of your estimate that you can access anyt
                           </button>
                         )}
                       </div>
+                    </div>
+
+                    {/* Profit Margin / Flat Rate Controls - Contractor Only */}
+                    <div className="bg-gradient-to-r from-emerald-950 via-green-950 to-emerald-950 rounded-xl px-3 py-3 border border-emerald-800 shadow-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-emerald-400 text-xs font-bold tracking-wide uppercase">🔒 Ganancia del Contratista</span>
+                        <span className="text-emerald-600 text-xs">(No visible al cliente)</span>
+                      </div>
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                          <span className="text-emerald-300 text-xs font-medium tracking-wide">MARGEN %</span>
+                          <div className="flex items-center bg-emerald-900 rounded-lg px-2 py-1 border border-emerald-700 flex-1 sm:flex-initial">
+                            <input
+                              type="number"
+                              value={estimate.profitMarginPercent || ""}
+                              onChange={(e) =>
+                                setEstimate((prev) => ({
+                                  ...prev,
+                                  profitMarginPercent: parseFloat(e.target.value) || 0,
+                                  targetPrice: 0,
+                                }))
+                              }
+                              className="w-12 bg-transparent text-emerald-100 text-xs text-center focus:outline-none"
+                              min="0"
+                              max="500"
+                              step="1"
+                              placeholder="0"
+                            />
+                            <span className="text-emerald-500 text-xs ml-1">%</span>
+                          </div>
+                        </div>
+                        <span className="text-emerald-700 text-xs hidden sm:block">ó</span>
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                          <span className="text-emerald-300 text-xs font-medium tracking-wide">PRECIO FIJO</span>
+                          <div className="flex items-center bg-emerald-900 rounded-lg px-2 py-1 border border-emerald-700 flex-1 sm:flex-initial">
+                            <span className="text-emerald-500 text-xs mr-1">$</span>
+                            <input
+                              type="number"
+                              value={estimate.targetPrice || ""}
+                              onChange={(e) =>
+                                setEstimate((prev) => ({
+                                  ...prev,
+                                  targetPrice: parseFloat(e.target.value) || 0,
+                                  profitMarginPercent: 0,
+                                }))
+                              }
+                              className="w-20 bg-transparent text-emerald-100 text-xs text-center focus:outline-none"
+                              min="0"
+                              step="0.01"
+                              placeholder="0.00"
+                            />
+                          </div>
+                        </div>
+                        {(estimate.profitMarginPercent > 0 || estimate.targetPrice > 0) && (
+                          <button
+                            onClick={() => setEstimate((prev) => ({ ...prev, profitMarginPercent: 0, targetPrice: 0 }))}
+                            className="text-xs text-emerald-600 hover:text-emerald-400 transition-colors underline"
+                          >
+                            Limpiar
+                          </button>
+                        )}
+                      </div>
+                      {(estimate.profitMarginPercent > 0 || estimate.targetPrice > 0) && estimate.profitAmount !== 0 && (
+                        <div className="mt-2 pt-2 border-t border-emerald-800 flex justify-between items-center">
+                          <span className="text-emerald-400 text-xs">Tu ganancia estimada:</span>
+                          <span className={`text-sm font-bold ${estimate.profitAmount >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                            {estimate.profitAmount >= 0 ? '+' : ''}${estimate.profitAmount.toFixed(2)}
+                            {estimate.contractorBaseCost > 0 && (
+                              <span className="text-emerald-600 text-xs ml-1">
+                                ({((estimate.profitAmount / estimate.contractorBaseCost) * 100).toFixed(1)}%)
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Premium Totals Summary */}

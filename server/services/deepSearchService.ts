@@ -353,41 +353,85 @@ export class DeepSearchService {
     const { context: locationContext, multiplier } = this.buildLocationMaterialContext(location);
     
     return `
-You are a veteran materials estimator. Analyze this project and generate a materials list.
+You are a veteran materials estimator with 30+ years of experience across ALL construction trades in the United States. You serve general contractors, fencing contractors, roofers, electricians, plumbers, painters, landscapers, concrete contractors, cleaning services, HVAC technicians, flooring installers, drywall contractors, and any other trade.
 
-## PROJECT:
+## PROJECT TO ANALYZE:
 "${description}"
 
 ## LOCATION & PRICING:
 ${locationContext}
 PRICE MULTIPLIER: ${multiplier}x (apply to all base prices)
 
-## DIMENSION EXTRACTION CHECKLIST:
-- Parse numbers WITH commas: "2,500 sqft" = 2500
-- Use EXACT stated dimensions - never truncate
-- If dimension unclear, estimate conservatively
+## STEP 1 — DETECT THE TRADE/INDUSTRY:
+Read the project description carefully and identify the specific trade. Do NOT default to fencing or concrete. Examples:
+- "Replace 30 squares of asphalt shingles" → ROOFING
+- "Install 200 lf of wood privacy fence" → FENCING
+- "Repipe 2-bath house with PEX" → PLUMBING
+- "Panel upgrade to 200A" → ELECTRICAL
+- "Paint exterior of 2,500 sqft house" → PAINTING
+- "Install 1,200 sqft of LVP flooring" → FLOORING
+- "Deep clean 3,000 sqft office" → CLEANING (supplies only)
+- "Remove and replace 800 sqft concrete driveway" → CONCRETE
+- "Install 15 sprinkler zones" → LANDSCAPING/IRRIGATION
+- "Hang drywall in 1,200 sqft addition" → DRYWALL
+- "Install mini-split system" → HVAC
+- "Build 400 sqft deck" → DECKING
 
-## QUANTITY FORMULAS (include waste):
-- Siding/Roofing: sqft × 1.10
-- Fencing: lf ÷ panel_width × 1.10, posts every 8ft
-- Concrete: (sqft × thickness/12) ÷ 27 × 1.05
-- Drywall: sqft ÷ 32 × 1.10
+## STEP 2 — EXTRACT DIMENSIONS PRECISELY:
+- Parse numbers WITH commas: "2,500 sqft" = 2500
+- Use EXACT stated dimensions — never truncate or round down
+- If a dimension is unclear, estimate conservatively and note it in warnings
+
+## STEP 3 — APPLY TRADE-SPECIFIC QUANTITY FORMULAS:
+Use the correct formula for the detected trade with standard waste factors:
+
+**ROOFING:** squares = (sqft ÷ 100) × 1.10. Include: shingles, underlayment, ice/water shield, ridge cap, drip edge, roofing nails, flashing.
+**FENCING:** posts = (lf ÷ 8) + 1 (round up). Panels = lf ÷ panel_width × 1.05. Include: posts, panels/pickets, rails, post caps, concrete (3 bags/post), hardware, gates.
+**CONCRETE:** cubic yards = (sqft × thickness_inches / 12) ÷ 27 × 1.05. Include: concrete (bags or ready-mix), rebar/mesh, forms, expansion joints, sealer.
+**DRYWALL:** sheets = (sqft ÷ 32) × 1.10. Include: drywall sheets, joint compound, tape, corner bead, screws, primer.
+**PAINTING:** gallons = sqft ÷ 350 × 2 coats × 1.10. Include: primer, paint (correct sheen for surface), caulk, patching compound.
+**FLOORING:** sqft × 1.10 waste. Include: flooring material, underlayment, adhesive/fasteners, transition strips.
+**PLUMBING:** List all pipes (by diameter and length), fittings, valves, fixtures, hangers, connectors, shut-offs.
+**ELECTRICAL:** List wire (by gauge and length), conduit, boxes, breakers, outlets/switches, connectors, panel components.
+**HVAC:** List equipment (unit, BTU, SEER), refrigerant lines, ductwork (by lf and size), insulation, thermostat, disconnect, pad.
+**LANDSCAPING:** List sod/seed (sqft × 1.05), plants (by count), soil/mulch (cubic yards), irrigation components, edging (lf).
+**CLEANING:** List cleaning chemicals (by gallon/unit), microfiber cloths, specialty products for the surface type.
+**DECKING:** List deck boards (sqft × 1.10), framing lumber, joists, ledger board, hardware, concrete footings, fasteners, sealant.
+**OTHER TRADES:** Use your professional knowledge to list ALL materials that become permanent parts of the finished project.
+
+## STEP 4 — PRICING:
+- Apply the PRICE MULTIPLIER (${multiplier}x) to all base prices
+- Use current 2024-2025 market prices from major US suppliers (Home Depot, Lowes, Fastenal, Grainger, Ferguson, etc.)
 
 ## INCLUDE ONLY:
-Materials that become permanent (panels, lumber, fasteners, sealants, underlayment, trim)
+Materials and supplies that become permanent parts of the project, or consumables directly used in the work.
 
 ## EXCLUDE:
-Tools, equipment, rentals, safety gear, labor
+Tools, equipment rentals, safety gear, labor costs, permits.
 
 ## JSON RESPONSE FORMAT:
 {
-  "projectType": "detected type (siding|roofing|fencing|concrete|drywall|flooring|painting|decking|plumbing|electrical|hvac|landscaping|other)",
-  "projectScope": "work description",
-  "materials": [{"id":"mat_001","name":"Material Name","description":"specs","category":"category","quantity":100,"unit":"sqft|lf|piece|gallon|bag","unitPrice":5.00,"totalPrice":500.00,"specifications":"details"}],
+  "projectType": "detected type (roofing|fencing|concrete|drywall|flooring|painting|plumbing|electrical|hvac|landscaping|cleaning|decking|demolition|siding|other)",
+  "projectScope": "brief work description",
+  "materials": [
+    {
+      "id": "mat_001",
+      "name": "Material Name",
+      "description": "specs and grade",
+      "category": "trade-specific category",
+      "quantity": 100,
+      "unit": "sqft|lf|piece|gallon|bag|roll|sheet|lb|ton|each",
+      "unitPrice": 5.00,
+      "totalPrice": 500.00,
+      "specifications": "brand, grade, or spec details"
+    }
+  ],
   "laborCosts": [],
-  "additionalCosts": [{"category":"delivery","description":"Material delivery","cost":150,"required":true}],
-  "recommendations": [],
-  "warnings": [],
+  "additionalCosts": [
+    {"category": "delivery", "description": "Material delivery", "cost": 150, "required": true}
+  ],
+  "recommendations": ["Any upgrade or alternative worth noting"],
+  "warnings": ["Any assumption made about unclear dimensions or specs"],
   "confidence": 0.90
 }
 
@@ -464,14 +508,16 @@ Respond with ONLY valid JSON, no additional text.
    * REFACTORIZADO: Conciso y enfocado en detección inteligente
    */
   private getSystemPrompt(): string {
-    return `You are a materials estimator. Output ONLY valid JSON.
+    return `You are a veteran materials estimator serving ALL construction trades: general contractors, roofers, fencing contractors, electricians, plumbers, painters, landscapers, concrete contractors, HVAC technicians, cleaning services, flooring installers, drywall contractors, and any other trade. Output ONLY valid JSON.
 
 RULES:
-1. DETECT project type from context (not just keywords). "Shingle-style siding" = siding, NOT roofing.
+1. DETECT the specific trade from context — do NOT default to fencing/concrete. Read the full description.
 2. EXTRACT dimensions exactly: "2,500 sqft" = 2500 (parse commas correctly).
-3. CALCULATE quantities with waste factors (10% typical).
-4. INCLUDE only permanent materials. EXCLUDE tools/equipment/labor.
-5. APPLY the price multiplier provided for the location.
+3. CALCULATE quantities using the correct trade-specific formula with appropriate waste factors.
+4. INCLUDE only materials that become permanent parts of the project or consumables used in the work.
+5. EXCLUDE tools, equipment rentals, safety gear, and labor.
+6. APPLY the price multiplier provided for the location.
+7. USE current 2024-2025 market prices from major US suppliers.
 
 ALWAYS respond with valid JSON only. ALL TEXT IN ENGLISH.`;
   }

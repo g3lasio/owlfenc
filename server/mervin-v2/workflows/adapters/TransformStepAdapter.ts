@@ -3,9 +3,48 @@
  * 
  * Adapter para ejecutar transformaciones de datos en workflows.
  * Maneja operaciones como formateo, validación, cálculos, etc.
+ * 
+ * CHANGELOG:
+ * - v2.1.0 (2026-04-24): Fixed tax calculation to apply ONLY to materials (not labor).
+ *   California sales tax (and most US states) applies only to tangible goods, not services.
+ *   Added flat rate / profit margin support with dual-view transparency.
  */
 
 import { WorkflowStep, WorkflowStepAdapter } from '../types';
+
+// Labor-related keywords used to classify items when no explicit type field is present.
+// This is the fallback heuristic for items coming from older DeepSearch formats.
+const LABOR_KEYWORDS = [
+  'labor', 'labour', 'installation', 'install', 'service', 'work', 'crew',
+  'hours', 'hrs', 'man-hour', 'man hour', 'workforce', 'technician',
+  'electrician', 'plumber', 'painter', 'roofer', 'cleaner', 'landscaper',
+  'demo', 'demolition', 'excavation', 'hauling', 'disposal', 'cleanup',
+  'mano de obra', 'instalación', 'servicio', 'trabajo', 'cuadrilla'
+];
+
+/**
+ * Determine if an item is a labor/service item (not taxable in most US states).
+ * Priority: explicit type/category field → name/description keyword heuristic.
+ */
+function isLaborItem(item: any): boolean {
+  // 1. Explicit type field (set by DeepSearch adapters)
+  if (item.type) {
+    const t = String(item.type).toLowerCase();
+    if (t === 'labor' || t === 'labour' || t === 'service') return true;
+    if (t === 'material' || t === 'materials' || t === 'product') return false;
+  }
+
+  // 2. Explicit category field
+  if (item.category) {
+    const c = String(item.category).toLowerCase();
+    if (c.includes('labor') || c.includes('labour') || c.includes('service') || c.includes('work')) return true;
+    if (c.includes('material') || c.includes('product') || c.includes('supply')) return false;
+  }
+
+  // 3. Heuristic: check name and description for labor keywords
+  const text = `${item.name || ''} ${item.description || ''}`.toLowerCase();
+  return LABOR_KEYWORDS.some(kw => text.includes(kw));
+}
 
 export class TransformStepAdapter implements WorkflowStepAdapter {
   
@@ -64,7 +103,7 @@ export class TransformStepAdapter implements WorkflowStepAdapter {
         return this.deepSearchToItems(inputValue);
         
       case 'calculate_estimate_totals':
-        return this.calculateEstimateTotals(inputValue);
+        return this.calculateEstimateTotals(inputValue, context);
         
       case 'identity':
         return inputValue;
@@ -90,8 +129,6 @@ export class TransformStepAdapter implements WorkflowStepAdapter {
     if (!address || address.trim().length === 0) {
       throw new Error('Address is required');
     }
-    
-    // Normalizar dirección
     return address.trim();
   }
   
@@ -103,8 +140,6 @@ export class TransformStepAdapter implements WorkflowStepAdapter {
       throw new Error('Property data is empty');
     }
     
-    // El endpoint /api/property/details retorna { property: {...}, source: "ATTOM" }
-    // Extraer el objeto property si existe
     const property = propertyData.property || propertyData;
     
     return {
@@ -173,34 +208,138 @@ export class TransformStepAdapter implements WorkflowStepAdapter {
   }
   
   /**
-   * Calcular totales del estimado
+   * Calcular totales del estimado con tax correcto (solo materiales) y soporte de Flat Rate / Profit Margin.
+   * 
+   * CORRECCIÓN CRÍTICA: En California y la mayoría de estados de EE.UU., el sales tax
+   * aplica SOLO a materiales (bienes tangibles), NO a mano de obra (servicios).
+   * Ref: California Revenue and Taxation Code §6006, §6010.
+   * 
+   * FLAT RATE / PROFIT MARGIN:
+   * Si el contexto contiene `targetPrice` (precio acordado con el cliente) o
+   * `profitMarginPercent` (margen de ganancia deseado), se calculan dos vistas:
+   *   - contractorView: costo base + margen de ganancia + tax = precio final al cliente
+   *   - clientView: solo el precio final (sin revelar el margen)
+   * 
+   * @param items - Array de ítems del estimado
+   * @param context - Contexto del workflow (puede contener taxRate, targetPrice, profitMarginPercent)
    */
-  private calculateEstimateTotals(items: any[]): any {
+  private calculateEstimateTotals(items: any[], context: Record<string, any>): any {
     if (!items || items.length === 0) {
       return {
         subtotal: 0,
+        materialsSubtotal: 0,
+        laborSubtotal: 0,
         tax: 0,
-        total: 0
+        total: 0,
+        taxRate: 0,
+        taxAppliedTo: 'materials_only',
+        profitMargin: null,
+        contractorView: null,
       };
     }
     
-    // Calcular subtotal
-    const subtotal = items.reduce((sum, item) => {
-      return sum + (item.totalCost || 0);
-    }, 0);
+    // ─── 1. Separate materials from labor ────────────────────────────────────
+    let materialsSubtotal = 0;
+    let laborSubtotal = 0;
     
-    // Calcular impuesto (asumiendo 8.5%)
-    const taxRate = 0.085;
-    const tax = subtotal * taxRate;
+    for (const item of items) {
+      const cost = item.totalCost || 0;
+      if (isLaborItem(item)) {
+        laborSubtotal += cost;
+      } else {
+        materialsSubtotal += cost;
+      }
+    }
     
-    // Total
-    const total = subtotal + tax;
+    const subtotal = materialsSubtotal + laborSubtotal;
+    
+    // ─── 2. Tax on materials only ─────────────────────────────────────────────
+    // Tax rate can be overridden per-request via context (e.g., user sets 9.25% in wizard).
+    // Default: 8.5% (Solano County, CA — where the primary user base is located).
+    const taxRate = (typeof context.taxRate === 'number' && context.taxRate >= 0)
+      ? context.taxRate
+      : 0.085;
+    
+    const tax = materialsSubtotal * taxRate;
+    const baseTotal = subtotal + tax;
+    
+    // ─── 3. Flat Rate / Profit Margin ─────────────────────────────────────────
+    let profitMarginData: any = null;
+    let finalTotal = baseTotal;
+    
+    const targetPrice: number | undefined = context.targetPrice;
+    const profitMarginPercent: number | undefined = context.profitMarginPercent;
+    
+    if (targetPrice && targetPrice > 0) {
+      // Contractor set a specific agreed price with the client.
+      // Calculate what the actual profit/margin is.
+      const profitAmount = targetPrice - baseTotal;
+      const profitPercent = baseTotal > 0 ? (profitAmount / baseTotal) * 100 : 0;
+      
+      profitMarginData = {
+        mode: 'flat_rate',
+        targetPrice: Math.round(targetPrice * 100) / 100,
+        baseCost: Math.round(baseTotal * 100) / 100,
+        profitAmount: Math.round(profitAmount * 100) / 100,
+        profitPercent: Math.round(profitPercent * 10) / 10,
+        // Scaling factor applied to each item for the client-facing PDF
+        scalingFactor: baseTotal > 0 ? targetPrice / baseTotal : 1,
+      };
+      finalTotal = targetPrice;
+      
+    } else if (profitMarginPercent && profitMarginPercent > 0) {
+      // Contractor wants a specific profit margin percentage.
+      // Calculate the price to charge the client.
+      const profitAmount = baseTotal * (profitMarginPercent / 100);
+      const priceToClient = baseTotal + profitAmount;
+      
+      profitMarginData = {
+        mode: 'margin',
+        profitPercent: profitMarginPercent,
+        profitAmount: Math.round(profitAmount * 100) / 100,
+        baseCost: Math.round(baseTotal * 100) / 100,
+        priceToClient: Math.round(priceToClient * 100) / 100,
+        scalingFactor: 1 + (profitMarginPercent / 100),
+      };
+      finalTotal = priceToClient;
+    }
+    
+    // ─── 4. Build contractor-facing breakdown ─────────────────────────────────
+    const contractorView = profitMarginData ? {
+      baseMaterialsCost: Math.round(materialsSubtotal * 100) / 100,
+      baseLaborCost: Math.round(laborSubtotal * 100) / 100,
+      baseSubtotal: Math.round(subtotal * 100) / 100,
+      taxOnMaterials: Math.round(tax * 100) / 100,
+      baseTotalWithTax: Math.round(baseTotal * 100) / 100,
+      profitAmount: Math.round(profitMarginData.profitAmount * 100) / 100,
+      profitPercent: profitMarginData.profitPercent,
+      finalPriceToClient: Math.round(finalTotal * 100) / 100,
+    } : null;
+    
+    // ─── 5. Return ─────────────────────────────────────────────────────────────
+    console.log(`💰 [TRANSFORM-ADAPTER] Tax calculation:`, {
+      materialsSubtotal: Math.round(materialsSubtotal * 100) / 100,
+      laborSubtotal: Math.round(laborSubtotal * 100) / 100,
+      taxRate: `${(taxRate * 100).toFixed(2)}%`,
+      taxOnMaterials: Math.round(tax * 100) / 100,
+      baseTotal: Math.round(baseTotal * 100) / 100,
+      profitMode: profitMarginData?.mode || 'none',
+      finalTotal: Math.round(finalTotal * 100) / 100,
+    });
     
     return {
+      // Core totals (used by PDF engine and frontend)
       subtotal: Math.round(subtotal * 100) / 100,
+      materialsSubtotal: Math.round(materialsSubtotal * 100) / 100,
+      laborSubtotal: Math.round(laborSubtotal * 100) / 100,
       tax: Math.round(tax * 100) / 100,
-      total: Math.round(total * 100) / 100,
-      taxRate: taxRate
+      taxRate: taxRate,
+      taxAppliedTo: 'materials_only',
+      total: Math.round(finalTotal * 100) / 100,
+      // Profit margin data (only present when flat rate or margin mode is active)
+      profitMargin: profitMarginData,
+      // Contractor-only view (never sent to client PDF)
+      contractorView: contractorView,
     };
   }
 
@@ -212,7 +351,6 @@ export class TransformStepAdapter implements WorkflowStepAdapter {
     console.log('🔍 [TRANSFORM-ADAPTER] Extrayendo información de solicitud de permisos...');
     
     try {
-      // Importar Anthropic
       const Anthropic = (await import('@anthropic-ai/sdk')).default;
       const anthropic = new Anthropic({
         apiKey: process.env.ANTHROPIC_API_KEY
@@ -248,14 +386,12 @@ If you're not certain about a field, set it to null.`,
       const textContent = response.content.find((c) => c.type === 'text') as { type: 'text'; text: string } | undefined;
       let rawText = textContent?.text || '{}';
       
-      // Remove markdown code blocks
       if (rawText.includes('```json')) {
         rawText = rawText.replace(/```json\s*/g, '').replace(/```\s*/g, '');
       } else if (rawText.includes('```')) {
         rawText = rawText.replace(/```\s*/g, '');
       }
       
-      // Try to extract JSON object
       const jsonMatch = rawText.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         rawText = jsonMatch[0];
@@ -274,8 +410,6 @@ If you're not certain about a field, set it to null.`,
       
     } catch (error: any) {
       console.error('❌ [TRANSFORM-ADAPTER] Error extrayendo información:', error.message);
-      
-      // Fallback: retornar sin información
       return {
         address: null,
         projectType: null,
@@ -296,28 +430,19 @@ If you're not certain about a field, set it to null.`,
       const address = context.projectInfo?.address || permitData.meta?.location || 'la propiedad';
       const projectType = context.projectInfo?.projectType || permitData.meta?.projectType || 'proyecto';
       
-      // Construir respuesta
       let response = `¡Órale jefe! Ya investigué los permisos para tu proyecto de ${projectType} en ${address}.\n\n`;
       
-      // Permisos requeridos
       if (permitData.requiredPermits && permitData.requiredPermits.length > 0) {
         response += `📋 **PERMISOS REQUERIDOS:**\n`;
         for (const permit of permitData.requiredPermits.slice(0, 3)) {
           response += `\n**${permit.name}** - ${permit.issuingAuthority}\n`;
-          if (permit.estimatedTimeline) {
-            response += `   • Timeline: ${permit.estimatedTimeline}\n`;
-          }
-          if (permit.averageCost) {
-            response += `   • Costo estimado: ${permit.averageCost}\n`;
-          }
-          if (permit.description) {
-            response += `   • ${permit.description}\n`;
-          }
+          if (permit.estimatedTimeline) response += `   • Timeline: ${permit.estimatedTimeline}\n`;
+          if (permit.averageCost) response += `   • Costo estimado: ${permit.averageCost}\n`;
+          if (permit.description) response += `   • ${permit.description}\n`;
         }
         response += '\n';
       }
       
-      // Códigos de construcción
       if (permitData.buildingCodes && permitData.buildingCodes.length > 0) {
         response += `🏗️ **CÓDIGOS APLICABLES:**\n`;
         for (const code of permitData.buildingCodes.slice(0, 3)) {
@@ -326,21 +451,15 @@ If you're not certain about a field, set it to null.`,
         response += '\n';
       }
       
-      // Información de contacto
       if (permitData.contactInfo || permitData.contact) {
         const contact = permitData.contactInfo || permitData.contact;
         response += `📞 **CONTACTO:**\n`;
         response += `${contact.department || 'Building Department'}\n`;
-        if (contact.phone) {
-          response += `${contact.phone}\n`;
-        }
-        if (contact.website) {
-          response += `${contact.website}\n`;
-        }
+        if (contact.phone) response += `${contact.phone}\n`;
+        if (contact.website) response += `${contact.website}\n`;
         response += '\n';
       }
       
-      // Link al PDF
       if (pdfUrl) {
         response += `📄 **REPORTE COMPLETO:**\n`;
         response += `He generado un reporte detallado en PDF con todos los permisos, códigos, proceso de aplicación y contactos.\n\n`;
@@ -350,7 +469,6 @@ If you're not certain about a field, set it to null.`,
       response += `¿Necesitas ayuda con algo más, compadre?`;
       
       console.log('✅ [TRANSFORM-ADAPTER] Respuesta formateada');
-      
       return response;
       
     } catch (error: any) {
