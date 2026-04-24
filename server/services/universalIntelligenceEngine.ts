@@ -16,11 +16,11 @@
  *  - STRICT FINANCIAL FIDELITY: Mathematically applies the contractor's exact
  *    profit margin, overhead, tax rate, and flat-rate settings.
  *  - SUPERIOR REASONING: Uses the most capable reasoning model available
- *    (claude-opus-4-5 / claude-3-opus) to think through each project like a
+ *    (claude-sonnet-4-20250514 / claude-3-7-sonnet) to think through each project like a
  *    seasoned professional with 40+ years of cross-industry experience.
  *
- * Model: claude-opus-4-5 (highest reasoning capability, "Opus 4.7 level")
- *        Falls back to claude-3-opus-20240229 if opus-4-5 is unavailable.
+ * Model: claude-sonnet-4-20250514 (highest reasoning capability currently available)
+ *        Falls back to claude-3-7-sonnet-20250219 if primary is unavailable.
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
@@ -31,10 +31,10 @@ const anthropic = new Anthropic({
 });
 
 // ─── Model Configuration ─────────────────────────────────────────────────────
-// Primary: claude-opus-4-5 (most advanced reasoning available)
-// Fallback: claude-3-opus-20240229
-const PRIMARY_MODEL = 'claude-opus-4-5';
-const FALLBACK_MODEL = 'claude-3-opus-20240229';
+// Primary: claude-sonnet-4-20250514 (most advanced model currently in production)
+// Fallback: claude-3-7-sonnet-20250219 (proven stable in production)
+const PRIMARY_MODEL = 'claude-sonnet-4-20250514';
+const FALLBACK_MODEL = 'claude-3-7-sonnet-20250219';
 
 // ─── Type Definitions ─────────────────────────────────────────────────────────
 
@@ -453,7 +453,7 @@ export class UniversalIntelligenceEngine {
       return content.text;
     } catch (primaryError: any) {
       // If model not found, fall back to claude-3-opus
-      if (primaryError.status === 404 || primaryError.message?.includes('model')) {
+      if (primaryError.status === 404 || primaryError.status === 400 || primaryError.message?.includes('model') || primaryError.message?.includes('not found')) {
         console.log(`⚠️ [UIE] Primary model ${PRIMARY_MODEL} unavailable, falling back to ${FALLBACK_MODEL}`);
         const response = await anthropic.messages.create({
           model: FALLBACK_MODEL,
