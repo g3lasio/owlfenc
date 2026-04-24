@@ -58,21 +58,17 @@ export class MaterialValidationService {
         {
           name: 'posts',
           required: true,
-          keywords: ['post', 'pole', 'support', '4x4', '6x6'],
+          // Covers wood posts (4x4, 6x6), steel posts, metal posts, aluminum posts
+          keywords: ['post', 'pole', 'support', '4x4', '6x6', 'steel post', 'metal post', 'aluminum post'],
           minimumQuantity: 2,
           warningMessage: 'Fence posts are essential - cannot build fence without structural posts'
         },
         {
-          name: 'boards_or_panels',
+          name: 'fence_surface_material',
           required: true,
-          keywords: ['board', 'panel', 'slat', 'picket', '1x6', '1x8', 'cedar', 'pine'],
-          warningMessage: 'Fence boards/panels are required for the actual fence surface'
-        },
-        {
-          name: 'hardware',
-          required: true,
-          keywords: ['nail', 'screw', 'bolt', 'bracket', 'hinge', 'galvanized'],
-          warningMessage: 'Hardware/fasteners are critical for assembly'
+          // Covers ALL fence types: wood boards, metal panels, chain link fabric, vinyl panels, pickets
+          keywords: ['board', 'panel', 'slat', 'picket', '1x6', '1x8', 'cedar', 'pine', 'fabric', 'chain link', 'mesh', 'ornamental', 'iron', 'aluminum fence', 'metal fence', 'vinyl panel', 'welded wire'],
+          warningMessage: 'Fence surface material is required (boards/panels/fabric/pickets depending on fence type)'
         },
         {
           name: 'concrete_or_foundation',
@@ -81,10 +77,10 @@ export class MaterialValidationService {
           warningMessage: 'Concrete is required for setting fence posts properly'
         }
       ],
-      optionalCategories: ['gate', 'paint', 'stain', 'cap', 'trim'],
+      optionalCategories: ['gate', 'paint', 'stain', 'cap', 'trim', 'hardware', 'nail', 'screw', 'bracket', 'hinge', 'welding', 'rail'],
       warningThresholds: {
-        totalCost: { min: 15, max: 50 }, // per linear foot
-        materialCount: { min: 4, max: 15 }
+        totalCost: { min: 12, max: 80 }, // per linear foot - wider range to cover metal/ornamental fences
+        materialCount: { min: 3, max: 18 }
       }
     },
     

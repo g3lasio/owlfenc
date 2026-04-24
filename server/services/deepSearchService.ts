@@ -386,7 +386,11 @@ Read the project description carefully and identify the specific trade. Do NOT d
 Use the correct formula for the detected trade with standard waste factors:
 
 **ROOFING:** squares = (sqft ÷ 100) × 1.10. Include: shingles, underlayment, ice/water shield, ridge cap, drip edge, roofing nails, flashing.
-**FENCING:** posts = (lf ÷ 8) + 1 (round up). Panels = lf ÷ panel_width × 1.05. Include: posts, panels/pickets, rails, post caps, concrete (3 bags/post), hardware, gates.
+**FENCING — CRITICAL: Detect the fence material type and use ONLY matching materials. NEVER mix wood materials into metal projects or vice versa:**
+  - WOOD FENCE (privacy, cedar, pine, picket, board-on-board): posts = (lf ÷ 8) + 1. Boards = lf × (fence_height_ft ÷ board_width_ft) × 1.10. Rails = (lf ÷ 8) × 3. Include: pressure-treated posts, cedar/pine boards, 2×4 rails, post caps, concrete (3 bags/post), galvanized nails/screws, gate hardware.
+  - CHAIN LINK FENCE: posts = (lf ÷ 10) + 1. Fabric rolls = lf ÷ 50. Include: steel terminal posts, steel line posts, chain link fabric, tension wire, top rail, tie wire, tension bands, post caps, concrete (2 bags/post), gate frame + fabric.
+  - METAL/WELDED/ORNAMENTAL/IRON/ALUMINUM FENCE (black metal, wrought iron, tubular steel, ornamental): panels = ROUND UP(lf ÷ panel_width). Posts = panels + 1. Include: metal fence panels (correct panel_width), steel/aluminum posts, post caps, concrete (2-3 bags/post), welding rods (if welded), primer + paint, mounting hardware, gate panels + hardware. DO NOT include any wood boards, pine posts, or nails.
+  - VINYL/PVC FENCE: posts = (lf ÷ 8) + 1. Panels = lf ÷ 8. Include: vinyl posts, vinyl panels/pickets, vinyl rails, post caps, concrete (2 bags/post), vinyl gate, hardware.
 **CONCRETE:** cubic yards = (sqft × thickness_inches / 12) ÷ 27 × 1.05. Include: concrete (bags or ready-mix), rebar/mesh, forms, expansion joints, sealer.
 **DRYWALL:** sheets = (sqft ÷ 32) × 1.10. Include: drywall sheets, joint compound, tape, corner bead, screws, primer.
 **PAINTING:** gallons = sqft ÷ 350 × 2 coats × 1.10. Include: primer, paint (correct sheen for surface), caulk, patching compound.

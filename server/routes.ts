@@ -5219,16 +5219,18 @@ ENHANCED LEGAL CLAUSE:`;
   // *** ESTIMATE SHARE VIEW ROUTE ***
   app.get("/api/estimates/shared/:shareId", async (req: Request, res: Response) => {
     try {
-      const { shareId } = req.params;
+      let { shareId } = req.params;
+      // Sanitize: extract only the first 64 hex characters in case iOS/Android Web Share API
+      // appended text (e.g. " Estimado profesional para...") to the URL
+      const hexMatch = typeof shareId === 'string' ? shareId.match(/^[a-f0-9]{64}/i) : null;
+      if (hexMatch) shareId = hexMatch[0];
       console.log(`🔗 [ESTIMATE-VIEW] Fetching shared estimate: ${shareId}`);
-
       if (!shareId || typeof shareId !== 'string' || shareId.length !== 64) {
         return res.status(400).json({
           success: false,
           error: "Invalid share ID"
         });
       }
-
       // ✅ SIMPLE: Obtener datos directamente de Firebase usando admin SDK
       const doc = await admin.firestore().collection('shared_estimates').doc(shareId).get();
       

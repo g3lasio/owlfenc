@@ -7122,7 +7122,6 @@ This link provides a professional view of your estimate that you can access anyt
                               if (shareUrl) {
                                 await navigator.share({
                                   title: `Estimado - ${estimate.client?.name || 'Cliente'}`,
-                                  text: `Estimado profesional para ${estimate.client?.name || 'Cliente'}`,
                                   url: shareUrl,
                                 });
                               }
@@ -8738,7 +8737,6 @@ This link provides a professional view of your estimate that you can access anyt
                         try {
                           await navigator.share({
                             title: `Estimate - ${estimate.client?.name || 'Client'}`,
-                            text: `Professional estimate for ${estimate.client?.name || 'Client'}`,
                             url: currentShareUrl,
                           });
                         } catch (error) {
