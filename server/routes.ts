@@ -3052,6 +3052,17 @@ ENHANCED LEGAL CLAUSE:`;
             tax_rate: taxRate,
             tax_amount: `$${taxAmount}`,
             total: `$${total}`,
+            // Strategy B fee lines (passed through from frontend)
+            overhead_amount: projectTotalCosts?.overheadAmount != null
+              ? `$${Math.round((projectTotalCosts.overheadAmount) * 100) / 100}`
+              : undefined,
+            markup_amount: projectTotalCosts?.markupAmount != null
+              ? `$${Math.round((projectTotalCosts.markupAmount) * 100) / 100}`
+              : undefined,
+            operational_costs_amount: projectTotalCosts?.operationalCostsAmount != null
+              ? `$${Math.round((projectTotalCosts.operationalCostsAmount) * 100) / 100}`
+              : undefined,
+            pricing_strategy: projectTotalCosts?.pricingStrategy || 'A',
           },
           client: {
             name: client?.name || client?.clientName || "Valued Client",

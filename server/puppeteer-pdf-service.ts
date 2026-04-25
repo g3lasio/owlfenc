@@ -32,6 +32,10 @@ interface EstimateData {
     tax_rate?: number;
     tax_amount?: string;
     total?: string;
+    overhead_amount?: string;
+    markup_amount?: string;
+    operational_costs_amount?: string;
+    pricing_strategy?: string;
   };
   client: {
     name: string;
@@ -186,6 +190,16 @@ export class PuppeteerPdfService {
       : `Sales Tax (${taxRateDisplay}%)`;
     const totalRaw = parseCurrency(data.estimate?.total || '0');
     const depositAmount = formatCurrency(totalRaw * 0.5);
+    const pricingStrategy = (data.estimate as any)?.pricing_strategy || 'A';
+    const overheadAmountRaw = parseCurrency((data.estimate as any)?.overhead_amount || '0');
+    const markupAmountRaw = parseCurrency((data.estimate as any)?.markup_amount || '0');
+    const operationalCostsRaw = parseCurrency((data.estimate as any)?.operational_costs_amount || '0');
+    const hasOverhead = pricingStrategy === 'B' && overheadAmountRaw > 0;
+    const hasMarkup = pricingStrategy === 'B' && markupAmountRaw > 0;
+    const hasOperational = pricingStrategy === 'B' && operationalCostsRaw > 0;
+    const overheadAmountFmt = formatCurrency(overheadAmountRaw);
+    const markupAmountFmt = formatCurrency(markupAmountRaw);
+    const operationalCostsFmt = formatCurrency(operationalCostsRaw);
 
     // Build logo HTML before template string
     const logoHtml = data.company?.logo
@@ -685,6 +699,21 @@ export class PuppeteerPdfService {
                 <span class="total-row-label">Discount</span>
                 <span class="total-row-value">-${discount}</span>
             </div>` : ''}
+            ${hasOverhead ? `
+            <div class="total-row">
+                <span class="total-row-label">Project Management &amp; Overhead</span>
+                <span class="total-row-value">${overheadAmountFmt}</span>
+            </div>` : ''}
+            ${hasMarkup ? `
+            <div class="total-row">
+                <span class="total-row-label">Contractor Fee</span>
+                <span class="total-row-value">${markupAmountFmt}</span>
+            </div>` : ''}
+            ${hasOperational ? `
+            <div class="total-row">
+                <span class="total-row-label">Operational Costs</span>
+                <span class="total-row-value">${operationalCostsFmt}</span>
+            </div>` : ''}
             ${hasTax ? `
             <div class="total-row">
                 <span class="total-row-label">${taxLabel}</span>
@@ -696,7 +725,6 @@ export class PuppeteerPdfService {
             </div>
         </div>
     </div>
-
     <!-- ══════════════════ DEPOSIT NOTE ══════════════════ -->
     <div class="deposit-note">
         <span class="deposit-note-label">Note</span>

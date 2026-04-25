@@ -192,6 +192,12 @@ interface EstimateData {
   targetPrice: number;         // 0 = no flat rate applied
   profitAmount: number;        // calculated profit in dollars
   contractorBaseCost: number;  // base cost before profit
+  // Strategy B fee lines (shown to client as professional service fees)
+  overheadAmount: number;         // "Project Management & Overhead" fee
+  markupAmount: number;           // "Contractor Fee" (markup)
+  operationalCostsAmount: number; // "Operational Costs" (fuel + misc + dump)
+  // Pricing strategy: 'B' = visible fee lines, 'A' = baked into prices
+  pricingStrategy: 'A' | 'B';
 }
 
 const STEPS = [
@@ -587,6 +593,10 @@ export default function EstimatesWizardFixed() {
     targetPrice: 0,
     profitAmount: 0,
     contractorBaseCost: 0,
+    overheadAmount: 0,
+    markupAmount: 0,
+    operationalCostsAmount: 0,
+    pricingStrategy: 'A' as const,
   });
 
   // Data from existing systems
@@ -1911,27 +1921,11 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       }, 1000);
     }
   }, [currentUser]);
-
-  // Calculate totals when items, tax rate, or discount change
+  // ─── Calculate totals: Strategy B (visible fee lines) or Strategy A (baked-in defaults) ───
   useEffect(() => {
     const subtotal = estimate.items.reduce((sum, item) => sum + item.total, 0);
 
-    console.log("🔍 TOTALS CALCULATION DEBUG", {
-      itemsCount: estimate.items.length,
-      itemsData: estimate.items.map((item) => ({
-        name: item.name,
-        price: item.price,
-        quantity: item.quantity,
-        total: item.total,
-        calculation: `${item.price} × ${item.quantity} = ${item.total}`,
-      })),
-      subtotal,
-      taxRate: estimate.taxRate,
-      discountValue: estimate.discountValue,
-      discountType: estimate.discountType,
-    });
-
-    // Calculate discount amount
+    // ── Discount ──────────────────────────────────────────────────────────────
     let discountAmount = 0;
     if (estimate.discountValue > 0) {
       if (estimate.discountType === "percentage") {
@@ -1940,36 +1934,99 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         discountAmount = estimate.discountValue;
       }
     }
-
-    // Apply discount to subtotal
     const subtotalAfterDiscount = subtotal - discountAmount;
 
-    // Calculate tax on discounted amount
-    const tax = subtotalAfterDiscount * (estimate.taxRate / 100);
-    const baseTotal = subtotalAfterDiscount + tax;
+    // ── Determine pricing strategy ────────────────────────────────────────────
+    // Strategy B: user has configured overhead OR markup > 0 in their settings
+    // Strategy A: no settings configured → apply industry defaults silently (15% overhead + 20% markup)
+    const overheadPct  = estimateSettings.defaultOverheadPercent  ?? 0;
+    const markupPct    = estimateSettings.defaultMarkupPercent     ?? 0;
+    const fuelCost     = estimateSettings.defaultFuelCostPerProject ?? 0;
+    const dumpFee      = estimateSettings.defaultDumpFeePerProject  ?? 0;
+    const miscPct      = estimateSettings.defaultMiscCostPercent    ?? 0;
 
-    // Profit Margin / Flat Rate calculation (contractor-only)
+    const hasSettings = overheadPct > 0 || markupPct > 0;
+
+    let overheadAmount         = 0;
+    let markupAmount           = 0;
+    let operationalCostsAmount = 0;
+    let pricingStrategy: 'A' | 'B' = 'A';
     let profitAmount = 0;
-    let total = baseTotal;
-    if (estimate.targetPrice > 0) {
-      profitAmount = estimate.targetPrice - baseTotal;
-      total = estimate.targetPrice;
-    } else if (estimate.profitMarginPercent > 0) {
-      profitAmount = baseTotal * (estimate.profitMarginPercent / 100);
-      total = baseTotal + profitAmount;
+    let total = 0;
+    let tax = 0;
+
+    if (hasSettings) {
+      // ── STRATEGY B: Visible fee lines ────────────────────────────────────────
+      // Respects the user's exact settings with precision
+      pricingStrategy = 'B';
+
+      // 1. Overhead on the discounted subtotal
+      overheadAmount = subtotalAfterDiscount * (overheadPct / 100);
+
+      // 2. Markup on (subtotal + overhead)
+      const subtotalPlusOverhead = subtotalAfterDiscount + overheadAmount;
+      markupAmount = subtotalPlusOverhead * (markupPct / 100);
+
+      // 3. Operational costs (fuel + dump fee + misc %)
+      const miscCost = subtotalAfterDiscount * (miscPct / 100);
+      operationalCostsAmount = fuelCost + dumpFee + miscCost;
+
+      // 4. Pre-tax base = all costs combined
+      const preTaxBase = subtotalAfterDiscount + overheadAmount + markupAmount + operationalCostsAmount;
+
+      // 5. Tax applied to the full pre-tax base
+      tax = preTaxBase * (estimate.taxRate / 100);
+
+      // 6. Base total
+      const baseTotal = preTaxBase + tax;
+
+      // 7. Flat Rate / Profit Margin override (contractor-only, optional)
+      if (estimate.targetPrice > 0) {
+        profitAmount = estimate.targetPrice - baseTotal;
+        total = estimate.targetPrice;
+      } else if (estimate.profitMarginPercent > 0) {
+        profitAmount = baseTotal * (estimate.profitMarginPercent / 100);
+        total = baseTotal + profitAmount;
+      } else {
+        total = baseTotal;
+        // profitAmount = the contractor's margin (overhead + markup + operational)
+        profitAmount = overheadAmount + markupAmount + operationalCostsAmount;
+      }
+
+    } else {
+      // ── STRATEGY A: Industry defaults baked into total (no visible fee lines) ─
+      // Used when no settings are configured. Ensures contractor never loses money.
+      pricingStrategy = 'A';
+      const DEFAULT_OVERHEAD = 15; // % — industry average
+      const DEFAULT_MARKUP   = 20; // % — industry average
+
+      // Apply overhead then markup on top of discounted subtotal
+      const withOverhead = subtotalAfterDiscount * (1 + DEFAULT_OVERHEAD / 100);
+      const withMarkup   = withOverhead * (1 + DEFAULT_MARKUP / 100);
+
+      // Tax on the marked-up total
+      tax = withMarkup * (estimate.taxRate / 100);
+      const baseTotal = withMarkup + tax;
+
+      // Flat Rate / Profit Margin override
+      if (estimate.targetPrice > 0) {
+        profitAmount = estimate.targetPrice - baseTotal;
+        total = estimate.targetPrice;
+      } else if (estimate.profitMarginPercent > 0) {
+        profitAmount = baseTotal * (estimate.profitMarginPercent / 100);
+        total = baseTotal + profitAmount;
+      } else {
+        total = baseTotal;
+        profitAmount = withMarkup - subtotalAfterDiscount; // implicit margin
+      }
     }
 
-    console.log("🔍 FINAL TOTALS DEBUG", {
-      subtotal,
-      discountAmount,
-      subtotalAfterDiscount,
-      tax,
-      baseTotal,
-      profitMarginPercent: estimate.profitMarginPercent,
-      targetPrice: estimate.targetPrice,
-      profitAmount,
-      total,
+    console.log("[Totals] Strategy " + pricingStrategy, {
+      subtotal, discountAmount, subtotalAfterDiscount,
+      overheadAmount, markupAmount, operationalCostsAmount,
+      tax, total, profitAmount,
     });
+
     setEstimate((prev) => ({
       ...prev,
       subtotal,
@@ -1977,7 +2034,11 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       total,
       discountAmount,
       profitAmount,
-      contractorBaseCost: baseTotal,
+      contractorBaseCost: subtotalAfterDiscount,
+      overheadAmount,
+      markupAmount,
+      operationalCostsAmount,
+      pricingStrategy,
     }));
   }, [
     estimate.items,
@@ -1986,6 +2047,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     estimate.discountValue,
     estimate.profitMarginPercent,
     estimate.targetPrice,
+    estimateSettings,
   ]);
 
   // 🔄 AUTO-SAVE con DEBOUNCE MEJORADO - useRef para evitar primer render
@@ -3137,6 +3199,11 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         profitMarginPercent: estimate.profitMarginPercent || 0,
         profitAmount: estimate.profitAmount || 0,
         contractorBaseCost: estimate.contractorBaseCost || 0,
+        // Strategy B fee amounts — saved for profitability dashboard and PDF rendering
+        overheadAmount: estimate.overheadAmount || 0,
+        markupAmount: estimate.markupAmount || 0,
+        operationalCostsAmount: estimate.operationalCostsAmount || 0,
+        pricingStrategy: estimate.pricingStrategy || 'A',
         // Settings snapshot — saved so dashboard can calculate accurate COGS even if settings change later
         overheadPercent: estimateSettings.defaultOverheadPercent || 0,
         markupPercent: estimateSettings.defaultMarkupPercent || 0,
@@ -3645,6 +3712,36 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
             <div style="margin-bottom: 10px; font-size: 1.1em; color: #22c55e;">
               <span style="margin-right: 40px; color: #22c55e;"><strong>Discount ${estimate.discountName ? "(" + estimate.discountName + ")" : ""} (${estimate.discountType === "percentage" ? estimate.discountValue + "%" : "Fixed"}):</strong></span>
               <span style="font-weight: bold; color: #22c55e;">-$${estimate.discountAmount.toFixed(2)}</span>
+            </div>
+          `
+              : ""
+          }
+          ${
+            estimate.pricingStrategy === 'B' && estimate.overheadAmount > 0
+              ? `
+            <div style="margin-bottom: 10px; font-size: 1.1em; color: #374151;">
+              <span style="margin-right: 40px; color: #374151;"><strong>Project Management &amp; Overhead:</strong></span>
+              <span style="font-weight: bold; color: #374151;">$${estimate.overheadAmount.toFixed(2)}</span>
+            </div>
+          `
+              : ""
+          }
+          ${
+            estimate.pricingStrategy === 'B' && estimate.markupAmount > 0
+              ? `
+            <div style="margin-bottom: 10px; font-size: 1.1em; color: #374151;">
+              <span style="margin-right: 40px; color: #374151;"><strong>Contractor Fee:</strong></span>
+              <span style="font-weight: bold; color: #374151;">$${estimate.markupAmount.toFixed(2)}</span>
+            </div>
+          `
+              : ""
+          }
+          ${
+            estimate.pricingStrategy === 'B' && estimate.operationalCostsAmount > 0
+              ? `
+            <div style="margin-bottom: 10px; font-size: 1.1em; color: #374151;">
+              <span style="margin-right: 40px; color: #374151;"><strong>Operational Costs:</strong></span>
+              <span style="font-weight: bold; color: #374151;">$${estimate.operationalCostsAmount.toFixed(2)}</span>
             </div>
           `
               : ""
@@ -4400,6 +4497,10 @@ This link provides a professional view of your estimate that you can access anyt
           taxRate: estimate.taxRate || 0,
           tax: estimate.tax || 0,
           total: estimate.total || 0,
+          overheadAmount: estimate.overheadAmount || 0,
+          markupAmount: estimate.markupAmount || 0,
+          operationalCostsAmount: estimate.operationalCostsAmount || 0,
+          pricingStrategy: estimate.pricingStrategy || 'A',
         },
         project_description: estimate.projectDescription || estimate.notes || "Proyecto de construcción",
         // 🔄 FALLBACK: Enviar datos del contractor como fallback si no hay perfil en Firebase
@@ -4710,6 +4811,10 @@ This link provides a professional view of your estimate that you can access anyt
           taxRate: Number(Number(estimate.taxRate.toFixed(2)).toFixed(2)) || 0,
           tax: Number(Number(estimate.tax.toFixed(2))) || 0,
           total: Number(Number(estimate.total.toFixed(2))) || 0,
+          overheadAmount: Number(Number(estimate.overheadAmount || 0).toFixed(2)),
+          markupAmount: Number(Number(estimate.markupAmount || 0).toFixed(2)),
+          operationalCostsAmount: Number(Number(estimate.operationalCostsAmount || 0).toFixed(2)),
+          pricingStrategy: estimate.pricingStrategy || 'A',
         },
         originalData: {
           projectDescription: estimate.projectDetails || "",
@@ -4919,6 +5024,10 @@ This link provides a professional view of your estimate that you can access anyt
           taxRate: Number(Number(estimate.taxRate.toFixed(2)).toFixed(2)) || 0,
           tax: Number(Number(estimate.tax.toFixed(2))) || 0,
           total: Number(Number(estimate.total.toFixed(2))) || 0,
+          overheadAmount: Number(Number(estimate.overheadAmount || 0).toFixed(2)),
+          markupAmount: Number(Number(estimate.markupAmount || 0).toFixed(2)),
+          operationalCostsAmount: Number(Number(estimate.operationalCostsAmount || 0).toFixed(2)),
+          pricingStrategy: estimate.pricingStrategy || 'A',
         },
         originalData: {
           projectDescription: estimate.projectDetails || "",
@@ -6473,7 +6582,6 @@ This link provides a professional view of your estimate that you can access anyt
                             ${estimate.subtotal.toFixed(2)}
                           </span>
                         </div>
-
                         {estimate.discountAmount > 0 && (
                           <div className="flex justify-between items-center text-sm">
                             <span className="text-emerald-600 font-medium">
@@ -6488,7 +6596,36 @@ This link provides a professional view of your estimate that you can access anyt
                             </span>
                           </div>
                         )}
-
+                        {estimate.pricingStrategy === 'B' && estimate.overheadAmount > 0 && (
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-gray-600 font-medium">
+                              Project Mgmt &amp; Overhead:
+                            </span>
+                            <span className="font-semibold text-gray-700">
+                              ${estimate.overheadAmount.toFixed(2)}
+                            </span>
+                          </div>
+                        )}
+                        {estimate.pricingStrategy === 'B' && estimate.markupAmount > 0 && (
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-gray-600 font-medium">
+                              Contractor Fee:
+                            </span>
+                            <span className="font-semibold text-gray-700">
+                              ${estimate.markupAmount.toFixed(2)}
+                            </span>
+                          </div>
+                        )}
+                        {estimate.pricingStrategy === 'B' && estimate.operationalCostsAmount > 0 && (
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-gray-600 font-medium">
+                              Operational Costs:
+                            </span>
+                            <span className="font-semibold text-gray-700">
+                              ${estimate.operationalCostsAmount.toFixed(2)}
+                            </span>
+                          </div>
+                        )}
                         <div className="flex justify-between items-center text-sm">
                           <span className="text-gray-600 font-medium">
                             Impuesto ({estimate.taxRate}%):
@@ -6497,7 +6634,6 @@ This link provides a professional view of your estimate that you can access anyt
                             ${estimate.tax.toFixed(2)}
                           </span>
                         </div>
-
                         <div className="border-t border-gray-300 pt-3 mt-3">
                           <div className="flex justify-between items-center">
                             <span className="text-lg font-bold text-gray-800">
@@ -7208,7 +7344,6 @@ This link provides a professional view of your estimate that you can access anyt
                           </span>
                         </div>
                       </div>
-
                       {/* Descuento */}
                       {estimate.discountAmount > 0 && (
                         <div className="text-xs">
@@ -7226,7 +7361,31 @@ This link provides a professional view of your estimate that you can access anyt
                           </div>
                         </div>
                       )}
-
+                      {/* Strategy B fee lines */}
+                      {estimate.pricingStrategy === 'B' && estimate.overheadAmount > 0 && (
+                        <div className="text-xs">
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-400">Project Mgmt &amp; Overhead:</span>
+                            <span className="text-gray-300">${estimate.overheadAmount.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      )}
+                      {estimate.pricingStrategy === 'B' && estimate.markupAmount > 0 && (
+                        <div className="text-xs">
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-400">Contractor Fee:</span>
+                            <span className="text-gray-300">${estimate.markupAmount.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      )}
+                      {estimate.pricingStrategy === 'B' && estimate.operationalCostsAmount > 0 && (
+                        <div className="text-xs">
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-400">Operational Costs:</span>
+                            <span className="text-gray-300">${estimate.operationalCostsAmount.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      )}
                       {/* Impuesto */}
                       <div className="text-xs">
                         <div className="flex justify-between items-center">
@@ -7238,7 +7397,6 @@ This link provides a professional view of your estimate that you can access anyt
                           </span>
                         </div>
                       </div>
-
                       {/* Total */}
                       <div className="pt-2 border-t border-gray-700">
                         <div className="flex justify-between items-center">
@@ -7742,6 +7900,10 @@ This link provides a professional view of your estimate that you can access anyt
                     targetPrice: 0,
                     profitAmount: 0,
                     contractorBaseCost: 0,
+                    overheadAmount: 0,
+                    markupAmount: 0,
+                    operationalCostsAmount: 0,
+                    pricingStrategy: 'A' as const,
                   });
                   window.history.replaceState({}, document.title, window.location.pathname);
                 }}
