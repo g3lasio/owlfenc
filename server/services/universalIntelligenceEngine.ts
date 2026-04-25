@@ -16,12 +16,12 @@
  *  - STRICT FINANCIAL FIDELITY: Mathematically applies the contractor's exact
  *    profit margin, overhead, tax rate, and flat-rate settings.
  *  - SUPERIOR REASONING: Uses the most capable reasoning model available
- *    (claude-opus-4-7 → claude-sonnet-4-6 → claude-haiku-4-5-20251001)
+ *    (claude-sonnet-4-20250514 → claude-3-7-sonnet-20250219 → claude-sonnet-4-5)
  *    to think through each project like a seasoned professional with 40+ years of cross-industry experience.
  *
- * Model: claude-opus-4-7 (most capable model, verified Apr 2026 — $5/$25 per MTok)
- *        Fallback 1: claude-sonnet-4-6 if Opus unavailable ($3/$15 per MTok)
- *        Fallback 2: claude-haiku-4-5-20251001 as last resort ($1/$5 per MTok)
+ * Model: claude-sonnet-4-20250514 (most advanced model confirmed active in this account)
+ *        Fallback 1: claude-3-7-sonnet-20250219 (proven stable)
+ *        Fallback 2: claude-sonnet-4-5 (last resort)
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
@@ -32,14 +32,17 @@ const anthropic = new Anthropic({
 });
 
 // ─── Model Configuration ─────────────────────────────────────────────────────
-// Verified from official Anthropic docs (Apr 2026) — https://docs.anthropic.com/en/docs/about-claude/models/overview
-//   claude-opus-4-7          → $5/MTok in  | $25/MTok out  | 1M ctx | Highest reasoning | Jan 2026 knowledge
-//   claude-sonnet-4-6        → $3/MTok in  | $15/MTok out  | 1M ctx | Best speed/intelligence | Aug 2025 knowledge
-//   claude-haiku-4-5-20251001 → $1/MTok in | $5/MTok out  | 200k ctx | Fastest | Feb 2025 knowledge
-// NOTE: If Opus 4.7 returns HTTP 402 (account not yet approved), Sonnet 4.6 is used automatically.
-const PRIMARY_MODEL   = 'claude-opus-4-7';           // Most capable — used for all estimates
-const FALLBACK_MODEL  = 'claude-sonnet-4-6';          // Fallback if Opus unavailable on current plan
-const FALLBACK2_MODEL = 'claude-haiku-4-5-20251001';  // Last resort — fast and cheap
+// Models confirmed ACTIVE in this project's Anthropic account (verified Apr 2026):
+//   claude-sonnet-4-20250514   → Most advanced model active in production
+//                                Used in: ConstructionKnowledgeBase, ClaudeConversationalEngine, mervin-v2
+//   claude-3-7-sonnet-20250219 → Proven stable fallback
+//                                Used in: deepSearchService, routes.ts, assistants
+//   claude-sonnet-4-5          → Last resort, used in mervin-v3
+//
+// NOTE: Update PRIMARY_MODEL to 'claude-opus-4-7' when that model is enabled on this account.
+const PRIMARY_MODEL   = 'claude-sonnet-4-20250514';   // Most advanced model active in this account
+const FALLBACK_MODEL  = 'claude-3-7-sonnet-20250219'; // Proven stable fallback
+const FALLBACK2_MODEL = 'claude-sonnet-4-5';          // Last resort
 
 // ─── Type Definitions ─────────────────────────────────────────────────────────
 
