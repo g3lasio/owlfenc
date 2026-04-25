@@ -16,12 +16,12 @@
  *  - STRICT FINANCIAL FIDELITY: Mathematically applies the contractor's exact
  *    profit margin, overhead, tax rate, and flat-rate settings.
  *  - SUPERIOR REASONING: Uses the most capable reasoning model available
- *    (claude-sonnet-4-20250514 → claude-3-7-sonnet-20250219 → claude-sonnet-4-5)
+ *    (claude-opus-4-7 → claude-sonnet-4-20250514 → claude-haiku-4-5-20251001)
  *    to think through each project like a seasoned professional with 40+ years of cross-industry experience.
  *
- * Model: claude-sonnet-4-20250514 (most advanced model confirmed active in this account)
- *        Fallback 1: claude-3-7-sonnet-20250219 (proven stable)
- *        Fallback 2: claude-sonnet-4-5 (last resort)
+ * Model: claude-opus-4-7 (most powerful model, released Apr 16 2026 — verified in LeadPrime)
+ *        Fallback 1: claude-sonnet-4-20250514 (excellent reasoning + tool use)
+ *        Fallback 2: claude-haiku-4-5-20251001 (fast last resort)
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
@@ -32,17 +32,16 @@ const anthropic = new Anthropic({
 });
 
 // ─── Model Configuration ─────────────────────────────────────────────────────
-// Models confirmed ACTIVE in this project's Anthropic account (verified Apr 2026):
-//   claude-sonnet-4-20250514   → Most advanced model active in production
-//                                Used in: ConstructionKnowledgeBase, ClaudeConversationalEngine, mervin-v2
-//   claude-3-7-sonnet-20250219 → Proven stable fallback
-//                                Used in: deepSearchService, routes.ts, assistants
-//   claude-sonnet-4-5          → Last resort, used in mervin-v3
+// DEFINITIVE model list — verified from LeadPrime aiModels.ts (same Anthropic account, Apr 2026):
+//   claude-opus-4-7           → NEWEST, most powerful (released Apr 16 2026) | 1M ctx | 128k output
+//   claude-sonnet-4-20250514  → Excellent reasoning + tool use | 1M ctx
+//   claude-haiku-4-5-20251001 → Fast, cheap | 200k ctx
 //
-// NOTE: Update PRIMARY_MODEL to 'claude-opus-4-7' when that model is enabled on this account.
-const PRIMARY_MODEL   = 'claude-sonnet-4-20250514';   // Most advanced model active in this account
-const FALLBACK_MODEL  = 'claude-3-7-sonnet-20250219'; // Proven stable fallback
-const FALLBACK2_MODEL = 'claude-sonnet-4-5';          // Last resort
+// DEPRECATED (return 404 from API — DO NOT USE):
+//   claude-3-7-sonnet-20250219, claude-3-5-sonnet-20241022, claude-sonnet-4-5, claude-sonnet-4-6
+const PRIMARY_MODEL   = 'claude-opus-4-7';            // Most powerful — ideal for complex estimates
+const FALLBACK_MODEL  = 'claude-sonnet-4-20250514';   // Excellent fallback
+const FALLBACK2_MODEL = 'claude-haiku-4-5-20251001';  // Fast last resort
 
 // ─── Type Definitions ─────────────────────────────────────────────────────────
 
