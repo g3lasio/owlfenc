@@ -360,10 +360,11 @@ async function triggerFullSync(
   // FIX: EstimatesWizard.tsx saves estimates with field 'firebaseUserId' (NOT 'userId').
   //      Querying 'userId' returns 0 results. Must use 'firebaseUserId'.
   try {
+    // NOTE: No orderBy here — combining where()+orderBy() on different fields requires a composite
+    // Firestore index that does not exist yet. Simple equality filter works without any index.
     const estimatesSnap = await firebaseDb
       .collection("estimates")
       .where("firebaseUserId", "==", uid)
-      .orderBy("createdAt", "desc")
       .limit(500)
       .get();
 
@@ -396,10 +397,10 @@ async function triggerFullSync(
   // Invoices.tsx saves to Firebase collection(db, 'invoices') with userId = Firebase UID.
   // This is the PRIMARY invoice source — project_payments is only for Stripe-processed payments.
   try {
+    // NOTE: No orderBy — avoids composite index requirement (userId + createdAt)
     const invoicesSnap = await firebaseDb
       .collection("invoices")
       .where("userId", "==", uid)
-      .orderBy("createdAt", "desc")
       .limit(500)
       .get();
     for (const doc of invoicesSnap.docs) {
@@ -507,10 +508,10 @@ async function triggerFullSync(
   const permitSeenIds = new Set<string>();
   for (const permitCollection of ["permit_search_history", "permit_searches"]) {
     try {
+      // NOTE: No orderBy — avoids composite index requirement (userId + createdAt)
       const permitsSnap = await firebaseDb
         .collection(permitCollection)
         .where("userId", "==", uid)
-        .orderBy("createdAt", "desc")
         .limit(200)
         .get();
 
