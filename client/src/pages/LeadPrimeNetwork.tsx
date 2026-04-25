@@ -84,8 +84,9 @@ export default function LeadPrimeNetwork() {
   const { data: connection, isLoading: loadingConnection } = useQuery<LeadPrimeConnection>({
     queryKey: ["leadprime-connection"],
     queryFn: async () => {
+      const authHeaders = await getAuthHeaders();
       const res = await apiRequest("GET", "/api/leadprime-network/connection", undefined, {
-        headers: getAuthHeaders(),
+        headers: authHeaders,
       });
       if (!res.ok) return { connected: false };
       return res.json();
@@ -97,8 +98,9 @@ export default function LeadPrimeNetwork() {
   const { data: syncStatus } = useQuery<SyncStatus>({
     queryKey: ["leadprime-sync-status"],
     queryFn: async () => {
+      const authHeaders = await getAuthHeaders();
       const res = await apiRequest("GET", "/api/leadprime-network/sync-status", undefined, {
-        headers: getAuthHeaders(),
+        headers: authHeaders,
       });
       if (!res.ok) return { estimates: 0, invoices: 0, contracts: 0, permits: 0, lastSyncAt: null };
       return res.json();
@@ -110,8 +112,9 @@ export default function LeadPrimeNetwork() {
   // ── Connect mutation ───────────────────────────────────────────────────────
   const connectMutation = useMutation({
     mutationFn: async (token: string) => {
+      const authHeaders = await getAuthHeaders();
       const res = await apiRequest("POST", "/api/leadprime-network/connect", { token }, {
-        headers: getAuthHeaders(),
+        headers: authHeaders,
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -140,8 +143,9 @@ export default function LeadPrimeNetwork() {
   // ── Disconnect mutation ────────────────────────────────────────────────────
   const disconnectMutation = useMutation({
     mutationFn: async () => {
+      const authHeaders = await getAuthHeaders();
       const res = await apiRequest("DELETE", "/api/leadprime-network/connection", undefined, {
-        headers: getAuthHeaders(),
+        headers: authHeaders,
       });
       if (!res.ok) throw new Error("Failed to disconnect");
       return res.json();
