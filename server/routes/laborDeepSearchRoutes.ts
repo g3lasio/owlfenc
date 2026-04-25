@@ -51,7 +51,13 @@ const CombinedAnalysisSchema = z.object({
   taxRate: z.number().min(0).max(30).optional(),
   taxOnMaterialsOnly: z.boolean().optional().default(true),
   overheadPercent: z.number().min(0).max(200).optional(),
-  markupPercent: z.number().min(0).max(500).optional()
+  markupPercent: z.number().min(0).max(500).optional(),
+  // Contractor operational settings — for real job cost calculation
+  crewSize: z.number().min(1).max(100).optional(),
+  laborRatePerHour: z.number().min(0).max(500).optional(),
+  fuelCostPerProject: z.number().min(0).optional(),
+  dumpFeePerProject: z.number().min(0).optional(),
+  miscCostPercent: z.number().min(0).max(100).optional(),
 });
 
 export function registerLaborDeepSearchRoutes(app: Express): void {
@@ -286,6 +292,11 @@ export function registerLaborDeepSearchRoutes(app: Express): void {
             taxOnMaterialsOnly: validatedData.taxOnMaterialsOnly ?? true,
             overheadPercent: validatedData.overheadPercent ?? 0,
             markupPercent: validatedData.markupPercent ?? 0,
+            crewSize: validatedData.crewSize ?? 2,
+            laborRatePerHour: validatedData.laborRatePerHour ?? 25,
+            fuelCostPerProject: validatedData.fuelCostPerProject ?? 0,
+            dumpFeePerProject: validatedData.dumpFeePerProject ?? 0,
+            miscCostPercent: validatedData.miscCostPercent ?? 0,
           }
         );
 

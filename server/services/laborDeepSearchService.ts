@@ -170,52 +170,22 @@ Analyze this project description and generate a COMPLETE list of labor/service t
 - foreman: $65-95/hr equivalent (supervision, complex work)
 - engineer: $100-200/hr equivalent (structural, permits)
 
-## REAL CONTRACTOR PRICING EXAMPLES:
+## PRICING PHILOSOPHY:
+Do NOT use fixed price ranges per trade. Instead, reason from first principles:
 
-### Fencing (per linear foot — CONTRACTOR BILLING RATES, what you charge the client):
-- Wood privacy fence installation (6ft): $28-45/lf (includes posts, rails, boards, concrete, labor)
-- Cedar/redwood premium fence: $35-55/lf
-- Board-on-board fence: $30-48/lf
-- Vinyl fence installation: $30-50/lf
-- Chain link installation: $18-32/lf
-- Ornamental/metal fence: $40-80/lf
-- Post hole digging: $35-65 per hole (includes concrete)
-- Gate installation (wood): $350-800 per gate
-- Gate installation (metal): $500-1500 per gate
-NOTE: These are what you BILL the client, not what you pay workers.
+1. UNDERSTAND THE SCOPE: What specific work needs to be done? What skill level is required?
+2. ESTIMATE REALISTIC TIME: How many crew-hours does this work actually take?
+   Think like a field supervisor: account for setup, actual work, cleanup, and travel time.
+3. PRICE THE LABOR: What does a professional contractor in THIS specific market charge for this skill?
+   A licensed electrician in NYC charges differently than a general laborer in rural Mississippi.
+   A fence installer in San Jose, CA charges more than one in Edinburg, TX.
+   Use your deep knowledge of current local labor markets — do not apply a single national rate.
+4. PRICE THE MATERIALS: What does the contractor actually pay to source and deliver materials?
+   This is the contractor's purchase price (not retail shelf price), including delivery to the job site.
+5. VERIFY PROFITABILITY: Does the total price make sense for a professional business?
+   Too low = contractor loses money on overhead and profit. Too high = unrealistic for the market.
 
-### Roofing (per square = 100 sqft — CONTRACTOR BILLING RATES):
-- Shingle tear-off + disposal: $100-200/square
-- Shingle installation (3-tab): $450-750/square (includes materials + labor)
-- Shingle installation (architectural): $550-900/square
-- Metal roofing: $700-1400/square
-- Underlayment + ice shield: $75-150/square
-
-### Concrete (per sqft or cyd — CONTRACTOR BILLING RATES):
-- Flatwork (4" slab): $10-22/sqft (includes materials + labor)
-- Stamped concrete: $15-32/sqft
-- Exposed aggregate: $12-25/sqft
-- Demolition + removal: $5-12/sqft
-- Excavation: $55-100/cyd
-
-### Painting (per sqft):
-- Interior walls: $1.50-4/sqft
-- Exterior: $2-6/sqft
-- Prep work: $0.50-2/sqft
-
-### Demolition/Hauling:
-- Debris removal: $45-95/cyd
-- Dumpster load: $350-650/load
-
-### Cleaning Services:
-- Pressure washing: $0.15-0.50/sqft
-- Window cleaning: $5-15/window
-- Post-construction cleanup: $0.10-0.30/sqft
-
-### Landscaping:
-- Sod installation: $1-3/sqft
-- Tree removal: $300-2000/tree
-- Grading: $1-4/sqft
+Apply this reasoning process for EVERY trade and EVERY location. Never hardcode a rate.
 
 ## RESPONSE FORMAT (JSON ONLY):
 {

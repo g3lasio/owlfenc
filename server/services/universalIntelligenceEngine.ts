@@ -150,6 +150,12 @@ export interface ContractorSettings {
   taxOnMaterialsOnly?: boolean;
   overheadPercent?: number;
   markupPercent?: number;
+  // Contractor operational settings — used to calculate real job cost and viability
+  crewSize?: number;            // number of workers on the crew
+  laborRatePerHour?: number;    // average hourly wage paid to workers (not billed rate)
+  fuelCostPerProject?: number;  // fuel/transportation cost per project
+  dumpFeePerProject?: number;   // dump/disposal fee per project
+  miscCostPercent?: number;     // misc costs as % of subtotal (consumables, small tools, etc.)
 }
 
 // ─── The Master System Prompt ─────────────────────────────────────────────────
@@ -189,9 +195,35 @@ function buildMasterUserPrompt(
   projectDescription: string,
   location: string,
   mode: 'full' | 'materials_only' | 'labor_only',
-  targetPrice?: number
+  targetPrice?: number,
+  contractorCtx?: ContractorSettings
 ): string {
   const { locationContext, multiplier } = resolveLocation(location);
+  // Build contractor operational context block for the AI
+  const crewSize = contractorCtx?.crewSize ?? 0;
+  const laborRate = contractorCtx?.laborRatePerHour ?? 0;
+  const fuelCost = contractorCtx?.fuelCostPerProject ?? 0;
+  const dumpFee = contractorCtx?.dumpFeePerProject ?? 0;
+  const miscPct = contractorCtx?.miscCostPercent ?? 0;
+  const hasContractorData = crewSize > 0 || laborRate > 0;
+  const contractorContextBlock = hasContractorData ? `
+## CONTRACTOR OPERATIONAL CONTEXT
+This contractor has provided their real operational data. Use this to:
+1. Calculate labor cost using THEIR actual crew and pay rate (not generic estimates)
+2. Verify that your generated prices cover their real costs
+3. Flag in warnings if the project price seems too low to be profitable
+
+- Crew size: ${crewSize} workers
+- Average labor rate paid to workers: $${laborRate}/hour
+- Fuel/transportation cost per project: $${fuelCost}
+- Dump/disposal fee per project: $${dumpFee}
+- Misc/consumables: ${miscPct}% of subtotal
+
+LABOR COST CALCULATION RULE:
+When estimating labor hours, multiply by $${laborRate}/hr to get the DIRECT labor cost.
+The price you bill the client for labor must be HIGHER than this to cover overhead and profit.
+If the contractor charges less than their direct labor cost + materials, they lose money.
+` : '';
 
   const modeInstructions = {
     full: 'Generate BOTH materials AND laborCosts. This is a full estimate.',
@@ -225,7 +257,12 @@ Rules:
 
 ## LOCATION CONTEXT
 ${locationContext}
-Price Multiplier: ${multiplier}x (apply to ALL base prices)
+Location Multiplier: ${multiplier}x (apply to ALL base prices as a starting adjustment)
+IMPORTANT: The location string above contains the full address. Use your knowledge of local 
+construction markets to refine pricing beyond the multiplier. A project in San Jose, CA 
+costs more than Sacramento, CA. Edinburgh, TX costs less than Austin, TX. Apply your 
+real-world knowledge of local labor markets, material availability, and permit costs.
+${contractorContextBlock}
 
 ## ANALYSIS MODE
 ${modeInstructions[mode]}
@@ -256,22 +293,28 @@ Use realistic productivity rates and crew sizing for this trade.
 For service businesses (cleaning, consulting, etc.), price per the industry-standard unit.
 
 **STEP 6 — PRICING**
-Apply the ${multiplier}x location multiplier to all base prices.
-Use current 2024-2025 US CONTRACTOR pricing (not wholesale/retail):
-- For MATERIALS: Use the price a contractor pays when purchasing + typical supplier markup (not Home Depot retail shelf price). 
-  Contractors typically pay 10-20% above wholesale. Use realistic installed-cost pricing.
-- For LABOR: Use what a professional contractor CHARGES clients (not what they pay workers).
-  Fencing: $28-45/lf installed (wood privacy), $35-55/lf (cedar/redwood), $18-30/lf (chain link)
-  Roofing: $450-850/square installed (shingles), $600-1200/square (metal)
-  Concrete: $10-22/sqft (flatwork), $15-30/sqft (stamped)
-  Painting: $2.50-6/sqft (exterior), $1.50-4/sqft (interior)
-  Drywall: $2.50-5/sqft installed
-  Flooring: $4-12/sqft installed (LVP/laminate), $8-20/sqft (hardwood), $3-8/sqft (tile)
-  Landscaping: $2-5/sqft (sod installed), $400-2500/tree (removal)
-  Pressure washing: $0.25-0.75/sqft
-  Cleaning: $0.20-0.50/sqft (commercial), $150-400/visit (residential)
-IMPORTANT: These prices are what the contractor BILLS the client. They already include the contractor's 
-reasonable profit. The overhead/markup settings will be applied separately on top of these prices.
+Apply the ${multiplier}x location multiplier as a BASE adjustment, then refine using your knowledge of the specific city/market.
+
+PRICING PHILOSOPHY — Think like a real field contractor, not an accountant:
+- For MATERIALS: Price at what a contractor ACTUALLY PAYS to purchase and deliver materials to the job site.
+  This is NOT the Home Depot shelf price. It includes: supplier pricing for contractors, delivery fees,
+  waste/overage already factored in, and any specialty material sourcing costs.
+  Use your knowledge of current 2024-2025 supplier pricing for the specific trade and region.
+  
+- For LABOR: Price at what a professional contractor BILLS the client for the work performed.
+  Think through: How many workers does this job realistically need? How many hours/days will it take?
+  What is the going rate for this type of skilled labor in this specific market?
+  If contractor operational data is provided above, use their actual crew size and hours to calculate
+  direct labor cost, then price the billing rate to cover that cost plus reasonable overhead.
+  
+  NEVER use a single flat rate for all trades. A licensed electrician in San Francisco bills differently
+  than a general laborer in rural Texas. Reason from first principles for each specific trade and location.
+
+- For ADDITIONAL COSTS (permits, equipment, disposal): Use your knowledge of local permit fees,
+  equipment rental rates, and disposal costs for the specific jurisdiction.
+
+CRITICAL: Your prices must be realistic enough that a professional contractor can make a living.
+Too low = contractor loses money. Too high = client won't accept. Find the professional market rate.
 
 ## JSON RESPONSE SCHEMA
 {
@@ -556,7 +599,7 @@ export class UniversalIntelligenceEngine {
     });
 
     const systemPrompt = buildMasterSystemPrompt();
-    const userPrompt = buildMasterUserPrompt(projectDescription, location, mode, settings.targetPrice);
+    const userPrompt = buildMasterUserPrompt(projectDescription, location, mode, settings.targetPrice, settings);
 
     let rawText: string;
     let modelUsed = PRIMARY_MODEL;
@@ -663,6 +706,51 @@ export class UniversalIntelligenceEngine {
     );
 
     // Build contractor view
+    // ── Profitability Viability Check ──────────────────────────────────────
+    // If the contractor provided their operational data, calculate their REAL job cost
+    // and warn if the generated price doesn't cover it
+    const crewSize = settings.crewSize ?? 0;
+    const laborRatePerHour = settings.laborRatePerHour ?? 0;
+    const fuelCostPerProject = settings.fuelCostPerProject ?? 0;
+    const dumpFeePerProject = settings.dumpFeePerProject ?? 0;
+    const miscCostPercent = settings.miscCostPercent ?? 0;
+
+    let viabilityWarning: string | null = null;
+    let realJobCost: number | null = null;
+    let profitabilityStatus: 'profitable' | 'break_even' | 'losing_money' | 'unknown' = 'unknown';
+
+    if (crewSize > 0 && laborRatePerHour > 0) {
+      // Estimate total labor hours from labor items
+      const totalLaborHours = laborCosts.reduce((sum, l) => sum + (l.estimatedHours ?? 0), 0);
+      // Real direct labor cost = crew × hours × rate
+      const realDirectLaborCost = crewSize * totalLaborHours * laborRatePerHour;
+      // Real operational costs
+      const realOperationalCost = fuelCostPerProject + dumpFeePerProject + 
+        (totalMaterialsCost * miscCostPercent / 100);
+      // Real total job cost (materials at AI price + real labor + operational)
+      realJobCost = Math.round((totalMaterialsCost + realDirectLaborCost + totalAdditionalCost + realOperationalCost) * 100) / 100;
+      
+      const priceToClient = financials.grandTotal;
+      const margin = priceToClient - realJobCost;
+      const marginPercent = realJobCost > 0 ? (margin / realJobCost) * 100 : 0;
+
+      if (marginPercent < 0) {
+        profitabilityStatus = 'losing_money';
+        viabilityWarning = `⚠️ PROFITABILITY ALERT: At the generated price of $${priceToClient.toFixed(2)}, ` +
+          `your estimated real job cost is $${realJobCost.toFixed(2)} ` +
+          `(${crewSize} workers × ${totalLaborHours.toFixed(1)}h × $${laborRatePerHour}/hr + materials + operational costs). ` +
+          `You would LOSE $${Math.abs(margin).toFixed(2)} on this project. ` +
+          `Consider increasing your overhead/markup in Settings, or negotiate a higher price with the client.`;
+      } else if (marginPercent < 10) {
+        profitabilityStatus = 'break_even';
+        viabilityWarning = `⚠️ LOW MARGIN WARNING: At the generated price of $${priceToClient.toFixed(2)}, ` +
+          `your margin is only ${marginPercent.toFixed(1)}% above real job cost ($${realJobCost.toFixed(2)}). ` +
+          `This leaves very little room for unexpected costs or delays.`;
+      } else {
+        profitabilityStatus = 'profitable';
+      }
+    }
+
     const contractorView = {
       baseMaterialsCost: Math.round(totalMaterialsCost * 100) / 100,
       baseLaborCost: Math.round(totalLaborCost * 100) / 100,
@@ -679,7 +767,21 @@ export class UniversalIntelligenceEngine {
       profitAmount: financials.profitAmount,
       profitPercent: financials.profitPercent,
       finalPriceToClient: financials.grandTotal,
+      // Viability check — only populated when contractor operational data is available
+      viability: {
+        status: profitabilityStatus,
+        realJobCost,
+        warning: viabilityWarning,
+        crewSize: crewSize > 0 ? crewSize : null,
+        laborRatePerHour: laborRatePerHour > 0 ? laborRatePerHour : null,
+      },
     };
+
+    // Add viability warning to the warnings array if applicable
+    const allWarnings = [...(parsed.warnings || [])];
+    if (viabilityWarning) {
+      allWarnings.push(viabilityWarning);
+    }
 
     console.log(`✅ [UIE] Estimate complete`, {
       projectType: parsed.projectType,
@@ -687,6 +789,7 @@ export class UniversalIntelligenceEngine {
       labor: laborCosts.length,
       grandTotal: financials.grandTotal,
       model: modelUsed,
+      profitabilityStatus,
     });
 
     return {
@@ -708,7 +811,7 @@ export class UniversalIntelligenceEngine {
       contractorView,
       confidence: Math.min(1, Math.max(0, Number(parsed.confidence) || 0.85)),
       recommendations: parsed.recommendations || [],
-      warnings: parsed.warnings || [],
+      warnings: allWarnings,
       aiModel: modelUsed,
       generatedAt: new Date().toISOString(),
     };

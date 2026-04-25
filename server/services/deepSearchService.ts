@@ -404,11 +404,15 @@ Use the correct formula for the detected trade with standard waste factors:
 **OTHER TRADES:** Use your professional knowledge to list ALL materials that become permanent parts of the finished project.
 
 ## STEP 4 — PRICING:
-- Apply the PRICE MULTIPLIER (${multiplier}x) to all base prices
-- Use CONTRACTOR PURCHASE PRICES (what a contractor actually pays, not retail shelf price):
-  Cedar fence pickets 6ft: $4.50-7.50 each | 4x4x8 PT posts: $18-28 each | 2x4x8 rails: $6-10 each
-  80lb concrete bag: $8-12 each | Galvanized screws/nails box: $25-45
-  These are realistic contractor supply prices for materials delivered to job site.
+- Apply the PRICE MULTIPLIER (${multiplier}x) to all base prices as a starting adjustment
+- Use CONTRACTOR PURCHASE PRICES — what a professional contractor actually pays to buy and deliver 
+  materials to the job site. This is NOT the retail shelf price. It includes:
+  - Contractor account pricing at suppliers (typically 10-30% below retail)
+  - Delivery/freight to the job site
+  - Any specialty sourcing costs for the specific material grade required
+- Use your knowledge of current 2024-2025 material costs for the specific trade, material type,
+  and geographic market. Prices vary significantly by region and city.
+- Do NOT apply fixed price ranges. Reason from the specific material, grade, quantity, and location.
 
 ## INCLUDE ONLY:
 Materials and supplies that become permanent parts of the project, or consumables directly used in the work.

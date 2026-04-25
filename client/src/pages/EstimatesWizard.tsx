@@ -1639,18 +1639,38 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       // ── Inject user settings into DeepSearch request ──────────────────────
       // This ensures the backend respects the contractor's tax rate, overhead,
       // markup, and tax-on-materials-only preference for EVERY estimate.
+      // Build full location context from client address fields
+      // Fallback: if client has no city/state, use contractor profile location
+      const clientCity    = estimate.client?.city    || (profile as any)?.city    || "";
+      const clientState   = estimate.client?.state   || (profile as any)?.state   || "";
+      const clientZip     = estimate.client?.zipCode || (profile as any)?.zipCode || "";
+      const clientAddress = estimate.client?.address || "";
+      // Compose a rich location string: "8055 Collins Dr, Oakland, CA 94621"
+      // The AI uses this to reason about local labor market, material costs, permit fees
+      const fullLocationContext = [clientAddress, clientCity, clientState, clientZip]
+        .filter(Boolean).join(", ") || "United States";
+
       const requestData: Record<string, any> = {
         projectDescription: description,
         includeMaterials: searchType === "materials" || searchType === "full",
         includeLabor: searchType === "labor" || searchType === "full",
-        location: estimate.client?.address || "United States",
+        // Full structured location — city + state + zip so AI can reason at local market level
+        location: fullLocationContext,
         projectType: "construction",
-        // User settings — passed from EstimateSettings tab (localStorage)
+        // ── Contractor Financial Settings (from EstimateSettings tab) ──────
         taxRate: estimateSettings.defaultTaxRate ?? 0,
         taxOnMaterialsOnly: estimateSettings.taxOnMaterialsOnly ?? true,
         overheadPercent: estimateSettings.defaultOverheadPercent ?? 0,
         markupPercent: estimateSettings.defaultMarkupPercent ?? 0,
         profitMarginPercent: estimateSettings.defaultProfitMargin ?? 0,
+        // ── Contractor Operational Settings ────────────────────────────────
+        // These let the AI calculate REAL job cost (not guessed) and warn when
+        // the generated price doesn't cover the contractor's actual expenses
+        crewSize: estimateSettings.defaultCrewSize ?? 2,
+        laborRatePerHour: estimateSettings.defaultLaborRatePerHour ?? 25,
+        fuelCostPerProject: estimateSettings.defaultFuelCostPerProject ?? 0,
+        dumpFeePerProject: estimateSettings.defaultDumpFeePerProject ?? 0,
+        miscCostPercent: estimateSettings.defaultMiscCostPercent ?? 0,
       };
 
       // Flat Rate / Negotiated Price — inject targetPrice when contractor has pre-agreed price
