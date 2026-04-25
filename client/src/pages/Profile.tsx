@@ -1458,12 +1458,6 @@ export default function Profile() {
                 Documentation
               </TabsTrigger>
               <TabsTrigger 
-                value="specialties"
-                className="data-[state=active]:bg-cyan-400 data-[state=active]:text-black bg-gray-800 text-white hover:bg-gray-700 border-0 rounded-md transition-all duration-300"
-              >
-                Specialties
-              </TabsTrigger>
-              <TabsTrigger 
                 value="settings"
                 className="data-[state=active]:bg-cyan-400 data-[state=active]:text-black bg-gray-800 text-white hover:bg-gray-700 border-0 rounded-md transition-all duration-300"
               >
@@ -2104,67 +2098,6 @@ export default function Profile() {
                       </AccordionContent>
                     </AccordionItem>
                   </Accordion>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* SPECIALTIES TAB */}
-          <TabsContent value="specialties" className="space-y-6">
-            <Card className="border-gray-700 bg-gray-900">
-              <CardHeader>
-                <CardTitle className="text-cyan-400">Specialties and Services</CardTitle>
-                <CardDescription className="text-gray-400">
-                  Indicate the types of fences and services you offer.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {companyInfo.specialties.map((specialty, index) => (
-                    <Badge
-                      key={index}
-                      variant="secondary"
-                      className="px-3 py-1 text-sm bg-gray-800 border-gray-600 text-cyan-400 hover:bg-gray-700"
-                    >
-                      {specialty}
-                      <button
-                        type="button"
-                        onClick={() => removeSpecialty(specialty)}
-                        className="ml-2 text-gray-400 hover:text-red-400 transition-colors"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                  {companyInfo.specialties.length === 0 && (
-                    <p className="text-gray-400 text-sm">
-                      No specialties added.
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Input
-                    value={newSpecialty}
-                    onChange={(e) => setNewSpecialty(e.target.value)}
-                    placeholder="Ex: Wood Fences, Gate Installation, etc."
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addSpecialty();
-                      }
-                    }}
-                    className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400"
-                  />
-                  <Button
-                    type="button"
-                    onClick={addSpecialty}
-                    variant="outline"
-                    size="icon"
-                    className="bg-gray-800 border-gray-600 text-cyan-400 hover:bg-gray-700 hover:border-cyan-400 hover:text-cyan-300"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </Button>
                 </div>
               </CardContent>
             </Card>

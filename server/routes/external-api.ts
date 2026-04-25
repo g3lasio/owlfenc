@@ -227,10 +227,11 @@ router.post('/keys', verifyFirebaseAuth, async (req: Request, res: Response) => 
 
     res.status(201).json({
       success: true,
-      keyId: docRef.id,
+      id: docRef.id,
       key,         // ⚠️ Shown ONCE — contractor must save this
       prefix,      // Safe to display later
       name,
+      createdAt: new Date().toISOString(),
       message: 'Save this key securely. It will not be shown again.',
     });
   } catch (err: any) {
@@ -254,21 +255,23 @@ router.get('/keys', verifyFirebaseAuth, async (req: Request, res: Response) => {
     const snapshot = await db
       .collection('external_api_keys')
       .where('userId', '==', userId)
-      .orderBy('createdAt', 'desc')
       .get();
 
-    const keys = snapshot.docs.map(doc => {
-      const d = doc.data();
-      return {
-        keyId: doc.id,
-        prefix: d.keyPrefix,
-        name: d.name,
-        isActive: d.isActive,
-        createdAt: d.createdAt?.toDate() || null,
-        lastUsedAt: d.lastUsedAt?.toDate() || null,
-        usageCount: d.usageCount || 0,
-      };
-    });
+    const keys = snapshot.docs
+      .map(doc => {
+        const d = doc.data();
+        return {
+          id: doc.id,
+          prefix: d.keyPrefix,
+          name: d.name,
+          isActive: d.isActive,
+          createdAt: d.createdAt?.toDate()?.toISOString() || null,
+          lastUsedAt: d.lastUsedAt?.toDate()?.toISOString() || null,
+          usageCount: d.usageCount || 0,
+        };
+      })
+      .filter(k => k.isActive !== false)
+      .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
 
     res.json({ success: true, keys });
   } catch (err: any) {
