@@ -25,7 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { FileText, PlusCircle, Search, Download, Eye, Clock } from "lucide-react";
+import { FileText, PlusCircle, Search, Download, Eye, Clock, Share2, ExternalLink } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -42,6 +42,7 @@ interface Contract {
   status: 'draft' | 'sent' | 'signed' | 'completed';
   contractType: string;
   html?: string;
+  permanent_pdf_url?: string;
 }
 
 const Contracts = () => {
@@ -432,7 +433,7 @@ const Contracts = () => {
                       <span className="font-medium">Tipo:</span> {contract.contractType}
                     </p>
                   </CardContent>
-                  <CardFooter className="p-4 flex justify-between">
+                  <CardFooter className="p-4 flex justify-between gap-2">
                     <Button 
                       variant="outline" 
                       size="sm"
@@ -441,14 +442,48 @@ const Contracts = () => {
                       <Eye className="h-4 w-4 mr-1" />
                       Ver
                     </Button>
-                    <Button 
-                      size="sm"
-                      onClick={() => downloadMutation.mutate(contract.id)}
-                      disabled={downloadMutation.isPending}
-                    >
-                      <Download className="h-4 w-4 mr-1" />
-                      PDF
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm"
+                        onClick={() => downloadMutation.mutate(contract.id)}
+                        disabled={downloadMutation.isPending}
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        PDF
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        title="Ver contrato en nueva pestaña"
+                        onClick={() =>
+                          window.open(
+                            contract.permanent_pdf_url || `https://app.owlfenc.com/view/contract/${contract.id}`,
+                            '_blank'
+                          )
+                        }
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        title="Compartir link del contrato"
+                        onClick={async () => {
+                          const url = contract.permanent_pdf_url || `https://app.owlfenc.com/view/contract/${contract.id}`;
+                          if (navigator.share) {
+                            try { await navigator.share({ title: contract.title, url }); return; } catch (_) {}
+                          }
+                          try {
+                            await navigator.clipboard.writeText(url);
+                            toast({ title: '✅ Link copiado', description: 'URL del contrato copiada al portapapeles' });
+                          } catch (_) {
+                            toast({ title: 'URL del contrato', description: url });
+                          }
+                        }}
+                      >
+                        <Share2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </CardFooter>
                 </Card>
               ))

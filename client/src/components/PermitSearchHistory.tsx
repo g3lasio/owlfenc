@@ -10,12 +10,16 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Share2, Copy, ExternalLink } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { 
   getPermitSearchHistory, 
   formatHistoryDate, 
   getProjectTypeIcon,
   type PermitSearchHistoryItem 
 } from '@/services/permitHistoryService';
+
+const OWL_FENC_BASE = 'https://app.owlfenc.com';
 
 interface PermitSearchHistoryProps {
   onSelectHistory: (historyItem: PermitSearchHistoryItem) => void;
@@ -24,6 +28,7 @@ interface PermitSearchHistoryProps {
 export default function PermitSearchHistory({ onSelectHistory }: PermitSearchHistoryProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useAuth();
+  const { toast } = useToast();
 
   const { data: history = [], isLoading } = useQuery({
     queryKey: ['permitHistory', user?.uid],
@@ -34,6 +39,30 @@ export default function PermitSearchHistory({ onSelectHistory }: PermitSearchHis
   const handleSelectHistory = (item: PermitSearchHistoryItem) => {
     onSelectHistory(item);
     setIsOpen(false);
+  };
+
+  const handleShare = async (item: PermitSearchHistoryItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const url = `${OWL_FENC_BASE}/view/permit/${item.id}`;
+    const title = `Permit Search — ${item.address}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, url });
+        return;
+      } catch (_) { /* fallback to clipboard */ }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      toast({ title: '✅ Link copiado', description: 'URL del permit report copiada al portapapeles' });
+    } catch (_) {
+      toast({ title: 'URL del reporte', description: url });
+    }
+  };
+
+  const handleOpenView = (item: PermitSearchHistoryItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    window.open(`${OWL_FENC_BASE}/view/permit/${item.id}`, '_blank');
   };
 
   const getProjectTypeColor = (projectType: string): string => {
@@ -147,6 +176,30 @@ export default function PermitSearchHistory({ onSelectHistory }: PermitSearchHis
                             📋 {item.results.process.length} steps
                           </span>
                         )}
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex items-center gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2 text-xs bg-gray-700/50 border-teal-400/30 text-teal-300 hover:bg-teal-500/20"
+                          onClick={(e) => handleOpenView(item, e)}
+                          title="View permit report"
+                        >
+                          <ExternalLink className="w-3 h-3 mr-1" />
+                          View
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2 text-xs bg-gray-700/50 border-teal-400/30 text-teal-300 hover:bg-teal-500/20"
+                          onClick={(e) => handleShare(item, e)}
+                          title="Copy share link"
+                        >
+                          <Share2 className="w-3 h-3 mr-1" />
+                          Share
+                        </Button>
                       </div>
                     </div>
 

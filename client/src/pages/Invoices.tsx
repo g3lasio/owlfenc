@@ -2041,6 +2041,51 @@ const Invoices: React.FC = () => {
                                   >
                                     <Mail className="h-4 w-4" />
                                   </Button>
+                                  {invoice.id && (
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        title="Ver invoice"
+                                        onClick={() =>
+                                          window.open(
+                                            `https://app.owlfenc.com/view/invoice/${invoice.id}`,
+                                            '_blank'
+                                          )
+                                        }
+                                      >
+                                        <ExternalLink className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        title="Copiar link de la invoice"
+                                        onClick={async () => {
+                                          const url = `https://app.owlfenc.com/view/invoice/${invoice.id}`;
+                                          if (navigator.share) {
+                                            try {
+                                              await navigator.share({
+                                                title: `Invoice #${invoice.invoiceNumber}`,
+                                                url,
+                                              });
+                                              return;
+                                            } catch (_) {}
+                                          }
+                                          try {
+                                            await navigator.clipboard.writeText(url);
+                                            toast({
+                                              title: '✅ Link copiado',
+                                              description: 'URL de la invoice copiada al portapapeles',
+                                            });
+                                          } catch (_) {
+                                            toast({ title: 'URL de la invoice', description: url });
+                                          }
+                                        }}
+                                      >
+                                        <Share2 className="h-4 w-4" />
+                                      </Button>
+                                    </>
+                                  )}
                                 </div>
                               </div>
                             </div>

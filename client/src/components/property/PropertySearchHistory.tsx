@@ -23,15 +23,16 @@ import {
   User, 
   MapPin, 
   CalendarDays,
-  Check,
-  Trash,
-  LayoutList,
-  Filter
+  Filter,
+  Share2,
+  ExternalLink
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import axios from 'axios';
+
+const OWL_FENC_BASE = 'https://app.owlfenc.com';
 
 interface PropertySearchHistoryItem {
   id: number;
@@ -58,72 +59,67 @@ export default function PropertySearchHistory({
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  // Obtener el historial de búsquedas
   const { data: historyItems = [], isLoading, error, refetch } = useQuery({
     queryKey: ['/api/property/history'],
-    staleTime: 30000, // 30 segundos antes de considerar los datos obsoletos
+    staleTime: 30000,
   });
   
-  // Filtrar elementos del historial basado en términos de búsqueda
   const filteredHistoryItems = useMemo(() => {
     if (!historyItems || !Array.isArray(historyItems)) return [];
-    
     return historyItems.filter((item: PropertySearchHistoryItem) => {
-      // Primero filtrar por favoritos si está activado
-      if (showFavoritesOnly && !item.isFavorite) {
-        return false;
-      }
-      
-      // Luego filtrar por término de búsqueda
+      if (showFavoritesOnly && !item.isFavorite) return false;
       if (!searchTerm) return true;
-      
       const searchLower = searchTerm.toLowerCase();
-      const addressMatch = item.address?.toLowerCase().includes(searchLower);
-      const titleMatch = item.title?.toLowerCase().includes(searchLower);
-      const ownerMatch = item.ownerName?.toLowerCase().includes(searchLower);
-      
-      return addressMatch || titleMatch || ownerMatch;
+      return (
+        item.address?.toLowerCase().includes(searchLower) ||
+        item.title?.toLowerCase().includes(searchLower) ||
+        item.ownerName?.toLowerCase().includes(searchLower)
+      );
     });
   }, [historyItems, searchTerm, showFavoritesOnly]);
 
-  // Función para marcar un elemento como favorito
   const toggleFavorite = async (id: number, currentState: boolean) => {
     try {
-      await axios.post(`/api/property/history/${id}/favorite`, {
-        isFavorite: !currentState,
-      });
-      
-      // Invalidar la consulta para refrescar los datos
-      queryClient.invalidateQueries({
-        queryKey: ['/api/property/history'],
-      });
-      
+      await axios.post(`/api/property/history/${id}/favorite`, { isFavorite: !currentState });
+      queryClient.invalidateQueries({ queryKey: ['/api/property/history'] });
       toast({
         title: !currentState ? 'Marcado como favorito' : 'Eliminado de favoritos',
         description: 'El historial ha sido actualizado',
       });
     } catch (error) {
-      console.error('Error al cambiar estado de favorito:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'No se pudo actualizar el estado de favorito',
-      });
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo actualizar el estado de favorito' });
     }
   };
 
-  // Función para seleccionar un elemento del historial
   const handleSelectHistory = (item: PropertySearchHistoryItem) => {
     onSelectHistory(item);
     setIsOpen(false);
   };
 
-  // Formatear la fecha
+  const handleShare = async (item: PropertySearchHistoryItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const url = `${OWL_FENC_BASE}/view/property/${item.id}`;
+    const title = `Property Report — ${item.address}`;
+    if (navigator.share) {
+      try { await navigator.share({ title, url }); return; } catch (_) {}
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      toast({ title: '✅ Link copiado', description: 'URL del property report copiada al portapapeles' });
+    } catch (_) {
+      toast({ title: 'URL del reporte', description: url });
+    }
+  };
+
+  const handleOpenView = (item: PropertySearchHistoryItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    window.open(`${OWL_FENC_BASE}/view/property/${item.id}`, '_blank');
+  };
+
   const formatDate = (dateString: string) => {
     try {
-      const date = new Date(dateString);
-      return format(date, 'dd MMM yyyy, HH:mm', { locale: es });
-    } catch (error) {
+      return format(new Date(dateString), 'dd MMM yyyy, HH:mm', { locale: es });
+    } catch {
       return 'Fecha desconocida';
     }
   };
@@ -146,18 +142,12 @@ export default function PropertySearchHistory({
                 Consulta y recupera tus búsquedas anteriores de propiedades
               </DialogDescription>
             </div>
-            <Button 
-              variant="outline" 
-              size="icon" 
-              onClick={() => refetch()}
-              title="Recargar historial"
-            >
-              <LayoutList className="h-4 w-4" />
+            <Button variant="outline" size="icon" onClick={() => refetch()} title="Recargar historial">
+              <Clock className="h-4 w-4" />
             </Button>
           </div>
         </DialogHeader>
         
-        {/* Barra de búsqueda y filtros */}
         <div className="flex items-center space-x-2 mb-4">
           <div className="relative flex-1">
             <Input
@@ -191,33 +181,18 @@ export default function PropertySearchHistory({
             ))}
           </div>
         ) : error ? (
-          <div className="text-center p-4 text-red-500">
-            Error al cargar el historial
-          </div>
-        ) : historyItems?.length === 0 ? (
+          <div className="text-center p-4 text-red-500">Error al cargar el historial</div>
+        ) : (historyItems as any[])?.length === 0 ? (
           <div className="text-center p-4 text-muted-foreground">
             <Search className="mx-auto h-12 w-12 opacity-20 mb-3" />
             <p>No se encontró historial de búsquedas</p>
-            <p className="text-sm mt-1">
-              Tus búsquedas de propiedades aparecerán aquí
-            </p>
+            <p className="text-sm mt-1">Tus búsquedas de propiedades aparecerán aquí</p>
           </div>
         ) : filteredHistoryItems.length === 0 ? (
           <div className="text-center p-4 text-muted-foreground">
             <Filter className="mx-auto h-12 w-12 opacity-20 mb-3" />
             <p>No se encontraron resultados para tu búsqueda</p>
-            <p className="text-sm mt-1">
-              Intenta con otros términos o quita los filtros
-            </p>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => {
-                setSearchTerm('');
-                setShowFavoritesOnly(false);
-              }}
-              className="mt-4"
-            >
+            <Button variant="outline" size="sm" onClick={() => { setSearchTerm(''); setShowFavoritesOnly(false); }} className="mt-4">
               Limpiar filtros
             </Button>
           </div>
@@ -227,26 +202,15 @@ export default function PropertySearchHistory({
               <span className="text-sm text-muted-foreground">
                 {filteredHistoryItems.length} {filteredHistoryItems.length === 1 ? 'resultado' : 'resultados'}
               </span>
-              {searchTerm || showFavoritesOnly ? (
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => {
-                    setSearchTerm('');
-                    setShowFavoritesOnly(false);
-                  }}
-                  className="h-7 px-2 text-xs"
-                >
+              {(searchTerm || showFavoritesOnly) && (
+                <Button variant="ghost" size="sm" onClick={() => { setSearchTerm(''); setShowFavoritesOnly(false); }} className="h-7 px-2 text-xs">
                   Limpiar filtros
                 </Button>
-              ) : null}
+              )}
             </div>
             <div className="space-y-4 p-1">
               {filteredHistoryItems.map((item: PropertySearchHistoryItem) => (
-                <div
-                  key={item.id}
-                  className="relative flex flex-col space-y-2 p-3 border rounded-lg hover:bg-accent transition-colors"
-                >
+                <div key={item.id} className="relative flex flex-col space-y-2 p-3 border rounded-lg hover:bg-accent transition-colors">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
@@ -259,27 +223,23 @@ export default function PropertySearchHistory({
                           </Badge>
                         )}
                       </div>
-                      
                       <div className="flex flex-col space-y-1 mt-2">
                         <div className="flex items-center text-sm text-muted-foreground">
                           <MapPin className="h-3.5 w-3.5 mr-1 opacity-70" />
                           <span>{item.address}</span>
                         </div>
-                        
                         {item.ownerName && (
                           <div className="flex items-center text-sm text-muted-foreground">
                             <User className="h-3.5 w-3.5 mr-1 opacity-70" />
                             <span>{item.ownerName}</span>
                           </div>
                         )}
-                        
                         <div className="flex items-center text-sm text-muted-foreground">
                           <CalendarDays className="h-3.5 w-3.5 mr-1 opacity-70" />
                           <span>{formatDate(item.createdAt)}</span>
                         </div>
                       </div>
                     </div>
-                    
                     <div className="flex space-x-1">
                       <Button
                         variant="ghost"
@@ -287,23 +247,37 @@ export default function PropertySearchHistory({
                         onClick={() => toggleFavorite(item.id, item.isFavorite)}
                         title={item.isFavorite ? "Quitar de favoritos" : "Marcar como favorito"}
                       >
-                        <Star 
-                          className="h-4 w-4" 
-                          fill={item.isFavorite ? "currentColor" : "none"} 
-                        />
+                        <Star className="h-4 w-4" fill={item.isFavorite ? "currentColor" : "none"} />
                       </Button>
                     </div>
                   </div>
                   
-                  <div className="mt-2">
+                  {/* Action buttons row */}
+                  <div className="flex gap-2 mt-1">
                     <Button 
                       variant="secondary" 
                       size="sm" 
-                      className="w-full"
+                      className="flex-1"
                       onClick={() => handleSelectHistory(item)}
                     >
                       <Search className="mr-2 h-3.5 w-3.5" />
                       Cargar búsqueda
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => handleOpenView(item, e)}
+                      title="Ver reporte completo"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => handleShare(item, e)}
+                      title="Compartir link del reporte"
+                    >
+                      <Share2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
                 </div>
