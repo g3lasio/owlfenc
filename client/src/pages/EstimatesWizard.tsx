@@ -463,110 +463,7 @@ function ProfitabilityDashboard({ estimates, settings }: { estimates: any[], set
   );
 }
 
-// ─── Estimate Settings Panel Component ────────────────────────────────────────
-function EstimateSettingsPanel({ settings, onSave }: { settings: any, onSave: (s: any) => void }) {
-  const [local, setLocal] = React.useState({ ...settings });
-  const [saved, setSaved] = React.useState(false);
-  const handleSave = () => {
-    onSave(local);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
-  return (
-    <div className="space-y-6">
-      <div className="cyber-panel p-6">
-        <h3 className="text-xl font-bold text-purple-400 mb-2 flex items-center gap-2">
-          <Settings className="h-5 w-5" />
-          Estimate Settings
-        </h3>
-        <p className="text-gray-400 text-sm">Configure default values for all new estimates. These are your private business settings.</p>
-      </div>
-      <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 space-y-6">
-        <h4 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
-          <DollarSign className="h-4 w-4 text-cyan-400" />
-          Pricing & Profit Defaults
-        </h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm text-gray-300 mb-2">Default Overhead % <span className="text-xs text-gray-500">(rent, insurance, admin)</span></label>
-            <div className="flex items-center gap-3">
-              <input type="range" min="0" max="50" step="1" value={local.defaultOverheadPercent}
-                onChange={e => setLocal({ ...local, defaultOverheadPercent: Number(e.target.value) })}
-                className="flex-1 accent-cyan-400" />
-              <span className="text-cyan-400 font-bold w-12 text-right">{local.defaultOverheadPercent}%</span>
-            </div>
-            <p className="text-xs text-gray-500 mt-1">Industry average: 15–25%</p>
-          </div>
-          <div>
-            <label className="block text-sm text-gray-300 mb-2">Default Markup % <span className="text-xs text-gray-500">(profit on top of costs)</span></label>
-            <div className="flex items-center gap-3">
-              <input type="range" min="0" max="100" step="1" value={local.defaultMarkupPercent}
-                onChange={e => setLocal({ ...local, defaultMarkupPercent: Number(e.target.value) })}
-                className="flex-1 accent-cyan-400" />
-              <span className="text-cyan-400 font-bold w-12 text-right">{local.defaultMarkupPercent}%</span>
-            </div>
-            <p className="text-xs text-gray-500 mt-1">Industry average: 20–35%</p>
-          </div>
-          <div>
-            <label className="block text-sm text-gray-300 mb-2">Default Tax Rate % <span className="text-xs text-gray-500">(materials only)</span></label>
-            <div className="flex items-center gap-3">
-              <input type="range" min="0" max="15" step="0.25" value={local.defaultTaxRate}
-                onChange={e => setLocal({ ...local, defaultTaxRate: Number(e.target.value) })}
-                className="flex-1 accent-cyan-400" />
-              <span className="text-cyan-400 font-bold w-12 text-right">{local.defaultTaxRate}%</span>
-            </div>
-            <p className="text-xs text-gray-500 mt-1">US range: 0% (OR, MT) to 10.75% (MA)</p>
-          </div>
-          <div>
-            <label className="block text-sm text-gray-300 mb-2">Default Profit Margin % <span className="text-xs text-gray-500">(pre-filled in new estimates)</span></label>
-            <div className="flex items-center gap-3">
-              <input type="range" min="0" max="50" step="1" value={local.defaultProfitMargin}
-                onChange={e => setLocal({ ...local, defaultProfitMargin: Number(e.target.value) })}
-                className="flex-1 accent-cyan-400" />
-              <span className="text-cyan-400 font-bold w-12 text-right">{local.defaultProfitMargin}%</span>
-            </div>
-            <p className="text-xs text-gray-500 mt-1">0% = no automatic margin applied</p>
-          </div>
-        </div>
-        <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg border border-gray-700">
-          <div>
-            <p className="text-sm text-gray-300 font-medium">Apply tax to materials only</p>
-            <p className="text-xs text-gray-500 mt-0.5">Most US states: sales tax applies to materials only, not labor</p>
-          </div>
-          <button
-            onClick={() => setLocal({ ...local, taxOnMaterialsOnly: !local.taxOnMaterialsOnly })}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${local.taxOnMaterialsOnly ? 'bg-cyan-500' : 'bg-gray-600'}`}
-          >
-            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${local.taxOnMaterialsOnly ? 'translate-x-6' : 'translate-x-1'}`} />
-          </button>
-        </div>
-      </div>
-      <div className="bg-gray-900 border border-green-500/30 rounded-lg p-6">
-        <h4 className="text-sm font-semibold text-green-400 mb-4 flex items-center gap-2">
-          <TrendingUp className="h-4 w-4" />
-          Your Pricing Formula Preview (based on $10,000 COGS, $5,000 materials)
-        </h4>
-        <div className="space-y-2 text-sm font-mono">
-          <div className="flex justify-between text-gray-400"><span>Direct Costs (COGS)</span><span>$10,000</span></div>
-          <div className="flex justify-between text-yellow-400"><span>+ Overhead ({local.defaultOverheadPercent}%)</span><span>+${(10000 * local.defaultOverheadPercent / 100).toFixed(0)}</span></div>
-          <div className="flex justify-between text-green-400"><span>+ Markup / Profit ({local.defaultMarkupPercent}%)</span><span>+${(10000 * local.defaultMarkupPercent / 100).toFixed(0)}</span></div>
-          <div className="flex justify-between text-cyan-400"><span>+ Tax ({local.defaultTaxRate}% on materials)</span><span>+${(5000 * local.defaultTaxRate / 100).toFixed(0)}</span></div>
-          <div className="border-t border-gray-700 pt-2 flex justify-between text-white font-bold text-base">
-            <span>Client Pays</span>
-            <span className="text-cyan-400">${(10000 + (10000 * local.defaultOverheadPercent / 100) + (10000 * local.defaultMarkupPercent / 100) + (5000 * local.defaultTaxRate / 100)).toFixed(0)}</span>
-          </div>
-        </div>
-      </div>
-      <div className="flex justify-end">
-        <button onClick={handleSave}
-          className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${saved ? 'bg-green-500 text-black' : 'bg-purple-600 hover:bg-purple-500 text-white'}`}>
-          {saved ? <CheckCircle className="h-4 w-4" /> : <Settings className="h-4 w-4" />}
-          {saved ? 'Settings Saved!' : 'Save Settings'}
-        </button>
-      </div>
-    </div>
-  );
-}
+import { EstimateSettingsPanel } from './EstimateSettingsPanel';
 
 export default function EstimatesWizardFixed() {
   const { currentUser } = useAuth(); // ✅ Using AuthContext which provides currentUser
@@ -751,8 +648,15 @@ export default function EstimatesWizardFixed() {
         showProfitOnEstimate: false,
         currency: "USD",
         taxOnMaterialsOnly: true,
+        defaultLaborRatePerHour: 25,
+        defaultCrewSize: 3,
+        defaultEstimatorRate: 35,
+        defaultFuelCostPerProject: 150,
+        defaultMiscCostPercent: 3,
+        defaultDumpFeePerProject: 0,
+        settingsMode: 'simple',
       };
-    } catch { return { defaultOverheadPercent: 15, defaultMarkupPercent: 20, defaultTaxRate: 0, defaultProfitMargin: 0, showProfitOnEstimate: false, currency: "USD", taxOnMaterialsOnly: true }; }
+    } catch { return { defaultOverheadPercent: 15, defaultMarkupPercent: 20, defaultTaxRate: 0, defaultProfitMargin: 0, showProfitOnEstimate: false, currency: "USD", taxOnMaterialsOnly: true, defaultLaborRatePerHour: 25, defaultCrewSize: 3, defaultEstimatorRate: 35, defaultFuelCostPerProject: 150, defaultMiscCostPercent: 3, defaultDumpFeePerProject: 0, settingsMode: 'simple' }; }
   });
   // ── Estimate Settings (persisted to localStorage) ─────────────────────────
 

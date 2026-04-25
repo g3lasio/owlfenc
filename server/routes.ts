@@ -8170,11 +8170,18 @@ ENHANCED LEGAL CLAUSE:`;
         return res.json({
           defaultTaxRate: 0,
           taxOnMaterialsOnly: true,
-          defaultOverheadPercent: 0,
-          defaultMarkupPercent: 0,
+          defaultOverheadPercent: 15,
+          defaultMarkupPercent: 20,
           defaultProfitMargin: 0,
           showProfitOnEstimate: false,
           currency: 'USD',
+          defaultLaborRatePerHour: 25,
+          defaultCrewSize: 3,
+          defaultEstimatorRate: 35,
+          defaultFuelCostPerProject: 150,
+          defaultMiscCostPercent: 3,
+          defaultDumpFeePerProject: 0,
+          settingsMode: 'simple',
         });
       }
       return res.json(doc.data());
@@ -8191,6 +8198,7 @@ ENHANCED LEGAL CLAUSE:`;
       const settings = req.body;
       // Validate basic types
       const sanitized = {
+        // Core pricing
         defaultTaxRate: typeof settings.defaultTaxRate === 'number' ? settings.defaultTaxRate : 0,
         taxOnMaterialsOnly: settings.taxOnMaterialsOnly !== false,
         defaultOverheadPercent: typeof settings.defaultOverheadPercent === 'number' ? settings.defaultOverheadPercent : 0,
@@ -8198,6 +8206,16 @@ ENHANCED LEGAL CLAUSE:`;
         defaultProfitMargin: typeof settings.defaultProfitMargin === 'number' ? settings.defaultProfitMargin : 0,
         showProfitOnEstimate: settings.showProfitOnEstimate === true,
         currency: typeof settings.currency === 'string' ? settings.currency : 'USD',
+        // Labor defaults
+        defaultLaborRatePerHour: typeof settings.defaultLaborRatePerHour === 'number' ? settings.defaultLaborRatePerHour : 25,
+        defaultCrewSize: typeof settings.defaultCrewSize === 'number' ? settings.defaultCrewSize : 3,
+        defaultEstimatorRate: typeof settings.defaultEstimatorRate === 'number' ? settings.defaultEstimatorRate : 35,
+        // Operational cost defaults
+        defaultFuelCostPerProject: typeof settings.defaultFuelCostPerProject === 'number' ? settings.defaultFuelCostPerProject : 150,
+        defaultMiscCostPercent: typeof settings.defaultMiscCostPercent === 'number' ? settings.defaultMiscCostPercent : 3,
+        defaultDumpFeePerProject: typeof settings.defaultDumpFeePerProject === 'number' ? settings.defaultDumpFeePerProject : 0,
+        // Mode
+        settingsMode: settings.settingsMode === 'advanced' ? 'advanced' : 'simple',
         updatedAt: new Date().toISOString(),
       };
       await admin.firestore().collection('estimate_settings').doc(userId).set(sanitized, { merge: true });
