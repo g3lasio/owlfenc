@@ -221,28 +221,85 @@ const TEMPLATE_OPTIONS = [
 
 // ─── Profitability Dashboard Component ────────────────────────────────────────
 function ProfitabilityDashboard({ estimates, settings }: { estimates: any[], settings: any }) {
-  const totalRevenue = estimates.reduce((sum: number, e: any) => sum + (e.total || 0), 0);
+  const fmt = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(n);
+  const fmtPct = (n: number) => `${n.toFixed(1)}%`;
+
+  // ── Per-estimate profit calculation ─────────────────────────────────────────
+  // Strategy:
+  //   1. Flat Rate estimates: negotiatedPrice - subtotal = real gross profit
+  //      (items were scaled to match negotiatedPrice, so subtotal IS the cost basis)
+  //   2. Margin-based estimates: use stored profitAmount if available, otherwise
+  //      derive from markup setting (legacy fallback)
+  //   3. Plain estimates (no profit mode): markup setting fallback
+  const calcProfit = (est: any): { revenue: number; cogs: number; profit: number; margin: number; mode: string } => {
+    const revenue = est.total || 0;
+
+    // Flat Rate: items were scaled so subtotal = cost basis, revenue = negotiated price
+    if (est.isFlatRate && est.targetPrice > 0) {
+      const cogs = est.subtotal || est.displaySubtotal || 0;
+      const profit = revenue - cogs;
+      const margin = revenue > 0 ? (profit / revenue) * 100 : 0;
+      return { revenue, cogs, profit, margin, mode: 'flat_rate' };
+    }
+
+    // Stored profitAmount from UIE (margin or overhead mode)
+    if (est.profitAmount && est.profitAmount !== 0) {
+      const profit = est.profitAmount;
+      const cogs = revenue - profit;
+      const margin = revenue > 0 ? (profit / revenue) * 100 : 0;
+      return { revenue, cogs, profit, margin, mode: 'stored' };
+    }
+
+    // Legacy fallback: derive from markup setting
+    const markupFactor = 1 + (settings.defaultMarkupPercent || 0) / 100;
+    const cogs = markupFactor > 0 ? revenue / markupFactor : revenue;
+    const profit = revenue - cogs;
+    const margin = revenue > 0 ? (profit / revenue) * 100 : 0;
+    return { revenue, cogs, profit, margin, mode: 'estimated' };
+  };
+
+  // ── Aggregate metrics ───────────────────────────────────────────────────
   const estimateCount = estimates.length;
-  const avgEstimate = estimateCount > 0 ? totalRevenue / estimateCount : 0;
-  const estimatedCOGS = totalRevenue / (1 + (settings.defaultMarkupPercent / 100));
-  const estimatedProfit = totalRevenue - estimatedCOGS;
-  const profitMarginPct = totalRevenue > 0 ? (estimatedProfit / totalRevenue) * 100 : 0;
+  const totalRevenue = estimates.reduce((s: number, e: any) => s + (e.total || 0), 0);
+  const totalProfit  = estimates.reduce((s: number, e: any) => s + calcProfit(e).profit, 0);
+  const totalCOGS    = totalRevenue - totalProfit;
+  const avgEstimate  = estimateCount > 0 ? totalRevenue / estimateCount : 0;
+  const overallMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
+
   const statusBreakdown = {
     approved: estimates.filter((e: any) => e.status === 'approved').length,
-    sent: estimates.filter((e: any) => e.status === 'sent').length,
-    draft: estimates.filter((e: any) => e.status === 'draft').length,
+    sent:     estimates.filter((e: any) => e.status === 'sent').length,
+    draft:    estimates.filter((e: any) => e.status === 'draft').length,
   };
-  const approvedRevenue = estimates.filter((e: any) => e.status === 'approved').reduce((sum: number, e: any) => sum + (e.total || 0), 0);
-  const fmt = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(n);
+  const approvedEstimates = estimates.filter((e: any) => e.status === 'approved');
+  const approvedRevenue = approvedEstimates.reduce((s: number, e: any) => s + (e.total || 0), 0);
+  const approvedProfit  = approvedEstimates.reduce((s: number, e: any) => s + calcProfit(e).profit, 0);
+
+  const flatRateCount = estimates.filter((e: any) => e.isFlatRate).length;
+
+  const marginColor = (m: number) =>
+    m >= 20 ? 'text-green-400' : m >= 10 ? 'text-yellow-400' : 'text-red-400';
+  const marginBg = (m: number) =>
+    m >= 20 ? 'bg-green-900/30 border-green-500/30' : m >= 10 ? 'bg-yellow-900/30 border-yellow-500/30' : 'bg-red-900/30 border-red-500/30';
+
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="cyber-panel p-6">
         <h3 className="text-xl font-bold text-green-400 mb-2 flex items-center gap-2">
           <BarChart2 className="h-5 w-5" />
           Profitability Dashboard
         </h3>
         <p className="text-gray-400 text-sm">Your private business intelligence — clients never see this data.</p>
+        {flatRateCount > 0 && (
+          <div className="mt-2 flex items-center gap-2 text-xs text-yellow-400">
+            <DollarSign className="h-3 w-3" />
+            <span>{flatRateCount} estimate{flatRateCount > 1 ? 's' : ''} using Flat Rate / Precio Negociado — profit calculated from actual item costs.</span>
+          </div>
+        )}
       </div>
+
+      {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-gray-900 border border-cyan-500/30 rounded-lg p-4">
           <div className="flex items-center gap-2 mb-2">
@@ -258,15 +315,21 @@ function ProfitabilityDashboard({ estimates, settings }: { estimates: any[], set
             <span className="text-xs text-gray-400 uppercase tracking-wide">Approved Revenue</span>
           </div>
           <p className="text-2xl font-bold text-green-400">{fmt(approvedRevenue)}</p>
-          <p className="text-xs text-gray-500 mt-1">{statusBreakdown.approved} approved</p>
+          <p className="text-xs text-gray-500 mt-1">
+            {statusBreakdown.approved} approved
+            {approvedProfit > 0 && <span className="ml-1 text-green-600">({fmt(approvedProfit)} profit)</span>}
+          </p>
         </div>
-        <div className="bg-gray-900 border border-yellow-500/30 rounded-lg p-4">
+        <div className={`bg-gray-900 border rounded-lg p-4 ${marginBg(overallMargin)}`}>
           <div className="flex items-center gap-2 mb-2">
             <TrendingUp className="h-4 w-4 text-yellow-400" />
-            <span className="text-xs text-gray-400 uppercase tracking-wide">Est. Profit</span>
+            <span className="text-xs text-gray-400 uppercase tracking-wide">Net Profit</span>
           </div>
-          <p className="text-2xl font-bold text-yellow-400">{fmt(estimatedProfit)}</p>
-          <p className="text-xs text-gray-500 mt-1">{profitMarginPct.toFixed(1)}% margin</p>
+          <p className={`text-2xl font-bold ${marginColor(overallMargin)}`}>{fmt(totalProfit)}</p>
+          <p className={`text-xs mt-1 ${marginColor(overallMargin)}`}>
+            {fmtPct(overallMargin)} margin
+            {overallMargin >= 20 ? ' ✔ Healthy' : overallMargin >= 10 ? ' ⚠ Thin' : ' ⚠ At Risk'}
+          </p>
         </div>
         <div className="bg-gray-900 border border-purple-500/30 rounded-lg p-4">
           <div className="flex items-center gap-2 mb-2">
@@ -277,6 +340,31 @@ function ProfitabilityDashboard({ estimates, settings }: { estimates: any[], set
           <p className="text-xs text-gray-500 mt-1">per project</p>
         </div>
       </div>
+
+      {/* Revenue Breakdown Visual Bar */}
+      {totalRevenue > 0 && (
+        <div className="bg-gray-900 border border-gray-700 rounded-lg p-4">
+          <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Revenue Breakdown</h4>
+          <div className="flex h-6 rounded-full overflow-hidden w-full">
+            <div
+              className="bg-red-700/80 transition-all"
+              style={{ width: `${Math.max(0, (totalCOGS / totalRevenue) * 100)}%` }}
+              title={`Costs: ${fmt(totalCOGS)}`}
+            />
+            <div
+              className="bg-green-500/80 transition-all"
+              style={{ width: `${Math.max(0, (totalProfit / totalRevenue) * 100)}%` }}
+              title={`Profit: ${fmt(totalProfit)}`}
+            />
+          </div>
+          <div className="flex justify-between mt-2 text-xs">
+            <span className="text-red-400">■ Costs {fmt(totalCOGS)} ({fmtPct(totalRevenue > 0 ? (totalCOGS / totalRevenue) * 100 : 0)})</span>
+            <span className={marginColor(overallMargin)}>■ Profit {fmt(totalProfit)} ({fmtPct(overallMargin)})</span>
+          </div>
+        </div>
+      )}
+
+      {/* Status Breakdown */}
       <div className="bg-gray-900 border border-gray-700 rounded-lg p-6">
         <h4 className="text-sm font-semibold text-gray-300 mb-4 flex items-center gap-2">
           <PieChart className="h-4 w-4 text-cyan-400" />
@@ -300,6 +388,8 @@ function ProfitabilityDashboard({ estimates, settings }: { estimates: any[], set
           </div>
         </div>
       </div>
+
+      {/* Per-Estimate Table */}
       <div className="bg-gray-900 border border-gray-700 rounded-lg p-6">
         <h4 className="text-sm font-semibold text-gray-300 mb-4 flex items-center gap-2">
           <Sliders className="h-4 w-4 text-cyan-400" />
@@ -308,7 +398,8 @@ function ProfitabilityDashboard({ estimates, settings }: { estimates: any[], set
         <div className="flex items-center gap-2 mb-4 p-3 bg-blue-900/20 border border-blue-500/30 rounded-lg">
           <Info className="h-4 w-4 text-blue-400 flex-shrink-0" />
           <p className="text-xs text-blue-300">
-            Profit estimates use your Settings markup of <strong>{settings.defaultMarkupPercent}%</strong>. Update Settings for more accurate projections.
+            💰 <strong>Flat Rate</strong> estimates show actual margin (negotiated price − item costs).
+            Standard estimates use stored profit data or your markup setting ({settings.defaultMarkupPercent}%) as fallback.
           </p>
         </div>
         {estimates.length === 0 ? (
@@ -322,19 +413,16 @@ function ProfitabilityDashboard({ estimates, settings }: { estimates: any[], set
               <thead>
                 <tr className="border-b border-gray-700">
                   <th className="text-left py-2 px-3 text-gray-400 font-medium">Client</th>
-                  <th className="text-left py-2 px-3 text-gray-400 font-medium hidden md:table-cell">Type</th>
+                  <th className="text-left py-2 px-3 text-gray-400 font-medium hidden md:table-cell">Mode</th>
                   <th className="text-right py-2 px-3 text-gray-400 font-medium">Revenue</th>
-                  <th className="text-right py-2 px-3 text-gray-400 font-medium">Est. COGS</th>
-                  <th className="text-right py-2 px-3 text-gray-400 font-medium">Est. Profit</th>
+                  <th className="text-right py-2 px-3 text-gray-400 font-medium">COGS</th>
+                  <th className="text-right py-2 px-3 text-gray-400 font-medium">Profit</th>
                   <th className="text-center py-2 px-3 text-gray-400 font-medium">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {estimates.slice(0, 20).map((est: any) => {
-                  const revenue = est.total || 0;
-                  const cogs = revenue / (1 + settings.defaultMarkupPercent / 100);
-                  const profit = revenue - cogs;
-                  const margin = revenue > 0 ? (profit / revenue) * 100 : 0;
+                  const { revenue, cogs, profit, margin, mode } = calcProfit(est);
                   return (
                     <tr key={est.id} className="border-b border-gray-800 hover:bg-gray-800/50 transition-colors">
                       <td className="py-2 px-3">
@@ -342,13 +430,19 @@ function ProfitabilityDashboard({ estimates, settings }: { estimates: any[], set
                         <div className="text-xs text-gray-500">{est.estimateNumber}</div>
                       </td>
                       <td className="py-2 px-3 hidden md:table-cell">
-                        <span className="text-xs text-gray-400 capitalize">{est.projectType || 'general'}</span>
+                        {mode === 'flat_rate' ? (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-900/40 text-yellow-400 border border-yellow-500/30 font-mono">💰 Flat Rate</span>
+                        ) : mode === 'stored' ? (
+                          <span className="text-xs text-green-400/70 font-mono">Margin</span>
+                        ) : (
+                          <span className="text-xs text-gray-500 font-mono">Est.</span>
+                        )}
                       </td>
                       <td className="py-2 px-3 text-right font-medium text-cyan-400">{fmt(revenue)}</td>
                       <td className="py-2 px-3 text-right text-red-400">{fmt(cogs)}</td>
                       <td className="py-2 px-3 text-right">
-                        <div className={`font-bold ${profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>{fmt(profit)}</div>
-                        <div className="text-xs text-gray-500">{margin.toFixed(1)}%</div>
+                        <div className={`font-bold ${marginColor(margin)}`}>{fmt(profit)}</div>
+                        <div className={`text-xs ${marginColor(margin)}`}>{fmtPct(margin)}</div>
                       </td>
                       <td className="py-2 px-3 text-center">
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
@@ -617,6 +711,10 @@ export default function EstimatesWizardFixed() {
 
   // Nuevo botón MATERIALS AI SEARCH - Estado independiente
   const [showNewDeepsearchDialog, setShowNewDeepsearchDialog] = useState(false);
+
+  // Flat Rate / Negotiated Price modal state
+  const [showFlatRateModal, setShowFlatRateModal] = useState(false);
+  const [flatRateInputValue, setFlatRateInputValue] = useState("");
 
   // New client form
   const [newClient, setNewClient] = useState({
@@ -1516,6 +1614,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
   // Nuevo handler para MATERIALS AI SEARCH - Con verificación de permisos
   const handleNewDeepsearch = async (
     searchType: "materials" | "labor" | "full",
+    negotiatedPrice?: number,
   ) => {
     console.log("🔍 NEW DEEPSEARCH - Starting with type:", searchType);
     
@@ -1592,7 +1691,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       // ── Inject user settings into DeepSearch request ──────────────────────
       // This ensures the backend respects the contractor's tax rate, overhead,
       // markup, and tax-on-materials-only preference for EVERY estimate.
-      const requestData = {
+      const requestData: Record<string, any> = {
         projectDescription: description,
         includeMaterials: searchType === "materials" || searchType === "full",
         includeLabor: searchType === "labor" || searchType === "full",
@@ -1605,6 +1704,15 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         markupPercent: estimateSettings.defaultMarkupPercent ?? 0,
         profitMarginPercent: estimateSettings.defaultProfitMargin ?? 0,
       };
+
+      // Flat Rate / Negotiated Price — inject targetPrice when contractor has pre-agreed price
+      if (negotiatedPrice && negotiatedPrice > 0) {
+        requestData.targetPrice = negotiatedPrice;
+        // Store the negotiated price in estimate state so the profitability dashboard
+        // and totals calculation can use it immediately
+        setEstimate(prev => ({ ...prev, targetPrice: negotiatedPrice }));
+        console.log(`💰 FLAT RATE MODE: targetPrice = $${negotiatedPrice}`);
+      }
 
       console.log("🔍 NEW DEEPSEARCH - Request data:", requestData);
 
@@ -3073,6 +3181,13 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         displayTax: estimate.tax,
         displayTotal: estimate.total,
         displayDiscountAmount: estimate.discountAmount || 0,
+
+        // Flat Rate / Negotiated Price — persisted so profitability dashboard can identify these estimates
+        targetPrice: estimate.targetPrice || 0,
+        isFlatRate: (estimate.targetPrice || 0) > 0,
+        profitMarginPercent: estimate.profitMarginPercent || 0,
+        profitAmount: estimate.profitAmount || 0,
+        contractorBaseCost: estimate.contractorBaseCost || 0,
 
         // Additional metadata for dashboard
         itemsCount: estimate.items.length,
@@ -5734,6 +5849,37 @@ This link provides a professional view of your estimate that you can access anyt
                                 </div>
                               </div>
                             </button>
+
+                            {/* Flat Rate / Negotiated Price */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowNewDeepsearchDialog(false);
+                                setFlatRateInputValue("");
+                                setShowFlatRateModal(true);
+                              }}
+                              className="group w-full p-3 rounded-lg transition-all duration-300 border border-yellow-400/40 bg-gradient-to-r from-yellow-500/10 to-amber-600/10 hover:border-yellow-400/70 hover:from-yellow-500/20 hover:to-amber-600/20 hover:shadow-lg hover:shadow-yellow-400/25"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-yellow-400/20 to-amber-600/20 border border-yellow-400/30 flex items-center justify-center">
+                                  <DollarSign className="h-5 w-5 text-yellow-400" />
+                                </div>
+                                <div className="flex-1 text-left">
+                                  <div className="flex items-center gap-2">
+                                    <div className="text-sm font-medium text-white group-hover:text-yellow-400 transition-colors">
+                                      PRECIO NEGOCIADO
+                                    </div>
+                                    <div className="px-2 py-0.5 bg-yellow-400/20 border border-yellow-400/40 rounded text-xs text-yellow-400 font-mono">
+                                      FLAT RATE
+                                    </div>
+                                  </div>
+                                  <div className="text-xs text-slate-400 font-mono">Ya negoció el precio — justifícalo con items</div>
+                                </div>
+                                <div className="flex items-center gap-1 px-2 py-1 bg-yellow-400/10 border border-yellow-400/30 rounded text-xs text-yellow-400 font-mono whitespace-nowrap">
+                                  ⚡ 20 cr
+                                </div>
+                              </div>
+                            </button>
                           </div>
 
                           {/* Footer */}
@@ -6294,6 +6440,44 @@ This link provides a professional view of your estimate that you can access anyt
                         </div>
                       )}
                     </div>
+
+                    {/* ══ Flat Rate Price Justification Card ════════════════════════ */}
+                    {estimate.targetPrice > 0 && estimate.items.length > 0 && (
+                      <div className="bg-gradient-to-r from-yellow-950 via-amber-950 to-yellow-950 rounded-xl px-4 py-4 border border-yellow-600/40 shadow-lg">
+                        <div className="flex items-center gap-2 mb-3">
+                          <DollarSign className="h-4 w-4 text-yellow-400" />
+                          <span className="text-yellow-400 text-xs font-bold tracking-wide uppercase">💰 Justificación de Precio Negociado</span>
+                          <span className="text-yellow-600 text-xs">(Solo visible para el contratista)</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 mb-3">
+                          <div className="bg-black/30 rounded-lg p-2.5 border border-yellow-600/20">
+                            <div className="text-xs text-yellow-600 uppercase tracking-wide mb-1">Precio Acordado</div>
+                            <div className="text-lg font-bold text-yellow-400">${estimate.targetPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                          </div>
+                          <div className="bg-black/30 rounded-lg p-2.5 border border-yellow-600/20">
+                            <div className="text-xs text-yellow-600 uppercase tracking-wide mb-1">Costo Base (Items)</div>
+                            <div className="text-lg font-bold text-white">${estimate.subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between bg-black/20 rounded-lg px-3 py-2 border border-yellow-600/20">
+                          <span className="text-xs text-yellow-300">📊 Margen sobre costo:</span>
+                          <span className={`text-sm font-bold ${
+                            estimate.subtotal > 0 && ((estimate.targetPrice - estimate.subtotal) / estimate.subtotal * 100) >= 20
+                              ? 'text-green-400'
+                              : estimate.subtotal > 0 && ((estimate.targetPrice - estimate.subtotal) / estimate.subtotal * 100) >= 10
+                              ? 'text-yellow-400'
+                              : 'text-red-400'
+                          }`}>
+                            {estimate.subtotal > 0
+                              ? `${((estimate.targetPrice - estimate.subtotal) / estimate.subtotal * 100).toFixed(1)}% (+$${(estimate.targetPrice - estimate.subtotal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`
+                              : '—'}
+                          </span>
+                        </div>
+                        <p className="text-xs text-yellow-700 mt-2">
+                          Los items fueron escalados proporcionalmente para que el total coincida con el precio negociado.
+                        </p>
+                      </div>
+                    )}
 
                     {/* Premium Totals Summary */}
                     <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-4 border border-gray-200 shadow-sm">
@@ -8785,6 +8969,108 @@ This link provides a professional view of your estimate that you can access anyt
       `}</style>
 
       {/* DeepSearch Effect - Smart Search con frases futuristas */}
+      {/* ═══ Flat Rate / Negotiated Price Modal ═══════════════════════════════ */}
+      {showFlatRateModal && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          onClick={() => setShowFlatRateModal(false)}
+        >
+          <div
+            className="relative bg-gray-900 border border-yellow-400/40 rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl shadow-yellow-400/10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Corner accents */}
+            <div className="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-yellow-400/60 rounded-tl-2xl" />
+            <div className="absolute top-0 right-0 w-4 h-4 border-r-2 border-t-2 border-yellow-400/60 rounded-tr-2xl" />
+            <div className="absolute bottom-0 left-0 w-4 h-4 border-l-2 border-b-2 border-yellow-400/60 rounded-bl-2xl" />
+            <div className="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-yellow-400/60 rounded-br-2xl" />
+
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-400/20 to-amber-600/20 border border-yellow-400/40 flex items-center justify-center">
+                <DollarSign className="h-6 w-6 text-yellow-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-yellow-400 font-mono tracking-wide">PRECIO NEGOCIADO</h3>
+                <p className="text-xs text-slate-400">Flat Rate — Justificación de precio</p>
+              </div>
+              <button
+                onClick={() => setShowFlatRateModal(false)}
+                className="ml-auto text-gray-500 hover:text-gray-300 transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Explanation */}
+            <div className="bg-yellow-400/5 border border-yellow-400/20 rounded-lg p-3 mb-5">
+              <p className="text-xs text-yellow-200 leading-relaxed">
+                💡 <strong>Ya negoció el precio con su cliente.</strong> Ingrese el total acordado y la IA
+                generará un desglose profesional de materiales y mano de obra que
+                <strong> justifica ese precio exactamente</strong> — perfecto para presentar al cliente
+                o para sus registros internos.
+              </p>
+            </div>
+
+            {/* Price input */}
+            <div className="mb-5">
+              <label className="block text-xs font-semibold text-yellow-300 uppercase tracking-wide mb-2">
+                Precio Total Negociado
+              </label>
+              <div className="flex items-center bg-gray-800 border border-yellow-400/40 rounded-xl px-4 py-3 gap-2 focus-within:border-yellow-400/80 transition-colors">
+                <span className="text-yellow-400 text-lg font-bold">$</span>
+                <input
+                  type="number"
+                  value={flatRateInputValue}
+                  onChange={(e) => setFlatRateInputValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const price = parseFloat(flatRateInputValue);
+                      if (price > 0) {
+                        setShowFlatRateModal(false);
+                        handleNewDeepsearch("full", price);
+                      }
+                    }
+                  }}
+                  placeholder="0.00"
+                  min="0"
+                  step="0.01"
+                  className="flex-1 bg-transparent text-white text-xl font-semibold focus:outline-none placeholder-gray-600"
+                  autoFocus
+                />
+              </div>
+              {flatRateInputValue && parseFloat(flatRateInputValue) > 0 && (
+                <p className="text-xs text-yellow-400/70 mt-1 font-mono">
+                  La IA generará items que sumen exactamente ${parseFloat(flatRateInputValue).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+              )}
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowFlatRateModal(false)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-600 text-gray-400 text-sm hover:border-gray-400 hover:text-gray-200 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  const price = parseFloat(flatRateInputValue);
+                  if (!price || price <= 0) return;
+                  setShowFlatRateModal(false);
+                  handleNewDeepsearch("full", price);
+                }}
+                disabled={!flatRateInputValue || parseFloat(flatRateInputValue) <= 0}
+                className="flex-2 flex-grow py-2.5 px-6 rounded-xl bg-gradient-to-r from-yellow-500 to-amber-500 text-black font-bold text-sm hover:from-yellow-400 hover:to-amber-400 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-yellow-500/20"
+              >
+                💰 Generar Justificación
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <DeepSearchEffect
         isVisible={isAIProcessing}
         onComplete={() => setIsAIProcessing(false)}

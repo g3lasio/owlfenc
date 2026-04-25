@@ -188,7 +188,8 @@ OUTPUT FORMAT: Respond with a single valid JSON object matching the schema below
 function buildMasterUserPrompt(
   projectDescription: string,
   location: string,
-  mode: 'full' | 'materials_only' | 'labor_only'
+  mode: 'full' | 'materials_only' | 'labor_only',
+  targetPrice?: number
 ): string {
   const { locationContext, multiplier } = resolveLocation(location);
 
@@ -197,6 +198,27 @@ function buildMasterUserPrompt(
     materials_only: 'Generate ONLY materials. Set laborCosts to an empty array [].',
     labor_only: 'Generate ONLY laborCosts (services/labor items). Set materials to an empty array []. For each labor item, treat unitPrice as the rate per unit (e.g., per sqft, per hour, per unit).',
   };
+
+  // Flat-rate / negotiated-price instructions injected when contractor has a pre-agreed price
+  const flatRateBlock = (targetPrice && targetPrice > 0) ? `
+## FLAT RATE / NEGOTIATED PRICE MODE
+The contractor has ALREADY AGREED on a total price of $${targetPrice.toFixed(2)} with the client.
+Your job is NOT to price the project from scratch — your job is to JUSTIFY that price with a
+professional, itemized breakdown that adds up to exactly $${targetPrice.toFixed(2)}.
+
+Rules:
+1. Generate realistic, professional items (materials + labor) for this project type.
+2. Price each item at fair market rates for the location.
+3. After generating items, mentally calculate the raw subtotal.
+4. Scale ALL unitPrice and totalPrice/totalCost values proportionally so that:
+   rawMaterialsCost + rawLaborCost + rawAdditionalCost = $${targetPrice.toFixed(2)}
+   (i.e., the scaling factor = $${targetPrice.toFixed(2)} / rawSubtotal)
+5. Round individual items naturally — do NOT show the scaling factor in descriptions.
+6. The result must look like a professional estimate that a client would accept,
+   not a list of inflated or deflated numbers.
+7. In the "reasoning" field of each item, explain WHY this item is needed for the project
+   (not that prices were scaled).
+` : '';
 
   return `## PROJECT TO ESTIMATE
 "${projectDescription}"
@@ -207,6 +229,7 @@ Price Multiplier: ${multiplier}x (apply to ALL base prices)
 
 ## ANALYSIS MODE
 ${modeInstructions[mode]}
+${flatRateBlock}
 
 ## YOUR REASONING PROCESS (think step by step before outputting JSON):
 
@@ -519,7 +542,7 @@ export class UniversalIntelligenceEngine {
     });
 
     const systemPrompt = buildMasterSystemPrompt();
-    const userPrompt = buildMasterUserPrompt(projectDescription, location, mode);
+    const userPrompt = buildMasterUserPrompt(projectDescription, location, mode, settings.targetPrice);
 
     let rawText: string;
     let modelUsed = PRIMARY_MODEL;
@@ -580,6 +603,37 @@ export class UniversalIntelligenceEngine {
       cost: Number(a.cost) || 0,
       required: Boolean(a.required),
     }));
+
+    // ── Flat-rate server-side safety net ────────────────────────────────────
+    // If the contractor set a negotiated price, scale ALL item prices so that
+    // the raw subtotal equals targetPrice EXACTLY before applying financials.
+    // This guarantees the final total matches the agreed price even if the AI
+    // scaling was slightly off.
+    const targetPrice = settings.targetPrice ?? 0;
+    if (targetPrice > 0) {
+      const rawSubtotalBeforeScale =
+        materials.reduce((s, m) => s + m.totalPrice, 0) +
+        laborCosts.reduce((s, l) => s + l.totalCost, 0) +
+        additionalCosts.reduce((s: number, a: { cost: number }) => s + a.cost, 0);
+
+      if (rawSubtotalBeforeScale > 0) {
+        const scalingFactor = targetPrice / rawSubtotalBeforeScale;
+        // Scale materials
+        materials.forEach(m => {
+          m.unitPrice  = Math.round(m.unitPrice  * scalingFactor * 100) / 100;
+          m.totalPrice = Math.round(m.totalPrice * scalingFactor * 100) / 100;
+        });
+        // Scale labor
+        laborCosts.forEach(l => {
+          l.unitPrice = Math.round(l.unitPrice * scalingFactor * 100) / 100;
+          l.totalCost = Math.round(l.totalCost * scalingFactor * 100) / 100;
+        });
+        // Scale additional costs
+        additionalCosts.forEach((a: { cost: number }) => {
+          a.cost = Math.round(a.cost * scalingFactor * 100) / 100;
+        });
+      }
+    }
 
     // Calculate raw totals
     const totalMaterialsCost = materials.reduce((s, m) => s + m.totalPrice, 0);
