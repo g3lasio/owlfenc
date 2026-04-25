@@ -365,6 +365,14 @@ export default function SharedEstimate() {
                     </div>
                   </div>
                   <div className="space-y-3">
+                    {(estimateData.contractor.address || estimateData.contractor.city || estimateData.contractor.state) && (
+                      <div className="flex items-start text-sm text-gray-300 p-2 bg-gray-800/50 rounded-lg border border-gray-600/30">
+                        <MapPin className="w-4 h-4 mr-3 text-purple-400 mt-0.5 flex-shrink-0" />
+                        <span className="tracking-wider">
+                          {[estimateData.contractor.address, [estimateData.contractor.city, estimateData.contractor.state, estimateData.contractor.zipCode].filter(Boolean).join(', ')].filter(Boolean).join(', ')}
+                        </span>
+                      </div>
+                    )}
                     {estimateData.contractor.phone && (
                       <div className="flex items-center text-sm text-gray-300 p-2 bg-gray-800/50 rounded-lg border border-gray-600/30">
                         <Phone className="w-4 h-4 mr-3 text-blue-400" />
@@ -538,7 +546,7 @@ export default function SharedEstimate() {
                     <span className="text-white font-mono font-bold text-lg">{formatCurrency(estimateData.subtotal)}</span>
                   </div>
                   
-                  {estimateData.discountAmount && estimateData.discountAmount > 0 && (
+                  {(estimateData.discountAmount ?? 0) > 0 && (
                     <div className="flex justify-between items-center p-3 bg-green-500/10 border border-green-400/30 rounded-lg">
                       <span className="text-green-400 tracking-wider">
                         DISCOUNT ({estimateData.discountName || 'DISCOUNT'}):

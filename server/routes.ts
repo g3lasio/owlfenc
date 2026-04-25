@@ -2955,9 +2955,14 @@ ENHANCED LEGAL CLAUSE:`;
           }
           
           // 🔥 Build contractor data from Firebase (SINGLE SOURCE OF TRUTH)
+          // Build full address: street + city, state zipCode
+          const _streetLine = profile.address || '';
+          const _cityStateZip = [profile.city, profile.state, profile.zipCode]
+            .filter(Boolean).join(', ');
+          const _fullAddress = [_streetLine, _cityStateZip].filter(Boolean).join(', ');
           contractorData = {
             name: profile.companyName,
-            address: profile.address || "",
+            address: _fullAddress,
             phone: profile.phone || "",
             email: profile.email || "",
             website: profile.website || "",

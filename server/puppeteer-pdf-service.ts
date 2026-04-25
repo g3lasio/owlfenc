@@ -643,7 +643,7 @@ export class PuppeteerPdfService {
         </div>
         <div>
             <div class="section-label">Project Details</div>
-            <div class="client-name" style="font-size:14px;">${data.estimate?.project_description ? data.estimate.project_description.split('\n')[0].replace(/\*\*/g,'').substring(0,60) : 'Construction Services'}</div>
+            <div class="client-name" style="font-size:14px;">${data.estimate?.project_description ? data.estimate.project_description.split('\n')[0].replace(/\*\*/g,'').substring(0,120) : 'Construction Services'}</div>
             <div class="client-details">
                 <div>Date: ${estimateDate}</div>
                 <div>Valid Until: ${validUntil}</div>
@@ -699,7 +699,21 @@ export class PuppeteerPdfService {
                 <span class="total-row-label">Discount</span>
                 <span class="total-row-value">-${discount}</span>
             </div>` : ''}
-            {/* Fee lines intentionally hidden from client PDF — baked into total */}
+            ${hasOverhead ? `
+            <div class="total-row">
+                <span class="total-row-label">Overhead &amp; Operations</span>
+                <span class="total-row-value">${overheadAmountFmt}</span>
+            </div>` : ''}
+            ${hasMarkup ? `
+            <div class="total-row">
+                <span class="total-row-label">Markup &amp; Profit</span>
+                <span class="total-row-value">${markupAmountFmt}</span>
+            </div>` : ''}
+            ${hasOperational ? `
+            <div class="total-row">
+                <span class="total-row-label">Operational Costs</span>
+                <span class="total-row-value">${operationalCostsFmt}</span>
+            </div>` : ''}
             ${hasTax ? `
             <div class="total-row">
                 <span class="total-row-label">${taxLabel}</span>
