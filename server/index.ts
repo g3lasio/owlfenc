@@ -34,6 +34,7 @@ import urlShortenerRoutes from "./routes/urlShortener";
 import mervinV2Routes from "./routes/mervin-v2";
 import contractVerificationRoutes from './routes/contract-verification';
 import leadprimeNetworkRoutes from './routes/leadprimeNetwork';
+import publicViewRoutes from './routes/public-view-routes';
 import { verifyFirebaseAuth } from './middleware/firebase-auth';
 // import assistantsRoutes from "./routes/assistants"; // DESACTIVADO - Sistema obsoleto de OpenAI Assistants
 // mervinEstimatesRoutes removed - Mervin now uses existing endpoints
@@ -1209,6 +1210,9 @@ console.log('🔍 [VERIFY] Sistema de verificación de contratos registrado en /
 // 🌐 LeadPrime Network Integration (requires Firebase auth)
 app.use("/api/leadprime-network", verifyFirebaseAuth, leadprimeNetworkRoutes);
 console.log('🌐 [LEADPRIME-NETWORK] Integración con LeadPrime Network registrada en /api/leadprime-network');
+// 👁️ PUBLIC VIEW ROUTES — No auth required, renders documents as HTML for LeadPrime/sharing
+app.use("/view", publicViewRoutes);
+console.log('👁️ [PUBLIC-VIEW] Public document view routes registered at /view');
 
 // 🧪 Endpoints de prueba para verificar conectividad backend
 app.get('/api/test/ping', (req, res) => {

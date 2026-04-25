@@ -26,6 +26,7 @@ const router = Router();
 
 // ─── LeadPrime API base URL ───────────────────────────────────────────────────
 const LEADPRIME_API = process.env.LEADPRIME_API_URL || "https://leadprime.chyrris.com/api";
+const OWL_FENC_BASE_URL = process.env.OWL_FENC_BASE_URL || "https://app.owlfenc.com";
 
 // ─── Auth middleware (Firebase UID from request) ──────────────────────────────
 function getFirebaseUid(req: Request): string | null {
@@ -383,6 +384,7 @@ async function triggerFullSync(
         project_name: e.projectType || e.projectSubtype || null,
         amount: e.total ? parseFloat(String(e.total)) : null,
         currency: "USD",
+        doc_url: e.shareId ? `${OWL_FENC_BASE_URL}/shared-estimate/${e.shareId}` : `${OWL_FENC_BASE_URL}/view/estimate/${doc.id}`,
         status: e.status || "sent",
         created_at: e.createdAt?.toDate ? e.createdAt.toDate().toISOString() : (e.createdAt || null),
       });
@@ -416,6 +418,7 @@ async function triggerFullSync(
         project_address: inv.estimateData?.clientAddress || null,
         amount: inv.totalAmount ? parseFloat(String(inv.totalAmount)) : null,
         currency: "USD",
+        doc_url: `${OWL_FENC_BASE_URL}/view/invoice/${doc.id}`,
         status: inv.paymentStatus === "paid" ? "paid" : (inv.paymentStatus === "partial" ? "pending" : "pending"),
         created_at: inv.createdAt || null,
       });
@@ -528,7 +531,8 @@ async function triggerFullSync(
           client_email: p.clientEmail || null,
           client_name: p.clientName || null,
           project_address: p.address ? `${p.address}${p.city ? ", " + p.city : ""}${p.state ? ", " + p.state : ""}` : null,
-          project_name: p.permitType || p.projectType || null,
+          client_name: p.permitType || p.projectType || null,
+          doc_url: `${OWL_FENC_BASE_URL}/view/permit/${doc.id}`,
           status: p.status || "completed",
           created_at: p.createdAt?.toDate ? p.createdAt.toDate().toISOString() : (p.createdAt || null),
         });
@@ -561,6 +565,7 @@ async function triggerFullSync(
         client_name: p.ownerName || null,
         project_address: p.address ? `${p.address}${p.city ? ", " + p.city : ""}${p.state ? ", " + p.state : ""}` : null,
         project_name: p.ownerName ? `Owner: ${p.ownerName}` : null,
+        doc_url: `${OWL_FENC_BASE_URL}/view/property/${doc.id}`,
         status: p.status || "completed",
         created_at: p.createdAt?.toDate ? p.createdAt.toDate().toISOString() : (p.createdAt || null),
       });
