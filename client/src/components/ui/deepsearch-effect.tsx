@@ -3,6 +3,10 @@ import { CheckCircle2, Loader2 } from 'lucide-react';
 
 interface DeepSearchEffectProps {
   isVisible: boolean;
+  /** When true, the animation shows "Estimate ready" and calls onComplete after 1.2 s.
+   *  Until this is true the animation loops indefinitely so it never disappears
+   *  before the API response arrives. */
+  isComplete?: boolean;
   onComplete?: () => void;
   projectDescription?: string;
   location?: string;
@@ -16,14 +20,18 @@ const STEPS = [
   { label: 'Validating estimate accuracy', duration: 2200 },
 ];
 
-export function DeepSearchEffect({ isVisible, onComplete, projectDescription, location }: DeepSearchEffectProps) {
+export function DeepSearchEffect({ isVisible, isComplete = false, onComplete, projectDescription, location }: DeepSearchEffectProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [stepProgress, setStepProgress] = useState(0);
   const [isDone, setIsDone] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const timerRef    = useRef<ReturnType<typeof setTimeout>  | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Keep a ref so the interval callback can read the latest isComplete value
+  const isCompleteRef = useRef(isComplete);
+  isCompleteRef.current = isComplete;
 
+  // ── Main animation loop (loops indefinitely until isComplete becomes true) ──
   useEffect(() => {
     if (!isVisible) return;
     setCurrentStep(0);
@@ -34,35 +42,49 @@ export function DeepSearchEffect({ isVisible, onComplete, projectDescription, lo
     let stepIndex = 0;
 
     const runStep = (index: number) => {
-      if (index >= STEPS.length) {
-        setIsDone(true);
-        timerRef.current = setTimeout(() => {
-          onComplete?.();
-        }, 900);
-        return;
-      }
+      // Wrap around to keep looping
+      const loopIndex = index % STEPS.length;
 
-      setCurrentStep(index);
+      setCurrentStep(loopIndex);
       setStepProgress(0);
 
-      const duration = STEPS[index].duration;
+      const duration    = STEPS[loopIndex].duration;
       const tickInterval = 50;
-      const ticks = duration / tickInterval;
-      let tick = 0;
+      const ticks       = duration / tickInterval;
+      let tick          = 0;
 
       intervalRef.current = setInterval(() => {
         tick++;
         // Ease-in-out progress curve
-        const raw = tick / ticks;
-        const eased = raw < 0.5 ? 2 * raw * raw : 1 - Math.pow(-2 * raw + 2, 2) / 2;
+        const raw    = tick / ticks;
+        const eased  = raw < 0.5 ? 2 * raw * raw : 1 - Math.pow(-2 * raw + 2, 2) / 2;
         const progress = Math.min(eased * 100, 100);
         setStepProgress(progress);
 
         if (tick >= ticks) {
           clearInterval(intervalRef.current!);
-          setCompletedSteps((prev) => [...prev, index]);
+
+          setCompletedSteps((prev) => {
+            const next = [...prev, loopIndex];
+            // At the end of a full loop, reset completed list so the loop restarts
+            // cleanly — unless the API has already responded.
+            if (loopIndex === STEPS.length - 1 && !isCompleteRef.current) {
+              return [];
+            }
+            return next;
+          });
+
           stepIndex = index + 1;
-          timerRef.current = setTimeout(() => runStep(stepIndex), 100);
+
+          if (isCompleteRef.current) {
+            // API responded — finish gracefully
+            setIsDone(true);
+            timerRef.current = setTimeout(() => {
+              onComplete?.();
+            }, 1200);
+          } else {
+            timerRef.current = setTimeout(() => runStep(stepIndex), 100);
+          }
         }
       }, tickInterval);
     };
@@ -70,15 +92,34 @@ export function DeepSearchEffect({ isVisible, onComplete, projectDescription, lo
     runStep(0);
 
     return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
+      if (timerRef.current)    clearTimeout(timerRef.current);
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isVisible]);
+
+  // ── React immediately when isComplete flips to true mid-animation ──────────
+  useEffect(() => {
+    if (!isComplete || !isVisible || isDone) return;
+    // Give the current step 400 ms to look like it finished, then wrap up
+    const t = setTimeout(() => {
+      if (timerRef.current)    clearTimeout(timerRef.current);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      setCompletedSteps(STEPS.map((_, i) => i));
+      setStepProgress(100);
+      setIsDone(true);
+      timerRef.current = setTimeout(() => {
+        onComplete?.();
+      }, 1200);
+    }, 400);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isComplete]);
 
   if (!isVisible) return null;
 
   const totalProgress =
-    completedSteps.length === STEPS.length
+    isDone
       ? 100
       : Math.round(((completedSteps.length + stepProgress / 100) / STEPS.length) * 100);
 

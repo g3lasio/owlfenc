@@ -154,6 +154,8 @@ interface EstimateItem {
   price: number;
   unit: string;
   total: number;
+  /** Optional tag set during DeepSearch mapping: 'material' | 'labor' */
+  itemType?: 'material' | 'labor';
 }
 
 interface ProjectAttachment {
@@ -220,22 +222,89 @@ const TEMPLATE_OPTIONS = [
 ];
 
 // ─── Profitability Dashboard Component ────────────────────────────────────────
+/**
+ * Calculates per-estimate financials from actual stored item data.
+ *
+ * Data model in Firestore:
+ *   est.items[]  → { price, quantity, total }  (raw unit prices, no overhead/markup)
+ *   est.subtotal → sum of item totals (raw)
+ *   est.taxAmount / est.taxRate
+ *   est.discountAmount
+ *   est.total    → final price charged to client (includes overhead + markup + tax + profit)
+ *
+ * Derivation strategy:
+ *   rawCOGS  = sum(item.total) for all items  — or est.subtotal if items not present
+ *   overhead = rawCOGS × overheadPercent
+ *   markup   = (rawCOGS + overhead) × markupPercent
+ *   tax      = est.taxAmount (already stored) or rawCOGS × taxRate
+ *   netProfit = est.total − rawCOGS − overhead − markup − tax
+ *
+ * This gives REAL per-estimate numbers, not a fixed % derived from settings.
+ */
+function calcEstimateFinancials(est: any, settings: any) {
+  const revenue = est.total || 0;
+  if (revenue === 0) return { revenue: 0, rawCOGS: 0, overhead: 0, markup: 0, tax: 0, netProfit: 0, marginPct: 0 };
+
+  // 1. Raw COGS — prefer sum of stored items, fall back to est.subtotal
+  const items: any[] = est.items || [];
+  const rawCOGS = items.length > 0
+    ? items.reduce((s: number, it: any) => s + (it.total || it.totalPrice || (it.quantity || 1) * (it.price || it.unitPrice || 0)), 0)
+    : (est.subtotal || est.displaySubtotal || 0);
+
+  // 2. Overhead and markup applied to raw COGS
+  const overheadPct = settings.defaultOverheadPercent ?? 0;
+  const markupPct   = settings.defaultMarkupPercent   ?? 0;
+  const overhead    = rawCOGS * (overheadPct / 100);
+  const markup      = (rawCOGS + overhead) * (markupPct / 100);
+
+  // 3. Tax — use stored value if available, otherwise estimate from settings
+  const tax = est.taxAmount ?? est.displayTax ?? est.tax ?? 0;
+
+  // 4. Net profit = what's left after all costs
+  const netProfit = revenue - rawCOGS - overhead - markup - tax;
+  const marginPct = revenue > 0 ? (netProfit / revenue) * 100 : 0;
+
+  return { revenue, rawCOGS, overhead, markup, tax, netProfit, marginPct };
+}
+
 function ProfitabilityDashboard({ estimates, settings }: { estimates: any[], settings: any }) {
-  const totalRevenue = estimates.reduce((sum: number, e: any) => sum + (e.total || 0), 0);
-  const estimateCount = estimates.length;
-  const avgEstimate = estimateCount > 0 ? totalRevenue / estimateCount : 0;
-  const estimatedCOGS = totalRevenue / (1 + (settings.defaultMarkupPercent / 100));
-  const estimatedProfit = totalRevenue - estimatedCOGS;
-  const profitMarginPct = totalRevenue > 0 ? (estimatedProfit / totalRevenue) * 100 : 0;
+  const fmt = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(n);
+
+  // Compute per-estimate financials
+  const estFinancials = estimates.map((e: any) => ({ ...e, ...calcEstimateFinancials(e, settings) }));
+
+  // Aggregate KPIs
+  const estimateCount   = estimates.length;
+  const totalRevenue    = estFinancials.reduce((s: number, e: any) => s + e.revenue, 0);
+  const totalRawCOGS    = estFinancials.reduce((s: number, e: any) => s + e.rawCOGS, 0);
+  const totalOverhead   = estFinancials.reduce((s: number, e: any) => s + e.overhead, 0);
+  const totalMarkup     = estFinancials.reduce((s: number, e: any) => s + e.markup, 0);
+  const totalTax        = estFinancials.reduce((s: number, e: any) => s + e.tax, 0);
+  const totalNetProfit  = estFinancials.reduce((s: number, e: any) => s + e.netProfit, 0);
+  const avgEstimate     = estimateCount > 0 ? totalRevenue / estimateCount : 0;
+  const overallMarginPct = totalRevenue > 0 ? (totalNetProfit / totalRevenue) * 100 : 0;
+
   const statusBreakdown = {
     approved: estimates.filter((e: any) => e.status === 'approved').length,
-    sent: estimates.filter((e: any) => e.status === 'sent').length,
-    draft: estimates.filter((e: any) => e.status === 'draft').length,
+    sent:     estimates.filter((e: any) => e.status === 'sent').length,
+    draft:    estimates.filter((e: any) => e.status === 'draft').length,
   };
-  const approvedRevenue = estimates.filter((e: any) => e.status === 'approved').reduce((sum: number, e: any) => sum + (e.total || 0), 0);
-  const fmt = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(n);
+  const approvedRevenue = estFinancials
+    .filter((e: any) => e.status === 'approved')
+    .reduce((s: number, e: any) => s + e.revenue, 0);
+  const approvedProfit = estFinancials
+    .filter((e: any) => e.status === 'approved')
+    .reduce((s: number, e: any) => s + e.netProfit, 0);
+
+  // Margin colour helper
+  const marginColor = (pct: number) =>
+    pct >= 20 ? 'text-green-400' : pct >= 10 ? 'text-yellow-400' : 'text-red-400';
+  const marginBg = (pct: number) =>
+    pct >= 20 ? 'bg-green-900/30 border-green-500/30' : pct >= 10 ? 'bg-yellow-900/30 border-yellow-500/30' : 'bg-red-900/30 border-red-500/30';
+
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="cyber-panel p-6">
         <h3 className="text-xl font-bold text-green-400 mb-2 flex items-center gap-2">
           <BarChart2 className="h-5 w-5" />
@@ -243,6 +312,8 @@ function ProfitabilityDashboard({ estimates, settings }: { estimates: any[], set
         </h3>
         <p className="text-gray-400 text-sm">Your private business intelligence — clients never see this data.</p>
       </div>
+
+      {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-gray-900 border border-cyan-500/30 rounded-lg p-4">
           <div className="flex items-center gap-2 mb-2">
@@ -258,25 +329,80 @@ function ProfitabilityDashboard({ estimates, settings }: { estimates: any[], set
             <span className="text-xs text-gray-400 uppercase tracking-wide">Approved Revenue</span>
           </div>
           <p className="text-2xl font-bold text-green-400">{fmt(approvedRevenue)}</p>
-          <p className="text-xs text-gray-500 mt-1">{statusBreakdown.approved} approved</p>
+          <p className="text-xs text-gray-500 mt-1">{statusBreakdown.approved} approved · {fmt(approvedProfit)} profit</p>
         </div>
-        <div className="bg-gray-900 border border-yellow-500/30 rounded-lg p-4">
+        <div className={`bg-gray-900 border rounded-lg p-4 ${marginBg(overallMarginPct)}`}>
           <div className="flex items-center gap-2 mb-2">
-            <TrendingUp className="h-4 w-4 text-yellow-400" />
-            <span className="text-xs text-gray-400 uppercase tracking-wide">Est. Profit</span>
+            <TrendingUp className={`h-4 w-4 ${marginColor(overallMarginPct)}`} />
+            <span className="text-xs text-gray-400 uppercase tracking-wide">Net Profit</span>
           </div>
-          <p className="text-2xl font-bold text-yellow-400">{fmt(estimatedProfit)}</p>
-          <p className="text-xs text-gray-500 mt-1">{profitMarginPct.toFixed(1)}% margin</p>
+          <p className={`text-2xl font-bold ${marginColor(overallMarginPct)}`}>{fmt(totalNetProfit)}</p>
+          <p className="text-xs text-gray-500 mt-1">{overallMarginPct.toFixed(1)}% net margin</p>
         </div>
         <div className="bg-gray-900 border border-purple-500/30 rounded-lg p-4">
           <div className="flex items-center gap-2 mb-2">
             <Target className="h-4 w-4 text-purple-400" />
-            <span className="text-xs text-gray-400 uppercase tracking-wide">Avg Estimate</span>
+            <span className="text-xs text-gray-400 uppercase tracking-wide">Avg Job Size</span>
           </div>
           <p className="text-2xl font-bold text-purple-400">{fmt(avgEstimate)}</p>
           <p className="text-xs text-gray-500 mt-1">per project</p>
         </div>
       </div>
+
+      {/* Cost Breakdown Bar */}
+      {totalRevenue > 0 && (
+        <div className="bg-gray-900 border border-gray-700 rounded-lg p-6">
+          <h4 className="text-sm font-semibold text-gray-300 mb-4 flex items-center gap-2">
+            <PieChart className="h-4 w-4 text-cyan-400" />
+            Revenue Breakdown (all estimates)
+          </h4>
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between items-center">
+              <span className="text-gray-400">Raw Costs (materials + labor)</span>
+              <span className="text-white font-mono">{fmt(totalRawCOGS)} <span className="text-gray-500 text-xs">({totalRevenue > 0 ? ((totalRawCOGS / totalRevenue) * 100).toFixed(0) : 0}%)</span></span>
+            </div>
+            {totalOverhead > 0 && (
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400">Overhead ({settings.defaultOverheadPercent}%)</span>
+                <span className="text-yellow-400 font-mono">{fmt(totalOverhead)}</span>
+              </div>
+            )}
+            {totalMarkup > 0 && (
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400">Markup ({settings.defaultMarkupPercent}%)</span>
+                <span className="text-blue-400 font-mono">{fmt(totalMarkup)}</span>
+              </div>
+            )}
+            {totalTax > 0 && (
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400">Tax ({settings.defaultTaxRate}%)</span>
+                <span className="text-orange-400 font-mono">{fmt(totalTax)}</span>
+              </div>
+            )}
+            <div className="border-t border-gray-700 pt-2 flex justify-between items-center">
+              <span className={`font-semibold ${marginColor(overallMarginPct)}`}>Net Profit</span>
+              <span className={`font-bold font-mono ${marginColor(overallMarginPct)}`}>{fmt(totalNetProfit)} <span className="text-xs">({overallMarginPct.toFixed(1)}%)</span></span>
+            </div>
+          </div>
+          {/* Visual bar */}
+          <div className="mt-4 h-3 rounded-full bg-gray-800 overflow-hidden flex">
+            <div className="bg-red-800/70 h-full" style={{ width: `${totalRevenue > 0 ? (totalRawCOGS / totalRevenue) * 100 : 0}%` }} title="Raw Costs" />
+            <div className="bg-yellow-700/70 h-full" style={{ width: `${totalRevenue > 0 ? (totalOverhead / totalRevenue) * 100 : 0}%` }} title="Overhead" />
+            <div className="bg-blue-700/70 h-full" style={{ width: `${totalRevenue > 0 ? (totalMarkup / totalRevenue) * 100 : 0}%` }} title="Markup" />
+            <div className="bg-orange-700/70 h-full" style={{ width: `${totalRevenue > 0 ? (totalTax / totalRevenue) * 100 : 0}%` }} title="Tax" />
+            <div className="bg-green-600/80 h-full flex-1" title="Net Profit" />
+          </div>
+          <div className="flex gap-4 mt-2 text-xs text-gray-500">
+            <span><span className="inline-block w-2 h-2 rounded-full bg-red-800/70 mr-1" />Costs</span>
+            <span><span className="inline-block w-2 h-2 rounded-full bg-yellow-700/70 mr-1" />Overhead</span>
+            <span><span className="inline-block w-2 h-2 rounded-full bg-blue-700/70 mr-1" />Markup</span>
+            <span><span className="inline-block w-2 h-2 rounded-full bg-orange-700/70 mr-1" />Tax</span>
+            <span><span className="inline-block w-2 h-2 rounded-full bg-green-600/80 mr-1" />Profit</span>
+          </div>
+        </div>
+      )}
+
+      {/* Status Breakdown */}
       <div className="bg-gray-900 border border-gray-700 rounded-lg p-6">
         <h4 className="text-sm font-semibold text-gray-300 mb-4 flex items-center gap-2">
           <PieChart className="h-4 w-4 text-cyan-400" />
@@ -291,24 +417,27 @@ function ProfitabilityDashboard({ estimates, settings }: { estimates: any[], set
           <div className="text-center">
             <div className="text-3xl font-bold text-yellow-400">{statusBreakdown.sent}</div>
             <div className="text-xs text-gray-400 mt-1">Pending</div>
-            <div className="text-xs text-yellow-400">{fmt(estimates.filter((e: any) => e.status === 'sent').reduce((s: number, e: any) => s + (e.total || 0), 0))}</div>
+            <div className="text-xs text-yellow-400">{fmt(estFinancials.filter((e: any) => e.status === 'sent').reduce((s: number, e: any) => s + e.revenue, 0))}</div>
           </div>
           <div className="text-center">
             <div className="text-3xl font-bold text-gray-400">{statusBreakdown.draft}</div>
             <div className="text-xs text-gray-400 mt-1">Drafts</div>
-            <div className="text-xs text-gray-400">{fmt(estimates.filter((e: any) => e.status === 'draft').reduce((s: number, e: any) => s + (e.total || 0), 0))}</div>
+            <div className="text-xs text-gray-400">{fmt(estFinancials.filter((e: any) => e.status === 'draft').reduce((s: number, e: any) => s + e.revenue, 0))}</div>
           </div>
         </div>
       </div>
+
+      {/* Per-Estimate Table */}
       <div className="bg-gray-900 border border-gray-700 rounded-lg p-6">
         <h4 className="text-sm font-semibold text-gray-300 mb-4 flex items-center gap-2">
           <Sliders className="h-4 w-4 text-cyan-400" />
           Per-Estimate Profitability Analysis
         </h4>
-        <div className="flex items-center gap-2 mb-4 p-3 bg-blue-900/20 border border-blue-500/30 rounded-lg">
-          <Info className="h-4 w-4 text-blue-400 flex-shrink-0" />
-          <p className="text-xs text-blue-300">
-            Profit estimates use your Settings markup of <strong>{settings.defaultMarkupPercent}%</strong>. Update Settings for more accurate projections.
+        <div className="flex items-center gap-2 mb-4 p-3 bg-green-900/20 border border-green-500/30 rounded-lg">
+          <Info className="h-4 w-4 text-green-400 flex-shrink-0" />
+          <p className="text-xs text-green-300">
+            Profit calculated from <strong>actual stored item costs</strong> — not a fixed % formula.
+            Overhead <strong>{settings.defaultOverheadPercent}%</strong> · Markup <strong>{settings.defaultMarkupPercent}%</strong> · Tax <strong>{settings.defaultTaxRate}%</strong> applied.
           </p>
         </div>
         {estimates.length === 0 ? (
@@ -324,46 +453,51 @@ function ProfitabilityDashboard({ estimates, settings }: { estimates: any[], set
                   <th className="text-left py-2 px-3 text-gray-400 font-medium">Client</th>
                   <th className="text-left py-2 px-3 text-gray-400 font-medium hidden md:table-cell">Type</th>
                   <th className="text-right py-2 px-3 text-gray-400 font-medium">Revenue</th>
-                  <th className="text-right py-2 px-3 text-gray-400 font-medium">Est. COGS</th>
-                  <th className="text-right py-2 px-3 text-gray-400 font-medium">Est. Profit</th>
+                  <th className="text-right py-2 px-3 text-gray-400 font-medium">Raw Costs</th>
+                  <th className="text-right py-2 px-3 text-gray-400 font-medium">Net Profit</th>
+                  <th className="text-center py-2 px-3 text-gray-400 font-medium">Margin</th>
                   <th className="text-center py-2 px-3 text-gray-400 font-medium">Status</th>
                 </tr>
               </thead>
               <tbody>
-                {estimates.slice(0, 20).map((est: any) => {
-                  const revenue = est.total || 0;
-                  const cogs = revenue / (1 + settings.defaultMarkupPercent / 100);
-                  const profit = revenue - cogs;
-                  const margin = revenue > 0 ? (profit / revenue) * 100 : 0;
-                  return (
-                    <tr key={est.id} className="border-b border-gray-800 hover:bg-gray-800/50 transition-colors">
-                      <td className="py-2 px-3">
-                        <div className="font-medium text-white">{est.clientName}</div>
-                        <div className="text-xs text-gray-500">{est.estimateNumber}</div>
-                      </td>
-                      <td className="py-2 px-3 hidden md:table-cell">
-                        <span className="text-xs text-gray-400 capitalize">{est.projectType || 'general'}</span>
-                      </td>
-                      <td className="py-2 px-3 text-right font-medium text-cyan-400">{fmt(revenue)}</td>
-                      <td className="py-2 px-3 text-right text-red-400">{fmt(cogs)}</td>
-                      <td className="py-2 px-3 text-right">
-                        <div className={`font-bold ${profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>{fmt(profit)}</div>
-                        <div className="text-xs text-gray-500">{margin.toFixed(1)}%</div>
-                      </td>
-                      <td className="py-2 px-3 text-center">
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                          est.status === 'approved' ? 'bg-green-900/50 text-green-400 border border-green-500/30' :
-                          est.status === 'sent' ? 'bg-yellow-900/50 text-yellow-400 border border-yellow-500/30' :
-                          'bg-gray-800 text-gray-400 border border-gray-600'
-                        }`}>{est.status}</span>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {estFinancials.slice(0, 20).map((est: any) => (
+                  <tr key={est.id} className="border-b border-gray-800 hover:bg-gray-800/50 transition-colors">
+                    <td className="py-2 px-3">
+                      <div className="font-medium text-white">{est.clientName}</div>
+                      <div className="text-xs text-gray-500">{est.estimateNumber}</div>
+                    </td>
+                    <td className="py-2 px-3 hidden md:table-cell">
+                      <span className="text-xs text-gray-400 capitalize">{est.projectType || 'general'}</span>
+                    </td>
+                    <td className="py-2 px-3 text-right font-medium text-cyan-400">{fmt(est.revenue)}</td>
+                    <td className="py-2 px-3 text-right text-red-400">{fmt(est.rawCOGS)}</td>
+                    <td className="py-2 px-3 text-right">
+                      <div className={`font-bold ${est.netProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>{fmt(est.netProfit)}</div>
+                    </td>
+                    <td className="py-2 px-3 text-center">
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${marginBg(est.marginPct)} ${marginColor(est.marginPct)}`}>
+                        {est.marginPct.toFixed(1)}%
+                      </span>
+                    </td>
+                    <td className="py-2 px-3 text-center">
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                        est.status === 'approved' ? 'bg-green-900/50 text-green-400 border border-green-500/30' :
+                        est.status === 'sent' ? 'bg-yellow-900/50 text-yellow-400 border border-yellow-500/30' :
+                        'bg-gray-800 text-gray-400 border border-gray-600'
+                      }`}>{est.status}</span>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
         )}
+        {/* Margin legend */}
+        <div className="flex gap-4 mt-4 text-xs text-gray-500">
+          <span><span className="inline-block w-2 h-2 rounded-full bg-green-600/80 mr-1" />&ge;20% healthy</span>
+          <span><span className="inline-block w-2 h-2 rounded-full bg-yellow-600/80 mr-1" />10–20% thin</span>
+          <span><span className="inline-block w-2 h-2 rounded-full bg-red-600/80 mr-1" />&lt;10% at risk</span>
+        </div>
       </div>
     </div>
   );
@@ -612,6 +746,8 @@ export default function EstimatesWizardFixed() {
     "materials" | "labor" | "full"
   >("materials");
   const [isAIProcessing, setIsAIProcessing] = useState(false);
+  // Signals DeepSearchEffect that the API responded — triggers the "Estimate ready" finish
+  const [aiProcessingComplete, setAiProcessingComplete] = useState(false);
   const [showMervinWorking, setShowMervinWorking] = useState(false);
   const [aiProgress, setAiProgress] = useState(0);
 
@@ -1722,6 +1858,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
               total:
                 (material.quantity || 1) *
                 (material.price || material.unitPrice || 0),
+              itemType: 'material', // tag for profitability analysis
             });
           });
         }
@@ -1751,6 +1888,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
               price: servicePrice,
               unit: serviceUnit,
               total: serviceTotal,
+              itemType: 'labor', // tag for profitability analysis
             });
           });
         }
@@ -1848,7 +1986,10 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         variant: "destructive",
       });
     } finally {
-      setIsAIProcessing(false);
+      // Signal the animation that the API is done (success or error).
+      // DeepSearchEffect will show "Estimate ready" then call onComplete
+      // which sets isAIProcessing(false) after 1.2 s.
+      setAiProcessingComplete(true);
       setAiProgress(0);
     }
   };
@@ -8787,7 +8928,11 @@ This link provides a professional view of your estimate that you can access anyt
       {/* DeepSearch Effect - Smart Search con frases futuristas */}
       <DeepSearchEffect
         isVisible={isAIProcessing}
-        onComplete={() => setIsAIProcessing(false)}
+        isComplete={aiProcessingComplete}
+        onComplete={() => {
+          setIsAIProcessing(false);
+          setAiProcessingComplete(false);
+        }}
       />
 
       {/* Mervin Working Effect */}
