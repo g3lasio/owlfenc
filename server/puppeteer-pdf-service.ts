@@ -699,21 +699,7 @@ export class PuppeteerPdfService {
                 <span class="total-row-label">Discount</span>
                 <span class="total-row-value">-${discount}</span>
             </div>` : ''}
-            ${hasOverhead ? `
-            <div class="total-row">
-                <span class="total-row-label">Project Management &amp; Overhead</span>
-                <span class="total-row-value">${overheadAmountFmt}</span>
-            </div>` : ''}
-            ${hasMarkup ? `
-            <div class="total-row">
-                <span class="total-row-label">Contractor Fee</span>
-                <span class="total-row-value">${markupAmountFmt}</span>
-            </div>` : ''}
-            ${hasOperational ? `
-            <div class="total-row">
-                <span class="total-row-label">Operational Costs</span>
-                <span class="total-row-value">${operationalCostsFmt}</span>
-            </div>` : ''}
+            {/* Fee lines intentionally hidden from client PDF — baked into total */}
             ${hasTax ? `
             <div class="total-row">
                 <span class="total-row-label">${taxLabel}</span>

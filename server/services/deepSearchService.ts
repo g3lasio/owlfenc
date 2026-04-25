@@ -405,7 +405,10 @@ Use the correct formula for the detected trade with standard waste factors:
 
 ## STEP 4 — PRICING:
 - Apply the PRICE MULTIPLIER (${multiplier}x) to all base prices
-- Use current 2024-2025 market prices from major US suppliers (Home Depot, Lowes, Fastenal, Grainger, Ferguson, etc.)
+- Use CONTRACTOR PURCHASE PRICES (what a contractor actually pays, not retail shelf price):
+  Cedar fence pickets 6ft: $4.50-7.50 each | 4x4x8 PT posts: $18-28 each | 2x4x8 rails: $6-10 each
+  80lb concrete bag: $8-12 each | Galvanized screws/nails box: $25-45
+  These are realistic contractor supply prices for materials delivered to job site.
 
 ## INCLUDE ONLY:
 Materials and supplies that become permanent parts of the project, or consumables directly used in the work.
@@ -460,7 +463,7 @@ Respond with ONLY valid JSON, no additional text.
     
     // Estados con nombres completos y abreviaciones - usar word boundaries
     const stateData: Array<{ patterns: RegExp[]; desc: string; mult: number }> = [
-      { patterns: [/\bcalifornia\b/, /\bca\b/], desc: 'California - Premium market', mult: 1.20 },
+      { patterns: [/\bcalifornia\b/, /\bca\b/], desc: 'California - Premium market', mult: 1.35 },
       { patterns: [/\bnew york\b/, /\bny\b/], desc: 'New York - High cost market', mult: 1.15 },
       { patterns: [/\bnew jersey\b/, /\bnj\b/], desc: 'New Jersey - High cost market', mult: 1.12 },
       { patterns: [/\bconnecticut\b/, /\bct\b/], desc: 'Connecticut - High cost market', mult: 1.12 },

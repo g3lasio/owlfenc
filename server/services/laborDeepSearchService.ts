@@ -172,23 +172,31 @@ Analyze this project description and generate a COMPLETE list of labor/service t
 
 ## REAL CONTRACTOR PRICING EXAMPLES:
 
-### Fencing (per linear foot):
-- Wood fence installation: $18-35/lf
-- Vinyl fence installation: $20-40/lf
-- Chain link installation: $12-25/lf
-- Post hole digging: $25-45 per hole
-- Gate installation: $150-400 per gate
+### Fencing (per linear foot — CONTRACTOR BILLING RATES, what you charge the client):
+- Wood privacy fence installation (6ft): $28-45/lf (includes posts, rails, boards, concrete, labor)
+- Cedar/redwood premium fence: $35-55/lf
+- Board-on-board fence: $30-48/lf
+- Vinyl fence installation: $30-50/lf
+- Chain link installation: $18-32/lf
+- Ornamental/metal fence: $40-80/lf
+- Post hole digging: $35-65 per hole (includes concrete)
+- Gate installation (wood): $350-800 per gate
+- Gate installation (metal): $500-1500 per gate
+NOTE: These are what you BILL the client, not what you pay workers.
 
-### Roofing (per square = 100 sqft):
-- Shingle tear-off: $75-150/square
-- Shingle installation: $350-650/square
-- Underlayment: $50-100/square
+### Roofing (per square = 100 sqft — CONTRACTOR BILLING RATES):
+- Shingle tear-off + disposal: $100-200/square
+- Shingle installation (3-tab): $450-750/square (includes materials + labor)
+- Shingle installation (architectural): $550-900/square
+- Metal roofing: $700-1400/square
+- Underlayment + ice shield: $75-150/square
 
-### Concrete (per sqft or cyd):
-- Flatwork: $8-18/sqft
-- Stamped concrete: $12-25/sqft
-- Demolition: $3-8/sqft
-- Excavation: $45-85/cyd
+### Concrete (per sqft or cyd — CONTRACTOR BILLING RATES):
+- Flatwork (4" slab): $10-22/sqft (includes materials + labor)
+- Stamped concrete: $15-32/sqft
+- Exposed aggregate: $12-25/sqft
+- Demolition + removal: $5-12/sqft
+- Excavation: $55-100/cyd
 
 ### Painting (per sqft):
 - Interior walls: $1.50-4/sqft

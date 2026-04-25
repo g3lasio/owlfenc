@@ -3716,36 +3716,7 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           `
               : ""
           }
-          ${
-            estimate.pricingStrategy === 'B' && estimate.overheadAmount > 0
-              ? `
-            <div style="margin-bottom: 10px; font-size: 1.1em; color: #374151;">
-              <span style="margin-right: 40px; color: #374151;"><strong>Project Management &amp; Overhead:</strong></span>
-              <span style="font-weight: bold; color: #374151;">$${estimate.overheadAmount.toFixed(2)}</span>
-            </div>
-          `
-              : ""
-          }
-          ${
-            estimate.pricingStrategy === 'B' && estimate.markupAmount > 0
-              ? `
-            <div style="margin-bottom: 10px; font-size: 1.1em; color: #374151;">
-              <span style="margin-right: 40px; color: #374151;"><strong>Contractor Fee:</strong></span>
-              <span style="font-weight: bold; color: #374151;">$${estimate.markupAmount.toFixed(2)}</span>
-            </div>
-          `
-              : ""
-          }
-          ${
-            estimate.pricingStrategy === 'B' && estimate.operationalCostsAmount > 0
-              ? `
-            <div style="margin-bottom: 10px; font-size: 1.1em; color: #374151;">
-              <span style="margin-right: 40px; color: #374151;"><strong>Operational Costs:</strong></span>
-              <span style="font-weight: bold; color: #374151;">$${estimate.operationalCostsAmount.toFixed(2)}</span>
-            </div>
-          `
-              : ""
-          }
+          {/* Fee lines intentionally hidden from client — baked into total */}
           <div style="margin-bottom: 15px; font-size: 1.1em; color: #000000;">
             <span style="margin-right: 40px; color: #000000;"><strong>Tax (${estimate.taxRate}%):</strong></span>
             <span style="font-weight: bold; color: #000000;">$${estimate.tax.toFixed(2)}</span>

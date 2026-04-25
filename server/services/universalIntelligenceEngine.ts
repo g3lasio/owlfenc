@@ -257,7 +257,21 @@ For service businesses (cleaning, consulting, etc.), price per the industry-stan
 
 **STEP 6 — PRICING**
 Apply the ${multiplier}x location multiplier to all base prices.
-Use current 2024-2025 US market rates.
+Use current 2024-2025 US CONTRACTOR pricing (not wholesale/retail):
+- For MATERIALS: Use the price a contractor pays when purchasing + typical supplier markup (not Home Depot retail shelf price). 
+  Contractors typically pay 10-20% above wholesale. Use realistic installed-cost pricing.
+- For LABOR: Use what a professional contractor CHARGES clients (not what they pay workers).
+  Fencing: $28-45/lf installed (wood privacy), $35-55/lf (cedar/redwood), $18-30/lf (chain link)
+  Roofing: $450-850/square installed (shingles), $600-1200/square (metal)
+  Concrete: $10-22/sqft (flatwork), $15-30/sqft (stamped)
+  Painting: $2.50-6/sqft (exterior), $1.50-4/sqft (interior)
+  Drywall: $2.50-5/sqft installed
+  Flooring: $4-12/sqft installed (LVP/laminate), $8-20/sqft (hardwood), $3-8/sqft (tile)
+  Landscaping: $2-5/sqft (sod installed), $400-2500/tree (removal)
+  Pressure washing: $0.25-0.75/sqft
+  Cleaning: $0.20-0.50/sqft (commercial), $150-400/visit (residential)
+IMPORTANT: These prices are what the contractor BILLS the client. They already include the contractor's 
+reasonable profit. The overhead/markup settings will be applied separately on top of these prices.
 
 ## JSON RESPONSE SCHEMA
 {
@@ -321,7 +335,7 @@ function resolveLocation(location?: string): { locationContext: string; multipli
   const loc = location.toLowerCase();
 
   const stateMap: Array<{ patterns: RegExp[]; label: string; mult: number }> = [
-    { patterns: [/\bcalifornia\b/, /\bca\b/], label: 'California — Premium market (+20%)', mult: 1.20 },
+    { patterns: [/\bcalifornia\b/, /\bca\b/], label: 'California — Premium market (+35%)', mult: 1.35 },
     { patterns: [/\bnew york\b/, /\bny\b/], label: 'New York — High cost market (+15%)', mult: 1.15 },
     { patterns: [/\bhawaii\b/, /\bhi\b/], label: 'Hawaii — Island premium (+40%)', mult: 1.40 },
     { patterns: [/\balaska\b/, /\bak\b/], label: 'Alaska — Remote premium (+40%)', mult: 1.40 },
