@@ -4557,6 +4557,10 @@ This link provides a professional view of your estimate that you can access anyt
         },
         body: JSON.stringify({
           estimateData: shareableEstimate,
+          // Link back to main estimates collection for real-time status updates
+          estimateNumber: estimate.estimateNumber || null,
+          firebaseDocId: editingEstimateId || null,
+          contractorId: currentUser?.uid || null,
         }),
       });
 
@@ -4793,6 +4797,26 @@ This link provides a professional view of your estimate that you can access anyt
     }
   };
 
+  // ── Mark estimate as sent (status: draft → pending) ──────────────────────
+  // Called by all send/share channels: URL share, Copy Link, Download PDF, native share
+  const markAsSent = async () => {
+    if (!currentUser?.uid || !editingEstimateId) return;
+    try {
+      const { doc, updateDoc } = await import("firebase/firestore");
+      const { db } = await import("../lib/firebase");
+      const estimateRef = doc(db, "estimates", editingEstimateId);
+      await updateDoc(estimateRef, {
+        status: "pending",
+        sentAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+      console.log("✅ [MARK-SENT] Estimate marked as pending:", editingEstimateId);
+    } catch (err) {
+      // Non-blocking: don't interrupt the share flow if this fails
+      console.warn("⚠️ [MARK-SENT] Could not update estimate status:", err);
+    }
+  };
+
   // Handle URL sharing - Opens holographic modal
   const handleUrlShare = async () => {
     // Check authentication before attempting to share
@@ -4816,6 +4840,8 @@ This link provides a professional view of your estimate that you can access anyt
       }
 
       setCurrentShareUrl(shareUrl);
+      // Mark estimate as pending (non-blocking)
+      markAsSent();
 
     } catch (error) {
       console.error("❌ URL sharing error:", error);
@@ -4957,6 +4983,8 @@ This link provides a professional view of your estimate that you can access anyt
       });
 
       console.log("📥 PDF download/share completed successfully");
+      // Mark estimate as pending (non-blocking)
+      markAsSent();
 
       // Get sharing capabilities for toast message
       const capabilities = getSharingCapabilities();
@@ -7642,6 +7670,8 @@ This link provides a professional view of your estimate that you can access anyt
                                   if (result.success && result.shareUrl) {
                                     await navigator.clipboard.writeText(result.shareUrl);
                                     toast({ title: "Link copiado", description: "URL copiada al portapapeles" });
+                                    // Mark estimate as pending (non-blocking)
+                                    markAsSent();
                                   } else {
                                     throw new Error('No share URL returned');
                                   }
@@ -8859,6 +8889,8 @@ This link provides a professional view of your estimate that you can access anyt
                       try {
                         await navigator.clipboard.writeText(currentShareUrl);
                         toast({ title: "✅ Copied!", description: "URL copied to clipboard" });
+                        // Mark estimate as pending (non-blocking)
+                        markAsSent();
                       } catch (error) {
                         toast({ title: "❌ Error", description: "Failed to copy URL", variant: "destructive" });
                       }
@@ -8878,6 +8910,8 @@ This link provides a professional view of your estimate that you can access anyt
                             title: `Estimate - ${estimate.client?.name || 'Client'}`,
                             url: currentShareUrl,
                           });
+                          // Mark estimate as pending after sharing (non-blocking)
+                          markAsSent();
                         } catch (error) {
                           if (error.name !== 'AbortError') console.error('Share error:', error);
                         }

@@ -95,6 +95,10 @@ export default function SharedEstimate() {
           console.log("🔍 [DEBUG] Raw estimate data items:", data.estimateData.items);
           setEstimateData(data.estimateData);
           setExpiresAt(data.expiresAt || null);
+          // ✅ Restore approval state if already approved
+          if (data.clientApproved) {
+            setIsApproved(true);
+          }
           console.log("✅ [SHARED-ESTIMATE] Estimate loaded successfully");
         } else {
           setError("Failed to load estimate data");

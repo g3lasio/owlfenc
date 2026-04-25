@@ -5172,7 +5172,7 @@ ENHANCED LEGAL CLAUSE:`;
       console.log(`🆔 [SHARE-ESTIMATE] Generated shareId: ${shareId}`);
       
       // Obtener datos del estimado
-      const { estimateData } = req.body;
+      const { estimateData, estimateNumber, firebaseDocId, contractorId } = req.body;
       
       if (!estimateData) {
         console.error('❌ [SHARE-ESTIMATE] No estimate data provided');
@@ -5188,7 +5188,11 @@ ENHANCED LEGAL CLAUSE:`;
         shareId,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         accessCount: 0,
-        isActive: true
+        isActive: true,
+        // Link back to main estimates collection for real-time status updates
+        estimateNumber: estimateNumber || null,
+        firebaseDocId: firebaseDocId || null,
+        contractorId: contractorId || null,
       });
       
       // Generar URL completa usando url-builder dinámico
@@ -5317,6 +5321,7 @@ ENHANCED LEGAL CLAUSE:`;
       }
 
       // Actualizar el documento con la aprobación
+      const sharedData = doc.data();
       const updateData = {
         approvedAt: admin.firestore.FieldValue.serverTimestamp(),
         clientApproved: true,
@@ -5327,11 +5332,31 @@ ENHANCED LEGAL CLAUSE:`;
       
       await admin.firestore().collection('shared_estimates').doc(shareId).update(updateData);
       
+      // ── Real-time sync: also update the contractor's main estimates collection ──
+      // This is what makes the Profitability Dashboard and History show "approved" in real time
+      const { firebaseDocId, contractorId } = sharedData || {};
+      if (firebaseDocId) {
+        try {
+          await admin.firestore().collection('estimates').doc(firebaseDocId).update({
+            status: 'approved',
+            approvedAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+          console.log(`✅ [ESTIMATE-APPROVAL] Main estimates collection updated for doc: ${firebaseDocId}`);
+        } catch (syncErr: any) {
+          // Non-blocking: log but don't fail the approval
+          console.warn(`⚠️ [ESTIMATE-APPROVAL] Could not sync to main estimates collection:`, syncErr.message);
+        }
+      } else {
+        console.log(`ℹ️ [ESTIMATE-APPROVAL] No firebaseDocId found — shared estimate was created before status sync was implemented`);
+      }
+      
       console.log(`✅ [ESTIMATE-APPROVAL] Estimate approved successfully: ${shareId}`);
       
       res.json({
         success: true,
-        message: "Estimate approved successfully"
+        message: "Estimate approved successfully",
+        firebaseDocId: firebaseDocId || null,
       });
 
     } catch (error) {
