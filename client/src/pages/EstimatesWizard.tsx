@@ -227,10 +227,9 @@ function ProfitabilityDashboard({ estimates, settings }: { estimates: any[], set
   // ── Per-estimate profit calculation ─────────────────────────────────────────
   // Strategy:
   //   1. Flat Rate estimates: negotiatedPrice - subtotal = real gross profit
-  //      (items were scaled to match negotiatedPrice, so subtotal IS the cost basis)
-  //   2. Margin-based estimates: use stored profitAmount if available, otherwise
-  //      derive from markup setting (legacy fallback)
-  //   3. Plain estimates (no profit mode): markup setting fallback
+  //   2. Stored profitAmount: use exact value saved when estimate was created
+  //   3. Estimated fallback: use full cost model from settings
+  //      COGS = materials + overhead% + operational costs (labor, fuel, misc)
   const calcProfit = (est: any): { revenue: number; cogs: number; profit: number; margin: number; mode: string } => {
     const revenue = est.total || 0;
 
@@ -250,9 +249,23 @@ function ProfitabilityDashboard({ estimates, settings }: { estimates: any[], set
       return { revenue, cogs, profit, margin, mode: 'stored' };
     }
 
-    // Legacy fallback: derive from markup setting
-    const markupFactor = 1 + (settings.defaultMarkupPercent || 0) / 100;
-    const cogs = markupFactor > 0 ? revenue / markupFactor : revenue;
+    // ── Full Cost Model Fallback (uses real settings) ──────────────────────────────────────────
+    // Use per-estimate settings snapshot if available (saved when estimate was created),
+    // otherwise fall back to current global settings.
+    const effOverhead  = est.overheadPercent  > 0 ? est.overheadPercent  : (settings.defaultOverheadPercent || 0);
+    const effMarkup    = est.markupPercent    > 0 ? est.markupPercent    : (settings.defaultMarkupPercent   || 0);
+    const effFuel      = est.fuelCostPerProject  != null ? est.fuelCostPerProject  : (settings.defaultFuelCostPerProject || 0);
+    const effDump      = est.dumpFeePerProject   != null ? est.dumpFeePerProject   : (settings.defaultDumpFeePerProject  || 0);
+    const effMiscPct   = est.miscCostPercent     != null ? est.miscCostPercent     : (settings.defaultMiscCostPercent    || 0);
+    // Revenue already includes overhead + markup (added by AI during estimate generation).
+    // Reverse-engineer base cost: COGS = revenue / (1 + overhead% + markup%)
+    const totalAddedPct = (effOverhead + effMarkup) / 100;
+    const baseCost = totalAddedPct > 0 ? revenue / (1 + totalAddedPct) : revenue * 0.80;
+    // Add per-project operational costs
+    const fuelCost  = effFuel;
+    const dumpFee   = effDump;
+    const miscCost  = baseCost * (effMiscPct / 100);
+    const cogs = baseCost + fuelCost + dumpFee + miscCost;
     const profit = revenue - cogs;
     const margin = revenue > 0 ? (profit / revenue) * 100 : 0;
     return { revenue, cogs, profit, margin, mode: 'estimated' };
@@ -399,7 +412,7 @@ function ProfitabilityDashboard({ estimates, settings }: { estimates: any[], set
           <Info className="h-4 w-4 text-blue-400 flex-shrink-0" />
           <p className="text-xs text-blue-300">
             💰 <strong>Flat Rate</strong> estimates show actual margin (negotiated price − item costs).
-            Standard estimates use stored profit data or your markup setting ({settings.defaultMarkupPercent}%) as fallback.
+            Standard estimates use stored profit data when available; otherwise profit is estimated using your settings: <strong>{settings.defaultOverheadPercent || 0}% overhead + {settings.defaultMarkupPercent || 0}% markup</strong> plus per-project operational costs (fuel, misc, dump fees).
           </p>
         </div>
         {estimates.length === 0 ? (
@@ -658,7 +671,28 @@ export default function EstimatesWizardFixed() {
       };
     } catch { return { defaultOverheadPercent: 15, defaultMarkupPercent: 20, defaultTaxRate: 0, defaultProfitMargin: 0, showProfitOnEstimate: false, currency: "USD", taxOnMaterialsOnly: true, defaultLaborRatePerHour: 25, defaultCrewSize: 3, defaultEstimatorRate: 35, defaultFuelCostPerProject: 150, defaultMiscCostPercent: 3, defaultDumpFeePerProject: 0, settingsMode: 'simple' }; }
   });
-  // ── Estimate Settings (persisted to localStorage) ─────────────────────────
+  // ── Sync Estimate Settings from backend on mount ────────────────────────────
+  useEffect(() => {
+    if (!currentUser) return;
+    (async () => {
+      try {
+        const authHeaders = await getAuthHeaders();
+        const res = await fetch('/api/estimate-settings', {
+          headers: { 'Content-Type': 'application/json', ...authHeaders },
+          credentials: 'include',
+        });
+        if (res.ok) {
+          const serverSettings = await res.json();
+          // Merge server settings with defaults, server wins
+          setEstimateSettings((prev: any) => ({ ...prev, ...serverSettings }));
+          localStorage.setItem('owlfenc_estimate_settings', JSON.stringify({ ...estimateSettings, ...serverSettings }));
+        }
+      } catch (e) {
+        console.warn('[EstimateSettings] Could not load from server, using localStorage:', e);
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser]);
 
   const [savedEstimates, setSavedEstimates] = useState<any[]>([]);
   const [isLoadingEstimates, setIsLoadingEstimates] = useState(false);
@@ -2412,6 +2446,17 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
               "fence",
             projectId: data.projectId || doc.id,
             pdfUrl: data.pdfUrl || null,
+            // ── Profitability fields needed by ProfitabilityDashboard ──
+            subtotal: data.displaySubtotal || data.subtotal || data.projectTotalCosts?.totalSummary?.subtotal || 0,
+            isFlatRate: data.isFlatRate || ((data.targetPrice || 0) > 0) || false,
+            targetPrice: data.targetPrice || 0,
+            profitAmount: data.profitAmount || 0,
+            profitMarginPercent: data.profitMarginPercent || 0,
+            overheadPercent: data.overheadPercent || 0,
+            markupPercent: data.markupPercent || 0,
+            fuelCostPerProject: data.fuelCostPerProject || 0,
+            miscCostPercent: data.miscCostPercent || 0,
+            dumpFeePerProject: data.dumpFeePerProject || 0,
             originalData: data, // Store original data for editing
           };
         });
@@ -3092,6 +3137,12 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         profitMarginPercent: estimate.profitMarginPercent || 0,
         profitAmount: estimate.profitAmount || 0,
         contractorBaseCost: estimate.contractorBaseCost || 0,
+        // Settings snapshot — saved so dashboard can calculate accurate COGS even if settings change later
+        overheadPercent: estimateSettings.defaultOverheadPercent || 0,
+        markupPercent: estimateSettings.defaultMarkupPercent || 0,
+        fuelCostPerProject: estimateSettings.defaultFuelCostPerProject || 0,
+        miscCostPercent: estimateSettings.defaultMiscCostPercent || 0,
+        dumpFeePerProject: estimateSettings.defaultDumpFeePerProject || 0,
 
         // Additional metadata for dashboard
         itemsCount: estimate.items.length,
