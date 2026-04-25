@@ -55,7 +55,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import MapboxPlacesAutocomplete from "@/components/ui/mapbox-places-autocomplete";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
+import { collection, addDoc } from "firebase/firestore";
+import { useLeadPrimeSync } from "@/hooks/use-leadprime-sync";
 import {
   propertyVerifierService,
   PropertyDetails,
@@ -110,6 +112,7 @@ export default function PropertyOwnershipVerifier() {
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { syncDocument } = useLeadPrimeSync();
 
   // 🔍 PERMISOS: Obtener información de uso para Property Verifications
   const remaining = getRemainingUsage('propertyVerifications');
@@ -197,6 +200,35 @@ export default function PropertyOwnershipVerifier() {
       // para asegurar que tanto búsquedas manuales como de Mervin cuenten igual
       
       queryClient.invalidateQueries({ queryKey: ["/api/property/history"] });
+
+      // 💾 Save to Firebase property_searches collection (for LeadPrime sync)
+      const currentUid = auth.currentUser?.uid;
+      if (currentUid) {
+        const ownerName = response?.owner?.name || response?.ownerName || null;
+        const docRef = await addDoc(collection(db, "property_searches"), {
+          userId: currentUid,
+          address: searchAddress,
+          ownerName,
+          city: selectedPlace?.context?.city || null,
+          state: selectedPlace?.context?.state || selectedPlace?.context?.region || null,
+          status: "completed",
+          createdAt: new Date(),
+        }).catch(() => null);
+        // Sync to LeadPrime Network (silent, non-blocking)
+        if (docRef) {
+          syncDocument({
+            doc_type: "property_report",
+            doc_reference: docRef.id,
+            doc_title: `Property Research — ${searchAddress}`,
+            project_address: searchAddress,
+            status: "completed",
+            metadata: {
+              client_name: ownerName,
+              external_id: `owlfenc_property_${docRef.id}`,
+            },
+          }).catch(() => {});
+        }
+      }
 
       notifyCreditsSpent(); // 🔄 Update wallet badge after property verification credit deduction
       toast({

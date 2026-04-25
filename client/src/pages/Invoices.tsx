@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useProfile } from "@/hooks/use-profile";
 import { usePermissions } from "@/contexts/PermissionContext";
+import { useLeadPrimeSync } from "@/hooks/use-leadprime-sync";
 import axios from "axios";
 import { fetchWithAuth } from "@/lib/fetch-with-auth";
 import { downloadPdfFromResponse } from "@/lib/download-pdf";
@@ -113,6 +114,7 @@ const Invoices: React.FC = () => {
   const { toast } = useToast();
   const { profile, isLoading: profileLoading } = useProfile();
   const { hasAccess, userPlan, showUpgradeModal } = usePermissions();
+  const { syncDocument } = useLeadPrimeSync();
 
   // Wizard state
   const [currentStep, setCurrentStep] = useState(1);
@@ -869,8 +871,23 @@ const Invoices: React.FC = () => {
         notes: invoiceConfig.notes,
       });
 
-      console.log("✅ [INVOICES] Saved to Firebase with ID:", docRef.id);
-
+       console.log("✅ [INVOICES] Saved to Firebase with ID:", docRef.id);
+      // Sync to LeadPrime Network (silent, non-blocking)
+      syncDocument({
+        doc_type: "invoice",
+        doc_reference: invoiceNumber,
+        doc_title: `Invoice #${invoiceNumber} — ${selectedEstimate.clientName}`,
+        amount: amounts.total,
+        currency: "USD",
+        project_address: selectedEstimate.clientAddress || undefined,
+        status: paymentStatus,
+        metadata: {
+          client_name: selectedEstimate.clientName,
+          client_email: selectedEstimate.clientEmail,
+          owlfenc_project_id: selectedEstimate.id,
+          external_id: `owlfenc_invoice_${docRef.id}`,
+        },
+      }).catch(() => {});
       // Update local state
       setInvoiceHistory([{ ...invoiceData, id: docRef.id }, ...invoiceHistory]);
 

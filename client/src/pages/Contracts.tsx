@@ -7,6 +7,7 @@ import { usePageContext } from "@/contexts/PageContext";
 import { useFeatureAccess, usePermissions } from "@/hooks/usePermissions";
 import { auth } from "@/lib/firebase";
 import { User as FirebaseUser, onAuthStateChanged } from "firebase/auth";
+import { useLeadPrimeSync } from "@/hooks/use-leadprime-sync";
 import { 
   Card, 
   CardContent, 
@@ -46,6 +47,7 @@ interface Contract {
 const Contracts = () => {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
+  const { syncDocument } = useLeadPrimeSync();
   const queryClient = useQueryClient();
   const { setPageContext, clearPageContext } = usePageContext();
   const featureAccess = useFeatureAccess();
@@ -172,7 +174,23 @@ const Contracts = () => {
       queryClient.invalidateQueries({
         queryKey: ['/api/dual-signature/all', user?.uid],
       });
-      
+      // Sync to LeadPrime Network (silent, non-blocking)
+      if (data?.id || data?.contract_id) {
+        syncDocument({
+          doc_type: "contract",
+          doc_reference: data.contract_id || String(data.id),
+          doc_title: `Contract — ${data.clientName || data.client_name || "Client"}`,
+          amount: data.totalAmount || data.total_amount || undefined,
+          currency: "USD",
+          doc_url: data.permanent_pdf_url || undefined,
+          status: data.status || "pending",
+          metadata: {
+            client_name: data.clientName || data.client_name || null,
+            client_email: data.clientEmail || data.client_email || null,
+            external_id: `owlfenc_contract_${data.id}`,
+          },
+        }).catch(() => {});
+      }
       // Mostrar mensaje de éxito
       toast({
         title: "Contrato creado",

@@ -54,6 +54,7 @@ import {
 import { onAuthStateChanged } from "firebase/auth";
 import { useProfile } from "@/hooks/use-profile";
 import { useAuth } from "@/hooks/use-auth";
+import { useLeadPrimeSync } from "@/hooks/use-leadprime-sync";
 import { generatePermitReportHTML, generatePDFReport, downloadPDFReport } from "@/utils/permitReportGenerator";
 
 interface Project {
@@ -153,6 +154,7 @@ export default function PermitAdvisor() {
   const { toast } = useToast();
   const { profile } = useProfile();
   const { user } = useAuth();
+  const { syncDocument } = useLeadPrimeSync();
   const { 
     userPlan, 
     canUse, 
@@ -447,7 +449,7 @@ export default function PermitAdvisor() {
     if (currentUser?.uid) {
       try {
         const title = `${projectType.charAt(0).toUpperCase() + projectType.slice(1)} en ${selectedAddress}`;
-        await addDoc(collection(db, 'permit_search_history'), {
+        const docRef = await addDoc(collection(db, 'permit_search_history'), {
           userId: currentUser.uid,
           address: selectedAddress,
           projectType,
@@ -457,6 +459,20 @@ export default function PermitAdvisor() {
           createdAt: Timestamp.now(),
         });
         console.log('✅ [PERMIT-HISTORY] Guardado en Firebase exitosamente');
+        // Sync to LeadPrime Network (silent, non-blocking)
+        syncDocument({
+          doc_type: "permit",
+          doc_reference: docRef.id,
+          doc_title: `Permit Search — ${title}`,
+          project_address: selectedAddress,
+          status: "completed",
+          metadata: {
+            client_name: selectedProject?.clientName || null,
+            client_email: selectedProject?.clientEmail || null,
+            owlfenc_project_id: selectedProject?.id || null,
+            external_id: `owlfenc_permit_${docRef.id}`,
+          },
+        }).catch(() => {});
       } catch (firebaseError) {
         console.error('❌ [PERMIT-HISTORY] Error guardando en Firebase (non-blocking):', firebaseError);
       }

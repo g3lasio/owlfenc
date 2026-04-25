@@ -227,14 +227,24 @@ router.post("/sync-document", async (req: Request, res: Response) => {
     return res.status(400).json({ error: "doc_type and doc_reference are required" });
   }
 
+  // Extract project-grouping fields from payload or metadata (for correct project association in LeadPrime)
+  const meta = payload.metadata || {};
+  const clientName = payload.client_name || meta.client_name || null;
+  const clientEmail = payload.client_email || meta.client_email || null;
+  const owlfencProjectId = payload.owlfenc_project_id || meta.owlfenc_project_id || null;
+  const externalId = payload.external_id || meta.external_id || payload.doc_reference;
+
   // Single doc push via /history endpoint (no recipient needed for own records)
   const result = await callLeadPrime("POST", "/leadprime-network/history", user.leadprimeToken, {
     documents: [{
       doc_type: payload.doc_type,
       doc_title: payload.doc_title || payload.doc_reference,
       doc_reference: payload.doc_reference,
-      external_id: payload.external_id || payload.doc_reference,
+      external_id: externalId,
       project_address: payload.project_address,
+      client_name: clientName,
+      client_email: clientEmail,
+      owlfenc_project_id: owlfencProjectId,
       amount: payload.amount,
       currency: payload.currency || "USD",
       doc_url: payload.doc_url,
@@ -378,9 +388,41 @@ async function triggerFullSync(
     console.warn("[LEADPRIME-SYNC] Could not read estimates from Firebase:", err.message);
   }
 
-  // ── 2. Invoices from PostgreSQL (via project_payments — the real invoice table) ──
+  // ── 2a. Invoices from Firebase 'invoices' collection (primary source) ─────────
+  // Invoices.tsx saves to Firebase collection(db, 'invoices') with userId = Firebase UID.
+  // This is the PRIMARY invoice source — project_payments is only for Stripe-processed payments.
+  try {
+    const invoicesSnap = await firebaseDb
+      .collection("invoices")
+      .where("userId", "==", uid)
+      .orderBy("createdAt", "desc")
+      .limit(500)
+      .get();
+    for (const doc of invoicesSnap.docs) {
+      const inv = doc.data();
+      documents.push({
+        doc_type: "invoice",
+        doc_title: `Invoice #${inv.invoiceNumber || doc.id} — ${inv.clientName || "Client"}`,
+        doc_reference: inv.invoiceNumber || doc.id,
+        external_id: `owlfenc_invoice_fb_${doc.id}`,
+        owlfenc_project_id: inv.estimateId || null,  // Firebase estimate doc ID
+        client_name: inv.clientName || null,
+        client_email: inv.clientEmail || null,
+        project_address: inv.estimateData?.clientAddress || null,
+        amount: inv.totalAmount ? parseFloat(String(inv.totalAmount)) : null,
+        currency: "USD",
+        status: inv.paymentStatus === "paid" ? "paid" : (inv.paymentStatus === "partial" ? "pending" : "pending"),
+        created_at: inv.createdAt || null,
+      });
+      breakdown.invoices++;
+    }
+  } catch (err: any) {
+    console.warn("[LEADPRIME-SYNC] Could not read invoices from Firebase:", err.message);
+  }
+
+  // ── 2b. Invoices from PostgreSQL (via project_payments — Stripe-processed payments) ──
   // NOTE: The 'invoices' table in schema.ts was never migrated to production.
-  //       OWL FENC stores payment/invoice records in 'project_payments' instead.
+  //       OWL FENC stores Stripe payment records in 'project_payments'.
   //       We need to join with users to get the integer userId from firebaseUid.
   if (pool) {
     try {
@@ -453,38 +495,42 @@ async function triggerFullSync(
     }
   }
 
-  // ── 4. Permit searches from Firebase ─────────────────────────────────────
-  // FIX: Use 'permit_searches' collection (has composite index) instead of
-  //      'searches/permits/history' subcollection path (no index, causes FAILED_PRECONDITION)
-  try {
-    const permitsSnap = await firebaseDb
-      .collection("permit_searches")
-      .where("userId", "==", uid)
-      .orderBy("createdAt", "desc")
-      .limit(200)
-      .get();
+  // ── 4. Permit searches from Firebase (two collections) ──────────────────────────
+  // PermitAdvisor.tsx saves to 'permit_search_history' (primary).
+  // Some older code saved to 'permit_searches'. We read BOTH to avoid missing any records.
+  const permitSeenIds = new Set<string>();
+  for (const permitCollection of ["permit_search_history", "permit_searches"]) {
+    try {
+      const permitsSnap = await firebaseDb
+        .collection(permitCollection)
+        .where("userId", "==", uid)
+        .orderBy("createdAt", "desc")
+        .limit(200)
+        .get();
 
-    for (const doc of permitsSnap.docs) {
-      const p = doc.data();
-      documents.push({
-        doc_type: "permit",
-        doc_title: `Permit Search — ${p.query || p.address || p.city || "Search"}`,
-        doc_reference: doc.id,
-        external_id: `owlfenc_permit_${doc.id}`,
-        // Project grouping: match by address
-        client_email: p.clientEmail || null,
-        client_name: p.clientName || null,
-        project_address: p.address ? `${p.address}${p.city ? ", " + p.city : ""}${p.state ? ", " + p.state : ""}` : null,
-        project_name: p.permitType || p.projectType || null,
-        status: p.status || "completed",
-        created_at: p.createdAt?.toDate ? p.createdAt.toDate().toISOString() : (p.createdAt || null),
-      });
-      breakdown.permits++;
+      for (const doc of permitsSnap.docs) {
+        if (permitSeenIds.has(doc.id)) continue; // deduplicate across collections
+        permitSeenIds.add(doc.id);
+        const p = doc.data();
+        documents.push({
+          doc_type: "permit",
+          doc_title: `Permit Search — ${p.query || p.address || p.city || "Search"}`,
+          doc_reference: doc.id,
+          external_id: `owlfenc_permit_${doc.id}`,
+          // Project grouping: match by address
+          client_email: p.clientEmail || null,
+          client_name: p.clientName || null,
+          project_address: p.address ? `${p.address}${p.city ? ", " + p.city : ""}${p.state ? ", " + p.state : ""}` : null,
+          project_name: p.permitType || p.projectType || null,
+          status: p.status || "completed",
+          created_at: p.createdAt?.toDate ? p.createdAt.toDate().toISOString() : (p.createdAt || null),
+        });
+        breakdown.permits++;
+      }
+    } catch (err: any) {
+      console.warn(`[LEADPRIME-SYNC] Could not read ${permitCollection} from Firebase:`, err.message);
     }
-  } catch (err: any) {
-    console.warn("[LEADPRIME-SYNC] Could not read permit searches from Firebase:", err.message);
   }
-
   // ── 5. Property searches from Firebase ───────────────────────────────────
   // FIX: Use 'property_searches' collection (has composite index) instead of
   //      'searches/property/history' subcollection path (no index, causes FAILED_PRECONDITION)
