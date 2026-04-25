@@ -346,6 +346,7 @@ async function triggerFullSync(
   uid: string,
   token: string
 ): Promise<{ imported: number; skipped: number; total: number; breakdown: Record<string, number> }> {
+  console.log(`[LEADPRIME-SYNC] ▶ Starting full sync for uid=${uid}`);
   const documents: any[] = [];
   const breakdown: Record<string, number> = {
     estimates: 0,
@@ -355,11 +356,13 @@ async function triggerFullSync(
     properties: 0,
   };
 
-  // ── 1. Estimates from Firebase ────────────────────────────────────────────
+  // ── 1. Estimates from Firebase ────────────────────────────────────────────────
+  // FIX: EstimatesWizard.tsx saves estimates with field 'firebaseUserId' (NOT 'userId').
+  //      Querying 'userId' returns 0 results. Must use 'firebaseUserId'.
   try {
     const estimatesSnap = await firebaseDb
       .collection("estimates")
-      .where("userId", "==", uid)
+      .where("firebaseUserId", "==", uid)
       .orderBy("createdAt", "desc")
       .limit(500)
       .get();
@@ -387,6 +390,7 @@ async function triggerFullSync(
   } catch (err: any) {
     console.warn("[LEADPRIME-SYNC] Could not read estimates from Firebase:", err.message);
   }
+  console.log(`[LEADPRIME-SYNC] ✓ Estimates: ${breakdown.estimates} found`);
 
   // ── 2a. Invoices from Firebase 'invoices' collection (primary source) ─────────
   // Invoices.tsx saves to Firebase collection(db, 'invoices') with userId = Firebase UID.
@@ -419,6 +423,7 @@ async function triggerFullSync(
   } catch (err: any) {
     console.warn("[LEADPRIME-SYNC] Could not read invoices from Firebase:", err.message);
   }
+  console.log(`[LEADPRIME-SYNC] ✓ Invoices (Firebase): ${breakdown.invoices} found`);
 
   // ── 2b. Invoices from PostgreSQL (via project_payments — Stripe-processed payments) ──
   // NOTE: The 'invoices' table in schema.ts was never migrated to production.
@@ -494,8 +499,9 @@ async function triggerFullSync(
       console.warn("[LEADPRIME-SYNC] Could not read contracts from PostgreSQL:", err.message);
     }
   }
+  console.log(`[LEADPRIME-SYNC] ✓ Contracts: ${breakdown.contracts} found`);
 
-  // ── 4. Permit searches from Firebase (two collections) ──────────────────────────
+  // ── 4. Permit searcheshes from Firebase (two collections) ──────────────────────────
   // PermitAdvisor.tsx saves to 'permit_search_history' (primary).
   // Some older code saved to 'permit_searches'. We read BOTH to avoid missing any records.
   const permitSeenIds = new Set<string>();
@@ -562,6 +568,8 @@ async function triggerFullSync(
   } catch (err: any) {
     console.warn("[LEADPRIME-SYNC] Could not read property searches from Firebase:", err.message);
   }
+  console.log(`[LEADPRIME-SYNC] ✓ Permits: ${breakdown.permits}, Properties: ${breakdown.properties} found`);
+  console.log(`[LEADPRIME-SYNC] ✓ Total documents to push: ${documents.length}`);
 
   // ── Push all documents to LeadPrime in batches of 100 ────────────────────
   let totalImported = 0;

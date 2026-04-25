@@ -163,18 +163,25 @@ export default function LeadPrimeNetwork() {
   const handleManualSync = async () => {
     setIsSyncing(true);
     try {
+      // FIX: getAuthHeaders() is async — must be awaited before passing to apiRequest
+      const authHeaders = await getAuthHeaders();
       const res = await apiRequest("POST", "/api/leadprime-network/sync", undefined, {
-        headers: getAuthHeaders(),
+        headers: authHeaders,
       });
-      if (!res.ok) throw new Error("Sync failed");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `HTTP ${res.status}`);
+      }
       const data = await res.json();
+      // FIX: server returns data.imported (not data.synced)
+      const synced = data.imported ?? data.synced ?? 0;
       toast({
         title: "Sync complete",
-        description: `${data.synced || 0} documents synced to LeadPrime.`,
+        description: `${synced} documents synced to LeadPrime. (${data.skipped || 0} skipped as duplicates)`,
       });
       queryClient.invalidateQueries({ queryKey: ["leadprime-sync-status"] });
-    } catch {
-      toast({ title: "Sync failed", description: "Could not sync documents.", variant: "destructive" });
+    } catch (err: any) {
+      toast({ title: "Sync failed", description: err.message || "Could not sync documents.", variant: "destructive" });
     } finally {
       setIsSyncing(false);
     }
