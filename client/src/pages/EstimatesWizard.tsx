@@ -626,6 +626,11 @@ export default function EstimatesWizardFixed() {
     "materials" | "labor" | "full"
   >("materials");
   const [isAIProcessing, setIsAIProcessing] = useState(false);
+  const [descriptionWarning, setDescriptionWarning] = useState<{
+    issue: string;
+    suggestion: string;
+    example: string | null;
+  } | null>(null);
   const [showMervinWorking, setShowMervinWorking] = useState(false);
   const [aiProgress, setAiProgress] = useState(0);
 
@@ -882,6 +887,122 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       hasSpecificTerms,
       isDetailed: words.length >= 5 && (hasNumbers || hasSpecificTerms),
     };
+  };
+
+  // ── Smart pre-flight validation before spending AI credits ──────────────────
+  // Returns { valid, issue, suggestion, example }
+  // Checks for trade-specific missing data (flooring without sqft, fence without lf, etc.)
+  const validateForDeepSearch = (description: string): {
+    valid: boolean;
+    issue: string | null;
+    suggestion: string | null;
+    example: string | null;
+  } => {
+    const d = description.trim().toLowerCase();
+    const words = d.split(/\s+/).filter(w => w.length > 0);
+
+    // Gate 1: Too short
+    if (words.length < 4) {
+      return {
+        valid: false,
+        issue: "Description is too short",
+        suggestion: "Add more details: what type of work, what material, and approximate size or quantity.",
+        example: null,
+      };
+    }
+
+    // Gate 2: Measurement detection
+    const hasMeasurement = /\d+\s*(sq\s*ft|sqft|square\s*feet|linear\s*feet|lf|ln\s*ft|ft|feet|meters?|m²|sq\s*m|yards?|yd|sf|lnft|lineal|running)/.test(d);
+    const hasQuantity = /\d+\s*(units?|pieces?|each|pcs?|bags?|gallons?|rolls?|sheets?|panels?|posts?|pickets?|boards?|squares?|sections?|windows?|doors?|rooms?|floors?)/.test(d);
+    const hasAnyNumber = /\d+/.test(d);
+
+    // Trade detection
+    const isFencing = /(fence|fencing|cerca|cercado|picket|chain.?link|vinyl fence|wood fence|metal fence|ornamental|wrought iron)/.test(d);
+    const isFlooring = /(floor|flooring|piso|tile|tiles|hardwood|laminate|vinyl plank|lvp|carpet|wood floor|ceramic|porcelain)/.test(d);
+    const isRoofing = /(roof|roofing|shingle|techo|tejado|re.?roof|metal roof|flat roof|membrane)/.test(d);
+    const isConcrete = /(concrete|cement|slab|sidewalk|driveway|patio|pad|foundation|footings?|flatwork)/.test(d);
+    const isPainting = /(paint|painting|repaint|pintura|primer|coat|stain|exterior paint|interior paint)/.test(d);
+    const isDrywall = /(drywall|sheetrock|gypsum|plaster|wall board)/.test(d);
+    const isLandscaping = /(sod|lawn|grass|landscape|turf|irrigation|sprinkler|mulch|gravel|garden)/.test(d);
+    const isPressureWash = /(pressure.?wash|power.?wash|soft.?wash)/.test(d);
+
+    // Trade-specific checks
+    if (isFencing && !hasMeasurement && !hasQuantity) {
+      return {
+        valid: false,
+        issue: "Fence project needs a measurement",
+        suggestion: "Add the total length of fence to install (in linear feet or meters).",
+        example: "Install 150 LF of 6ft wood privacy fence with posts and concrete",
+      };
+    }
+    if (isFlooring && !hasMeasurement) {
+      return {
+        valid: false,
+        issue: "Flooring project needs square footage",
+        suggestion: "Add the total area to cover in square feet (or square meters).",
+        example: "Install 800 sqft of LVP flooring, remove old carpet, include underlayment",
+      };
+    }
+    if (isRoofing && !hasMeasurement) {
+      return {
+        valid: false,
+        issue: "Roofing project needs square footage",
+        suggestion: "Add the roof area in square feet (or number of squares — 1 square = 100 sqft).",
+        example: "Replace roof on 2,200 sqft house, architectural shingles, tear off old roof",
+      };
+    }
+    if (isConcrete && !hasMeasurement) {
+      return {
+        valid: false,
+        issue: "Concrete project needs dimensions",
+        suggestion: "Add the area in square feet or dimensions (length × width) and thickness if known.",
+        example: "Pour 400 sqft concrete driveway, 4 inch thick, with rebar",
+      };
+    }
+    if (isPainting && !hasMeasurement && !hasQuantity) {
+      return {
+        valid: false,
+        issue: "Painting project needs area or room count",
+        suggestion: "Add the area in square feet, or number of rooms and approximate size.",
+        example: "Paint interior of 1,800 sqft house, 3 bedrooms, 2 bathrooms, living room",
+      };
+    }
+    if (isDrywall && !hasMeasurement) {
+      return {
+        valid: false,
+        issue: "Drywall project needs square footage",
+        suggestion: "Add the total wall/ceiling area in square feet.",
+        example: "Install 1,200 sqft of drywall, 1/2 inch, tape and texture",
+      };
+    }
+    if (isLandscaping && !hasMeasurement && !hasQuantity) {
+      return {
+        valid: false,
+        issue: "Landscaping project needs area or quantity",
+        suggestion: "Add the area in square feet or the number of items (trees, plants, etc.).",
+        example: "Install 2,500 sqft of sod, level ground, include irrigation",
+      };
+    }
+    if (isPressureWash && !hasMeasurement && !hasQuantity) {
+      return {
+        valid: false,
+        issue: "Cleaning/pressure washing needs area or scope",
+        suggestion: "Add the area in square feet or describe the surfaces to clean.",
+        example: "Pressure wash 3,000 sqft concrete driveway and 1,200 sqft patio",
+      };
+    }
+
+    // Gate 3: Generic description with no numbers
+    if (!hasAnyNumber && words.length < 8) {
+      return {
+        valid: false,
+        issue: "Not enough detail for an accurate estimate",
+        suggestion: "Add dimensions, quantities, or specific materials to get an accurate estimate.",
+        example: null,
+      };
+    }
+
+    return { valid: true, issue: null, suggestion: null, example: null };
   };
 
   // 🔧 SIMPLE & FUNCTIONAL PROJECT DESCRIPTION REWRITER
@@ -1147,19 +1268,16 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       });
       return;
     }
-
-    const evaluation = evaluateProjectDescription(description);
-
-    // Si la descripción es muy básica, sugerir mejorarla
-    if (!evaluation.isDetailed) {
-      toast({
-        title: "Description too basic for DeepSearch",
-        description:
-          'To run DeepSearch I need more project details. Include measurements, specific materials, or use "Enhance with Mervin AI" first.',
-        variant: "destructive",
+    const validation = validateForDeepSearch(description);
+    if (!validation.valid) {
+      setDescriptionWarning({
+        issue: validation.issue!,
+        suggestion: validation.suggestion!,
+        example: validation.example,
       });
       return;
     }
+    setDescriptionWarning(null);
 
     setIsAIProcessing(true);
     setAiProgress(0);
@@ -1578,15 +1696,23 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     );
 
     if (!description || description.length < 3) {
-      toast({
-        title: "Description Required",
-        description:
-          "Please describe your project with at least 3 characters to use AI Search",
-        variant: "destructive",
+      setDescriptionWarning({
+        issue: "Project description is required",
+        suggestion: "Describe what work needs to be done, including measurements and materials.",
+        example: null,
       });
       return;
     }
-
+    const validation = validateForDeepSearch(description);
+    if (!validation.valid) {
+      setDescriptionWarning({
+        issue: validation.issue!,
+        suggestion: validation.suggestion!,
+        example: validation.example,
+      });
+      return;
+    }
+    setDescriptionWarning(null);
     setShowNewDeepsearchDialog(false);
     setIsAIProcessing(true);
     setAiProgress(0);
@@ -1753,6 +1879,32 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
       console.log("🔍 NEW DEEPSEARCH - Data.success:", data.success);
       console.log("🔍 NEW DEEPSEARCH - Data.items:", data.items);
       console.log("🔍 NEW DEEPSEARCH - Items length:", data.items?.length);
+
+      // ── Confidence threshold check ──────────────────────────────────────────
+      // If the AI returned a low confidence score, it means the description was
+      // too vague to generate a reliable estimate. Warn the user instead of
+      // silently adding unreliable items.
+      const combinedConfidence = data.data?.confidence ?? data.confidence ?? 1.0;
+      const uieWarnings: string[] = data.data?.warnings ?? data.warnings ?? [];
+      if (combinedConfidence < 0.5) {
+        toast({
+          title: "⚠️ Low confidence estimate",
+          description: `The AI generated this estimate with low confidence (${Math.round(combinedConfidence * 100)}%). The description may be too vague. Review the items carefully and consider improving your project description.`,
+          variant: "destructive",
+          duration: 8000,
+        });
+      } else if (uieWarnings.length > 0) {
+        // Show important warnings from the AI (e.g., profitability alerts)
+        const profitWarning = uieWarnings.find(w => w.includes('PROFITABILITY') || w.includes('MARGIN'));
+        if (profitWarning) {
+          toast({
+            title: "⚠️ Profitability Alert",
+            description: profitWarning.replace(/^⚠️\s*/, '').substring(0, 200) + (profitWarning.length > 200 ? '...' : ''),
+            variant: "destructive",
+            duration: 10000,
+          });
+        }
+      }
 
       // Verificar diferentes estructuras de respuesta según el endpoint
       let items = [];
@@ -5646,22 +5798,38 @@ This link provides a professional view of your estimate that you can access anyt
                     ></div>
                   </div>
                 </div>
-                {/* Mensaje de ayuda dinámico */}
-                {estimate.projectDetails.trim().length >= 10 &&
-                  !evaluateProjectDescription(estimate.projectDetails)
-                    .isDetailed && (
-                    <div className="flex items-start gap-2 mt-2 p-3 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg border border-yellow-200">
-                      <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5 flex-shrink-0" />
-                      <p className="text-xs text-yellow-700">
-                        <strong>Para DeepSearch necesito más detalles:</strong>{" "}
-                        Incluye medidas específicas, tipos de materiales,
-                        ubicación del trabajo, o usa{" "}
-                        <strong>"Enhance with Mervin AI"</strong> para generar
-                        una descripción completa.
-                      </p>
+                {/* Smart Description Warning Panel */}
+                {descriptionWarning && (
+                  <div className="mt-3 p-4 bg-amber-950/40 border border-amber-500/50 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center">
+                        <AlertCircle className="h-4 w-4 text-amber-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-amber-300 mb-1">
+                          {descriptionWarning.issue}
+                        </p>
+                        <p className="text-xs text-amber-200/80 mb-2">
+                          {descriptionWarning.suggestion}
+                        </p>
+                        {descriptionWarning.example && (
+                          <div className="mt-2 p-2 bg-black/30 rounded border border-amber-500/30">
+                            <p className="text-xs text-gray-400 mb-1 font-mono uppercase tracking-wide">Example:</p>
+                            <p className="text-xs text-amber-100 font-mono italic">
+                              &ldquo;{descriptionWarning.example}&rdquo;
+                            </p>
+                          </div>
+                        )}
+                        <button
+                          onClick={() => setDescriptionWarning(null)}
+                          className="mt-2 text-xs text-amber-400/60 hover:text-amber-400 underline"
+                        >
+                          Dismiss
+                        </button>
+                      </div>
                     </div>
-                  )}
-
+                  </div>
+                )}
                 {/* Compact Attachments List - Only show if files exist */}
                 {estimate.attachments.length > 0 && (
                   <div className="mt-3 space-y-2">

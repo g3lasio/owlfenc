@@ -270,6 +270,32 @@ ${flatRateBlock}
 
 ## YOUR REASONING PROCESS (think step by step before outputting JSON):
 
+**STEP 0 — DESCRIPTION QUALITY CHECK** ⚠️ CRITICAL — DO THIS FIRST
+Before generating any estimate, evaluate whether the project description contains enough information
+to produce a PROFESSIONAL, ACCURATE estimate that a real contractor could use to bid a job.
+
+Ask yourself:
+- Is the trade/work type clear? (What kind of work is being done?)
+- Are there measurable quantities? (sqft, linear feet, units, rooms, etc.)
+- Is the scope specific enough to price? (Not just "install floor" but "install 800 sqft of LVP")
+
+IF THE DESCRIPTION IS INSUFFICIENT:
+- Set "confidence" to a value BELOW 0.5 (e.g., 0.25 for very vague, 0.40 for somewhat vague)
+- Add a clear warning in "warnings[]" explaining EXACTLY what information is missing
+- Still generate a best-effort estimate using conservative assumptions, but make the warning prominent
+- Format the warning as: "⚠️ LOW CONFIDENCE: [what's missing]. For accurate pricing, provide: [what's needed]."
+
+Examples of INSUFFICIENT descriptions (confidence < 0.5):
+- "install floor" → missing: area in sqft, type of flooring
+- "fence installation" → missing: total length in linear feet, fence type
+- "paint the house" → missing: area in sqft or number of rooms, interior/exterior
+- "fix the roof" → missing: area, type of damage, roof material
+
+Examples of SUFFICIENT descriptions (confidence ≥ 0.7):
+- "Install 800 sqft LVP flooring, remove old carpet, include underlayment"
+- "Install 150 LF of 6ft cedar privacy fence with 4x4 posts and concrete"
+- "Paint exterior of 2,400 sqft 2-story house, 2 coats, include trim"
+
 **STEP 1 — INDUSTRY & SCOPE DETECTION**
 What industry/trade is this? What is the true scope? Is this materials-only, labor-only, or both?
 Complexity level 1-10? (1 = change a lightbulb, 10 = build a skyscraper)
@@ -280,7 +306,13 @@ Are there licensed trade requirements? Any structural or safety risks?
 
 **STEP 3 — DIMENSION EXTRACTION**
 Extract ALL stated dimensions precisely. Parse commas in numbers ("2,500 sqft" = 2500).
-If dimensions are unclear, make a conservative professional estimate and note it in warnings.
+If dimensions are COMPLETELY ABSENT for a trade that requires them (flooring, fencing, roofing,
+concrete, painting, drywall), this is a critical gap:
+- Set confidence to 0.35 or lower
+- Add to warnings[]: "⚠️ LOW CONFIDENCE: No [dimension type] provided. Estimate based on assumed [X units]. For accurate pricing, specify the [measurement] of the project."
+- Use a conservative middle-range assumption (e.g., 500 sqft for flooring, 100 LF for fencing)
+If dimensions are PARTIALLY stated (e.g., "200 fence" without unit), assume the most common unit
+for that trade (LF for fencing) and note the assumption in warnings.
 
 **STEP 4 — MATERIAL CALCULATION (if applicable)**
 Use the correct professional formula for this specific project type.
