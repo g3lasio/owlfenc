@@ -44,6 +44,14 @@ import {
   Shield,
   User as UserIcon,
   Info,
+  Key,
+  Copy,
+  Eye,
+  EyeOff,
+  Link2,
+  Trash2,
+  RefreshCw,
+  Zap,
 } from "lucide-react";
 import { SubscriptionInfo } from "@/components/ui/subscription-info";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
@@ -66,6 +74,7 @@ import {
 } from "@/components/ui/dialog";
 // import PhoneAuthMFA from "@/components/auth/PhoneAuthMFA"; // REMOVED: 2FA functionality temporarily disabled
 import { ImageCropper } from "@/components/ui/image-cropper";
+import { ApiKeyManager } from "@/components/ui/api-key-manager";
 import { EmailAuthProvider, reauthenticateWithCredential, signOut } from "firebase/auth";
 import { auth, uploadFile } from "@/lib/firebase";
 import {
@@ -1435,7 +1444,7 @@ export default function Profile() {
 
         <Tabs defaultValue="info" className="space-y-8">
           <div className="border border-gray-700 rounded-lg bg-gray-900/50 p-1">
-            <TabsList className="w-full bg-transparent grid grid-cols-4 gap-1">
+            <TabsList className="w-full bg-transparent grid grid-cols-5 gap-1">
               <TabsTrigger 
                 value="info" 
                 className="data-[state=active]:bg-cyan-400 data-[state=active]:text-black bg-gray-800 text-white hover:bg-gray-700 border-0 rounded-md transition-all duration-300"
@@ -1459,6 +1468,12 @@ export default function Profile() {
                 className="data-[state=active]:bg-cyan-400 data-[state=active]:text-black bg-gray-800 text-white hover:bg-gray-700 border-0 rounded-md transition-all duration-300"
               >
                 User Settings
+              </TabsTrigger>
+              <TabsTrigger 
+                value="integrations"
+                className="data-[state=active]:bg-cyan-400 data-[state=active]:text-black bg-gray-800 text-white hover:bg-gray-700 border-0 rounded-md transition-all duration-300"
+              >
+                Integrations
               </TabsTrigger>
             </TabsList>
           </div>
@@ -2529,6 +2544,74 @@ export default function Profile() {
                       </Button>
                     </div>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* INTEGRATIONS TAB */}
+          <TabsContent value="integrations" className="space-y-6">
+            {/* Owl Fenc API Keys */}
+            <Card className="border-gray-700 bg-gray-900">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-cyan-400/10 border border-cyan-400/20">
+                    <Key className="w-5 h-5 text-cyan-400" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-cyan-400">API Keys</CardTitle>
+                    <CardDescription className="text-gray-400">
+                      Generate API keys to connect Owl Fenc with LeadPrime or other external agents.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <ApiKeyManager />
+              </CardContent>
+            </Card>
+
+            {/* LeadPrime Connection Guide */}
+            <Card className="border-gray-700 bg-gray-900">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-purple-500/10 border border-purple-500/20">
+                    <Zap className="w-5 h-5 text-purple-400" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-purple-400">Connect to LeadPrime</CardTitle>
+                    <CardDescription className="text-gray-400">
+                      Let your LeadPrime AI agent generate estimates, contracts, and permits directly from conversation.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="flex flex-col items-center text-center p-4 rounded-lg bg-gray-800 border border-gray-700">
+                      <div className="w-8 h-8 rounded-full bg-cyan-400 text-black font-bold flex items-center justify-center mb-2 text-sm">1</div>
+                      <p className="text-white text-sm font-medium">Generate API Key</p>
+                      <p className="text-gray-400 text-xs mt-1">Create a new key above and copy it</p>
+                    </div>
+                    <div className="flex flex-col items-center text-center p-4 rounded-lg bg-gray-800 border border-gray-700">
+                      <div className="w-8 h-8 rounded-full bg-cyan-400 text-black font-bold flex items-center justify-center mb-2 text-sm">2</div>
+                      <p className="text-white text-sm font-medium">Go to LeadPrime</p>
+                      <p className="text-gray-400 text-xs mt-1">Settings → Integrations → Owl Fenc API Key</p>
+                    </div>
+                    <div className="flex flex-col items-center text-center p-4 rounded-lg bg-gray-800 border border-gray-700">
+                      <div className="w-8 h-8 rounded-full bg-cyan-400 text-black font-bold flex items-center justify-center mb-2 text-sm">3</div>
+                      <p className="text-white text-sm font-medium">Paste & Save</p>
+                      <p className="text-gray-400 text-xs mt-1">Your agent can now generate estimates from chat</p>
+                    </div>
+                  </div>
+                  <Alert className="border-cyan-400/30 bg-cyan-400/5">
+                    <Info className="h-4 w-4 text-cyan-400" />
+                    <AlertTitle className="text-cyan-400">What your agent can do</AlertTitle>
+                    <AlertDescription className="text-gray-300 text-sm">
+                      Once connected, your LeadPrime AI agent can: generate AI-powered estimates, convert estimates to contracts, check permit requirements, and look up or create clients — all from a text conversation with your leads.
+                    </AlertDescription>
+                  </Alert>
                 </div>
               </CardContent>
             </Card>
