@@ -35,6 +35,7 @@ import mervinV2Routes from "./routes/mervin-v2";
 import contractVerificationRoutes from './routes/contract-verification';
 import leadprimeNetworkRoutes from './routes/leadprimeNetwork';
 import publicViewRoutes from './routes/public-view-routes';
+import externalApiRoutes from './routes/external-api';
 import { verifyFirebaseAuth } from './middleware/firebase-auth';
 // import assistantsRoutes from "./routes/assistants"; // DESACTIVADO - Sistema obsoleto de OpenAI Assistants
 // mervinEstimatesRoutes removed - Mervin now uses existing endpoints
@@ -810,6 +811,8 @@ console.log('💬 [CONVERSATIONS] Sistema de historial de conversaciones registr
 // 🤖 Registrar sistema Mervin V2 (Hybrid Intelligence Orchestrator)
 app.use('/api/mervin-v2', mervinV2Routes);
 console.log('🤖 [MERVIN-V2] Sistema Mervin V2 registrado en /api/mervin-v2');
+app.use('/api/external', externalApiRoutes);
+console.log('🔌 [EXT-API] External API (Agent Integration Layer) registrado en /api/external');
 
 // 🤖 Registrar sistema Assistants API (OpenAI-powered) - DESACTIVADO
 // app.use('/api/assistant', assistantsRoutes);
