@@ -2992,30 +2992,49 @@ ENHANCED LEGAL CLAUSE:`;
         }
 
         // Process items data with proper currency formatting
+        // ─── PRICING STRATEGY B: Proportional cost distribution ───────────────
+        // When Strategy B is used, overhead/markup/operational costs are baked
+        // proportionally into each item's unit_price and total so that:
+        //   subtotal of displayed items === grand total (no visible gap)
+        // The client never sees a breakdown of internal cost components.
+        const rawSubtotal = Math.round((projectTotalCosts?.subtotal || 0) * 100) / 100;
+        const rawTotal    = Math.round((projectTotalCosts?.total    || rawSubtotal) * 100) / 100;
+        const pricingStrategyB = (projectTotalCosts?.pricingStrategy || 'A') === 'B';
+        const hasExtraCosts = pricingStrategyB && rawTotal > rawSubtotal && rawSubtotal > 0;
+
+        // Multiplier to scale each item's price so items sum to rawTotal
+        const distributionMultiplier = hasExtraCosts ? (rawTotal / rawSubtotal) : 1;
+
         let processedItems = [];
+        let distributedSubtotal = 0;
         if (items && Array.isArray(items)) {
           processedItems = items.map((item, index) => {
-            const price = typeof item.price === 'number' ? item.price : parseFloat(String(item.price || 0).replace(/[$,]/g, '')) || 0;
+            const price     = typeof item.price === 'number' ? item.price : parseFloat(String(item.price || 0).replace(/[$,]/g, '')) || 0;
             const itemTotal = typeof item.total === 'number' ? item.total : parseFloat(String(item.total || 0).replace(/[$,]/g, '')) || 0;
-            const roundedPrice = Math.round(price * 100) / 100;
-            const roundedTotal = Math.round(itemTotal * 100) / 100;
-            
+            const qty       = item.quantity || item.qty || 1;
+
+            // Scale prices proportionally if Strategy B
+            const adjustedTotal     = Math.round(itemTotal * distributionMultiplier * 100) / 100;
+            const adjustedUnitPrice = Math.round(price    * distributionMultiplier * 100) / 100;
+            distributedSubtotal    += adjustedTotal;
+
             return {
-              code: item.name || item.materialId || `Item ${index + 1}`,
+              code:        item.name || item.materialId || `Item ${index + 1}`,
               description: item.description || "No description available",
-              qty: item.quantity || item.qty || 1,
-              unit_price: `$${roundedPrice.toFixed(2)}`,
-              total: `$${roundedTotal.toFixed(2)}`,
+              qty,
+              unit_price: `$${adjustedUnitPrice.toFixed(2)}`,
+              total:      `$${adjustedTotal.toFixed(2)}`,
             };
           });
         }
 
-        // Calculate financial summary with proper rounding
-        const subtotal = Math.round((projectTotalCosts?.subtotal || 0) * 100) / 100;
-        const discount = Math.round((projectTotalCosts?.discount || 0) * 100) / 100;
-        const taxRate = projectTotalCosts?.taxRate || 0;
+        // After distribution, subtotal shown to client equals the grand total
+        const subtotal  = hasExtraCosts ? Math.round(distributedSubtotal * 100) / 100 : rawSubtotal;
+        const discount  = Math.round((projectTotalCosts?.discount || 0) * 100) / 100;
+        const taxRate   = projectTotalCosts?.taxRate || 0;
         const taxAmount = Math.round((projectTotalCosts?.tax || 0) * 100) / 100;
-        const total = Math.round((projectTotalCosts?.total || subtotal) * 100) / 100;
+        // Total shown = subtotal (already includes all costs) + tax + discount
+        const total     = Math.round((subtotal - discount + taxAmount) * 100) / 100;
 
         // Extract premium template parameters from request
         const templateMode = requestData.templateMode;
@@ -3057,17 +3076,9 @@ ENHANCED LEGAL CLAUSE:`;
             tax_rate: taxRate,
             tax_amount: `$${taxAmount}`,
             total: `$${total}`,
-            // Strategy B fee lines (passed through from frontend)
-            overhead_amount: projectTotalCosts?.overheadAmount != null
-              ? `$${Math.round((projectTotalCosts.overheadAmount) * 100) / 100}`
-              : undefined,
-            markup_amount: projectTotalCosts?.markupAmount != null
-              ? `$${Math.round((projectTotalCosts.markupAmount) * 100) / 100}`
-              : undefined,
-            operational_costs_amount: projectTotalCosts?.operationalCostsAmount != null
-              ? `$${Math.round((projectTotalCosts.operationalCostsAmount) * 100) / 100}`
-              : undefined,
-            pricing_strategy: projectTotalCosts?.pricingStrategy || 'A',
+            // NOTE: Strategy B overhead/markup/operational costs are already
+            // proportionally distributed into item prices above — do NOT pass
+            // them as separate fields or they will create a visible gap.
           },
           client: {
             name: client?.name || client?.clientName || "Valued Client",
@@ -5310,6 +5321,73 @@ ENHANCED LEGAL CLAUSE:`;
         success: false,
         error: "Internal server error"
       });
+    }
+  });
+
+  // ✅ UNIFIED HTML VIEW: Serve the same HTML template used for PDF generation
+  // This allows SharedEstimate.tsx to render an iframe with identical output to the PDF
+  app.get("/api/estimates/shared/:shareId/html", async (req: Request, res: Response) => {
+    try {
+      let { shareId } = req.params;
+      const hexMatch = typeof shareId === 'string' ? shareId.match(/^[a-f0-9]{64}/i) : null;
+      if (hexMatch) shareId = hexMatch[0];
+      if (!shareId || typeof shareId !== 'string' || shareId.length !== 64) {
+        return res.status(400).send('<p>Invalid share ID</p>');
+      }
+      const doc = await admin.firestore().collection('shared_estimates').doc(shareId).get();
+      if (!doc.exists) return res.status(404).send('<p>Estimate not found</p>');
+      const data = doc.data();
+      if (!data?.isActive) return res.status(410).send('<p>Estimate deactivated</p>');
+
+      const ed = data.estimateData;
+      // Map Firestore estimateData → EstimateData shape expected by PuppeteerPdfService
+      const estimateDataForTemplate = {
+        company: {
+          name:    ed.contractor?.company || ed.contractorCompanyName || 'Your Company',
+          address: (() => {
+            const c = ed.contractor || {};
+            const parts = [c.address, [c.city, c.state].filter(Boolean).join(', '), c.zipCode].filter(Boolean);
+            return parts.join(', ');
+          })(),
+          phone:   ed.contractor?.phone   || ed.contractorPhone   || '',
+          email:   ed.contractor?.email   || ed.contractorEmail   || '',
+          website: ed.contractor?.website || '',
+          logo:    ed.contractor?.logo    || ed.contractorLogo    || '',
+          license: ed.contractor?.license || ed.contractorLicense || '',
+        },
+        estimate: {
+          number:              ed.estimateNumber || `EST-${Date.now()}`,
+          date:                ed.date           || new Date().toLocaleDateString(),
+          valid_until:         ed.validUntil     || '',
+          project_description: ed.project?.description || ed.projectDetails || '',
+          items: (ed.items || []).map((item: any) => ({
+            code:        item.name        || item.code        || 'Item',
+            description: item.description || '',
+            qty:         item.quantity    || item.qty         || 1,
+            unit_price:  `$${Number(item.price || item.unitPrice || 0).toFixed(2)}`,
+            total:       `$${Number(item.total || 0).toFixed(2)}`,
+          })),
+          subtotal:  `$${Number(ed.subtotal || 0).toFixed(2)}`,
+          discounts: ed.discountAmount > 0 ? `-$${Number(ed.discountAmount).toFixed(2)}` : '$0.00',
+          tax_rate:  ed.taxRate  || 0,
+          tax_amount:`$${Number(ed.tax || 0).toFixed(2)}`,
+          total:     `$${Number(ed.total || ed.subtotal || 0).toFixed(2)}`,
+        },
+        client: {
+          name:    ed.client?.name    || ed.clientName    || 'Valued Client',
+          email:   ed.client?.email   || ed.clientEmail   || '',
+          phone:   ed.client?.phone   || ed.clientPhone   || '',
+          address: ed.client?.address || ed.clientAddress || '',
+        },
+      };
+
+      const html = await puppeteerPdfService.renderHtmlFromTemplate(estimateDataForTemplate);
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+      res.send(html);
+    } catch (error) {
+      console.error('❌ [ESTIMATE-HTML] Error rendering estimate HTML:', error);
+      res.status(500).send('<p>Error rendering estimate</p>');
     }
   });
 

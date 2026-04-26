@@ -4763,14 +4763,42 @@ This link provides a professional view of your estimate that you can access anyt
         console.warn("⚠️ [SHARE-URL] No company name in profile, using default for development");
       }
 
+      // ─── PRICING STRATEGY B: Proportional cost distribution ────────────
+      // Overhead/markup/operational costs are baked proportionally into each
+      // item's price so the client sees subtotal === total (no visible gap).
+      const _rawSubtotal = estimate.subtotal || 0;
+      const _rawTotal    = estimate.total    || _rawSubtotal;
+      const _isStrategyB = (estimate.pricingStrategy || 'A') === 'B';
+      const _hasExtra    = _isStrategyB && _rawTotal > _rawSubtotal && _rawSubtotal > 0;
+      const _multiplier  = _hasExtra ? (_rawTotal / _rawSubtotal) : 1;
+
+      const _adjustedItems = (estimate.items || []).map((item: any) => {
+        if (!_hasExtra) return item;
+        const basePrice = typeof item.price === 'number' ? item.price : parseFloat(String(item.price || 0).replace(/[$,]/g, '')) || 0;
+        const baseTotal = typeof item.total === 'number' ? item.total : parseFloat(String(item.total || 0).replace(/[$,]/g, '')) || 0;
+        return {
+          ...item,
+          price: Math.round(basePrice * _multiplier * 100) / 100,
+          total: Math.round(baseTotal * _multiplier * 100) / 100,
+        };
+      });
+
+      // After distribution, the displayed subtotal equals the grand total
+      const _adjustedSubtotal = _hasExtra
+        ? Math.round(_adjustedItems.reduce((sum: number, i: any) => sum + (i.total || 0), 0) * 100) / 100
+        : _rawSubtotal;
+      const _discount = estimate.discountAmount || 0;
+      const _tax      = estimate.tax || 0;
+      const _adjustedTotal = Math.round((_adjustedSubtotal - _discount + _tax) * 100) / 100;
+
       // Prepare estimate data for sharing
       const shareableEstimate = {
         client: estimate.client,
-        items: estimate.items,
+        items: _adjustedItems,
         projectDetails: estimate.projectDetails,
-        subtotal: estimate.subtotal,
+        subtotal: _adjustedSubtotal,
         tax: estimate.tax,
-        total: estimate.total,
+        total: _adjustedTotal,
         taxRate: estimate.taxRate,
         discountType: estimate.discountType,
         discountValue: estimate.discountValue,

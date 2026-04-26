@@ -96,7 +96,7 @@ export class PuppeteerPdfService {
     }
   }
 
-  private async renderHtmlFromTemplate(data: EstimateData): Promise<string> {
+  async renderHtmlFromTemplate(data: EstimateData): Promise<string> {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
 
@@ -699,21 +699,7 @@ export class PuppeteerPdfService {
                 <span class="total-row-label">Discount</span>
                 <span class="total-row-value">-${discount}</span>
             </div>` : ''}
-            ${hasOverhead ? `
-            <div class="total-row">
-                <span class="total-row-label">Overhead &amp; Operations</span>
-                <span class="total-row-value">${overheadAmountFmt}</span>
-            </div>` : ''}
-            ${hasMarkup ? `
-            <div class="total-row">
-                <span class="total-row-label">Markup &amp; Profit</span>
-                <span class="total-row-value">${markupAmountFmt}</span>
-            </div>` : ''}
-            ${hasOperational ? `
-            <div class="total-row">
-                <span class="total-row-label">Operational Costs</span>
-                <span class="total-row-value">${operationalCostsFmt}</span>
-            </div>` : ''}
+
             ${hasTax ? `
             <div class="total-row">
                 <span class="total-row-label">${taxLabel}</span>
