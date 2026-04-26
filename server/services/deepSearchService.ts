@@ -1063,6 +1063,25 @@ CRITICAL INSTRUCTIONS:
       // Aplicar factores de inflación y mercado actuales
       result = this.applyMarketAdjustments(result);
 
+      // ── Premium Buffer (Fix 3): 18% contractor margin buffer ─────────────────
+      // Ensures estimates use p85 market pricing, never underprice.
+      // The contractor can always lower the price; we never start too low.
+      const PREMIUM_BUFFER = 1.18;
+      result.materials = result.materials.map(material => ({
+        ...material,
+        unitPrice: Number((material.unitPrice * PREMIUM_BUFFER).toFixed(2)),
+        totalPrice: Number((material.totalPrice * PREMIUM_BUFFER).toFixed(2))
+      }));
+      result.laborCosts = result.laborCosts.map(labor => ({
+        ...labor,
+        rate: Number((labor.rate * PREMIUM_BUFFER).toFixed(2)),
+        total: Number((labor.total * PREMIUM_BUFFER).toFixed(2))
+      }));
+      result.additionalCosts = result.additionalCosts.map(cost => ({
+        ...cost,
+        cost: Number((cost.cost * PREMIUM_BUFFER).toFixed(2))
+      }));
+
       // Recalcular totales
       result.totalMaterialsCost = result.materials.reduce((sum, item) => sum + item.totalPrice, 0);
       result.totalLaborCost = result.laborCosts.reduce((sum, item) => sum + item.total, 0);

@@ -65,7 +65,7 @@ export class ExpertContractorService {
             supplier: 'Home Depot/Lowes',
             quantityFormula: 'Math.ceil(linearFeet / 8) + 1',
             wasteFactorPercent: 5,
-            unitPriceRange: { min: 6, max: 9, typical: 7.5 },
+            unitPriceRange: { min: 6, max: 9, typical: 8.5 }, // p85: closer to max for contractor margin
             laborHoursPerUnit: 0.50,
             specialRequirements: ['Post hole digger', 'Concrete mix']
           },
@@ -76,7 +76,7 @@ export class ExpertContractorService {
             supplier: 'Lumber Yard',
             quantityFormula: 'Math.ceil(linearFeet / 8) + 1',
             wasteFactorPercent: 5,
-            unitPriceRange: { min: 25, max: 35, typical: 30 },
+            unitPriceRange: { min: 25, max: 35, typical: 33 }, // p85: closer to max for contractor margin
             laborHoursPerUnit: 1.0
           }
         },
@@ -88,7 +88,7 @@ export class ExpertContractorService {
             supplier: 'Specialty Lumber',
             quantityFormula: '(linearFeet * height) / 0.5', // 6" coverage
             wasteFactorPercent: 10,
-            unitPriceRange: { min: 2.00, max: 2.75, typical: 2.25 },
+            unitPriceRange: { min: 2.00, max: 2.75, typical: 2.65 }, // p85: closer to max for contractor margin
             laborHoursPerUnit: 0.06
           },
           '1x8x8_pt': {
@@ -98,7 +98,7 @@ export class ExpertContractorService {
             supplier: 'Home Depot/Lowes',
             quantityFormula: '(linearFeet * height) / 0.67', // 8" coverage
             wasteFactorPercent: 10,
-            unitPriceRange: { min: 2.75, max: 4.25, typical: 3.50 },
+            unitPriceRange: { min: 2.75, max: 4.25, typical: 4.00 }, // p85: closer to max for contractor margin
             laborHoursPerUnit: 0.05
           }
         },
@@ -110,7 +110,7 @@ export class ExpertContractorService {
             supplier: 'Fastener Specialty',
             quantityFormula: 'Math.ceil((linearFeet * height * 0.1) / 0.5)', // lbs needed
             wasteFactorPercent: 15,
-            unitPriceRange: { min: 4, max: 7, typical: 5.5 },
+            unitPriceRange: { min: 4, max: 7, typical: 6.5 }, // p85: closer to max for contractor margin
             laborHoursPerUnit: 0
           }
         }
@@ -125,7 +125,7 @@ export class ExpertContractorService {
           supplier: 'Ready Mix Concrete',
           quantityFormula: '(linearFeet * 0.67 * 0.67 * 2) / 27', // cubic yards
           wasteFactorPercent: 8,
-          unitPriceRange: { min: 120, max: 180, typical: 150 },
+          unitPriceRange: { min: 120, max: 180, typical: 168 }, // p85: closer to max for contractor margin
           laborHoursPerUnit: 2.5
         }
       }
@@ -219,13 +219,13 @@ export class ExpertContractorService {
       };
     }
 
-    // Defaults basados en estado - Corregidos para precios de mercado realistas
+    // Defaults basados en estado - Precios de mercado realistas (percentil 75-85)
     const stateDefaults = {
       'CA': {
         climate: 'temperate' as const,
         soilType: 'mixed' as const,
-        laborCostMultiplier: 1.05, // Reducido de 1.30 a 1.05 (5% premium)
-        materialCostMultiplier: 1.08, // Reducido de 1.15 a 1.08 (8% premium)
+        laborCostMultiplier: 1.35, // CA market: 35% above national avg (restored)
+        materialCostMultiplier: 1.20, // CA materials: 20% above national avg (restored)
         permitRequirements: ['City Building Permit']
       },
       'TX': {
@@ -279,7 +279,7 @@ export class ExpertContractorService {
         justification: `Standard 8ft spacing for ${dimensions.linearFeet}ft fence requires ${numPosts} posts including end posts`
       };
       postCalc.totalPrice = Number((postCalc.finalQuantity * postCalc.unitPrice).toFixed(2)); // CÁLCULOS SEGUROS: sin × 100 problemático
-      postCalc.laborCost = Number((postCalc.laborHours * 32 * geoFactors.laborCostMultiplier).toFixed(2)); // CÁLCULOS SEGUROS: sin × 100 problemático
+      postCalc.laborCost = Number((postCalc.laborHours * 48 * geoFactors.laborCostMultiplier).toFixed(2)); // $48/hr base (p75 national, ~$65/hr in CA)
       
       calculations.push(postCalc);
 
@@ -302,7 +302,7 @@ export class ExpertContractorService {
         justification: `${dimensions.height}ft height requires ${numBoards} boards with ${boardSpec.wasteFactorPercent}% waste factor`
       };
       boardCalc.totalPrice = Number((boardCalc.finalQuantity * boardCalc.unitPrice).toFixed(2)); // CÁLCULOS SEGUROS: sin × 100 problemático
-      boardCalc.laborCost = Number((boardCalc.laborHours * 28 * geoFactors.laborCostMultiplier).toFixed(2)); // CÁLCULOS SEGUROS: sin × 100 problemático
+      boardCalc.laborCost = Number((boardCalc.laborHours * 42 * geoFactors.laborCostMultiplier).toFixed(2)); // $42/hr base (p75 national, ~$57/hr in CA)
       
       calculations.push(boardCalc);
 
@@ -344,7 +344,7 @@ export class ExpertContractorService {
           justification: `Post setting concrete for ${numPosts} posts in ${geoFactors.soilType} soil conditions`
         };
         concreteCalc.totalPrice = Number((concreteCalc.finalQuantity * concreteCalc.unitPrice).toFixed(2)); // CÁLCULOS SEGUROS: sin × 100 problemático
-        concreteCalc.laborCost = Number((concreteCalc.laborHours * 35 * geoFactors.laborCostMultiplier).toFixed(2)); // CÁLCULOS SEGUROS: sin × 100 problemático
+        concreteCalc.laborCost = Number((concreteCalc.laborHours * 52 * geoFactors.laborCostMultiplier).toFixed(2)); // $52/hr base (p75 national, ~$70/hr in CA)
         
         calculations.push(concreteCalc);
       }

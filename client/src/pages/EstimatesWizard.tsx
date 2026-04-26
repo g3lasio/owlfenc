@@ -8899,38 +8899,65 @@ This link provides a professional view of your estimate that you can access anyt
                 }
 
                 try {
-                  // Transform items to match normalizeInvoicePayload expectations
-                  // Backend expects: unitPrice, totalPrice, quantity, name, description
-                  const transformedItems = estimate.items.map(item => ({
-                    name: item.name || "Item",
-                    description: item.description || "",
-                    quantity: item.quantity || 1,
-                    unitPrice: item.price || 0,      // Rename price → unitPrice (as number)
-                    totalPrice: item.total || 0      // Rename total → totalPrice (as number)
-                  }));
+                  // ── Fix 1+2: Proportional cost distribution ──────────────────────────
+                  // When pricingStrategy B is used, overhead/markup are baked into
+                  // estimate.total but NOT into individual item prices.
+                  // We distribute them proportionally so: subtotal === total
+                  // and no fake tax manipulation is needed.
+                  const rawSubtotal = (estimate.items || []).reduce((sum: number, item: any) => {
+                    const t = typeof item.total === 'string'
+                      ? parseFloat((item.total as string).replace(/[$,]/g, ''))
+                      : Number(item.total || 0);
+                    return sum + t;
+                  }, 0);
+                  const finalTotal = Number(estimate.total || rawSubtotal);
+                  const priceMultiplier = rawSubtotal > 0 && finalTotal > rawSubtotal
+                    ? finalTotal / rawSubtotal
+                    : 1;
 
-                  // Prepare invoice data payload with numeric downPaymentAmount
+                  const transformedItems = (estimate.items || []).map((item: any) => {
+                    const baseUnitPrice = typeof item.price === 'string'
+                      ? parseFloat((item.price as string).replace(/[$,]/g, ''))
+                      : Number(item.price || 0);
+                    const baseTotal = typeof item.total === 'string'
+                      ? parseFloat((item.total as string).replace(/[$,]/g, ''))
+                      : Number(item.total || 0);
+                    return {
+                      name: item.name || 'Item',
+                      description: item.description || '',
+                      quantity: item.quantity || 1,
+                      unitPrice: Number((baseUnitPrice * priceMultiplier).toFixed(2)),
+                      totalPrice: Number((baseTotal * priceMultiplier).toFixed(2)),
+                    };
+                  });
+
+                  // Recalculate subtotal from adjusted items — must equal finalTotal
+                  const adjustedSubtotal = transformedItems.reduce(
+                    (sum: number, item: any) => sum + item.totalPrice, 0
+                  );
+
+                  // Prepare invoice data payload
                   const invoicePayload = {
                     profile: {
                       company: profile.company,
                       address: profile.address
-                        ? `${profile.address}${profile.city ? ", " + profile.city : ""}${profile.state ? ", " + profile.state : ""}${profile.zipCode ? " " + profile.zipCode : ""}`
-                        : "",
-                      phone: profile.phone || "",
-                      email: profile.email || currentUser?.email || "",
-                      website: profile.website || "",
-                      logo: profile.logo || "",
+                        ? `${profile.address}${profile.city ? ', ' + profile.city : ''}${profile.state ? ', ' + profile.state : ''}${profile.zipCode ? ' ' + profile.zipCode : ''}`
+                        : '',
+                      phone: profile.phone || '',
+                      email: profile.email || currentUser?.email || '',
+                      website: profile.website || '',
+                      logo: profile.logo || '',
                     },
                     estimate: {
                       client: estimate.client,
                       items: transformedItems,
-                      subtotal: estimate.subtotal || 0,
-                      discountAmount: estimate.discountAmount || 0,
-                      taxRate: estimate.taxRate || 0,
-                      tax: estimate.tax || 0,
-                      total: estimate.total || 0,
+                      subtotal: adjustedSubtotal,   // ← adjusted, equals total
+                      discountAmount: Number(estimate.discountAmount || 0),
+                      taxRate: 0,                   // ← no fake tax rate
+                      tax: 0,                       // ← overhead already in item prices
+                      total: adjustedSubtotal,      // ← subtotal === total
                     },
-                    invoiceConfig,  // Already numeric, no conversion needed
+                    invoiceConfig,
                   };
 
                   // Choose endpoint based on payment link checkbox
