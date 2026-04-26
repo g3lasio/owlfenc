@@ -321,7 +321,7 @@ router.get("/validate-handle/:handle", async (req: Request, res: Response) => {
 
   const result = await callLeadPrime(
     "GET",
-    `/network/validate-handle/${encodeURIComponent(handle)}`,
+    `/leadprime-network/validate-handle/${encodeURIComponent(handle)}`,
     user.leadprimeToken
   );
 
