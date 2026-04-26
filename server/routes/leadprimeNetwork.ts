@@ -289,8 +289,52 @@ router.post("/send-document", async (req: Request, res: Response) => {
     return res.status(400).json({ error: "recipient_handle is required" });
   }
 
+  // ── Auto-enrich doc_data from Firebase when frontend doesn't send it ────────
+  let enrichedDocData = docPayload.doc_data || null;
+  if (!enrichedDocData && docPayload.doc_reference && docPayload.doc_type === 'estimate') {
+    try {
+      const snapshot = await firebaseDb
+        .collection('estimates')
+        .where('estimateNumber', '==', docPayload.doc_reference)
+        .limit(1)
+        .get();
+      if (!snapshot.empty) {
+        const est = snapshot.docs[0].data();
+        enrichedDocData = {
+          scope_of_work: est.projectDetails || est.projectDescription || '',
+          project_details: est.projectDetails || '',
+          line_items: (est.items || []).map((item: any) => ({
+            name: item.name,
+            description: item.description,
+            quantity: item.quantity,
+            unit: item.unit,
+            price: item.price,
+            total: item.total,
+          })),
+          subtotal: est.subtotal,
+          tax: est.tax,
+          tax_rate: est.taxRate,
+          discount_amount: est.discountAmount,
+          overhead_amount: est.overheadAmount,
+          markup_amount: est.markupAmount,
+          operational_costs_amount: est.operationalCostsAmount,
+          total: est.total,
+          notes: est.notes,
+          client_name: est.client?.name,
+          client_email: est.client?.email,
+          client_phone: est.client?.phone,
+          project_address: est.client?.address,
+        };
+        console.log('[LeadPrimeNetwork] doc_data enriched from Firebase for', docPayload.doc_reference);
+      }
+    } catch (enrichErr: any) {
+      console.warn('[LeadPrimeNetwork] doc_data enrichment failed:', enrichErr.message);
+    }
+  }
+
   const result = await callLeadPrime("POST", "/leadprime-network/documents/push", user.leadprimeToken, {
     ...docPayload,
+    doc_data: enrichedDocData,
     recipient_handle,
     source: "owlfenc",
   });
