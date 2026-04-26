@@ -4733,7 +4733,10 @@ This link provides a professional view of your estimate that you can access anyt
       const headers = await getAuthHeaders();
       const res = await axios.get("/api/contractor-payments/stripe/account-status", { headers });
       const data = res.data;
-      setStripeConnected(!!(data.connected && data.chargesEnabled));
+      // API returns: { isActive, accountDetails: { chargesEnabled } }
+      // NOT: { connected, chargesEnabled } — fix the field names
+      const chargesEnabled = data.accountDetails?.chargesEnabled ?? false;
+      setStripeConnected(!!(data.isActive || (data.hasStripeAccount && chargesEnabled)));
     } catch {
       setStripeConnected(false);
     } finally {
