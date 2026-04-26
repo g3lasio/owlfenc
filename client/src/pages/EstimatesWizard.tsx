@@ -2369,6 +2369,29 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
         displayTotal: estimate.total,
         displayDiscountAmount: estimate.discountAmount || 0,
 
+        // ── itemsAdjusted: items with overhead/markup baked into prices ──────────
+        // These are the prices the client actually sees on the estimate PDF.
+        // Invoices.tsx reads this field directly — no recalculation needed.
+        itemsAdjusted: (() => {
+          const rawSub = estimate.items.reduce((s, i) => s + (Number(i.total) || 0), 0);
+          const extra = Number(estimate.overheadAmount || 0)
+            + Number(estimate.markupAmount || 0)
+            + Number((estimate as any).operationalCostsAmount || 0);
+          const mult = rawSub > 0 && extra > 0 ? (rawSub + extra) / rawSub : 1;
+          return estimate.items.map((item, index) => ({
+            id: item.id,
+            name: item.name,
+            description: item.description || "",
+            quantity: item.quantity,
+            unit: item.unit || "unit",
+            price: Math.round(Number(item.price || 0) * mult * 100) / 100,
+            unitPrice: Math.round(Number(item.price || 0) * mult * 100) / 100,
+            total: Math.round(Number(item.total || 0) * mult * 100) / 100,
+            totalPrice: Math.round(Number(item.total || 0) * mult * 100) / 100,
+            sortOrder: index,
+          }));
+        })(),
+
         // Metadata
         status: "draft",
         type: "estimate",

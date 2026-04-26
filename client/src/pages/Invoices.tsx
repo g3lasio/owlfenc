@@ -238,7 +238,14 @@ const Invoices: React.FC = () => {
         }
 
         // Extraer subtotal, discount y tax
-        subtotal = Number(data.subtotal || data.projectTotalCosts?.totalSummary?.subtotal || 0);
+        // If itemsAdjusted exists, derive subtotal from those (adjusted) items
+        // so the subtotal shown in the invoice matches the adjusted item prices
+        if (data.itemsAdjusted && Array.isArray(data.itemsAdjusted) && data.itemsAdjusted.length > 0) {
+          subtotal = data.itemsAdjusted.reduce((s: number, i: any) =>
+            s + (Number(i.total || i.totalPrice || 0)), 0);
+        } else {
+          subtotal = Number(data.subtotal || data.projectTotalCosts?.totalSummary?.subtotal || 0);
+        }
         discount = Number(data.discount || data.projectTotalCosts?.totalSummary?.discount || 0);
         tax = Number(data.tax || data.projectTotalCosts?.totalSummary?.tax || 0);
 
@@ -254,7 +261,8 @@ const Invoices: React.FC = () => {
           clientPhone: data.clientPhone || data.client?.phone || "",
           clientAddress: data.clientAddress || data.client?.address || "",
           projectType: data.projectType || "fence",
-          items: data.items || [],
+          // Prefer itemsAdjusted (overhead/markup already baked in) over raw items
+          items: data.itemsAdjusted || data.items || [],
           subtotal: subtotal,
           discount: discount,
           tax: tax,
