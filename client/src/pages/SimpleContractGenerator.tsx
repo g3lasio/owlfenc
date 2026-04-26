@@ -74,8 +74,17 @@ import {
   LayoutGrid,
   Paintbrush,
   TreePine,
+  Globe,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -306,6 +315,15 @@ export default function SimpleContractGenerator() {
   
   // ✅ OPTIMISTIC UPDATES: Instant archive/unarchive with React Query
   const contractsStore = useContractsStore();
+
+  // ─── Optimus Add-to-Project modal state ───────────────────────────────────
+  const [optimusModalOpen, setOptimusModalOpen] = useState(false);
+  const [optimusContract, setOptimusContract] = useState<any>(null);
+  const [optimusProjects, setOptimusProjects] = useState<any[]>([]);
+  const [optimusLoading, setOptimusLoading] = useState(false);
+  const [optimusAdding, setOptimusAdding] = useState(false);
+  const [optimusSelectedProject, setOptimusSelectedProject] = useState<string>("");
+  const [optimusDone, setOptimusDone] = useState<string | null>(null);
 
   // Get current plan information for UI restrictions
   const currentPlan = userPlan;
@@ -1081,6 +1099,65 @@ export default function SimpleContractGenerator() {
     },
     [toast, currentUser],
   );
+
+  // ─── Optimus: open modal and load active projects ────────────────────────────────
+  const openOptimusModal = useCallback(async (contract: any) => {
+    setOptimusContract(contract);
+    setOptimusSelectedProject("");
+    setOptimusDone(null);
+    setOptimusModalOpen(true);
+    setOptimusLoading(true);
+    try {
+      const token = await currentUser?.getIdToken();
+      const res = await fetch("/api/leadprime-network/optimus-projects", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to load Optimus projects");
+      const data = await res.json();
+      setOptimusProjects(data.projects || []);
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || "Could not load Optimus projects", variant: "destructive" });
+      setOptimusModalOpen(false);
+    } finally {
+      setOptimusLoading(false);
+    }
+  }, [currentUser, toast]);
+
+  const addToOptimusProject = useCallback(async () => {
+    if (!optimusContract || !optimusSelectedProject) return;
+    setOptimusAdding(true);
+    try {
+      const token = await currentUser?.getIdToken();
+      // Use the signed PDF URL if available, otherwise fall back to view URL
+      const fileUrl = optimusContract.signedPdfUrl
+        || optimusContract.permanent_pdf_url
+        || `https://app.owlfenc.com/view/contract/${optimusContract.contractId}`;
+      const clientLabel = optimusContract.clientName || 'Client';
+      const fileName = `Signed_Contract_${clientLabel.replace(/\s+/g, '_')}.pdf`;
+      const res = await fetch("/api/leadprime-network/optimus-add-file", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          project_id: optimusSelectedProject,
+          file_url: fileUrl,
+          file_name: fileName,
+          contract_id: optimusContract.contractId || String(optimusContract.id),
+          amount: optimusContract.totalAmount,
+        }),
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Failed to add file");
+      }
+      const projectName = optimusProjects.find((p) => p.id === optimusSelectedProject)?.name || "Optimus Project";
+      setOptimusDone(projectName);
+      toast({ title: "✅ Added to Optimus!", description: `Contract added to \"${projectName}\"` });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || "Could not add file", variant: "destructive" });
+    } finally {
+      setOptimusAdding(false);
+    }
+  }, [currentUser, optimusContract, optimusSelectedProject, optimusProjects, toast]);
 
   // Download contract as HTML file
   const downloadContractHtml = useCallback(
@@ -7792,7 +7869,7 @@ export default function SimpleContractGenerator() {
                             </div>
 
                             {/* Compact Action Buttons - Wrap on mobile */}
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mt-2">
+                            <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 mt-2">
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -7830,6 +7907,18 @@ export default function SimpleContractGenerator() {
                               >
                                 <Archive className="h-3 w-3 mr-1" />
                                 Archive
+                              </Button>
+                              {/* Add to Optimus Project */}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => openOptimusModal(contract)}
+                                className="border-indigo-500/60 text-indigo-400 hover:bg-indigo-500 hover:text-white text-[10px] h-7 px-2 col-span-2 sm:col-span-1"
+                                title="Add this signed contract to a LeadPrime Optimus project"
+                                data-testid={`button-optimus-${contract.contractId}`}
+                              >
+                                <Globe className="h-3 w-3 mr-1" />
+                                Optimus
                               </Button>
                             </div>
                           </div>
@@ -8001,6 +8090,112 @@ export default function SimpleContractGenerator() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* ─── Optimus: Add to Project Modal ─── */}
+      <Dialog open={optimusModalOpen} onOpenChange={(v) => !v && setOptimusModalOpen(false)}>
+        <DialogContent className="bg-gray-900 border-gray-700 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <Globe className="w-5 h-5 text-indigo-400" />
+              Add to Optimus Project
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Send this signed contract directly to a LeadPrime Optimus project file storage.
+            </DialogDescription>
+          </DialogHeader>
+
+          {optimusDone ? (
+            /* Success state */
+            <div className="flex flex-col items-center py-8 gap-3">
+              <CheckCircle className="w-14 h-14 text-green-400" />
+              <p className="text-white font-semibold text-lg">Contract Added!</p>
+              <p className="text-gray-400 text-sm text-center">
+                The signed contract is now in <span className="text-indigo-300 font-semibold">{optimusDone}</span>'s Files tab.
+              </p>
+              <Button
+                onClick={() => setOptimusModalOpen(false)}
+                className="mt-2 bg-indigo-600 hover:bg-indigo-500 text-white"
+              >
+                Done
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4 pt-2">
+              {/* Contract preview */}
+              {optimusContract && (
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-800/60 border border-gray-700/50">
+                  <Shield className="w-8 h-8 text-green-400 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-white truncate">{optimusContract.clientName}</p>
+                    <p className="text-xs text-gray-400">
+                      {optimusContract.contractId}
+                      {optimusContract.totalAmount ? ` · $${Number(optimusContract.totalAmount).toLocaleString()}` : ''}
+                    </p>
+                  </div>
+                  <Badge className="bg-green-600/90 text-white text-[10px] shrink-0">SIGNED</Badge>
+                </div>
+              )}
+
+              {/* Project selector */}
+              {optimusLoading ? (
+                <div className="flex items-center justify-center py-6 gap-2 text-gray-400">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span className="text-sm">Loading your Optimus projects...</span>
+                </div>
+              ) : optimusProjects.length === 0 ? (
+                <div className="text-center py-6">
+                  <p className="text-gray-400 text-sm">No active Optimus projects found.</p>
+                  <p className="text-gray-500 text-xs mt-1">Create a project in LeadPrime first.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-gray-300 text-sm font-medium">Select destination project:</p>
+                  <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1">
+                    {optimusProjects.map((project) => (
+                      <button
+                        key={project.id}
+                        onClick={() => setOptimusSelectedProject(project.id)}
+                        className={`w-full text-left p-2.5 rounded-lg border transition-colors text-sm ${
+                          optimusSelectedProject === project.id
+                            ? 'border-indigo-500 bg-indigo-500/10 text-white'
+                            : 'border-gray-700 bg-gray-800/50 text-gray-300 hover:border-gray-500'
+                        }`}
+                      >
+                        <span className="font-medium">{project.name}</span>
+                        {project.client_name && (
+                          <span className="text-gray-500 text-xs ml-2">— {project.client_name}</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <DialogFooter className="gap-2 pt-1">
+                <Button
+                  variant="outline"
+                  onClick={() => setOptimusModalOpen(false)}
+                  className="border-gray-600 text-gray-300 hover:text-white"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={addToOptimusProject}
+                  disabled={!optimusSelectedProject || optimusAdding || optimusLoading}
+                  className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white"
+                >
+                  {optimusAdding ? (
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Adding...</>
+                  ) : (
+                    <><Globe className="w-4 h-4 mr-2" /> Add to Project</>
+                  )}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

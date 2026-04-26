@@ -25,7 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { FileText, PlusCircle, Search, Download, Eye, Clock, Share2, ExternalLink } from "lucide-react";
+import { FileText, PlusCircle, Search, Download, Eye, Clock, Share2, ExternalLink, Zap, CheckCircle, Loader2, ChevronDown } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -60,6 +60,15 @@ const Contracts = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [contractHtml, setContractHtml] = useState<string>("");
   const [user, setUser] = useState<FirebaseUser | null>(null);
+
+  // Optimus modal state
+  const [optimusModalOpen, setOptimusModalOpen] = useState(false);
+  const [optimusContract, setOptimusContract] = useState<Contract | null>(null);
+  const [optimusProjects, setOptimusProjects] = useState<any[]>([]);
+  const [optimusLoading, setOptimusLoading] = useState(false);
+  const [optimusAdding, setOptimusAdding] = useState(false);
+  const [optimusSelectedProject, setOptimusSelectedProject] = useState<string>("");
+  const [optimusDone, setOptimusDone] = useState<string | null>(null); // project name after success
 
   // Listen to authentication state
   useEffect(() => {
@@ -245,6 +254,60 @@ const Contracts = () => {
         description: "No se pudo cargar la vista previa del contrato",
         variant: "destructive",
       });
+    }
+  };
+
+  // Open Optimus modal: load active projects from LeadPrime
+  const openOptimusModal = async (contract: Contract) => {
+    setOptimusContract(contract);
+    setOptimusSelectedProject("");
+    setOptimusDone(null);
+    setOptimusModalOpen(true);
+    setOptimusLoading(true);
+    try {
+      const token = await user?.getIdToken();
+      const res = await fetch("/api/leadprime-network/optimus-projects", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to load projects");
+      const data = await res.json();
+      setOptimusProjects(data.projects || []);
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || "Could not load Optimus projects", variant: "destructive" });
+      setOptimusModalOpen(false);
+    } finally {
+      setOptimusLoading(false);
+    }
+  };
+
+  const addToOptimusProject = async () => {
+    if (!optimusContract || !optimusSelectedProject) return;
+    setOptimusAdding(true);
+    try {
+      const token = await user?.getIdToken();
+      const fileUrl = optimusContract.permanent_pdf_url || `https://app.owlfenc.com/view/contract/${optimusContract.id}`;
+      const fileName = `${optimusContract.title || 'Signed Contract'}.pdf`;
+      const res = await fetch("/api/leadprime-network/optimus-add-file", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          project_id: optimusSelectedProject,
+          file_url: fileUrl,
+          file_name: fileName,
+          contract_id: String(optimusContract.id),
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to add file");
+      }
+      const projectName = optimusProjects.find((p) => p.id === optimusSelectedProject)?.name || "Optimus Project";
+      setOptimusDone(projectName);
+      toast({ title: "✅ Added to Optimus!", description: `Contract added to "${projectName}"` });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || "Could not add file", variant: "destructive" });
+    } finally {
+      setOptimusAdding(false);
     }
   };
 

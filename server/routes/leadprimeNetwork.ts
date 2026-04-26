@@ -329,6 +329,62 @@ router.get("/validate-handle/:handle", async (req: Request, res: Response) => {
   return res.json(result.data);
 });
 
+// ─── GET /optimus-projects — list active Optimus projects for the connected contractor ────────────
+router.get("/optimus-projects", async (req: Request, res: Response) => {
+  const uid = getFirebaseUid(req);
+  if (!uid) return res.status(401).json({ error: "Unauthorized" });
+
+  const user = await getUserByUid(uid);
+  if (!user || !user.leadprimeToken) {
+    return res.status(400).json({ error: "Not connected to LeadPrime Network" });
+  }
+
+  const result = await callLeadPrime("GET", "/optimus/projects", user.leadprimeToken);
+  if (!result.ok) {
+    return res.status(500).json({ error: result.data?.message || "Failed to fetch Optimus projects" });
+  }
+  // Return only active projects
+  const projects = (result.data?.projects || []).filter((p: any) => p.status === 'active' || p.status === 'in_progress');
+  return res.json({ projects });
+});
+
+// ─── POST /optimus-add-file — add a signed contract PDF to an Optimus project ───────────────────
+// Accepts: { project_id, file_url, file_name, contract_id, amount }
+router.post("/optimus-add-file", async (req: Request, res: Response) => {
+  const uid = getFirebaseUid(req);
+  if (!uid) return res.status(401).json({ error: "Unauthorized" });
+
+  const user = await getUserByUid(uid);
+  if (!user || !user.leadprimeToken) {
+    return res.status(400).json({ error: "Not connected to LeadPrime Network" });
+  }
+
+  const { project_id, file_url, file_name, contract_id, amount } = req.body;
+  if (!project_id || !file_url || !file_name) {
+    return res.status(400).json({ error: "project_id, file_url, and file_name are required" });
+  }
+
+  const result = await callLeadPrime(
+    "POST",
+    `/optimus/projects/${project_id}/files`,
+    user.leadprimeToken,
+    {
+      file_url,
+      file_name,
+      file_type: "document",
+      mime_type: "application/pdf",
+      description: `Signed contract${amount ? ` — $${Number(amount).toLocaleString()}` : ''}${contract_id ? ` (${contract_id})` : ''}`,
+      is_from_owlfenc: true,
+      owlfenc_doc_id: contract_id || null,
+    }
+  );
+
+  if (!result.ok) {
+    return res.status(500).json({ error: result.data?.message || "Failed to add file to Optimus project" });
+  }
+  return res.json({ success: true, file: result.data?.file });
+});
+
 // ─── Full sync: reads ALL data from OWL FENC and pushes to LeadPrime ──────────
 /**
  * Reads estimates (Firebase), invoices/payments (PostgreSQL via project_payments),
