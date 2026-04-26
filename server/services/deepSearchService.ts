@@ -403,16 +403,20 @@ Use the correct formula for the detected trade with standard waste factors:
 **DECKING:** List deck boards (sqft × 1.10), framing lumber, joists, ledger board, hardware, concrete footings, fasteners, sealant.
 **OTHER TRADES:** Use your professional knowledge to list ALL materials that become permanent parts of the finished project.
 
-## STEP 4 — PRICING:
+## STEP 4 — PRICING (CRITICAL — READ CAREFULLY):
 - Apply the PRICE MULTIPLIER (${multiplier}x) to all base prices as a starting adjustment
-- Use CONTRACTOR PURCHASE PRICES — what a professional contractor actually pays to buy and deliver 
-  materials to the job site. This is NOT the retail shelf price. It includes:
-  - Contractor account pricing at suppliers (typically 10-30% below retail)
-  - Delivery/freight to the job site
-  - Any specialty sourcing costs for the specific material grade required
-- Use your knowledge of current 2024-2025 material costs for the specific trade, material type,
-  and geographic market. Prices vary significantly by region and city.
-- Do NOT apply fixed price ranges. Reason from the specific material, grade, quantity, and location.
+- Use MARKET SELLING PRICES at the 75th-85th percentile for the specific city and trade.
+  This means: use the HIGHER end of the local market range, NOT the average or low end.
+  Rationale: A professional contractor must cover overhead, profit, insurance, and warranty.
+  The contractor can always offer a discount — but starting too low means a loss.
+- For LABOR COSTS: use the 75th percentile hourly rate for licensed tradespeople in that specific
+  city. For example: a licensed electrician in San Francisco bills $95-120/hr (use $110+),
+  not the national average of $65/hr. A painter in Austin TX bills $45-60/hr (use $55+).
+- For MATERIALS: use the price a contractor charges the client (which includes their markup
+  on materials, typically 15-25% above their cost). Do NOT use bare wholesale/cost prices.
+- Prices vary significantly by city — a project in Manhattan costs 2-3x more than rural Mississippi.
+  Use your knowledge of the specific city's construction market, not just the state average.
+- Do NOT apply fixed price ranges. Reason from the specific material, grade, city, and trade.
 
 ## INCLUDE ONLY:
 Materials and supplies that become permanent parts of the project, or consumables directly used in the work.
@@ -519,7 +523,7 @@ Respond with ONLY valid JSON, no additional text.
    * REFACTORIZADO: Conciso y enfocado en detección inteligente
    */
   private getSystemPrompt(): string {
-    return `You are a veteran materials estimator serving ALL construction trades: general contractors, roofers, fencing contractors, electricians, plumbers, painters, landscapers, concrete contractors, HVAC technicians, cleaning services, flooring installers, drywall contractors, and any other trade. Output ONLY valid JSON.
+    return `You are a veteran construction estimator with 30+ years of experience across ALL trades in the United States. Output ONLY valid JSON.
 
 RULES:
 1. DETECT the specific trade from context — do NOT default to fencing/concrete. Read the full description.
@@ -528,7 +532,8 @@ RULES:
 4. INCLUDE only materials that become permanent parts of the project or consumables used in the work.
 5. EXCLUDE tools, equipment rentals, safety gear, and labor.
 6. APPLY the price multiplier provided for the location.
-7. USE current 2024-2025 market prices from major US suppliers.
+7. USE market SELLING prices at the 75th-85th percentile for the specific city — NOT national averages, NOT wholesale cost prices. A contractor must cover overhead, profit, insurance, and warranty. Starting too low means a loss.
+8. PRICES vary by city: San Francisco != rural Mississippi. Use city-specific market knowledge.
 
 ALWAYS respond with valid JSON only. ALL TEXT IN ENGLISH.`;
   }
@@ -1062,25 +1067,6 @@ CRITICAL INSTRUCTIONS:
 
       // Aplicar factores de inflación y mercado actuales
       result = this.applyMarketAdjustments(result);
-
-      // ── Premium Buffer (Fix 3): 18% contractor margin buffer ─────────────────
-      // Ensures estimates use p85 market pricing, never underprice.
-      // The contractor can always lower the price; we never start too low.
-      const PREMIUM_BUFFER = 1.18;
-      result.materials = result.materials.map(material => ({
-        ...material,
-        unitPrice: Number((material.unitPrice * PREMIUM_BUFFER).toFixed(2)),
-        totalPrice: Number((material.totalPrice * PREMIUM_BUFFER).toFixed(2))
-      }));
-      result.laborCosts = result.laborCosts.map(labor => ({
-        ...labor,
-        rate: Number((labor.rate * PREMIUM_BUFFER).toFixed(2)),
-        total: Number((labor.total * PREMIUM_BUFFER).toFixed(2))
-      }));
-      result.additionalCosts = result.additionalCosts.map(cost => ({
-        ...cost,
-        cost: Number((cost.cost * PREMIUM_BUFFER).toFixed(2))
-      }));
 
       // Recalcular totales
       result.totalMaterialsCost = result.materials.reduce((sum, item) => sum + item.totalPrice, 0);
