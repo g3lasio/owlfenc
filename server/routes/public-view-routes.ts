@@ -17,7 +17,7 @@ import { db as firebaseDb } from "../firebase-admin";
 const router = Router();
 
 // ─── Shared HTML shell ────────────────────────────────────────────────────────
-function htmlShell(title: string, body: string): string {
+function htmlShell(title: string, body: string, paymentLink?: string): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -75,6 +75,7 @@ function htmlShell(title: string, body: string): string {
   <div class="share-bar">
     <button class="btn btn-secondary" onclick="window.print()">🖨️ Print</button>
     <button class="btn btn-primary" onclick="navigator.share ? navigator.share({title: document.title, url: window.location.href}) : navigator.clipboard.writeText(window.location.href).then(() => alert('Link copied!'))">🔗 Share Link</button>
+    ${paymentLink ? `<a href="${paymentLink}" target="_blank" rel="noopener noreferrer" class="btn" style="background:#0891b2;color:white;">💳 Pay Now</a>` : ''}
   </div>
   <script>
     // Auto-resize for iframe embedding
@@ -221,9 +222,15 @@ router.get("/invoice/:invoiceId", async (req: Request, res: Response) => {
           <div class="info-block"><label>Payment Terms</label><div class="value">Net ${inv.paymentTerms || 30} days</div></div>
         </div>
         ${inv.notes ? `<div class="section-title">Notes</div><div class="content-block">${inv.notes}</div>` : ""}
+        ${(inv.paymentLink || inv.stripeCheckoutUrl) ? `
+        <div style="margin:24px 0;padding:20px 24px;background:#ecfeff;border:2px solid #0891b2;border-radius:10px;text-align:center;">
+          <div style="font-size:11px;font-weight:700;color:#0e7490;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Secure Online Payment</div>
+          <a href="${inv.paymentLink || inv.stripeCheckoutUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block;background:#0891b2;color:white;padding:13px 36px;text-decoration:none;border-radius:8px;font-weight:800;font-size:15px;letter-spacing:-0.3px;margin-bottom:10px;">Pay Now — ${formatCurrency(inv.balanceAmount || inv.totalAmount)}</a>
+          <div style="font-size:11px;color:#6b7280;word-break:break-all;margin-top:6px;">${inv.paymentLink || inv.stripeCheckoutUrl}</div>
+        </div>` : ""}
       </div>
     `;
-    res.send(htmlShell(`Invoice #${inv.invoiceNumber || invoiceId} — ${inv.clientName || ""}`, body));
+    res.send(htmlShell(`Invoice #${inv.invoiceNumber || invoiceId} — ${inv.clientName || ""}`, body, inv.paymentLink || inv.stripeCheckoutUrl));
   } catch (err: any) {
     console.error("[PUBLIC-VIEW] invoice error:", err.message);
     res.status(500).send(errorPage("An error occurred loading this document."));

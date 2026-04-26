@@ -897,6 +897,8 @@ const Invoices: React.FC = () => {
         firebaseUserId: currentUser.uid, // Consistencia con estimates
         estimateData: selectedEstimate,
         notes: invoiceConfig.notes,
+        // Save payment link so the public /view/invoice/:id page can show it
+        ...(resolvedPaymentLink ? { paymentLink: resolvedPaymentLink, stripeCheckoutUrl: resolvedPaymentLink } : {}),
       });
 
       console.log("✅ [INVOICES] Saved to Firebase with ID:", docRef.id);

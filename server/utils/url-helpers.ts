@@ -44,16 +44,17 @@ export function resolveAppBaseUrl(options: ResolveAppBaseUrlOptions = {}): strin
     baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
     console.log(`🔗 [URL-RESOLVER] Using REPLIT_DEV_DOMAIN: ${baseUrl}`);
   }
+  // Priority 4: Hardcoded production fallback for owlfenc.com (LIVE mode)
+  // This ensures payment links always work even if env vars are not set in Replit.
+  // To override, set APP_BASE_URL=https://app.owlfenc.com in Replit Secrets.
+  else if (isLiveMode) {
+    baseUrl = 'https://app.owlfenc.com';
+    console.warn(`⚠️ [URL-RESOLVER] No env var found. Using hardcoded production fallback: ${baseUrl}. Set APP_BASE_URL in Replit Secrets to suppress this warning.`);
+  }
   // Development fallback: localhost (ONLY if not in LIVE mode)
-  else if (!isLiveMode) {
+  else {
     baseUrl = 'http://localhost:5000';
     console.warn(`⚠️ [URL-RESOLVER] Using localhost fallback (development only)`);
-  }
-  // Error: No base URL configured in LIVE mode
-  else {
-    const errorMsg = `❌ [URL-RESOLVER] CRITICAL: No base URL configured for LIVE mode. Set APP_BASE_URL, REPLIT_DOMAINS, or REPLIT_DEV_DOMAIN environment variable`;
-    console.error(errorMsg);
-    throw new Error(errorMsg);
   }
   
   // SECURITY: Enforce HTTPS in LIVE mode or when explicitly required
