@@ -9506,6 +9506,32 @@ This link provides a professional view of your estimate that you can access anyt
             : "Estimate",
           amount: estimate.total,
           projectAddress: estimate.client?.address,
+          docData: {
+            scope_of_work: estimate.projectDetails || estimate.projectDescription || "",
+            project_details: estimate.projectDetails || "",
+            line_items: (estimate.items || []).map((item: any) => ({
+              name: item.name,
+              description: item.description,
+              quantity: item.quantity,
+              unit: item.unit,
+              price: item.price,
+              total: item.total,
+            })),
+            subtotal: estimate.subtotal,
+            tax: estimate.tax,
+            tax_rate: estimate.taxRate,
+            discount_amount: estimate.discountAmount,
+            discount_name: estimate.discountName,
+            overhead_amount: estimate.overheadAmount,
+            markup_amount: estimate.markupAmount,
+            operational_costs_amount: estimate.operationalCostsAmount,
+            total: estimate.total,
+            notes: estimate.notes,
+            client_name: estimate.client?.name,
+            client_email: estimate.client?.email,
+            client_phone: estimate.client?.phone,
+            project_address: estimate.client?.address,
+          },
         }}
       />
     </div>

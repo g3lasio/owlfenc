@@ -46,6 +46,29 @@ interface DocumentInfo {
   amount?: number;
   pdfUrl?: string;
   projectAddress?: string;
+  docData?: {
+    scope_of_work?: string;
+    project_details?: string;
+    line_items?: Array<{
+      name: string;
+      description?: string;
+      quantity: number;
+      unit?: string;
+      price: number;
+      total: number;
+    }>;
+    subtotal?: number;
+    tax?: number;
+    tax_rate?: number;
+    discount_amount?: number;
+    discount_name?: string;
+    overhead_amount?: number;
+    markup_amount?: number;
+    operational_costs_amount?: number;
+    total?: number;
+    notes?: string;
+    [key: string]: any;
+  };
 }
 
 interface SendToNetworkModalProps {
@@ -157,6 +180,7 @@ export function SendToNetworkModal({ open, onClose, document }: SendToNetworkMod
           pdf_url: document.pdfUrl,
           project_address: document.projectAddress,
           preview_text: `${document.type.charAt(0).toUpperCase() + document.type.slice(1)} · ${document.reference}${document.amount ? ` · $${document.amount.toLocaleString()}` : ""}`,
+          ...(document.docData ? { doc_data: document.docData } : {}),
         },
         { headers: getAuthHeaders() }
       );
