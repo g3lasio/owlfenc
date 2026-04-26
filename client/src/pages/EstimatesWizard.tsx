@@ -4762,15 +4762,16 @@ This link provides a professional view of your estimate that you can access anyt
       if (!profile?.company) {
         console.warn("⚠️ [SHARE-URL] No company name in profile, using default for development");
       }
-
-      // ─── PRICING STRATEGY B: Proportional cost distribution ────────────
-      // Overhead/markup/operational costs are baked proportionally into each
-      // item's price so the client sees subtotal === total (no visible gap).
+      // ─── Proportional cost distribution (robust) ─────────────────────────────
+      // Use the computed overhead/markup/operational amounts from the estimate
+      // state (set by the totals useEffect) to build the multiplier.
+      // Works for both Strategy A and B, and for estimates loaded from Firestore.
       const _rawSubtotal = estimate.subtotal || 0;
-      const _rawTotal    = estimate.total    || _rawSubtotal;
-      const _isStrategyB = (estimate.pricingStrategy || 'A') === 'B';
-      const _hasExtra    = _isStrategyB && _rawTotal > _rawSubtotal && _rawSubtotal > 0;
-      const _multiplier  = _hasExtra ? (_rawTotal / _rawSubtotal) : 1;
+      const _extraCosts  = Number(estimate.overheadAmount || 0)
+        + Number(estimate.markupAmount || 0)
+        + Number(estimate.operationalCostsAmount || 0);
+      const _hasExtra    = _rawSubtotal > 0 && _extraCosts > 0;
+      const _multiplier  = _hasExtra ? ((_rawSubtotal + _extraCosts) / _rawSubtotal) : 1;
 
       const _adjustedItems = (estimate.items || []).map((item: any) => {
         if (!_hasExtra) return item;
@@ -4789,9 +4790,7 @@ This link provides a professional view of your estimate that you can access anyt
         : _rawSubtotal;
       const _discount = estimate.discountAmount || 0;
       const _tax      = estimate.tax || 0;
-      const _adjustedTotal = Math.round((_adjustedSubtotal - _discount + _tax) * 100) / 100;
-
-      // Prepare estimate data for sharing
+      const _adjustedTotal = Math.round((_adjustedSubtotal - _discount + _tax) * 100) / 100;   // Prepare estimate data for sharing
       const shareableEstimate = {
         client: estimate.client,
         items: _adjustedItems,
@@ -8899,19 +8898,24 @@ This link provides a professional view of your estimate that you can access anyt
                 }
 
                 try {
-                  // ── Fix 1+2: Proportional cost distribution ──────────────────────────
-                  // When pricingStrategy B is used, overhead/markup are baked into
-                  // estimate.total but NOT into individual item prices.
-                  // We distribute them proportionally so: subtotal === total
-                  // and no fake tax manipulation is needed.
+                  // ── Proportional cost distribution (robust) ──────────────────────────
+                  // Use the computed overhead/markup/operational amounts from the
+                  // estimate state (set by the totals useEffect) to build the
+                  // multiplier. This works for both Strategy A and B, and for
+                  // estimates loaded from Firestore or freshly generated.
                   const rawSubtotal = (estimate.items || []).reduce((sum: number, item: any) => {
                     const t = typeof item.total === 'string'
                       ? parseFloat((item.total as string).replace(/[$,]/g, ''))
                       : Number(item.total || 0);
                     return sum + t;
                   }, 0);
-                  const finalTotal = Number(estimate.total || rawSubtotal);
-                  const priceMultiplier = rawSubtotal > 0 && finalTotal > rawSubtotal
+                  // Extra costs = overhead + markup + operational (always computed
+                  // by the totals useEffect, even in Strategy A with defaults)
+                  const extraCosts = Number(estimate.overheadAmount || 0)
+                    + Number(estimate.markupAmount || 0)
+                    + Number(estimate.operationalCostsAmount || 0);
+                  const finalTotal = rawSubtotal + extraCosts;
+                  const priceMultiplier = rawSubtotal > 0 && extraCosts > 0
                     ? finalTotal / rawSubtotal
                     : 1;
 

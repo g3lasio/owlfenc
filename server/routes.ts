@@ -2992,18 +2992,22 @@ ENHANCED LEGAL CLAUSE:`;
         }
 
         // Process items data with proper currency formatting
-        // ─── PRICING STRATEGY B: Proportional cost distribution ───────────────
-        // When Strategy B is used, overhead/markup/operational costs are baked
-        // proportionally into each item's unit_price and total so that:
+        // ─── Proportional cost distribution (robust) ─────────────────────────────
+        // Overhead/markup/operational costs are baked proportionally into each
+        // item's unit_price and total so that:
         //   subtotal of displayed items === grand total (no visible gap)
-        // The client never sees a breakdown of internal cost components.
+        // Uses explicit extra-cost fields (not total > subtotal comparison) so
+        // it works for both Strategy A and B and for estimates loaded from DB.
         const rawSubtotal = Math.round((projectTotalCosts?.subtotal || 0) * 100) / 100;
-        const rawTotal    = Math.round((projectTotalCosts?.total    || rawSubtotal) * 100) / 100;
-        const pricingStrategyB = (projectTotalCosts?.pricingStrategy || 'A') === 'B';
-        const hasExtraCosts = pricingStrategyB && rawTotal > rawSubtotal && rawSubtotal > 0;
+        const extraCosts  = Math.round((
+          Number(projectTotalCosts?.overheadAmount || 0)
+          + Number(projectTotalCosts?.markupAmount || 0)
+          + Number(projectTotalCosts?.operationalCostsAmount || 0)
+        ) * 100) / 100;
+        const hasExtraCosts = rawSubtotal > 0 && extraCosts > 0;
 
-        // Multiplier to scale each item's price so items sum to rawTotal
-        const distributionMultiplier = hasExtraCosts ? (rawTotal / rawSubtotal) : 1;
+        // Multiplier to scale each item's price so items sum to rawSubtotal + extraCosts
+        const distributionMultiplier = hasExtraCosts ? ((rawSubtotal + extraCosts) / rawSubtotal) : 1;
 
         let processedItems = [];
         let distributedSubtotal = 0;
