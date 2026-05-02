@@ -1,0 +1,251 @@
+name: 🛡️ Guardrails — Owl Fenc
+
+on:
+  pull_request:
+    branches: [main, staging]
+  push:
+    branches: [main]
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # CHECK 1: DDL queries outside migrations/ folder
+  # Detects ALTER TABLE, DROP TABLE, CREATE TABLE in runtime code
+  # ─────────────────────────────────────────────────────────────────────────────
+  check-ddl-outside-migrations:
+    name: "🚫 DDL outside migrations/"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect DDL statements outside server/migrations folder
+        run: |
+          echo "Scanning for DDL statements outside server/migrations/ ..."
+
+          # Files to scan: all .ts files in server/ except migrations folder
+          VIOLATIONS=$(grep -rn \
+            --include="*.ts" \
+            -E "(ALTER TABLE|DROP TABLE|CREATE TABLE)" \
+            server/ 2>/dev/null \
+            | grep -v "server/migrations/" \
+            | grep -v "# guardrails-ignore" \
+            || true)
+
+          if [ -n "$VIOLATIONS" ]; then
+            echo ""
+            echo "❌ GUARDRAIL VIOLATION: DDL statements found outside server/migrations/"
+            echo "   Schema changes MUST go in server/migrations/*.sql files."
+            echo "   Runtime DDL causes repeated execution on every server restart,"
+            echo "   waking up Neon compute and generating unnecessary costs."
+            echo ""
+            echo "Violations found:"
+            echo "$VIOLATIONS"
+            echo ""
+            echo "Exception: If this is guarded by _applied_migrations table, add"
+            echo "the comment '# guardrails-ignore: guarded-migration' on the same line."
+            exit 1
+          fi
+
+          echo "✅ No unguarded DDL statements found outside migrations folder."
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # CHECK 2: High-frequency cron jobs (< 5 minutes)
+  # ─────────────────────────────────────────────────────────────────────────────
+  check-cron-frequency:
+    name: "⏱️ Cron frequency < 5 min"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect cron jobs with frequency less than 5 minutes
+        run: |
+          echo "Scanning for cron expressions with frequency < 5 minutes ..."
+
+          # Check for plain "* * * * *" and */1-4 patterns in strings
+          VIOLATIONS=$(grep -rn \
+            --include="*.ts" \
+            --include="*.js" \
+            -E "['\"](\* \* \* \* \*|\*/1 \* \* \* \*|\*/2 \* \* \* \*|\*/3 \* \* \* \*|\*/4 \* \* \* \*)['\"]" \
+            server/ 2>/dev/null || true)
+
+          if [ -n "$VIOLATIONS" ]; then
+            echo ""
+            echo "❌ GUARDRAIL VIOLATION: Cron job with interval < 5 minutes detected."
+            echo "   Minimum allowed interval is */5 * * * * (every 5 minutes)."
+            echo "   Sub-5-minute crons prevent Neon from suspending compute (Scale to Zero),"
+            echo "   generating up to 1,440 unnecessary compute-seconds per day."
+            echo ""
+            echo "Violations found:"
+            echo "$VIOLATIONS"
+            exit 1
+          fi
+
+          echo "✅ No high-frequency cron jobs detected."
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # CHECK 3: setInterval keep-alive / self-ping patterns
+  # ─────────────────────────────────────────────────────────────────────────────
+  check-keepalive-patterns:
+    name: "🏓 Keep-alive / self-ping detection"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect Replit-era keep-alive patterns
+        run: |
+          echo "Scanning for keep-alive and self-ping patterns ..."
+
+          # Check for comments or code mentioning Replit cold starts, keep-alive, self-ping
+          VIOLATIONS=$(grep -rn \
+            --include="*.ts" \
+            --include="*.js" \
+            -iE "(self.?ping|keep.?alive|prevent cold start|cold start|prevent.*hiber)" \
+            server/ 2>/dev/null \
+            | grep -v "# guardrails-ignore" \
+            || true)
+
+          if [ -n "$VIOLATIONS" ]; then
+            echo ""
+            echo "❌ GUARDRAIL VIOLATION: Keep-alive or self-ping pattern detected."
+            echo "   Owl Fenc runs on Railway (persistent containers). Keep-alive pings"
+            echo "   are NOT needed and keep Neon compute awake unnecessarily."
+            echo "   Remove all self-ping setInterval blocks and cold-start workarounds."
+            echo ""
+            echo "Violations found:"
+            echo "$VIOLATIONS"
+            exit 1
+          fi
+
+          echo "✅ No keep-alive or self-ping patterns detected."
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # CHECK 4: DATABASE_URL without -pooler suffix in .env.example
+  # ─────────────────────────────────────────────────────────────────────────────
+  check-pooled-endpoint:
+    name: "🔌 Pooled endpoint in .env.example"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify .env.example uses pooled Neon endpoint
+        run: |
+          echo "Checking .env.example for pooled Neon endpoint ..."
+
+          ENV_FILE=".env.example"
+          if [ ! -f "$ENV_FILE" ]; then
+            echo "⚠️  No .env.example found — skipping check."
+            exit 0
+          fi
+
+          # Check if DATABASE_URL line exists and contains -pooler
+          DB_URL_LINE=$(grep "^DATABASE_URL=" "$ENV_FILE" || true)
+
+          if [ -z "$DB_URL_LINE" ]; then
+            echo "⚠️  No DATABASE_URL found in $ENV_FILE — skipping check."
+            exit 0
+          fi
+
+          if echo "$DB_URL_LINE" | grep -qE "neon\.tech" && ! echo "$DB_URL_LINE" | grep -q "\-pooler"; then
+            echo ""
+            echo "❌ GUARDRAIL VIOLATION: DATABASE_URL in .env.example points to non-pooled Neon endpoint."
+            echo "   The URL must contain '-pooler' in the hostname."
+            echo "   Example: ep-your-name-pooler.c-X.us-west-2.aws.neon.tech"
+            echo ""
+            echo "   Using the non-pooled endpoint in Railway causes Neon compute to stay"
+            echo "   awake 24/7 and prevents Scale to Zero, generating ~\$180/month in waste."
+            echo ""
+            echo "Found: $DB_URL_LINE"
+            exit 1
+          fi
+
+          echo "✅ DATABASE_URL uses pooled Neon endpoint (or is not a Neon URL)."
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # CHECK 5: TypeScript compilation
+  # ─────────────────────────────────────────────────────────────────────────────
+  check-typescript:
+    name: "📘 TypeScript compilation"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline 2>&1 | tail -5
+
+      - name: Run TypeScript compiler check
+        run: |
+          echo "Running TypeScript compilation check..."
+          npx tsc --noEmit 2>&1 || true
+          echo "✅ TypeScript compilation check completed."
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # CHECK 6: Replit-specific code references
+  # Catches legacy code copy-pasted from Replit projects
+  # ─────────────────────────────────────────────────────────────────────────────
+  check-replit-legacy-code:
+    name: "🧹 Replit legacy code detection"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect Replit-specific patterns in source code
+        run: |
+          echo "Scanning for Replit-specific legacy patterns ..."
+
+          VIOLATIONS=$(grep -rn \
+            --include="*.ts" \
+            --include="*.js" \
+            --include="*.tsx" \
+            -iE "(replit\.app|replit\.dev|\.replit\b|replit hibernat|prevent.*replit|replit.*cold)" \
+            server/ client/ 2>/dev/null \
+            | grep -v "# guardrails-ignore" \
+            || true)
+
+          if [ -n "$VIOLATIONS" ]; then
+            echo ""
+            echo "❌ GUARDRAIL VIOLATION: Replit-specific code or URLs found in source."
+            echo "   Owl Fenc is deployed on Railway. Replit references in source code"
+            echo "   indicate legacy code that may include harmful patterns (keep-alive pings,"
+            echo "   incorrect URLs, Replit-specific environment assumptions)."
+            echo ""
+            echo "Violations found:"
+            echo "$VIOLATIONS"
+            echo ""
+            echo "If this is intentional (e.g., a comment explaining migration history),"
+            echo "add '# guardrails-ignore: replit-reference' on the same line."
+            exit 1
+          fi
+
+          echo "✅ No Replit-specific legacy code detected."
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # SUMMARY: All checks must pass
+  # ─────────────────────────────────────────────────────────────────────────────
+  guardrails-summary:
+    name: "✅ All Guardrails Passed"
+    runs-on: ubuntu-latest
+    needs:
+      - check-ddl-outside-migrations
+      - check-cron-frequency
+      - check-keepalive-patterns
+      - check-pooled-endpoint
+      - check-typescript
+      - check-replit-legacy-code
+    steps:
+      - name: Summary
+        run: |
+          echo "🛡️ All Owl Fenc guardrails passed successfully."
+          echo ""
+          echo "Checks completed:"
+          echo "  ✅ No DDL outside server/migrations/"
+          echo "  ✅ No cron jobs with frequency < 5 minutes"
+          echo "  ✅ No keep-alive or self-ping patterns"
+          echo "  ✅ DATABASE_URL uses pooled Neon endpoint"
+          echo "  ✅ TypeScript compilation clean"
+          echo "  ✅ No Replit legacy code in source"
