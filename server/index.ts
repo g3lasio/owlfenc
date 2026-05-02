@@ -1479,21 +1479,38 @@ console.log('🔧 [UNIFIED-ANALYSIS] Sistema híbrido registrado en /api/analysi
   await registerRoutes(app);
   console.log("✅ [ROUTES] All routes registered (including wallet PAYG routes)");
 
-  // Run LeadPrime Network columns migration (idempotent — safe on every restart)
+  // Run LeadPrime Network columns migration — GUARDED: runs only once via _applied_migrations table
   try {
     const { Pool } = await import('@neondatabase/serverless');
     if (process.env.DATABASE_URL) {
       const migPool = new Pool({ connectionString: process.env.DATABASE_URL });
+      // Ensure migration tracking table exists
       await migPool.query(`
-        ALTER TABLE users
-          ADD COLUMN IF NOT EXISTS leadprime_token TEXT,
-          ADD COLUMN IF NOT EXISTS leadprime_handle TEXT,
-          ADD COLUMN IF NOT EXISTS leadprime_connected_at TIMESTAMP,
-          ADD COLUMN IF NOT EXISTS leadprime_synced_docs INTEGER DEFAULT 0,
-          ADD COLUMN IF NOT EXISTS leadprime_last_sync TIMESTAMP
+        CREATE TABLE IF NOT EXISTS _applied_migrations (
+          name TEXT PRIMARY KEY,
+          applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
       `);
+      const alreadyApplied = await migPool.query(
+        `SELECT 1 FROM _applied_migrations WHERE name = 'leadprime_network_columns_v1'`
+      );
+      if (alreadyApplied.rowCount === 0) {
+        await migPool.query(`
+          ALTER TABLE users
+            ADD COLUMN IF NOT EXISTS leadprime_token TEXT,
+            ADD COLUMN IF NOT EXISTS leadprime_handle TEXT,
+            ADD COLUMN IF NOT EXISTS leadprime_connected_at TIMESTAMP,
+            ADD COLUMN IF NOT EXISTS leadprime_synced_docs INTEGER DEFAULT 0,
+            ADD COLUMN IF NOT EXISTS leadprime_last_sync TIMESTAMP
+        `);
+        await migPool.query(
+          `INSERT INTO _applied_migrations (name) VALUES ('leadprime_network_columns_v1') ON CONFLICT DO NOTHING`
+        );
+        console.log('✅ [MIGRATION] LeadPrime Network columns applied (first time)');
+      } else {
+        console.log('✅ [MIGRATION] LeadPrime Network columns already applied — skipping');
+      }
       await migPool.end();
-      console.log('✅ [MIGRATION] LeadPrime Network columns ready');
     }
   } catch (migErr: any) {
     if (!['42701', '42P07'].includes(migErr?.code)) {
@@ -1576,27 +1593,11 @@ console.log('🔧 [UNIFIED-ANALYSIS] Sistema híbrido registrado en /api/analysi
     });
   });
 
-  // 📳 KEEP-ALIVE PING: Prevent Replit cold starts by self-pinging every 4 minutes
-  // Replit hibernates servers after ~5 minutes of inactivity, causing 3-8s cold starts.
-  // This internal ping keeps the Node.js process warm without external dependencies.
-  const KEEP_ALIVE_INTERVAL_MS = 4 * 60 * 1000; // 4 minutes
-  setInterval(() => {
-    const options = {
-      hostname: 'localhost',
-      port: port,
-      path: '/healthz',
-      method: 'GET',
-      timeout: 5000,
-    };
-    const req = http.request(options, (res: any) => {
-      console.log(`📳 [KEEP-ALIVE] Self-ping OK (status: ${res.statusCode})`);
-    });
-    req.on('error', (err: any) => {
-      console.warn(`⚠️ [KEEP-ALIVE] Self-ping failed: ${err.message}`);
-    });
-    req.end();
-  }, KEEP_ALIVE_INTERVAL_MS);
-  console.log(`📳 [KEEP-ALIVE] Self-ping active every ${KEEP_ALIVE_INTERVAL_MS / 60000} minutes`);
+  // ✅ NOTE: Keep-alive self-ping removed — Railway does NOT hibernate containers.
+  // The previous Replit-era ping was generating ~360 unnecessary HTTP requests/day
+  // against localhost and keeping Neon compute awake unnecessarily.
+  // Railway's always-on infrastructure makes this pattern obsolete.
+  console.log('✅ [RAILWAY] Server running on Railway — no keep-alive ping needed');
 
   // Add error handler after all routes and Vite setup
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
