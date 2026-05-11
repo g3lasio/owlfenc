@@ -2,7 +2,7 @@
  * ╔══════════════════════════════════════════════════════════════════════════════╗
  * ║              OWL FENC — EXTERNAL API (Agent Integration Layer)              ║
  * ║                                                                              ║
- * ║  Exposes 5 tools callable by external agents (LeadPrime, MCP, etc.)         ║
+ * ║  Exposes 6 tools callable by external agents (LeadPrime, MCP, etc.)         ║
  * ║  Authentication: API keys with format owf_live_<random>                     ║
  * ║                                                                              ║
  * ║  Tools:                                                                      ║
@@ -11,6 +11,7 @@
  * ║    POST /api/external/create-contract-from-estimate                          ║
  * ║    POST /api/external/check-permit                                           ║
  * ║    GET  /api/external/estimate-status/:estimateId                            ║
+ * ║    POST /api/external/document-status-update                                 ║
  * ║                                                                              ║
  * ║  API Key Management:                                                         ║
  * ║    POST /api/external/keys          (create key — requires Firebase auth)    ║
@@ -27,6 +28,7 @@ import { walletService } from '../services/walletService';
 import { FEATURE_CREDIT_COSTS } from '../../shared/wallet-schema';
 import { verifyFirebaseAuth } from '../middleware/firebase-auth';
 import { universalIntelligenceEngine as uieInstance } from '../services/universalIntelligenceEngine';
+import { resendService } from '../services/resendService';
 
 const router = Router();
 
@@ -954,13 +956,162 @@ router.get('/estimate-status/:estimateId', requireApiKey, async (req: Request, r
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// TOOL 6: document-status-update (LeadPrime → Owl Fenc callback)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * POST /api/external/document-status-update
+ * Called by LeadPrime when a recipient approves, declines, or requests changes
+ * on a document sent via LeadPrime Network.
+ *
+ * Auth: Bearer owf_live_<key> (the contractor's Owl Fenc API key stored in LeadPrime)
+ * Body: {
+ *   document_id: string,       // LeadPrime network document UUID
+ *   doc_reference: string,     // Owl Fenc estimate/doc ID (e.g. EST-1777...)
+ *   status: 'approved' | 'declined' | 'changes_requested',
+ *   note?: string,             // Only present for changes_requested
+ *   responded_by?: string,     // LeadPrime contractor UUID of the recipient
+ *   responded_at: string,      // ISO 8601 timestamp
+ * }
+ */
+router.post('/document-status-update', requireApiKey, async (req: Request, res: Response) => {
+  const auth = (req as any).externalAuth as AuthResult;
+  try {
+    const bodySchema = z.object({
+      document_id: z.string().min(1),
+      doc_reference: z.string().optional(),
+      status: z.enum(['approved', 'declined', 'changes_requested']),
+      note: z.string().optional(),
+      responded_by: z.string().optional(),
+      responded_at: z.string().optional(),
+    });
+    const body = bodySchema.parse(req.body);
+
+    const db = admin.firestore();
+    const statusMap: Record<string, string> = {
+      approved: 'approved',
+      declined: 'rejected',
+      changes_requested: 'changes_requested',
+    };
+    const owlfencStatus = statusMap[body.status];
+
+    // ── 1. Try to update the estimate in Firestore by doc_reference ──────────
+    let estimateUpdated = false;
+    let contractorEmail: string | null = null;
+    let estimateNumber: string | null = body.doc_reference || null;
+    let clientName: string | null = null;
+    let estimateTotal: number | null = null;
+
+    if (body.doc_reference) {
+      // Try to find by estimateNumber field first
+      const byNumber = await db
+        .collection('estimates')
+        .where('userId', '==', auth.userId)
+        .where('estimateNumber', '==', body.doc_reference)
+        .limit(1)
+        .get();
+
+      // Also try by Firestore document ID directly
+      let estimateDoc: FirebaseFirestore.DocumentSnapshot | null = null;
+      if (!byNumber.empty) {
+        estimateDoc = byNumber.docs[0];
+      } else {
+        // Try direct doc ID lookup
+        const directDoc = await db.collection('estimates').doc(body.doc_reference).get();
+        if (directDoc.exists && directDoc.data()?.userId === auth.userId) {
+          estimateDoc = directDoc;
+        }
+      }
+
+      if (estimateDoc) {
+        const estimateData = estimateDoc.data()!;
+        clientName = estimateData.client?.name || estimateData.clientName || null;
+        estimateTotal = estimateData.total || null;
+        estimateNumber = estimateData.estimateNumber || body.doc_reference;
+
+        await estimateDoc.ref.update({
+          status: owlfencStatus,
+          leadprimeStatus: body.status,
+          leadprimeNote: body.note || null,
+          leadprimeRespondedAt: body.responded_at || new Date().toISOString(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        estimateUpdated = true;
+      }
+    }
+
+    // ── 2. Get contractor email from Firebase Auth ────────────────────────────
+    try {
+      const firebaseUser = await admin.auth().getUser(auth.userId);
+      contractorEmail = firebaseUser.email || null;
+    } catch (_) { /* non-critical */ }
+
+    // ── 3. Send email notification to contractor ──────────────────────────────
+    if (contractorEmail) {
+      const statusLabels: Record<string, { emoji: string; label: string; color: string; bgColor: string }> = {
+        approved: { emoji: '✅', label: 'Approved', color: '#065f46', bgColor: '#d1fae5' },
+        declined: { emoji: '❌', label: 'Declined', color: '#7f1d1d', bgColor: '#fee2e2' },
+        changes_requested: { emoji: '✏️', label: 'Changes Requested', color: '#78350f', bgColor: '#fef3c7' },
+      };
+      const sl = statusLabels[body.status];
+      const noteBlock = body.note
+        ? `<div style="margin-top:12px;padding:12px;background:#f9fafb;border-left:3px solid #d1d5db;border-radius:4px;">
+             <strong style="color:#374151;">Note from recipient:</strong>
+             <p style="color:#6b7280;margin:6px 0 0;">${body.note}</p>
+           </div>`
+        : '';
+
+      const html = `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
+          <div style="background:${sl.bgColor};padding:20px;border-radius:12px;border-left:4px solid ${sl.color};">
+            <h2 style="color:${sl.color};margin:0 0 15px 0;">${sl.emoji} Estimate ${sl.label} via LeadPrime Network</h2>
+            ${estimateNumber ? `<p style="color:${sl.color};margin:0 0 8px;"><strong>Estimate:</strong> ${estimateNumber}</p>` : ''}
+            ${clientName ? `<p style="color:${sl.color};margin:0 0 8px;"><strong>Client:</strong> ${clientName}</p>` : ''}
+            ${estimateTotal ? `<p style="color:${sl.color};margin:0 0 8px;"><strong>Amount:</strong> $${estimateTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>` : ''}
+            <p style="color:${sl.color};margin:0;"><strong>Responded:</strong> ${body.responded_at ? new Date(body.responded_at).toLocaleString('en-US') : new Date().toLocaleString('en-US')}</p>
+            ${noteBlock}
+          </div>
+          <p style="color:#6b7280;font-size:12px;margin-top:16px;">This notification was sent automatically by LeadPrime Network. Log in to <a href="https://app.owlfenc.com" style="color:#0ea5e9;">Owl Fenc</a> to view the full estimate.</p>
+        </div>
+      `;
+
+      await resendService.sendEmail({
+        to: contractorEmail,
+        subject: `${sl.emoji} Estimate ${sl.label} — ${estimateNumber || body.document_id}`,
+        html,
+        emailType: 'notification',
+        userId: auth.userId,
+      }).catch(() => { /* non-critical — don't fail the response */ });
+    }
+
+    // ── 4. Respond ────────────────────────────────────────────────────────────
+    res.json({
+      success: true,
+      document_id: body.document_id,
+      doc_reference: body.doc_reference || null,
+      status: body.status,
+      owlfenc_status: owlfencStatus,
+      estimate_updated: estimateUpdated,
+      contractor_notified: !!contractorEmail,
+    });
+
+  } catch (err: any) {
+    if (err instanceof z.ZodError) {
+      return res.status(400).json({ success: false, error: 'INVALID_BODY', details: err.errors });
+    }
+    console.error('[EXT-API] document-status-update error:', err);
+    res.status(500).json({ success: false, error: 'SERVER_ERROR', message: err.message });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // MANIFEST — GET /api/external
 // ─────────────────────────────────────────────────────────────────────────────
 
 router.get('/', async (_req: Request, res: Response) => {
   res.json({
     name: 'Owl Fenc External API',
-    version: '1.0.0',
+    version: '1.1.0',
     description: 'Agent integration layer for Owl Fenc contractor tools',
     authentication: 'Bearer owf_live_<key> or X-API-Key: owf_live_<key>',
     tools: [
@@ -1003,6 +1154,15 @@ router.get('/', async (_req: Request, res: Response) => {
         path: '/api/external/estimate-status/:estimateId',
         required: ['estimateId (URL param)'],
         credits: 0,
+      },
+      {
+        name: 'document_status_update',
+        method: 'POST',
+        path: '/api/external/document-status-update',
+        required: ['document_id', 'status (approved | declined | changes_requested)'],
+        optional: ['doc_reference', 'note', 'responded_by', 'responded_at'],
+        credits: 0,
+        note: 'Called by LeadPrime Network when a recipient responds to a sent document. Updates estimate status in Firestore and notifies the contractor via email.',
       },
     ],
     keyManagement: {
