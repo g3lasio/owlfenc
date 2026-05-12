@@ -291,7 +291,9 @@ router.post("/send-document", async (req: Request, res: Response) => {
 
   // ── Auto-enrich doc_data from Firebase when frontend doesn't send it ────────
   let enrichedDocData = docPayload.doc_data || null;
-  if (!enrichedDocData && docPayload.doc_reference && docPayload.doc_type === 'estimate') {
+  let enrichedDocUrl = docPayload.doc_url || null;
+
+  if (docPayload.doc_reference && docPayload.doc_type === 'estimate') {
     try {
       const snapshot = await firebaseDb
         .collection('estimates')
@@ -300,32 +302,85 @@ router.post("/send-document", async (req: Request, res: Response) => {
         .get();
       if (!snapshot.empty) {
         const est = snapshot.docs[0].data();
-        enrichedDocData = {
-          scope_of_work: est.projectDetails || est.projectDescription || '',
-          project_details: est.projectDetails || '',
-          line_items: (est.items || []).map((item: any) => ({
-            name: item.name,
-            description: item.description,
-            quantity: item.quantity,
-            unit: item.unit,
-            price: item.price,
-            total: item.total,
-          })),
-          subtotal: est.subtotal,
-          tax: est.tax,
-          tax_rate: est.taxRate,
-          discount_amount: est.discountAmount,
-          overhead_amount: est.overheadAmount,
-          markup_amount: est.markupAmount,
-          operational_costs_amount: est.operationalCostsAmount,
-          total: est.total,
-          notes: est.notes,
-          client_name: est.client?.name,
-          client_email: est.client?.email,
-          client_phone: est.client?.phone,
-          project_address: est.client?.address,
-        };
-        console.log('[LeadPrimeNetwork] doc_data enriched from Firebase for', docPayload.doc_reference);
+        const estDocId = snapshot.docs[0].id;
+
+        // Build doc_data if not provided
+        if (!enrichedDocData) {
+          enrichedDocData = {
+            scope_of_work: est.projectDetails || est.projectDescription || '',
+            project_details: est.projectDetails || '',
+            line_items: (est.items || []).map((item: any) => ({
+              name: item.name,
+              description: item.description,
+              quantity: item.quantity,
+              unit: item.unit,
+              price: item.price,
+              total: item.total,
+            })),
+            subtotal: est.subtotal,
+            tax: est.tax,
+            tax_rate: est.taxRate,
+            discount_amount: est.discountAmount,
+            overhead_amount: est.overheadAmount,
+            markup_amount: est.markupAmount,
+            operational_costs_amount: est.operationalCostsAmount,
+            total: est.total,
+            notes: est.notes,
+            client_name: est.client?.name,
+            client_email: est.client?.email,
+            client_phone: est.client?.phone,
+            project_address: est.client?.address,
+          };
+          console.log('[LeadPrimeNetwork] doc_data enriched from Firebase for', docPayload.doc_reference);
+        }
+
+        // Build doc_url from shareId if not provided
+        if (!enrichedDocUrl) {
+          // First try: shareId stored directly in the estimate doc
+          if (est.shareId) {
+            enrichedDocUrl = `${OWL_FENC_BASE_URL}/shared-estimate/${est.shareId}`;
+            console.log('[LeadPrimeNetwork] doc_url built from estimate.shareId:', enrichedDocUrl);
+          } else {
+            // Second try: look up in shared_estimates collection by estimateNumber
+            try {
+              const sharedSnap = await firebaseDb
+                .collection('shared_estimates')
+                .where('estimateNumber', '==', docPayload.doc_reference)
+                .orderBy('createdAt', 'desc')
+                .limit(1)
+                .get();
+              if (!sharedSnap.empty) {
+                const sharedData = sharedSnap.docs[0].data();
+                const shareId = sharedData.shareId || sharedSnap.docs[0].id;
+                enrichedDocUrl = `${OWL_FENC_BASE_URL}/shared-estimate/${shareId}`;
+                console.log('[LeadPrimeNetwork] doc_url built from shared_estimates lookup:', enrichedDocUrl);
+                // Also update the estimate doc with shareId for future use
+                try {
+                  await firebaseDb.collection('estimates').doc(estDocId).update({ shareId });
+                } catch (_) {}
+              } else {
+                // Third try: look up by firebaseDocId
+                const sharedByDocId = await firebaseDb
+                  .collection('shared_estimates')
+                  .where('firebaseDocId', '==', estDocId)
+                  .orderBy('createdAt', 'desc')
+                  .limit(1)
+                  .get();
+                if (!sharedByDocId.empty) {
+                  const sharedData = sharedByDocId.docs[0].data();
+                  const shareId = sharedData.shareId || sharedByDocId.docs[0].id;
+                  enrichedDocUrl = `${OWL_FENC_BASE_URL}/shared-estimate/${shareId}`;
+                  console.log('[LeadPrimeNetwork] doc_url built from shared_estimates by firebaseDocId:', enrichedDocUrl);
+                  try {
+                    await firebaseDb.collection('estimates').doc(estDocId).update({ shareId });
+                  } catch (_) {}
+                }
+              }
+            } catch (sharedLookupErr: any) {
+              console.warn('[LeadPrimeNetwork] shared_estimates lookup failed:', sharedLookupErr.message);
+            }
+          }
+        }
       }
     } catch (enrichErr: any) {
       console.warn('[LeadPrimeNetwork] doc_data enrichment failed:', enrichErr.message);
@@ -335,6 +390,7 @@ router.post("/send-document", async (req: Request, res: Response) => {
   const result = await callLeadPrime("POST", "/leadprime-network/documents/push", user.leadprimeToken, {
     ...docPayload,
     doc_data: enrichedDocData,
+    doc_url: enrichedDocUrl,
     recipient_handle,
     source: "owlfenc",
   });

@@ -5225,6 +5225,20 @@ ENHANCED LEGAL CLAUSE:`;
         firebaseDocId: firebaseDocId || null,
         contractorId: contractorId || null,
       });
+
+      // ✅ Also store shareId back in the main estimates doc for future lookups (e.g., LeadPrime Network)
+      if (firebaseDocId) {
+        try {
+          await admin.firestore().collection('estimates').doc(firebaseDocId).update({
+            shareId,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+          console.log(`✅ [SHARE-ESTIMATE] shareId stored back in estimates/${firebaseDocId}`);
+        } catch (updateErr: any) {
+          // Non-blocking: don't fail the share if this update fails
+          console.warn(`⚠️ [SHARE-ESTIMATE] Could not store shareId in estimates doc:`, updateErr.message);
+        }
+      }
       
       // Generar URL completa usando url-builder dinámico
       // 🌐 PRODUCCIÓN: Usa chyrris.com para URLs de estimados compartidos
