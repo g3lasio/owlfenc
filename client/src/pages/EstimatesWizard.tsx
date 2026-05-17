@@ -29,7 +29,6 @@ import { useToast } from "@/hooks/use-toast";
 import { MervinWorkingEffect } from "@/components/ui/mervin-working-effect";
 import { DeepSearchEffect } from "@/components/ui/deepsearch-effect";
 import { EmailVerification } from "@/components/auth/EmailVerification";
-import { SendToNetworkModal } from "@/components/network/SendToNetworkModal";
 // Usar el logo correcto de OWL FENCE
 const mervinLogoUrl =
   "https://ik.imagekit.io/lp5czyx2a/ChatGPT%20Image%20May%2010,%202025,%2005_35_38%20PM.png?updatedAt=1748157114019";
@@ -202,8 +201,8 @@ interface EstimateData {
 }
 
 const STEPS = [
-  { id: "client", title: "Client", icon: User },
   { id: "details", title: "Details", icon: FileText },
+  { id: "client", title: "Client", icon: User },
   { id: "materials", title: "Materials", icon: Package },
   { id: "preview", title: "Preview", icon: Eye },
 ];
@@ -730,9 +729,6 @@ export default function EstimatesWizardFixed() {
   const [showHolographicShare, setShowHolographicShare] = useState(false);
   const [currentShareUrl, setCurrentShareUrl] = useState<string | null>(null);
   const [isGeneratingShareUrl, setIsGeneratingShareUrl] = useState(false);
-
-  // LeadPrime Network modal
-  const [showNetworkModal, setShowNetworkModal] = useState(false);
 
   // Invoice configuration states
   const [showInvoiceDialog, setShowInvoiceDialog] = useState(false);
@@ -3210,6 +3206,42 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     }
   };
 
+  // Auto-enhance on step 0 (Details): runs Mervin AI then advances to step 1
+  const handleNextStep = async () => {
+    if (currentStep === 0 && estimate.projectDetails.trim()) {
+      // Run enhancement silently — advance regardless of success/failure
+      setIsAIProcessing(true);
+      setShowMervinWorking(true);
+      try {
+        const response = await fetch("/api/ai-enhance", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            originalText: estimate.projectDetails,
+            projectType: "construction estimate",
+          }),
+        });
+        if (response.ok) {
+          const result = await response.json();
+          if (result.enhancedDescription) {
+            setEstimate((prev) => ({
+              ...prev,
+              projectDetails: result.enhancedDescription,
+            }));
+          }
+        }
+      } catch (_) {
+        // Silent fail — user still advances
+      } finally {
+        setIsAIProcessing(false);
+        setShowMervinWorking(false);
+        setCurrentStep(1);
+      }
+    } else {
+      nextStep();
+    }
+  };
+
   const prevStep = () => {
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
@@ -3218,10 +3250,10 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
 
   const canProceedToNext = () => {
     switch (currentStep) {
-      case 0:
-        return estimate.client !== null;
-      case 1:
+      case 0: // Details — need a description
         return estimate.projectDetails.trim().length > 0;
+      case 1: // Client — need a selected client
+        return estimate.client !== null;
       case 2:
         return estimate.items.length > 0;
       case 3:
@@ -5319,7 +5351,7 @@ This link provides a professional view of your estimate that you can access anyt
   // Render current step
   const renderCurrentStep = () => {
     switch (currentStep) {
-      case 0: // Client Selection
+      case 1: // Client Selection
         return (
           <Card className="bg-gray-900 border-gray-700">
             <CardHeader>
@@ -5665,7 +5697,7 @@ This link provides a professional view of your estimate that you can access anyt
           </Card>
         );
 
-      case 1: // Project Details
+      case 0: // Project Details
         return (
           <Card className="bg-gray-900 border-gray-700">
             <CardHeader>
@@ -5684,28 +5716,10 @@ This link provides a professional view of your estimate that you can access anyt
                     <Building2 className="h-4 w-4" />
                     Project Details
                   </Label>
-                  <Button
-                    onClick={enhanceProjectWithAI}
-                    disabled={isAIProcessing || !estimate.projectDetails.trim()}
-                    className="bg-cyan-400 text-black hover:bg-cyan-300 w-full sm:w-auto"
-                    size="sm"
-                  >
-                    {isAIProcessing ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        <span className="hidden sm:inline">Procesando...</span>
-                        <span className="sm:hidden">Procesando...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Brain className="h-4 w-4 mr-2" />
-                        <span className="hidden sm:inline">
-                          Enhance with Mervin AI
-                        </span>
-                        <span className="sm:hidden">Mervin AI</span>
-                      </>
-                    )}
-                  </Button>
+                  <span className="text-xs text-cyan-400/70 flex items-center gap-1">
+                    <Brain className="h-3 w-3" />
+                    Mervin AI mejora automáticamente al continuar
+                  </span>
                 </div>
                 <div className="relative">
                   <Textarea
@@ -6920,7 +6934,7 @@ This link provides a professional view of your estimate that you can access anyt
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setCurrentStep(0)}
+                      onClick={() => setCurrentStep(1)}
                       disabled={hasClient}
                     >
                       Ir a Cliente
@@ -7638,7 +7652,7 @@ This link provides a professional view of your estimate that you can access anyt
                         <span className="text-sm text-blue-300 font-medium">Auto-guardando...</span>
                       </div>
                     )}
-                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {/* Download PDF Button - Primary Action */}
                       <Button
                         onClick={handleDownload}
@@ -7727,20 +7741,6 @@ This link provides a professional view of your estimate that you can access anyt
                         <FileText className="h-3 w-3 mr-1" />
                         <span className="hidden sm:inline">Invoice</span>
                         <span className="sm:hidden">Invoice</span>
-                      </Button>
-
-                      {/* Send to LeadPrime Network */}
-                      <Button
-                        onClick={() => setShowNetworkModal(true)}
-                        disabled={!estimate.client || estimate.items.length === 0}
-                        size="sm"
-                        className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-xs shadow-lg shadow-indigo-500/25"
-                        data-testid="button-send-network"
-                        title="Send this proposal directly to a LeadPrime PM via @handle"
-                      >
-                        <Globe className="h-3 w-3 mr-1" />
-                        <span className="hidden sm:inline">Network</span>
-                        <span className="sm:hidden">LP</span>
                       </Button>
                     </div>
                   </CardContent>
@@ -8253,13 +8253,22 @@ This link provides a professional view of your estimate that you can access anyt
               <div className="flex flex-col sm:flex-row gap-2 order-1 sm:order-2">
                 {currentStep < STEPS.length - 1 && (
                   <Button
-                    onClick={nextStep}
-                    disabled={!canProceedToNext()}
+                    onClick={handleNextStep}
+                    disabled={!canProceedToNext() || isAIProcessing}
                     className="w-full sm:w-auto bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 shadow-lg shadow-cyan-500/25"
                     data-testid="button-next-step"
                   >
-                    Siguiente
-                    <ChevronRight className="h-4 w-4 ml-2" />
+                    {isAIProcessing && currentStep === 0 ? (
+                      <>
+                        <span className="animate-spin mr-2">✨</span>
+                        Mervin AI...
+                      </>
+                    ) : (
+                      <>
+                        Siguiente
+                        <ChevronRight className="h-4 w-4 ml-2" />
+                      </>
+                    )}
                   </Button>
                 )}
               </div>
@@ -9484,55 +9493,15 @@ This link provides a professional view of your estimate that you can access anyt
         </div>
       )}
 
-       <DeepSearchEffect
+      <DeepSearchEffect
         isVisible={isAIProcessing}
         onComplete={() => setIsAIProcessing(false)}
       />
+
       {/* Mervin Working Effect */}
       <MervinWorkingEffect
         isVisible={showMervinWorking}
         onComplete={() => setShowMervinWorking(false)}
-      />
-
-      {/* LeadPrime Network Modal */}
-      <SendToNetworkModal
-        open={showNetworkModal}
-        onClose={() => setShowNetworkModal(false)}
-        document={{
-          type: "estimate",
-          reference: estimate.estimateNumber || `EST-${Date.now()}`,
-          title: estimate.client?.name
-            ? `Estimate for ${estimate.client.name}${estimate.client.address ? ` — ${estimate.client.address}` : ''}`
-            : "Estimate",
-          amount: estimate.total,
-          projectAddress: estimate.client?.address,
-          docData: {
-            scope_of_work: estimate.projectDetails || estimate.projectDescription || "",
-            project_details: estimate.projectDetails || "",
-            line_items: (estimate.items || []).map((item: any) => ({
-              name: item.name,
-              description: item.description,
-              quantity: item.quantity,
-              unit: item.unit,
-              price: item.price,
-              total: item.total,
-            })),
-            subtotal: estimate.subtotal,
-            tax: estimate.tax,
-            tax_rate: estimate.taxRate,
-            discount_amount: estimate.discountAmount,
-            discount_name: estimate.discountName,
-            overhead_amount: estimate.overheadAmount,
-            markup_amount: estimate.markupAmount,
-            operational_costs_amount: estimate.operationalCostsAmount,
-            total: estimate.total,
-            notes: estimate.notes,
-            client_name: estimate.client?.name,
-            client_email: estimate.client?.email,
-            client_phone: estimate.client?.phone,
-            project_address: estimate.client?.address,
-          },
-        }}
       />
     </div>
   );
