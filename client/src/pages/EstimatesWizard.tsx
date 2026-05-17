@@ -2809,12 +2809,13 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     // Load the estimate data for editing
     loadProjectForEdit(projectId);
     
-    // Close the history dialog
+    // Close the history dialog and switch to wizard view
     setShowEstimatesHistory(false);
+    setActiveView("new-estimate");
     
     toast({
-      title: "✅ Editando estimado",
-      description: "Los datos del estimado han sido cargados para editar",
+      title: "✅ Estimado cargado",
+      description: "Puedes revisar, editar y descargar el estimado",
     });
   };
 
@@ -3137,8 +3138,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
           originalTotal: projectTotal,
         });
 
-        // Jump to materials step (step 2) since client and details are loaded
-        setCurrentStep(2);
+        // Jump directly to Preview (step 3) — user can go back to edit if needed
+        setCurrentStep(3);
 
         toast({
           title: "Proyecto cargado exitosamente",
