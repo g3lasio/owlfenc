@@ -213,6 +213,11 @@ export class PuppeteerPdfService {
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
       .replace(/\n/g, '<br>');
 
+    // Short project identifier for the header (first sentence, no markdown, max 70 chars)
+    const projectSummary = rawDescription
+      ? rawDescription.replace(/[*#\-•]/g, '').split(/[.\n]/)[0].trim().substring(0, 70) || 'Construction Services'
+      : 'Construction Services';
+
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -643,7 +648,7 @@ export class PuppeteerPdfService {
         </div>
         <div>
             <div class="section-label">Project Details</div>
-            <div class="client-name" style="font-size:14px;">${data.estimate?.project_description ? data.estimate.project_description.split('\n')[0].replace(/\*\*/g,'').substring(0,120) : 'Construction Services'}</div>
+            <div class="client-name" style="font-size:14px;">${projectSummary}</div>
             <div class="client-details">
                 <div>Date: ${estimateDate}</div>
                 <div>Valid Until: ${validUntil}</div>

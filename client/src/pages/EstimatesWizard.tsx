@@ -3207,40 +3207,8 @@ ${profile?.website ? `🌐 ${profile.website}` : ""}
     }
   };
 
-  // Auto-enhance on step 0 (Details): runs Mervin AI then advances to step 1
-  const handleNextStep = async () => {
-    if (currentStep === 0 && estimate.projectDetails.trim()) {
-      // Run enhancement silently — advance regardless of success/failure
-      setIsAIProcessing(true);
-      setShowMervinWorking(true);
-      try {
-        const response = await fetch("/api/ai-enhance", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            originalText: estimate.projectDetails,
-            projectType: "construction estimate",
-          }),
-        });
-        if (response.ok) {
-          const result = await response.json();
-          if (result.enhancedDescription) {
-            setEstimate((prev) => ({
-              ...prev,
-              projectDetails: result.enhancedDescription,
-            }));
-          }
-        }
-      } catch (_) {
-        // Silent fail — user still advances
-      } finally {
-        setIsAIProcessing(false);
-        setShowMervinWorking(false);
-        setCurrentStep(1);
-      }
-    } else {
-      nextStep();
-    }
+  const handleNextStep = () => {
+    nextStep();
   };
 
   const prevStep = () => {
@@ -5719,7 +5687,7 @@ This link provides a professional view of your estimate that you can access anyt
                   </Label>
                   <span className="text-xs text-cyan-400/70 flex items-center gap-1">
                     <Brain className="h-3 w-3" />
-                    Mervin AI mejora automáticamente al continuar
+                    Usa Mervin AI para mejorar tu descripción antes de continuar
                   </span>
                 </div>
                 <div className="relative">
@@ -5961,6 +5929,31 @@ This link provides a professional view of your estimate that you can access anyt
                         </div>
                       ))}
                     </div>
+                  </div>
+                )}
+
+                {/* Mervin AI Enhancement Button */}
+                {estimate.projectDetails.trim().length > 0 && (
+                  <div className="mt-4 flex justify-start">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={enhanceProjectWithAI}
+                      disabled={isAIProcessing}
+                      className="bg-gradient-to-r from-purple-900/40 to-cyan-900/40 hover:from-purple-800/60 hover:to-cyan-800/60 border-cyan-400/30 hover:border-cyan-400/60 text-cyan-300"
+                    >
+                      {isAIProcessing ? (
+                        <>
+                          <span className="animate-spin mr-2">✨</span>
+                          Mervin AI procesando...
+                        </>
+                      ) : (
+                        <>
+                          <Brain className="h-4 w-4 mr-2" />
+                          Mejorar con Mervin AI
+                        </>
+                      )}
+                    </Button>
                   </div>
                 )}
               </div>
@@ -8255,21 +8248,12 @@ This link provides a professional view of your estimate that you can access anyt
                 {currentStep < STEPS.length - 1 && (
                   <Button
                     onClick={handleNextStep}
-                    disabled={!canProceedToNext() || isAIProcessing}
+                    disabled={!canProceedToNext()}
                     className="w-full sm:w-auto bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 shadow-lg shadow-cyan-500/25"
                     data-testid="button-next-step"
                   >
-                    {isAIProcessing && currentStep === 0 ? (
-                      <>
-                        <span className="animate-spin mr-2">✨</span>
-                        Mervin AI...
-                      </>
-                    ) : (
-                      <>
-                        Siguiente
-                        <ChevronRight className="h-4 w-4 ml-2" />
-                      </>
-                    )}
+                    Siguiente
+                    <ChevronRight className="h-4 w-4 ml-2" />
                   </Button>
                 )}
               </div>
