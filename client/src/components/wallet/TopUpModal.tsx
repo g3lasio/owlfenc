@@ -24,6 +24,7 @@ import {
   Loader2,
   CreditCard,
   TrendingUp,
+  AlertTriangle,
   Shield,
   FileText,
   ScrollText,
@@ -99,7 +100,7 @@ export function TopUpModal({
   featureName,
   currentBalance,
 }: TopUpModalProps) {
-  const { packages, balance, initiateTopUp, isCheckingOut } = useWallet();
+  const { packages, balance, error, initiateTopUp, isCheckingOut } = useWallet();
   const [selectedPackageId, setSelectedPackageId] = useState<number | null>(null);
 
   const displayBalance = currentBalance ?? balance ?? 0;
@@ -143,6 +144,14 @@ export function TopUpModal({
 
         {/* ── Scrollable body ── */}
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+
+          {/* Checkout errors must be visible; console-only failures leave users blocked without guidance. */}
+          {error && (
+            <div role="alert" className="flex items-start gap-2 px-3 py-2 rounded-lg bg-red-950/30 border border-red-800/40">
+              <AlertTriangle className="h-3.5 w-3.5 text-red-400 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-red-200 leading-snug">{error}</p>
+            </div>
+          )}
 
           {/* Context alert */}
           {requiredCredits && deficit > 0 && (
