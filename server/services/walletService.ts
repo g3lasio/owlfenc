@@ -487,7 +487,7 @@ class WalletService {
     // With db.transaction(), both operations succeed or both are rolled back atomically.
     const isTopUp = params.type === 'topup';
 
-    const transactionResult = await pgDb.transaction(async (tx) => {
+    const { newBalance, walletId, transactionId } = await pgDb.transaction(async (tx) => {
       // Step 1: Update balance atomically
       const updateResult = await tx.execute(sql`
         UPDATE wallet_accounts 
@@ -538,11 +538,9 @@ class WalletService {
       throw txError;
     });
 
-    if (!transactionResult) {
+    if (!newBalance && newBalance !== 0) {
       return { success: false, creditsAdded: 0, balanceAfter: 0, transactionId: 0, error: 'Wallet not found' };
     }
-
-    const { newBalance, transactionId } = transactionResult;
 
     console.log(`✅ [WALLET] Added ${params.amountCredits} credits (${params.type}). New balance: ${newBalance}`);
 

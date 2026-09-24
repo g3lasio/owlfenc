@@ -369,7 +369,7 @@ router.get('/billing-status', requireAuth, async (req: Request, res: Response) =
 // POST /api/admin/credits/grant
 // Admin: dar créditos a usuario(s)
 // ================================
-async function handleAdminCreditGrant(req: Request, res: Response) {
+router.post('/admin/grant', async (req: Request, res: Response) => {
   try {
     // Verificar que es admin
     const adminKey = req.headers['x-admin-key'] as string;
@@ -467,12 +467,7 @@ async function handleAdminCreditGrant(req: Request, res: Response) {
     console.error('❌ [WALLET-ROUTES] Error granting credits:', error);
     return res.status(500).json({ error: 'Failed to grant credits' });
   }
-}
-
-// Legacy path retained for integrations already calling /api/wallet/admin/grant.
-router.post('/admin/grant', handleAdminCreditGrant);
-// Canonical documented endpoint when this router is mounted at /api/admin/credits.
-router.post('/grant', handleAdminCreditGrant);
+});
 
 // ================================
 // POST /api/wallet/backfill (Admin: crear wallets para usuarios existentes)
