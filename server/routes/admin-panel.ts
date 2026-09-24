@@ -7,8 +7,19 @@ import { Router } from 'express';
 import { verifyAdminAuth } from '../middleware/firebase-auth-middleware.js';
 import { productionUsageService } from '../services/productionUsageService.js';
 import { db } from '../lib/firebase-admin.js';
+import { pool } from '../db';
+import { walletService } from '../services/walletService';
+import { invalidateWalletCache } from './wallet-routes';
+import { z } from 'zod';
 
 const router = Router();
+
+const creditGrantSchema = z.object({
+  firebaseUid: z.string().trim().min(1).max(255),
+  credits: z.number().int().min(1).max(100_000),
+  description: z.string().trim().min(3).max(240),
+  idempotencyKey: z.string().trim().min(8).max(200).optional(),
+});
 
 /**
  * GET /api/admin/dashboard
@@ -167,6 +178,128 @@ router.get('/users', verifyAdminAuth, async (req, res) => {
       error: 'Users loading failed',
       message: error instanceof Error ? error.message : 'Unknown error'
     });
+  }
+});
+
+/**
+ * GET /api/admin/credits/accounts?search=
+ * Searchable account directory for the administrator credit screen.
+ * The response includes only the data needed to identify a recipient and its
+ * current wallet state; it never returns payment instruments or Stripe IDs.
+ */
+router.get('/credits/accounts', verifyAdminAuth, async (req, res) => {
+  try {
+    if (!pool) {
+      return res.status(503).json({ success: false, error: 'Wallet database unavailable' });
+    }
+
+    const search = String(req.query.search || '').trim();
+    const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 100);
+    // Escape LIKE wildcards so the search input is always treated as plain text.
+    const escapedSearch = search.replace(/[\\%_]/g, '\\$&');
+    const pattern = `%${escapedSearch}%`;
+
+    const result = await pool.query(
+      `SELECT
+         u.firebase_uid AS "firebaseUid",
+         COALESCE(NULLIF(TRIM(u.company), ''), 'Sin compañía registrada') AS "companyName",
+         COALESCE(NULLIF(TRIM(u.owner_name), ''), NULLIF(TRIM(u.username), ''), 'Sin nombre') AS "ownerName",
+         u.email AS "email",
+         COALESCE(w.balance_credits, 0) AS "balanceCredits",
+         COALESCE(w.is_locked, false) AS "isLocked"
+       FROM users u
+       LEFT JOIN wallet_accounts w ON w.firebase_uid = u.firebase_uid
+       WHERE u.firebase_uid IS NOT NULL
+         AND (
+           $1 = ''
+           OR COALESCE(u.company, '') ILIKE $2 ESCAPE '\\'
+           OR COALESCE(u.owner_name, '') ILIKE $2 ESCAPE '\\'
+           OR COALESCE(u.username, '') ILIKE $2 ESCAPE '\\'
+           OR COALESCE(u.email, '') ILIKE $2 ESCAPE '\\'
+         )
+       ORDER BY COALESCE(NULLIF(TRIM(u.company), ''), u.email) ASC
+       LIMIT $3`,
+      [search, pattern, limit],
+    );
+
+    return res.json({
+      success: true,
+      accounts: result.rows.map((account) => ({
+        firebaseUid: account.firebaseUid,
+        companyName: account.companyName,
+        ownerName: account.ownerName,
+        email: account.email,
+        balanceCredits: Number(account.balanceCredits) || 0,
+        isLocked: Boolean(account.isLocked),
+      })),
+    });
+  } catch (error) {
+    console.error('❌ [ADMIN-CREDITS] Failed to load account directory:', error);
+    return res.status(500).json({ success: false, error: 'Unable to load accounts' });
+  }
+});
+
+/**
+ * POST /api/admin/credits/grant
+ * Privileged, audited credit adjustment. This replaces the unreachable
+ * API-key-only workflow for administrators using the authenticated UI.
+ */
+router.post('/credits/grant', verifyAdminAuth, async (req: any, res) => {
+  try {
+    const payload = creditGrantSchema.parse(req.body);
+    const adminUid = req.uid;
+    const idempotencyKey = `admin-ui:${adminUid}:${payload.idempotencyKey || crypto.randomUUID()}`;
+
+    await walletService.getOrCreateWallet(payload.firebaseUid);
+    const adjustment = await walletService.addCredits({
+      firebaseUid: payload.firebaseUid,
+      amountCredits: payload.credits,
+      type: 'admin_adjustment',
+      description: payload.description,
+      idempotencyKey,
+      metadata: { grantedBy: adminUid, source: 'admin_credit_console' },
+    });
+
+    if (!adjustment.success) {
+      return res.status(500).json({ success: false, error: adjustment.error || 'Credit adjustment failed' });
+    }
+
+    invalidateWalletCache(payload.firebaseUid);
+
+    await db.collection('audit_logs').add({
+      uid: payload.firebaseUid,
+      action: 'admin_credit_grant',
+      feature: 'wallet',
+      success: true,
+      timestamp: new Date(),
+      metadata: {
+        credits: payload.credits,
+        description: payload.description,
+        grantedBy: adminUid,
+        transactionId: adjustment.transactionId,
+        balanceAfter: adjustment.balanceAfter,
+      },
+    }).catch((auditError) => {
+      console.error('⚠️ [ADMIN-CREDITS] Failed to write audit log:', auditError);
+    });
+
+    return res.json({
+      success: true,
+      creditsAdded: adjustment.creditsAdded,
+      balanceAfter: adjustment.balanceAfter,
+      transactionId: adjustment.transactionId,
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid credit adjustment',
+        fields: error.issues.map((issue) => ({ field: issue.path.join('.'), message: issue.message })),
+      });
+    }
+
+    console.error('❌ [ADMIN-CREDITS] Failed to grant credits:', error);
+    return res.status(500).json({ success: false, error: 'Credit adjustment failed' });
   }
 });
 
