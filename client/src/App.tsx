@@ -35,7 +35,6 @@ const Subscription = lazy(() => import("@/pages/Subscription"));
 const SubscriptionTest = lazy(() => import("@/pages/SubscriptionTest"));
 const Billing = lazy(() => import("./pages/Billing"));
 const WalletPage = lazy(() => import("./pages/WalletPage")); // PAY AS YOU GROW
-const AdminCredits = lazy(() => import("./pages/AdminCredits"));
 const ProjectPayments = lazy(() => import("@/pages/ProjectPayments"));
 const Invoices = lazy(() => import("@/pages/Invoices"));
 const EstimatesDashboard = lazy(() => import("@/pages/EstimatesDashboard"));
@@ -354,11 +353,6 @@ function MainAppRouter() {
               </Route>
               <Route path="/wallet/success">
                 {() => <ProtectedRoute component={WalletPage} />}
-              </Route>
-
-              {/* ADMINISTRATOR CREDIT CONSOLE */}
-              <Route path="/admin/credits">
-                {() => <ProtectedRoute component={AdminCredits} />}
               </Route>
 
               {/* Help & Support Routes */}
